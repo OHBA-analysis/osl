@@ -1,0 +1,10 @@
+*.pyc
+*.swo
+*.swp
+*.egg-info
+.vscode
+.coverage
+.DS_Store
+dist
+build
+doc/build
