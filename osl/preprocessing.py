@@ -2,8 +2,8 @@
 
 # vim: set expandtab ts=4 sw=4:
 
-
 import os
+import sys
 import mne
 import yaml
 import sails
@@ -288,10 +288,10 @@ def load_infifs(fname):
     return infifs, outnames, good_fifs
 
 
-def write_dataset(dataset, outbase, run_id):
+def write_dataset(dataset, outbase, run_id, overwrite=False):
     # Save output
     outname = outbase.format(run_id=run_id, ftype='raw', fext='fif')
-    dataset['raw'].save(outname, overwrite=args.overwrite)
+    dataset['raw'].save(outname, overwrite=overwrite)
 
     if dataset['events'] is not None:
         outname = outbase.format(run_id=run_id, ftype='events', fext='npy')
@@ -299,7 +299,7 @@ def write_dataset(dataset, outbase, run_id):
 
     if dataset['epochs'] is not None:
         outname = outbase.format(run_id=run_id, ftype='epochs', fext='fif')
-        dataset['epochs'].save(outname, overwrite=args.overwrite)
+        dataset['epochs'].save(outname, overwrite=overwrite)
 
     if dataset['ica'] is not None:
         outname = outbase.format(run_id=run_id, ftype='ica', fext='fif')
@@ -338,43 +338,26 @@ def run_proc_chain(infif, config, outdir=None, outname=None):
 
     return dataset
 
-# ----------------------------------------------------------
-# Main user function
 
-
-if __name__ == '__main__':
-
-    parser = argparse.ArgumentParser(description='Batch preprocess some fif files.')
-    parser.add_argument('config', type=str,
-                        help='yaml defining preproc')
-    parser.add_argument('files', type=str,
-                        help='plain text file containing full paths to files to be processed')
-    parser.add_argument('outdir', type=str,
-                        help='Path to output directory to save data in')
-    parser.add_argument('--overwrite', action='store_true',
-                        help="Overwrite previous output files if they're in the way")
-
-    parser.usage = parser.format_help()
-    args = parser.parse_args()
-    print(args)
+def run_proc_batch(config, files, outdir, overwrite=False):
 
     # -------------------------------------------------------------
 
     print('\n\nOHBA Auto-Proc\n\n')
 
-    infifs, outnames, good_fifs = load_infifs(args.files)
+    infifs, outnames, good_fifs = load_infifs(files)
     print('Processing {0} files'.format(sum(good_fifs)))
 
-    if os.path.isdir(args.outdir) is False:
+    if os.path.isdir(outdir) is False:
         raise ValueError('Output dir not found!')
     else:
         name_base = '{run_id}_{ftype}.{fext}'
-        outbase = os.path.join(args.outdir, name_base)
+        outbase = os.path.join(outdir, name_base)
         print(outbase)
 
-    print('Outputs saving to: {0}\n\n'.format(args.outdir))
+    print('Outputs saving to: {0}\n\n'.format(outdir))
 
-    with open(args.config, 'r') as f:
+    with open(config, 'r') as f:
         config = yaml.load(f, Loader=yaml.FullLoader)
     print(yaml.dump(config))
 
@@ -387,4 +370,36 @@ if __name__ == '__main__':
         else:
             outname = outnames[idx]
 
-        run_proc_chain(infif, config, args.outdir, outname)
+        run_proc_chain(infif, config, outdir, outname)
+
+
+def main(argv=None):
+
+    if argv is None:
+        argv = sys.argv[1:]
+    print(argv)
+
+    parser = argparse.ArgumentParser(description='Batch preprocess some fif files.')
+    parser.add_argument('config', type=str,
+                        help='yaml defining preproc')
+    parser.add_argument('files', type=str,
+                        help='plain text file containing full paths to files to be processed')
+    parser.add_argument('outdir', type=str,
+                        help='Path to output directory to save data in')
+    parser.add_argument('--overwrite', action='store_true',
+                        help="Overwrite previous output files if they're in the way")
+
+    parser.usage = parser.format_help()
+    args = parser.parse_args(argv)
+    print(args)
+
+    run_proc_batch(**vars(args))
+
+
+# ----------------------------------------------------------
+# Main user function
+
+
+if __name__ == '__main__':
+
+    main()

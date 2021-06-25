@@ -6,4 +6,9 @@ setup(name='osl',
       author='OHBA Analysis Group',
       license='MIT',
       packages=['osl'],
-      zip_safe=False)
+      zip_safe=False,
+      entry_points={
+          'console_scripts': [
+              'osl_batch = osl.preprocessing:main',
+              ],
+      },)
