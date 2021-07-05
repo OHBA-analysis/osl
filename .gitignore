@@ -5,6 +5,7 @@
 .vscode
 .coverage
 .DS_Store
+__pycache__
 dist
 build
 doc/build

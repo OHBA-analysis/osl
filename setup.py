@@ -9,6 +9,8 @@ setup(name='osl',
       zip_safe=False,
       entry_points={
           'console_scripts': [
-              'osl_batch = osl.preprocessing:main',
+              'osl_batch = osl.preprocessing.batch:main',
+              'osl_maxfilter = osl.maxfilter.maxfilter:main',
+              'osl_report = osl.report.raw_report:main',
               ],
       },)
