@@ -2,14 +2,6 @@
 
 MNE-Python based tool for generating quality check reports from MEG recordings.
 
-## Install
-
-This tool can be run as a stand alone script without direct installation but the dependancies in the requirements.txt file must be installed in the present environment. These can be installed using pip
-
-```
-pip install -r requirements.txt
-```
-
 ## Usage
 
 The script runs from the command line with two positional arguments

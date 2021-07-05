@@ -2,20 +2,11 @@
 
 A python batch processing script for Maxfilter preprocessing of MEG files.
 
-- [Dependencies](#dependencies)
-- [Install](#install)
 - [Usage](#usage)
   - [Customising Options](#customising-options)
   - [Multistage Options](#multistage-options)
 - [Options Arguments](#optional-arguments)
 
-## Dependencies
-
-OHBA Maxfilter mostly runs using standard python libraries. MNE-Python is required to run the `cbu` mode.
-
-## Install
-
-`ohba_maxfilter.py` runs as a standalone script. Download or clone the script onto your computer and run as a command line function.
 
 ## Usage
 
