@@ -5,26 +5,44 @@
 def ica_label(dataset):
     global drive, savedir
     import mne
+    import os
     from osl.preprocessing.osl_plot_ica import plot_ica
     from matplotlib import pyplot as plt
     plt.ion()
 
-    def ica_setup():
+    # first try to access file containing drive and
+    home=os.path.expanduser("~")
+    file = "".join((home, '/', 'labeldir.txt'))
+    drive = None
+    savedir = None
+    try:
+        f=open(file, 'r')#with open(file) as f:
+        for line in f:
+            exec(line)
+        file.close()
+    except:
+        print('SETTING UP THE DIRECTORIES')
+
+    if drive is None:
         drive = int(input('Do you have access to mark`s (1) or kia`s (2) ohba drive?'))
         if drive==1:
             drive='mwoolrich'
         elif drive==2:
             drive='knobre'
-        drive = "".join(('/ohba/pi/', drive, '/datasets/mrc_meguk/'))
+        #drive = "".join(('/ohba/pi/', drive, '/datasets/mrc_meguk/'))
+        drive = "".join(('/Volumes/T5_OHBA/', drive, '/datasets/mrc_meguk/'))
+        # write to text file
+        with open(file, "a") as text_file:
+            print(f"drive = '{drive}'", file=text_file)
 
+    if savedir is None:
         researcher_id = input('What are your initials?').lower()
         savedir = "".join((drive, researcher_id, '/'))
-        import os
-        if not os.path.isdir(savedir):
-            os.mkdir(savedir)
+        with open(file, "a") as text_file:
+            print(f"savedir = '{savedir}'", file=text_file)
 
-    try: drive
-    except NameError: ica_setup()
+    if not os.path.isdir(savedir):
+        os.mkdir(savedir)
 
     print(f'### LABELING DATASET {dataset} ###')
     print('LOADING DATA')
