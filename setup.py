@@ -5,7 +5,8 @@ setup(name='osl',
       description='OHBA Software Library',
       author='OHBA Analysis Group',
       license='MIT',
-      packages=['osl'],
+      packages=['osl', 'osl.report', 'osl.maxfilter',
+                'osl.preprocessing', 'osl.utils'],
       zip_safe=False,
       entry_points={
           'console_scripts': [
