@@ -77,85 +77,49 @@ def run_mne_crop(dataset, userargs):
     return dataset
 
 
-def run_mne_ica_raw_autoreject(dataset, userargs):
-    print('\nICA AUTOREJECT')
-
-    ica = mne.preprocessing.ICA(n_components=45, random_state=97)
-    ica.fit(dataset['raw'], picks=userargs['picks'])
-
-    eog_indices, eog_scores = ica.find_bads_eog(dataset['raw'], threshold=0.35, measure='correlation')
-    ica.exclude.extend(eog_indices)
-    print('Removing {0} EOG IC'.format(len(ica.exclude)))
-
-    # ECG channel correlation
-    ecg_indices, ecg_scores = ica.find_bads_ecg(dataset['raw'], threshold=3, method='correlation')
-    # MNEs cross-channel ECG thingy
-    #ecg_indices, ecg_scores = ica.find_bads_ecg(dataset['raw'], threshold='auto', method='ctps')
-    ica.exclude.extend(ecg_indices)
-    print('Removing {0} ECG IC'.format(len(ica.exclude)))
-
-    dataset['ica'] = ica
-    ica.apply(dataset['raw'])
-
-    return dataset
-
-
-def run_mne_ica_raw_autoreject2(dataset, userargs):
-
-    ica = mne.preprocessing.ICA(n_components=45, random_state=97)
-    ica.fit(dataset['raw'], picks=userargs['picks'])
-
-    eog_indices, eog_scores = ica.find_bads_eog(dataset['raw'], threshold=5)
-    ica.exclude.extend(eog_indices)
-
-    ecg_indices, ecg_scores = ica.find_bads_ecg(dataset['raw'], threshold='auto', method='correlation')
-    ica.exclude.extend(ecg_indices)
-
-    dataset['ica'] = ica
-    ica.apply(dataset['raw'])
-
-    return dataset
-
-
 def run_mne_ica_raw(dataset, userargs):
     print('\nICA')
-    # NOTE: **userargs doesn't work because 'picks' is in there
-    ica = mne.preprocessing.ICA(n_components=userargs['n_components'])
+    ica = mne.preprocessing.ICA(n_components=userargs['n_components'])  # NOTE: **userargs doesn't work because 'picks' is in there
     ica.fit(dataset['raw'], picks=userargs['picks'])
-    dataset['ica'] = ica
+    dataset['ica']=ica
     return dataset
 
 
 def run_mne_ica_autoreject(dataset, userargs):
     print('\nICA AUTOREJECT')
-    if np.logical_or('ecgmethod' not in userargs, userargs['ecgmethod'] == 'ctps'):
+    if np.logical_or('ecgmethod' not in userargs, userargs['ecgmethod']=='ctps'):
         ecgmethod = 'ctps'
-    elif userargs['ecgmethod'] == 'correlation':
+    elif userargs['ecgmethod']=='correlation':
         ecgmethod = 'correlation'
-    if ecgmethod == 'ctps':
-        ecgthreshold = 'auto'
-    elif ecgmethod == 'correlation':
-        ecgthreshold = 3
-
+    if ecgmethod=='ctps':
+        ecgthreshold='auto'
+    elif ecgmethod=='correlation':
+        ecgthreshold=3
     eog_indices, eog_scores = dataset['ica'].find_bads_eog(dataset['raw'], threshold=0.35, measure='correlation')
     dataset['ica'].exclude.extend(eog_indices)
-    print('Removing {0} EOG IC'.format(len(dataset['ica'].exclude)))
-
+    print('Marking {0} as EOG ICs'.format(len(dataset['ica'].exclude)))
     ecg_indices, ecg_scores = dataset['ica'].find_bads_ecg(dataset['raw'], threshold=ecgthreshold, method=ecgmethod)
     dataset['ica'].exclude.extend(ecg_indices)
-    print('Removing {0} ECG IC'.format(len(dataset['ica'].exclude)))
-
-    dataset['ica'].apply(dataset['raw'])
+    print('Marking {0} as ECG ICs'.format(len(dataset['ica'].exclude)))
+    if np.logical_or('apply' not in userargs, userargs['apply'] is True):
+        print('\nREMOVING SELECTED COMPONENTS FROM RAW DATA')
+        dataset['ica'].apply(dataset['raw'])
+    else:
+        print('\nCOMPONENTS WERE NOT REMOVED FROM RAW DATA')
     return dataset
 
-
-def run_mne_ica_manualreject(dataset, userargs):
+def run_osl_ica_manualreject(dataset, userargs):
     print('\nICA MANUAL REJECT')
-    dataset['ica'].plot_sources(dataset['raw'], show_scrollbars=True)
-    dataset['ica'].plot_components(ch_type=userargs['picks'])
+    from .osl_plot_ica import plot_ica
+    plot_ica(dataset['ica'], dataset['raw'], block=True)
     print('Removing {0} IC'.format(len(dataset['ica'].exclude)))
-    dataset['ica'].apply(dataset['raw'])
+    if np.logical_or('apply' not in userargs, userargs['apply'] is True):
+        print('\nREMOVING SELECTED COMPONENTS FROM RAW DATA')
+        dataset['ica'].apply(dataset['raw'])
+    else:
+        print('\nCOMPONENTS WERE NOT REMOVED FROM RAW DATA')
     return dataset
+
 
 # --------------------------------------------------------------
 # Preproc funcs from OHBA

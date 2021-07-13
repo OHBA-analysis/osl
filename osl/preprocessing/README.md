@@ -27,7 +27,8 @@ preproc:
   - {method: bad_segments, segment_len: 800, picks: 'grad'}
   - {method: bad_segments, segment_len: 800, picks: 'eeg'}
   - {method: resample, sfreq: 400, n_jobs: 6}
-  - {method: ica_raw_autoreject, picks: 'meg', ecgmethod: 'correlation'}
+  - {method: ica_raw, picks: 'meg', n_components: 64}
+  - {method: run_mne_ica_autoreject, ecgmethod: 'correlation', apply: True}
 """
 
 config = yaml.load(config_text, Loader=yaml.FullLoader)
