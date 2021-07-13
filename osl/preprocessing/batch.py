@@ -5,11 +5,14 @@
 import os
 import sys
 import mne
+import csv
 import yaml
 import sails
 import argparse
 import numpy as np
 from copy import deepcopy
+import multiprocessing as mp
+from functools import partial
 
 """MNE Advice
 
@@ -79,26 +82,32 @@ def run_mne_crop(dataset, userargs):
 
 def run_mne_ica_raw(dataset, userargs):
     print('\nICA')
-    ica = mne.preprocessing.ICA(n_components=userargs['n_components'])  # NOTE: **userargs doesn't work because 'picks' is in there
+    # NOTE: **userargs doesn't work because 'picks' is in there
+    ica = mne.preprocessing.ICA(n_components=userargs['n_components'])
     ica.fit(dataset['raw'], picks=userargs['picks'])
-    dataset['ica']=ica
+    dataset['ica'] = ica
     return dataset
 
 
 def run_mne_ica_autoreject(dataset, userargs):
     print('\nICA AUTOREJECT')
-    if np.logical_or('ecgmethod' not in userargs, userargs['ecgmethod']=='ctps'):
+    if np.logical_or('ecgmethod' not in userargs, userargs['ecgmethod'] == 'ctps'):
         ecgmethod = 'ctps'
-    elif userargs['ecgmethod']=='correlation':
+    elif userargs['ecgmethod'] == 'correlation':
         ecgmethod = 'correlation'
-    if ecgmethod=='ctps':
-        ecgthreshold='auto'
-    elif ecgmethod=='correlation':
-        ecgthreshold=3
-    eog_indices, eog_scores = dataset['ica'].find_bads_eog(dataset['raw'], threshold=0.35, measure='correlation')
+    if ecgmethod == 'ctps':
+        ecgthreshold = 'auto'
+    elif ecgmethod == 'correlation':
+        ecgthreshold = 3
+    eog_indices, eog_scores = dataset['ica'].find_bads_eog(dataset['raw'],
+                                                           threshold=0.35,
+                                                           measure='correlation')
+
     dataset['ica'].exclude.extend(eog_indices)
     print('Marking {0} as EOG ICs'.format(len(dataset['ica'].exclude)))
-    ecg_indices, ecg_scores = dataset['ica'].find_bads_ecg(dataset['raw'], threshold=ecgthreshold, method=ecgmethod)
+    ecg_indices, ecg_scores = dataset['ica'].find_bads_ecg(dataset['raw'],
+                                                           threshold=ecgthreshold,
+                                                           method=ecgmethod)
     dataset['ica'].exclude.extend(ecg_indices)
     print('Marking {0} as ECG ICs'.format(len(dataset['ica'].exclude)))
     if np.logical_or('apply' not in userargs, userargs['apply'] is True):
@@ -107,6 +116,7 @@ def run_mne_ica_autoreject(dataset, userargs):
     else:
         print('\nCOMPONENTS WERE NOT REMOVED FROM RAW DATA')
     return dataset
+
 
 def run_osl_ica_manualreject(dataset, userargs):
     print('\nICA MANUAL REJECT')
@@ -148,7 +158,7 @@ def get_badseg_annotations(raw, userargs):
     onsets = onsets / raw.info['sfreq']
     durations = durations / raw.info['sfreq']
 
-    orig_time = [None for ii in range(len(onsets))]
+    #orig_time = [None for ii in range(len(onsets))]
 
     return onsets, durations, descriptions
 
@@ -180,7 +190,7 @@ def get_badchan_labels(raw, userargs):
 
 def run_osl_bad_segments(dataset, userargs):
     print('\nBAD-SEGMENTS')
-    anns = dataset['raw'].annotations
+    #anns = dataset['raw'].annotations
     new = get_badseg_annotations(dataset['raw'], userargs)
     dataset['raw'].annotations.append(*new)
 
@@ -199,7 +209,8 @@ def run_osl_bad_channels(dataset, userargs):
 
 
 def _print_badsegs(raw, modality):
-    """Print a text-summary of the bad segments marked in a dataset."""
+    """CURRENTLY BROKEN : Print a text-summary of the bad segments marked in a
+    dataset."""
     types = [r['description'] for r in raw.annotations]
 
     inds = [s.find(modality) > 0 for s in types]
@@ -232,22 +243,52 @@ def find_func(method):
     return func
 
 
-def load_infifs(fname):
-    import csv
+def check_inconfig(config):
+    if isinstance(config, str):
+        with open(config, 'r') as f:
+            config = yaml.load(f, Loader=yaml.FullLoader)
+    elif isinstance(config, dict):
+        pass
+
+    return config
+
+
+def check_infifs(infiles):
     infifs = []
     outnames = []
-    for row in csv.reader(open(fname, 'r'), delimiter=" "):
-        infifs.append(row[0])
-        if len(row) > 1:
+    if isinstance(infiles, str):
+        # We have a file with a list of paths
+        check_paths = True
+        for row in csv.reader(open(infiles, 'r'), delimiter=" "):
+            infifs.append(row[0])
+            if len(row) > 1:
+                outnames.append(row[1])
+    elif isinstance(infiles[0], str):
+        # We have a list of paths
+        check_paths = True
+        infifs = infiles
+    elif isinstance(infiles[0], [list, tuple]):
+        # We have a list containing files and output names
+        check_paths = True
+        for row in infiles:
+            infifs.append(row[0])
             outnames.append(row[1])
+    elif isinstance(infiles[0], mne.io.fiff.raw.Raw):
+        # We have a list of MNE objects
+        check_paths = False
+        infifs = infiles
+
     if len(outnames) == 0:
         outnames = None
 
+    # Check that files actually exist if we've been passed filenames rather
+    # than objects
     good_fifs = [1 for ii in range(len(infifs))]
-    for idx, fif in enumerate(infifs):
-        if os.path.isfile(fif) == False:
-            good_fifs[idx] = 0
-            print('File not found: {0}'.format(fif))
+    if check_paths:
+        for idx, fif in enumerate(infifs):
+            if os.path.isfile(fif) == False:
+                good_fifs[idx] = 0
+                print('File not found: {0}'.format(fif))
 
     return infifs, outnames, good_fifs
 
@@ -270,7 +311,8 @@ def write_dataset(dataset, outbase, run_id, overwrite=False):
         dataset['ica'].save(outname)
 
 
-def run_proc_chain(infif, config, outdir=None, outname=None):
+def run_proc_chain(infif, config, outname=None,
+                   outdir=None, ret_dataset=False, overwrite=False):
 
     if isinstance(infif, str):
         raw = import_data(infif)
@@ -292,24 +334,41 @@ def run_proc_chain(infif, config, outdir=None, outname=None):
     for stage in deepcopy(config['preproc']):
         method = stage.pop('method')
         func = find_func(method)
-        dataset = func(dataset, stage)
+        try:
+            dataset = func(dataset, stage)
+        except:
+            print('PROCESSING FAILED!!!!')
+            e = sys.exc_info()[0]
+            print(e)
+            return 0
 
     if outdir is not None:
         name_base = '{run_id}_{ftype}.{fext}'
         outbase = os.path.join(outdir, name_base)
 
-        write_dataset(dataset, outbase, run_id)
+        write_dataset(dataset, outbase, run_id, overwrite=overwrite)
 
-    return dataset
+    if ret_dataset:
+        return dataset
+    else:
+        return 1
 
 
-def run_proc_batch(config, files, outdir, overwrite=False):
+def run_proc_batch(config, files, outdir, overwrite=False, nprocesses=1):
+    """
+    files can be a list of Raw objects or a list of filenames or a path to a
+    textfile list of filenames
+
+    Currently writes outputs to disk - does not return a list of processed
+    data! this could potentially be huge amounts of memory.
+
+    """
 
     # -------------------------------------------------------------
 
     print('\n\nOHBA Auto-Proc\n\n')
 
-    infifs, outnames, good_fifs = load_infifs(files)
+    infifs, outnames, good_fifs = check_infifs(files)
     print('Processing {0} files'.format(sum(good_fifs)))
 
     if os.path.isdir(outdir) is False:
@@ -320,21 +379,33 @@ def run_proc_batch(config, files, outdir, overwrite=False):
         print(outbase)
 
     print('Outputs saving to: {0}\n\n'.format(outdir))
-
-    with open(config, 'r') as f:
-        config = yaml.load(f, Loader=yaml.FullLoader)
+    config = check_inconfig(config)
     print(yaml.dump(config))
 
     # -------------------------------------------------------------
+    # Create partial function with fixed options
+    pool_func = partial(run_proc_chain,
+                        outdir=outdir,
+                        ret_dataset=False,
+                        overwrite=overwrite)
 
     # For each file...
+    args = []
     for idx, infif in enumerate(infifs):
         if outnames is None:
             outname = None
         else:
             outname = outnames[idx]
 
-        run_proc_chain(infif, config, outdir, outname)
+        args.append((infif, config, outname))
+
+    # Actually run the processes
+    p = mp.Pool(processes=nprocesses)
+    proc_flags = p.starmap(pool_func, args)
+    p.close()
+
+    # Return failed flags
+    return proc_flags
 
 
 def main(argv=None):
@@ -352,6 +423,8 @@ def main(argv=None):
                         help='Path to output directory to save data in')
     parser.add_argument('--overwrite', action='store_true',
                         help="Overwrite previous output files if they're in the way")
+    parser.add_argument('--nprocesses', type=int, default=1,
+                        help="Number of jobs to process in parallel")
 
     parser.usage = parser.format_help()
     args = parser.parse_args(argv)

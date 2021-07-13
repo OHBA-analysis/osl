@@ -1,0 +1,4 @@
+{subject}_{task}_bl_tsss_raw.fif (processed_fif)
+{subject}_{task}_bl_tsss_epochs.fif (epoched_fif)
+{subject}_{task}_bl_tsss_ica.fif (ica)
+{subject}_{task}_bl_tsss_events.npy (events)

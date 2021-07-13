@@ -1,3 +1,7 @@
+#!/usr/bin/env python3
+
+# vim: set expandtab ts=4 sw=4:
+
 import mne
 import sys
 import sails
