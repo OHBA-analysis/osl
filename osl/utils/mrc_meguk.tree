@@ -1,0 +1,7 @@
+sub-{subject}
+  anat
+    sub-{subject}_T1w.nii.gz (t1)
+  meg
+    sub-{subject}_task-resteyesclosed_meg.fif (meg_restclosed)
+    sub-{subject}_task-resteyesopen_meg.fif (meg_restopen)
+    sub-{subject}_task-visuomotor_meg.fif (meg_visuomotor)
