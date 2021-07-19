@@ -29,8 +29,8 @@ def ica_label(dataset):
             drive='mwoolrich'
         elif drive==2:
             drive='knobre'
-        #drive = "".join(('/ohba/pi/', drive, '/datasets/mrc_meguk/'))
-        drive = "".join(('/Volumes/T5_OHBA/', drive, '/datasets/mrc_meguk/'))
+        drive = "".join(('/ohba/pi/', drive, '/datasets/mrc_meguk/'))
+        #drive = "".join(('/Volumes/T5_OHBA/', drive, '/datasets/mrc_meguk/'))
         # write to text file
         with open(file, "a") as text_file:
             print(f"drive = '{drive}'", file=text_file)
