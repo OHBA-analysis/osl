@@ -1,0 +1,13 @@
+sub-{subject}
+  anat
+    sub-{subject}_T1w.nii.gz (t1)
+  meg
+    sub-{subject}_task-resteyesclosed_meg.fif (restclosed_fif)
+    sub-{subject}_task-resteyesopen_meg.fif (restopen_fif)
+    sub-{subject}_task-visuomotor_meg.fif (visuomotor_fif)
+    sub-{subject}_task-resteyesclosed_meg.ds
+      sub-{subject}_task-resteyesclosed_meg.meg4 (restclosed_ds)
+    sub-{subject}_task-resteyesopen_meg.ds
+      sub-{subject}_task-resteyesopen_meg.meg4 (restopen_ds)
+    sub-{subject}_task-visuomotor_meg.ds
+      sub-{subject}_task-visuomotor_meg.meg4 (visuomotor_ds)

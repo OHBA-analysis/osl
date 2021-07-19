@@ -1,13 +1,15 @@
 import os
+import mne
 import sys
 import argparse
 import tempfile
+import numpy as np
 
 
-def _add_headpos(cmd, args):
+def _add_headpos(cmd, args, outfif):
     """Estimates and stores head position parameters but does not transform data"""
     if ('headpos' in args) and args['headpos']:
-        hp_name = outname.replace('.fif', '_headpos.log')
+        hp_name = outfif.replace('.fif', '_headpos.log')
         hp_name = os.path.join(args['outdir'], hp_name)
         cmd += ' -hp {0}'.format(hp_name)
     return cmd
@@ -176,23 +178,33 @@ def _add_scanner(cmd, args):
     return cmd
 
 
+def quick_load_dig(fname):
+    from mne.io.constants import FIFF
+    ff, tree, _ = mne.io.open.fiff_open(fname, preload=False)
+    meas = mne.io.tree.dir_tree_find(tree, FIFF.FIFFB_MEAS)
+    meas_info = mne.io.tree.dir_tree_find(meas, FIFF.FIFFB_MEAS_INFO)
+    dig = mne.io._digitization._read_dig_fif(ff, meas_info)
+    return dig
+
+
 def fit_cbu_origin(infif, outbase=None, remove_nose=True):
-    if 'mne' not in sys.modules:
-        import mne
-    if 'np' not in sys.modules:
-        import numpy as np
-    raw = mne.io.read_raw_fif(infif)
+
+    try:
+        raw = mne.io.read_raw_fif(infif)
+        dig = raw.info['dig']
+    except ValueError:
+        dig = quick_load_dig(infif)
 
     # Extract headshape points
     headshape = []
-    for dp in raw.info['dig']:
+    for dp in dig:
         if dp['kind']._name.find('EXTRA') > 0:
             headshape.append(dp['r'])
     headshape = np.vstack(headshape)
 
     if remove_nose:
         # Remove nosepoints
-        keeps = np.where(np.logical_and(headshape[:, 2] < 0, headshape[:, 1] > 0) is False)[0]
+        keeps = np.where(np.logical_and(headshape[:, 2] < 0, headshape[:, 1] > 0) == False)[0]  # noqa: E712
         headshape = headshape[keeps, :]
 
     # Save txt and fit origin
@@ -208,9 +220,10 @@ def fit_cbu_origin(infif, outbase=None, remove_nose=True):
     cmd = '/neuro/bin/util/fit_sphere_to_points {0} > {1}'.format(tmp_hs, tmp_fit)
     os.system("bash -c '{}'".format(cmd))
 
-    new_origin = np.loadtxt(tmp_fit)
+    new_origin = np.loadtxt(tmp_fit)[:3] * 1000
+    print('fitted origin is {0}'.format(new_origin))
 
-    return new_origin[:3] * 1000
+    return new_origin
 
 
 def run_maxfilter(infif, outfif, args, logfile_tag=''):
@@ -226,9 +239,9 @@ def run_maxfilter(infif, outfif, args, logfile_tag=''):
         outfif = outfif.replace('.fif', 'sss.fif')
 
     # Create base command
-    cmd = basecmd.format(maxpath=args['maxpath'], infif=fif, outfif=outfif)
+    cmd = basecmd.format(maxpath=args['maxpath'], infif=infif, outfif=outfif)
 
-    cmd = _add_headpos(cmd, args)
+    cmd = _add_headpos(cmd, args, outfif)
     cmd = _add_movecomp(cmd, args)
     cmd = _add_movecompinter(cmd, args)
     cmd = _add_hpie(cmd, args)
@@ -257,9 +270,9 @@ def run_maxfilter(infif, outfif, args, logfile_tag=''):
         outdir = os.path.split(infif)[0]
     else:
         outdir = args['outdir']
-    stdlog = outname.replace('.fif', '{0}.log'.format(logfile_tag))
+    stdlog = outfif.replace('.fif', '{0}.log'.format(logfile_tag))
     stdlog = os.path.join(outdir, stdlog)
-    errlog = outname.replace('.fif', '{0}_err.log'.format(logfile_tag))
+    errlog = outfif.replace('.fif', '{0}_err.log'.format(logfile_tag))
     errlog = os.path.join(outdir, errlog)
 
     # Set tee to capture both stdout and stderr into separate files
@@ -280,6 +293,7 @@ def run_maxfilter(infif, outfif, args, logfile_tag=''):
         os.system("bash -c '{}'".format(cmd))
 
     return outfif, stdlog
+
 
 # -------------------------------------------------
 
@@ -474,7 +488,6 @@ def main(argv=None):
     parser.add_argument('--maxpath', type=str, default='/neuro/bin/util/maxfilter-2.2',
                         help='Path to maxfilter command to use')
 
-
     parser.add_argument('--mode', type=str, default='standard',
                         help="Running mode for maxfilter. Either 'standard' or 'multistage'")
 
@@ -520,12 +533,12 @@ def main(argv=None):
                         help="ets the g-value limit (goodness-of-fit) for hpi coil fitting (def 0.98))")
 
     parser.add_argument('--scanner', type=str, default=None,
-                        help="Set CTC and Cal for the OHBA scanner the dataset was collected with (VectorView, VectorView2 or Neo). This overrides the --ctc and --cal options.")
+                        help="Set CTC and Cal for the OHBA scanner the dataset was collected with \
+                              (VectorView, VectorView2 or Neo). This overrides the --ctc and --cal options.")
     parser.add_argument('--ctc', type=str, default=None,
                         help='Specify cross-talk calibration file')
     parser.add_argument('--cal', type=str, default=None,
                         help='Specify fine-calibration file')
-
 
     parser.add_argument('--overwrite', action='store_true',
                         help="Overwrite previous output files if they're in the way")
