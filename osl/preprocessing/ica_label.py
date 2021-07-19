@@ -6,7 +6,6 @@ def ica_label(dataset):
     global drive, savedir
     import mne
     import os
-    #import osl
     from matplotlib import pyplot as plt
     plt.ion()
 
@@ -58,7 +57,7 @@ def ica_label(dataset):
 
     # interactive components plot
     print('INTERACTIVE ICA LABELING')
-    from osl.preprocessing.osl_plot_ica import plot_ica
+    from osl_plot_ica import plot_ica
     plot_ica(ica,raw, block=True)
     plt.pause(0.1)
 
