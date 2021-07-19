@@ -58,7 +58,9 @@ def ica_label(dataset):
 
     # interactive components plot
     print('INTERACTIVE ICA LABELING')
-    #osl.preprocessing.osl_plot_ica(ica,raw, block=True)
+    from osl.preprocessing.osl_plot_ica import plot_ica
+    plot_ica(ica,raw, block=True)
+    plt.pause(0.1)
 
     print('SAVING DATA')
     ica.save("".join((savedir, dataset, '_ica.fif')))
