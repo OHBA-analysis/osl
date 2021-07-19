@@ -6,7 +6,7 @@ def ica_label(dataset):
     global drive, savedir
     import mne
     import os
-    from osl.preprocessing.osl_plot_ica import plot_ica
+    #import osl
     from matplotlib import pyplot as plt
     plt.ion()
 
@@ -18,8 +18,9 @@ def ica_label(dataset):
     try:
         f=open(file, 'r')#with open(file) as f:
         for line in f:
-            exec(line)
-        file.close()
+            exec(line, globals())
+        f.close()
+        print(drive)
     except:
         print('SETTING UP THE DIRECTORIES')
 
@@ -57,9 +58,26 @@ def ica_label(dataset):
 
     # interactive components plot
     print('INTERACTIVE ICA LABELING')
-    plot_ica(ica,raw, block=True)
+    #osl.preprocessing.osl_plot_ica(ica,raw, block=True)
 
     print('SAVING DATA')
     ica.save("".join((savedir, dataset, '_ica.fif')))
     del ica, raw
     print(f'### LABELING DATASET {dataset} COMPLETE ###')
+
+def main(argv=None):
+    import argparse
+    import sys
+
+    if argv is None:
+        argv = sys.argv[1:]
+    print(argv)
+    parser = argparse.ArgumentParser(description='Label ICA components.')
+    parser.add_argument('dataset', type=str,
+                        help='Name of the ICA dataset (from partnership data)')
+    args = parser.parse_args(argv)
+    ica_label(args.dataset)
+
+
+if __name__ == '__main__':
+    main()
