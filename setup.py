@@ -14,5 +14,5 @@ setup(name='osl',
               'osl_maxfilter = osl.maxfilter.maxfilter:main',
               'osl_report = osl.report.raw_report:main',
               ]},
-      install_requires = ['mne', 'fslpy', 'sails', 'tabulate'],
+      install_requires=['mne', 'fslpy', 'sails', 'tabulate'],
       )
