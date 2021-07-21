@@ -9,6 +9,7 @@ import csv
 import yaml
 import sails
 import argparse
+import traceback
 import numpy as np
 from copy import deepcopy
 import multiprocessing as mp
@@ -311,19 +312,24 @@ def write_dataset(dataset, outbase, run_id, overwrite=False):
         dataset['ica'].save(outname)
 
 
-def run_proc_chain(infif, config, outname=None,
-                   outdir=None, ret_dataset=False, overwrite=False):
+def run_proc_chain(infif, config, outname=None, outdir=None, ret_dataset=False, overwrite=False):
+
+    if outname is None:
+        run_id = os.path.split(infif)[1].rstrip('.fif')
+    else:
+        run_id = outname.rstrip('.fif')
+
+    if outdir is not None:
+        name_base = '{run_id}_{ftype}.{fext}'
+        outbase = os.path.join(outdir, name_base)
+        logfile = outbase.format(run_id=run_id, ftype='preproc', fext='log')
+        mne.utils._logging.set_log_file(logfile)
 
     if isinstance(infif, str):
         raw = import_data(infif)
     elif isinstance(infif, mne.io.fiff.raw.Raw):
         raw = infif
         infif = raw.filenames[0]  # assuming only one file here
-
-    if outname is None:
-        run_id = os.path.split(infif)[1].rstrip('.fif')
-    else:
-        run_id = outname.rstrip('.fif')
 
     dataset = {'raw': raw,
                'ica': None,
@@ -336,16 +342,22 @@ def run_proc_chain(infif, config, outname=None,
         func = find_func(method)
         try:
             dataset = func(dataset, stage)
-        except:
+        except Exception as e:
             print('PROCESSING FAILED!!!!')
-            e = sys.exc_info()[0]
-            print(e)
+            ex_type, ex_value, ex_traceback = sys.exc_info()
+            print(ex_type)
+            print(ex_value)
+            if outdir is not None:
+                with open(logfile.replace('.log', '.error.log'), 'w') as f:
+                    f.write('Processing filed during stage : "{0}"\n\n'.format(method))
+                    f.write(str(ex_type))
+                    f.write('\n')
+                    f.write(str(ex_value))
+                    f.write('\n')
+                    traceback.print_tb(ex_traceback, file=f)
             return 0
 
     if outdir is not None:
-        name_base = '{run_id}_{ftype}.{fext}'
-        outbase = os.path.join(outdir, name_base)
-
         write_dataset(dataset, outbase, run_id, overwrite=overwrite)
 
     if ret_dataset:
@@ -354,7 +366,7 @@ def run_proc_chain(infif, config, outname=None,
         return 1
 
 
-def run_proc_batch(config, files, outdir, overwrite=False, nprocesses=1):
+def run_proc_batch(config, files, outdir, overwrite=False, nprocesses=1, mnelog='INFO'):
     """
     files can be a list of Raw objects or a list of filenames or a path to a
     textfile list of filenames
@@ -365,6 +377,7 @@ def run_proc_batch(config, files, outdir, overwrite=False, nprocesses=1):
     """
 
     # -------------------------------------------------------------
+    mne.set_log_level(mnelog)
 
     print('\n\nOHBA Auto-Proc\n\n')
 
@@ -404,6 +417,8 @@ def run_proc_batch(config, files, outdir, overwrite=False, nprocesses=1):
     proc_flags = p.starmap(pool_func, args)
     p.close()
 
+    print('Processed {0}/{1} files successfully'.format(np.sum(proc_flags), len(proc_flags)))
+
     # Return failed flags
     return proc_flags
 
@@ -425,6 +440,8 @@ def main(argv=None):
                         help="Overwrite previous output files if they're in the way")
     parser.add_argument('--nprocesses', type=int, default=1,
                         help="Number of jobs to process in parallel")
+    parser.add_argument('--mnelog', type=str, default='INFO',
+                        help="Set the logging level for MNE python functions")
 
     parser.usage = parser.format_help()
     args = parser.parse_args(argv)
