@@ -110,7 +110,7 @@ def run_mne_ica_autoreject(dataset, userargs):
                                                            method=ecgmethod)
     dataset['ica'].exclude.extend(ecg_indices)
     print('Marking {0} as ECG ICs'.format(len(dataset['ica'].exclude)))
-    if np.logical_or('apply' not in userargs, userargs['apply'] is True):
+    if ('apply' not in userargs) or (userargs['apply'] is True):
         print('\nREMOVING SELECTED COMPONENTS FROM RAW DATA')
         dataset['ica'].apply(dataset['raw'])
     else:
