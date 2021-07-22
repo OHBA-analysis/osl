@@ -14,6 +14,7 @@ import numpy as np
 from copy import deepcopy
 import multiprocessing as mp
 from functools import partial
+from time import strftime, localtime
 
 """MNE Advice
 
@@ -33,56 +34,110 @@ XML sanity check on config file. pre-parser to avoid mad sequences of methods.
 # Preproc funcs from MNE
 
 
-def import_data(infif):
+def import_data2(infile, preload=True):
     """Including as a function to make adding alt loaders easier later."""
-    print('IMPORTING: {0}'.format(infif))
-    return mne.io.read_raw_fif(infif, preload=True)
+    osl_print('IMPORTING: {0}'.format(infile))
+    return mne.io.read_raw(infile, preload=preload)
 
 
-def run_mne_find_events(dataset, userargs):
-    print('\nFINDING EVENTS')
+def find_run_id(infile, preload=True):
+
+    if os.path.split(infile)[1] == 'c,rfDC':
+        # We have a BTI scan
+        runname = os.path.basename(os.path.dirname(infile))
+    elif os.path.splitext(infile)[1] == '.fif':
+        # We have a FIF file
+        runname = os.path.basename(infile).rstrip('.fif')
+    elif os.path.splitext(infile)[1] == '.meg4':
+        # We have the meg file from a ds directory
+        runname = os.path.basename(infile).rstrip('.ds')
+    elif os.path.splitext(infile)[1] == '.ds':
+        runname = os.path.basename(infile).rstrip('.ds')
+    else:
+        raise ValueError('Unable to determine run_id from file {0}'.format(infile))
+
+    return runname
+
+
+def import_data(infile, preload=True, logfile=None):
+    osl_print('IMPORTING: {0}'.format(infile), logfile=logfile)
+
+    if os.path.split(infile)[1] == 'c,rfDC':
+        # We have a BTI scan
+        if os.path.isfile(os.path.join(os.path.split(infile)[0], 'hs_file')):
+            head_shape_fname = 'hs_file'
+        else:
+            head_shape_fname = None
+        raw = mne.io.read_raw_bti(infile, head_shape_fname=head_shape_fname, preload=preload)
+    elif os.path.splitext(infile)[1] == '.fif':
+        # We have a FIF file
+        raw = mne.io.read_raw_fif(infile, preload=preload)
+    elif os.path.splitext(infile)[1] == '.meg4':
+        # We have the meg file from a ds directory
+        raw = mne.io.read_raw_ctf(os.path.dirname(infile), preload=preload)
+    elif os.path.splitext(infile)[1] == '.ds':
+        raw = mne.io.read_raw_ctf(infile, preload=preload)
+    else:
+        raise ValueError('Unable to determine file type of input {0}'.format(infile))
+
+    return raw
+
+
+def run_mne_set_channel_types(dataset, userargs, logfile=None):
+    osl_print('\nSETTING CHANNEL TYPES', logfile=logfile)
+    osl_print(str(userargs), logfile=logfile)
+
+    dataset['raw'].set_channel_types(userargs)
+    return dataset
+
+
+def run_mne_find_events(dataset, userargs, logfile=None):
+    osl_print('\nFINDING EVENTS', logfile=logfile)
     dataset['events'] = mne.find_events(dataset['raw'], **userargs)
     return dataset
 
 
-def run_mne_filter(dataset, userargs):
-    print('\nFILTERING')
+def run_mne_filter(dataset, userargs, logfile=None):
+    osl_print('\nFILTERING', logfile=logfile)
     dataset['raw'].filter(**userargs)
     return dataset
 
 
-def run_mne_notch_filter(dataset, userargs):
-    print('\nNOTCH-FILTERING')
+def run_mne_notch_filter(dataset, userargs, logfile=None):
+    osl_print('\nNOTCH-FILTERING', logfile=logfile)
     freqs = np.array(userargs.pop('freqs').split(' ')).astype(float)
-    print(freqs)
+    osl_print(freqs)
     dataset['raw'].notch_filter(freqs, **userargs)
     return dataset
 
 
-def run_mne_resample(dataset, userargs):
+def run_mne_resample(dataset, userargs, logfile=None):
     """The MNE guys don't seem to like resampling so much...
     """
-    print('\nRESAMPLING')
-    dataset['raw'].resample(**userargs)
+    osl_print('\nRESAMPLING', logfile=logfile)
+    if ('events' in dataset) and (dataset['events'] is not None):
+        dataset['raw'], dataset['events'] = dataset['raw'].resample(events=dataset['events'], **userargs)
+    else:
+        dataset['raw'].resample(**userargs)
     return dataset
 
 
-def run_mne_epochs(dataset, userargs):
-    print('\nEPOCHING')
+def run_mne_epochs(dataset, userargs, logfile=None):
+    osl_print('\nEPOCHING', logfile=logfile)
     dataset['epochs'] = mne.Epochs(dataset['raw'],
                                    dataset['events'],
                                    dataset['event_id'])
     return dataset
 
 
-def run_mne_crop(dataset, userargs):
-    print('\nCROPPING')
+def run_mne_crop(dataset, userargs, logfile=None):
+    osl_print('\nCROPPING', logfile=logfile)
     dataset['raw'].crop(**userargs)
     return dataset
 
 
-def run_mne_ica_raw(dataset, userargs):
-    print('\nICA')
+def run_mne_ica_raw(dataset, userargs, logfile=None):
+    osl_print('\nICA', logfile=logfile)
     # NOTE: **userargs doesn't work because 'picks' is in there
     ica = mne.preprocessing.ICA(n_components=userargs['n_components'])
     ica.fit(dataset['raw'], picks=userargs['picks'])
@@ -90,8 +145,8 @@ def run_mne_ica_raw(dataset, userargs):
     return dataset
 
 
-def run_mne_ica_autoreject(dataset, userargs):
-    print('\nICA AUTOREJECT')
+def run_mne_ica_autoreject(dataset, userargs, logfile=None):
+    osl_print('\nICA AUTOREJECT', logfile=logfile)
     if np.logical_or('ecgmethod' not in userargs, userargs['ecgmethod'] == 'ctps'):
         ecgmethod = 'ctps'
     elif userargs['ecgmethod'] == 'correlation':
@@ -105,17 +160,17 @@ def run_mne_ica_autoreject(dataset, userargs):
                                                            measure='correlation')
 
     dataset['ica'].exclude.extend(eog_indices)
-    print('Marking {0} as EOG ICs'.format(len(dataset['ica'].exclude)))
+    osl_print('Marking {0} as EOG ICs'.format(len(dataset['ica'].exclude)), logfile=logfile)
     ecg_indices, ecg_scores = dataset['ica'].find_bads_ecg(dataset['raw'],
                                                            threshold=ecgthreshold,
                                                            method=ecgmethod)
     dataset['ica'].exclude.extend(ecg_indices)
-    print('Marking {0} as ECG ICs'.format(len(dataset['ica'].exclude)))
+    osl_print('Marking {0} as ECG ICs'.format(len(dataset['ica'].exclude)), logfile=logfile)
     if ('apply' not in userargs) or (userargs['apply'] is True):
-        print('\nREMOVING SELECTED COMPONENTS FROM RAW DATA')
+        osl_print('\nREMOVING SELECTED COMPONENTS FROM RAW DATA', logfile=logfile)
         dataset['ica'].apply(dataset['raw'])
     else:
-        print('\nCOMPONENTS WERE NOT REMOVED FROM RAW DATA')
+        osl_print('\nCOMPONENTS WERE NOT REMOVED FROM RAW DATA', logfile=logfile)
     return dataset
 
 
@@ -164,24 +219,26 @@ def get_badseg_annotations(raw, userargs):
     return onsets, durations, descriptions
 
 
-def get_badchan_labels(raw, userargs):
+def get_badchan_labels(raw, userargs, logfile=None):
     """Set bad channels in MNE object."""
-    print('\nBAD-CHANNELS')
+    osl_print('\nBAD-CHANNELS', logfile=logfile)
     picks = userargs.get('picks', 'grad')
-    print(picks)
+    osl_print(picks, logfile=logfile)
     bdinds = sails.utils.detect_artefacts(raw.get_data(picks=picks), 0,
                                           reject_mode='dim',
                                           ret_mode='bad_inds')
 
     if (picks == 'mag') or (picks == 'grad'):
         chinds = mne.pick_types(raw.info, meg=picks)
+    elif (picks == 'meg'):
+        chinds = mne.pick_types(raw.info, meg=True)
     elif (picks == 'eeg'):
         chinds = mne.pick_types(raw.info, eeg=True, exclude=[])
     ch_names = np.array(raw.ch_names)[chinds]
 
     s = 'Modality {0} - {1}/{2} channels rejected     ({3:02f}%)'
     pc = (bdinds.sum() / len(bdinds)) * 100
-    print(s.format(userargs['picks'], bdinds.sum(), len(bdinds), pc))
+    osl_print(s.format(userargs['picks'], bdinds.sum(), len(bdinds), pc), logfile=logfile)
 
     if np.any(bdinds):
         return list(ch_names[np.where(bdinds)[0]])
@@ -189,8 +246,8 @@ def get_badchan_labels(raw, userargs):
         return []
 
 
-def run_osl_bad_segments(dataset, userargs):
-    print('\nBAD-SEGMENTS')
+def run_osl_bad_segments(dataset, userargs, logfile=None):
+    osl_print('\nBAD-SEGMENTS', logfile=logfile)
     #anns = dataset['raw'].annotations
     new = get_badseg_annotations(dataset['raw'], userargs)
     dataset['raw'].annotations.append(*new)
@@ -199,12 +256,12 @@ def run_osl_bad_segments(dataset, userargs):
     full_dur = dataset['raw'].n_times/dataset['raw'].info['sfreq']
     pc = (mod_dur / full_dur) * 100
     s = 'Modality {0} - {1:02f}/{2} seconds rejected     ({3:02f}%)'
-    print(s.format(userargs['picks'], mod_dur, full_dur, pc))
+    osl_print(s.format(userargs['picks'], mod_dur, full_dur, pc), logfile=logfile)
     return dataset
 
 
-def run_osl_bad_channels(dataset, userargs):
-    badchans = get_badchan_labels(dataset['raw'], userargs)
+def run_osl_bad_channels(dataset, userargs, logfile=None):
+    badchans = get_badchan_labels(dataset['raw'], userargs, logfile=logfile)
     dataset['raw'].info['bads'].extend(badchans)
     return dataset
 
@@ -221,13 +278,15 @@ def _print_badsegs(raw, modality):
     print(s.format(modality, mod_dur, full_dur, pc))
 
 
-def run_osl_ica(dataset, userargs):
-    print('\nICA')
-    return dataset
-
-
 # --------------------------------------------------------------
 # Utils
+
+def osl_print(s, logfile=None):
+    print(s)
+    if logfile is not None:
+        with open(logfile, 'a') as f:
+            f.write(s + '\n')
+
 
 def find_func(method):
 
@@ -254,44 +313,49 @@ def check_inconfig(config):
     return config
 
 
-def check_infifs(infiles):
-    infifs = []
+def check_infiles(infiles):
+    checked_files = []
     outnames = []
     if isinstance(infiles, str):
-        # We have a file with a list of paths
+        # We have a file with a list of paths possibly with output names
         check_paths = True
         for row in csv.reader(open(infiles, 'r'), delimiter=" "):
-            infifs.append(row[0])
+            checked_files.append(row[0])
             if len(row) > 1:
                 outnames.append(row[1])
+            else:
+                outnames.append(find_run_id(row[0]))
     elif isinstance(infiles[0], str):
         # We have a list of paths
         check_paths = True
-        infifs = infiles
+        checked_files = infiles
+        outnames = [find_run_id(f) for f in infiles]
     elif isinstance(infiles[0], [list, tuple]):
         # We have a list containing files and output names
         check_paths = True
         for row in infiles:
-            infifs.append(row[0])
+            checked_files.append(row[0])
             outnames.append(row[1])
     elif isinstance(infiles[0], mne.io.fiff.raw.Raw):
         # We have a list of MNE objects
         check_paths = False
-        infifs = infiles
+        checked_files = infiles
 
     if len(outnames) == 0:
         outnames = None
 
     # Check that files actually exist if we've been passed filenames rather
     # than objects
-    good_fifs = [1 for ii in range(len(infifs))]
+    good_files = [1 for ii in range(len(checked_files))]
     if check_paths:
-        for idx, fif in enumerate(infifs):
-            if os.path.isfile(fif) == False:
-                good_fifs[idx] = 0
+        for idx, fif in enumerate(checked_files):
+            if fif.endswith('.ds'):
+                good_files[idx] = int(os.path.isdir(fif))
+            else:
+                good_files[idx] = int(os.path.isfile(fif))
                 print('File not found: {0}'.format(fif))
 
-    return infifs, outnames, good_fifs
+    return checked_files, outnames, good_files
 
 
 def write_dataset(dataset, outbase, run_id, overwrite=False):
@@ -312,10 +376,11 @@ def write_dataset(dataset, outbase, run_id, overwrite=False):
         dataset['ica'].save(outname)
 
 
-def run_proc_chain(infif, config, outname=None, outdir=None, ret_dataset=False, overwrite=False):
+def run_proc_chain(infile, config, outname=None, outdir=None, ret_dataset=False, overwrite=False):
 
     if outname is None:
-        run_id = os.path.split(infif)[1].rstrip('.fif')
+        #run_id = os.path.split(infile)[1].rstrip('.fif')
+        run_id = find_run_id(infile)
     else:
         run_id = outname.rstrip('.fif')
 
@@ -324,12 +389,17 @@ def run_proc_chain(infif, config, outname=None, outdir=None, ret_dataset=False, 
         outbase = os.path.join(outdir, name_base)
         logfile = outbase.format(run_id=run_id, ftype='preproc', fext='log')
         mne.utils._logging.set_log_file(logfile)
+    else:
+        logfile = None
+    now = strftime("%Y-%m-%d %H:%M:%S", localtime())
+    osl_print('{0} : Starting OSL Processing'.format(now), logfile=logfile)
+    osl_print('input : {0}'.format(infile), logfile=logfile)
 
-    if isinstance(infif, str):
-        raw = import_data(infif)
-    elif isinstance(infif, mne.io.fiff.raw.Raw):
-        raw = infif
-        infif = raw.filenames[0]  # assuming only one file here
+    if isinstance(infile, str):
+        raw = import_data(infile)
+    elif isinstance(infile, mne.io.fiff.raw.Raw):
+        raw = infile
+        infile = raw.filenames[0]  # assuming only one file here
 
     dataset = {'raw': raw,
                'ica': None,
@@ -341,7 +411,7 @@ def run_proc_chain(infif, config, outname=None, outdir=None, ret_dataset=False, 
         method = stage.pop('method')
         func = find_func(method)
         try:
-            dataset = func(dataset, stage)
+            dataset = func(dataset, stage, logfile=logfile)
         except Exception as e:
             print('PROCESSING FAILED!!!!')
             ex_type, ex_value, ex_traceback = sys.exc_info()
@@ -359,6 +429,9 @@ def run_proc_chain(infif, config, outname=None, outdir=None, ret_dataset=False, 
 
     if outdir is not None:
         write_dataset(dataset, outbase, run_id, overwrite=overwrite)
+
+    now = strftime("%Y-%m-%d %H:%M:%S", localtime())
+    osl_print('{0} : Processing Complete'.format(now), logfile=logfile)
 
     if ret_dataset:
         return dataset
@@ -381,8 +454,8 @@ def run_proc_batch(config, files, outdir, overwrite=False, nprocesses=1, mnelog=
 
     print('\n\nOHBA Auto-Proc\n\n')
 
-    infifs, outnames, good_fifs = check_infifs(files)
-    print('Processing {0} files'.format(sum(good_fifs)))
+    infiles, outnames, good_files = check_infiles(files)
+    print('Processing {0} files'.format(sum(good_files)))
 
     if os.path.isdir(outdir) is False:
         raise ValueError('Output dir not found!')
@@ -404,7 +477,7 @@ def run_proc_batch(config, files, outdir, overwrite=False, nprocesses=1, mnelog=
 
     # For each file...
     args = []
-    for idx, infif in enumerate(infifs):
+    for idx, infif in enumerate(infiles):
         if outnames is None:
             outname = None
         else:
