@@ -15,4 +15,5 @@ setup(name='osl',
               'osl_report = osl.report.raw_report:main',
               ]},
       install_requires=['mne', 'fslpy', 'sails', 'tabulate'],
+      package_data={'osl': ['utils/*tree']},
       )

@@ -1,0 +1,7 @@
+{site}
+  sub-{subject}
+    anat
+      sub-{subject}_T1w.nii.gz (t1)
+    meg
+      sub-{subject}_task-{task}_meg.ds
+        sub-{subject}_task-{task}_meg.meg4 (ds)
