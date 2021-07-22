@@ -1,0 +1,6 @@
+{site}
+  sub-{subject}_task-{task}_meg_events.npy (events)
+  sub-{subject}_task-{task}_meg_ica.fif (ica)
+  sub-{subject}_task-{task}_meg_preproc.log (logfile)
+  sub-{subject}_task-{task}_meg_preproc.error.log (errorfile)
+  sub-{subject}_task-{task}_meg_raw.fif (meg)
