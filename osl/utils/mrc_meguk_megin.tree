@@ -1,10 +1,8 @@
 {site}
   derivatives
-    sub-{subject}
+    sub-{subject1}
       meg
-        sub-{subject}_task-{task}_meg.fif (sss_fif)
+        sub-{subject}_task-{task}_proc-sss_meg.fif (sss_fif)
   sub-{subject}
     anat
       sub-{subject}_T1w.nii.gz (t1)
-    meg
-      sub-{subject}_task-{task}_meg.fif (fif)
