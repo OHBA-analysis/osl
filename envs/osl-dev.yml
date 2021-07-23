@@ -1,0 +1,6 @@
+name: osl
+channels:
+dependencies:
+   - pip
+   - pip:
+     - git+https://github.com/OHBA-analysis/oslpy.git
