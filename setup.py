@@ -14,6 +14,6 @@ setup(name='osl',
               'osl_maxfilter = osl.maxfilter.maxfilter:main',
               'osl_report = osl.report.raw_report:main',
               ]},
-      install_requires=['mne', 'sklearn', 'fslpy', 'sails', 'tabulate', 'yaml'],
+      install_requires=['mne', 'sklearn', 'fslpy', 'sails', 'tabulate', 'PyYAML'],
       package_data={'osl': ['utils/*tree']},
       )
