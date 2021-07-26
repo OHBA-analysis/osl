@@ -778,7 +778,7 @@ class osl_MNEBrowseFigure(MNEBrowseFigure):
             self.mne.ica.exclude = [self.mne.ica._ica_names.index(ch)
                                     for ch in self.mne.info['bads']]
             # MVE: remove bad component labels that were reversed to good component
-            tmp=self.mne.ica.labels_.keys()
+            tmp=list(self.mne.ica.labels_.keys())[:]
             for ch in tmp:
                 if ch not in self.mne.info['bads']:
                     del self.mne.ica.labels_[ch]
