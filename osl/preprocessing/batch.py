@@ -330,7 +330,7 @@ def check_infiles(infiles):
         check_paths = True
         checked_files = infiles
         outnames = [find_run_id(f) for f in infiles]
-    elif isinstance(infiles[0], [list, tuple]):
+    elif isinstance(infiles[0], (list, tuple)):
         # We have a list containing files and output names
         check_paths = True
         for row in infiles:
