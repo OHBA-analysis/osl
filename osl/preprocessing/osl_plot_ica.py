@@ -745,17 +745,24 @@ class osl_MNEBrowseFigure(MNEBrowseFigure):
         n_topos = len(picks)
         ica_tmp = ica.copy()
         ica_tmp._ica_names = ['' for i in ica_tmp._ica_names]
+        nchans, ncomps = ica_tmp.get_components().shape
         chtype = np.unique([mne.io.pick.channel_type(ica.info, ch) for ch in mne.pick_types(ica.info, meg=True)])
         n_chtype = len(chtype)
         for i in range(n_chtype):
             for j in range(n_topos):
-                mne.viz.ica._plot_ica_topomap(ica_tmp, idx=picks[j], ch_type=chtype[i], axes=ax_topo[i, j],
+                if picks[j] < ncomps:
+                    mne.viz.ica._plot_ica_topomap(ica_tmp, idx=picks[j], ch_type=chtype[i], axes=ax_topo[i, j],
                                               vmin=None, vmax=None, cmap='RdBu_r', colorbar=False,
                                               title=None, show=True, outlines='head', contours=0,
                                               image_interp='bilinear', res=64,
                                               sensors=False, allow_ref_meg=False,
                                               sphere=None
                                               )
+                else:
+                    # We likely have an EOG/ECG comp - don't plot a topo
+                    ax_topo[i, j].clear()
+                    ax_topo[i, j].set_xticks([])
+                    ax_topo[i, j].set_yticks([])
             ax_topo[i, 0].set_title(f'{chtype[i]}')
 
     def _close(self, event):
