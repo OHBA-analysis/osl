@@ -90,6 +90,13 @@ def run_mne_set_channel_types(dataset, userargs, logfile=None):
     dataset['raw'].set_channel_types(userargs)
     return dataset
 
+def run_mne_pick_types(dataset, userargs, logfile=None):
+    osl_print('\nPICKING CHANNEL TYPES', logfile=logfile)
+    osl_print(str(userargs), logfile=logfile)
+
+    dataset['raw'].pick_types(**userargs)
+    return dataset
+
 
 def run_mne_find_events(dataset, userargs, logfile=None):
     osl_print('\nFINDING EVENTS', logfile=logfile)
