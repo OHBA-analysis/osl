@@ -927,7 +927,7 @@ class osl_MNEBrowseFigure(MNEBrowseFigure):
         elif key == 'z':  # zen mode: hide scrollbars and buttons
             self._toggle_scrollbars()
             self._redraw(update_data=False)
-        elif int(key) in range(len(self.mne.bad_labels_list)+1): # MVE addition for labeling artifact type of bad components
+        elif str(key).isnumeric() and (int(key) in range(len(self.mne.bad_labels_list)+1)): # MVE addition for labeling artifact type of bad components
             if len(self.mne.info['bads'])>0:
                 last_bad_component = self.mne.info['bads'][-1]
                 # save bad component label in dict.
