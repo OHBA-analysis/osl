@@ -444,7 +444,7 @@ def write_dataset(dataset, outbase, run_id, overwrite=False):
         dataset['ica'].save(outname)
 
 
-def run_proc_chain(infile, config, outname=None, outdir=None, ret_dataset=False, overwrite=False):
+def run_proc_chain(infile, config, outname=None, outdir=None, ret_dataset=True, overwrite=False):
 
     if outname is None:
         #run_id = os.path.split(infile)[1].rstrip('.fif')
