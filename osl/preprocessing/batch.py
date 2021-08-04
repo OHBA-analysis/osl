@@ -2,6 +2,22 @@
 
 # vim: set expandtab ts=4 sw=4:
 
+"""Tools for batch preprocessing ephys data.
+
+MNE Advice.
+
+* L-poass filter before downsampling!
+ - Makes a huge speed difference
+
+* Use notch_filter rather than the manual bandstop option in standard filter
+
+* Don't downsample?
+https://mne.tools/dev/auto_tutorials/preprocessing/30_filtering_resampling.html#resampling
+... or at least downsample events with data (this is default here)
+
+XML sanity check on config file. pre-parser to avoid mad sequences of methods.
+"""
+
 import os
 import sys
 import mne
@@ -16,19 +32,6 @@ import multiprocessing as mp
 from functools import partial
 from time import strftime, localtime
 
-"""MNE Advice
-
-* L-poass filter before downsampling!
- - Makes a huge speed difference
-
-* Use notch_filter rather than the manual bandstop option in standard filter
-
-* Don't downsample?
-https://mne.tools/dev/auto_tutorials/preprocessing/30_filtering_resampling.html#resampling
-... or at least downsample events with data (this is default here)
-
-XML sanity check on config file. pre-parser to avoid mad sequences of methods.
-"""
 
 # --------------------------------------------------------------
 # Preproc funcs from MNE
@@ -90,6 +93,7 @@ def run_mne_set_channel_types(dataset, userargs, logfile=None):
     dataset['raw'].set_channel_types(userargs)
     return dataset
 
+
 def run_mne_pick_types(dataset, userargs, logfile=None):
     osl_print('\nPICKING CHANNEL TYPES', logfile=logfile)
     osl_print(str(userargs), logfile=logfile)
@@ -100,18 +104,21 @@ def run_mne_pick_types(dataset, userargs, logfile=None):
 
 def run_mne_find_events(dataset, userargs, logfile=None):
     osl_print('\nFINDING EVENTS', logfile=logfile)
+    osl_print(str(userargs), logfile=logfile)
     dataset['events'] = mne.find_events(dataset['raw'], **userargs)
     return dataset
 
 
 def run_mne_filter(dataset, userargs, logfile=None):
     osl_print('\nFILTERING', logfile=logfile)
+    osl_print(str(userargs), logfile=logfile)
     dataset['raw'].filter(**userargs)
     return dataset
 
 
 def run_mne_notch_filter(dataset, userargs, logfile=None):
     osl_print('\nNOTCH-FILTERING', logfile=logfile)
+    osl_print(str(userargs), logfile=logfile)
     freqs = np.array(userargs.pop('freqs').split(' ')).astype(float)
     osl_print(freqs)
     dataset['raw'].notch_filter(freqs, **userargs)
@@ -122,6 +129,7 @@ def run_mne_resample(dataset, userargs, logfile=None):
     """The MNE guys don't seem to like resampling so much...
     """
     osl_print('\nRESAMPLING', logfile=logfile)
+    osl_print(str(userargs), logfile=logfile)
     if ('events' in dataset) and (dataset['events'] is not None):
         dataset['raw'], dataset['events'] = dataset['raw'].resample(events=dataset['events'], **userargs)
     else:
@@ -131,9 +139,13 @@ def run_mne_resample(dataset, userargs, logfile=None):
 
 def run_mne_epochs(dataset, userargs, logfile=None):
     osl_print('\nEPOCHING', logfile=logfile)
+    osl_print(userargs, logfile=logfile)
+    tmin = userargs.pop('tmin', -0.2)
+    tmax = userargs.pop('tmax', 0.5)
     dataset['epochs'] = mne.Epochs(dataset['raw'],
                                    dataset['events'],
-                                   dataset['event_id'])
+                                   dataset['event_id'],
+                                   tmin, tmax, **userargs)
     return dataset
 
 
@@ -194,6 +206,53 @@ def run_osl_ica_manualreject(dataset, userargs):
     return dataset
 
 
+def run_mne_tfr_multitaper(dataset, userargs, logfile=None):
+    osl_print('\nTFR MULTITAPER', logfile=logfile)
+    osl_print(str(userargs), logfile=logfile)
+    from mne.time_frequency import tfr_multitaper
+
+    freqs = np.array(userargs.pop('freqs').split(' ')).astype('float')
+    freqs = np.linspace(freqs[0], freqs[1], int(freqs[2]))
+    out = tfr_multitaper(dataset['epochs'],
+                         freqs,
+                         **userargs)
+    if 'return_itc' in userargs and userargs['return_itc']:
+        dataset['power'], dataset['itc'] = out
+    else:
+        dataset['power'] = out
+
+    return dataset
+
+
+def run_mne_tfr_morlet(dataset, userargs, logfile=None):
+    osl_print('\nTFR MORLET', logfile=logfile)
+    osl_print(str(userargs), logfile=logfile)
+    from mne.time_frequency import tfr_morlet
+
+    freqs = np.array(userargs.pop('freqs').split(' ')).astype('float')
+    print(freqs)
+    freqs = np.linspace(freqs[0], freqs[1], int(freqs[2]))
+    dataset['power'], dataset['itc'] = tfr_morlet(dataset['epochs'],
+                                                  freqs,
+                                                  **userargs)
+
+    return dataset
+
+
+def run_mne_tfr_stockwell(dataset, userargs, logfile=None):
+    osl_print('\nTFR STOCKWELL', logfile=logfile)
+    osl_print(str(userargs), logfile=logfile)
+    from mne.time_frequency import tfr_stockwell
+
+    out = tfr_stockwell(dataset['epochs'], **userargs)
+    if 'return_itc' in userargs and userargs['return_itc']:
+        dataset['power'], dataset['itc'] = out
+    else:
+        dataset['power'] = out
+
+    return dataset
+
+
 # --------------------------------------------------------------
 # Preproc funcs from OHBA
 
@@ -229,6 +288,7 @@ def get_badseg_annotations(raw, userargs):
 def get_badchan_labels(raw, userargs, logfile=None):
     """Set bad channels in MNE object."""
     osl_print('\nBAD-CHANNELS', logfile=logfile)
+    osl_print(str(userargs), logfile=logfile)
     picks = userargs.get('picks', 'grad')
     osl_print(picks, logfile=logfile)
     bdinds = sails.utils.detect_artefacts(raw.get_data(picks=picks), 0,
@@ -255,6 +315,7 @@ def get_badchan_labels(raw, userargs, logfile=None):
 
 def run_osl_bad_segments(dataset, userargs, logfile=None):
     osl_print('\nBAD-SEGMENTS', logfile=logfile)
+    osl_print(str(userargs), logfile=logfile)
     #anns = dataset['raw'].annotations
     new = get_badseg_annotations(dataset['raw'], userargs)
     dataset['raw'].annotations.append(*new)
