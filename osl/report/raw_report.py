@@ -2,13 +2,16 @@
 
 # vim: set expandtab ts=4 sw=4:
 
+import os
 import mne
 import sys
 import sails
 import numpy as np
 import argparse
+from jinja2 import Template
 from tabulate import tabulate
 import matplotlib.pyplot as plt
+import neurokit2 as nk
 
 # -------------------------------------------------------------------
 # Global (within script...) variables containing html templates. Should
@@ -111,7 +114,7 @@ def get_header_id(raw):
     return raw.filenames[0].split('/')[-1].strip('.fif')
 
 
-def gen_fif_html(raw, outf=None, fif_id=None, gen_plots=True):
+def gen_fif_data(raw, outf=None, fif_id=None, gen_plots=True):
     """Generate HTML web-report for an MNE data object."""
     x = {}
     x['filename'] = raw.filenames[0]
@@ -135,9 +138,11 @@ def gen_fif_html(raw, outf=None, fif_id=None, gen_plots=True):
                               headers=['Channel Type', 'Number Acquired'])
 
     dig_codes = ('Cardinal', 'HPI', 'EEG', 'Extra')
-    digs = [d['kind'] for d in raw.info['dig']]
-    d, dcounts = np.unique(digs, return_counts=True)
-    x['digitable'] = tabulate(np.c_[dig_codes, dcounts], tablefmt='html',
+    dig_counts = np.zeros((4,))
+    for ii in range(1, 5):
+        dig_counts[ii-1] = np.sum([d['kind'] == ii for d in raw.info['dig']])
+    #d, dcounts = np.unique(digs, return_counts=True)
+    x['digitable'] = tabulate(np.c_[dig_codes, dig_counts], tablefmt='html',
                               headers=['Digitisation Stage', 'Points Acquired'])
 
     ev = mne.find_events(raw, min_duration=5/raw.info['sfreq'], verbose=False)
@@ -147,17 +152,28 @@ def gen_fif_html(raw, outf=None, fif_id=None, gen_plots=True):
 
     savebase = '{0}/{1}'.format(outf, x['fif_id']) + '_{0}.png'
     if gen_plots:
-        plot_artefact_channels(raw, savebase=savebase)
+        #plot_artefact_channels(raw, savebase=savebase)
+        plot_eog_summary(raw, savebase=savebase)
+        plot_ecg_summary_neurokit(raw, savebase=savebase)
+        plot_digitisation_2d(raw, savebase=savebase)
         plot_spectra(raw, savebase=savebase)
         plot_channel_dists(raw, savebase=savebase)
     plt.close('all')
 
     x['plt_channeldev'] = savebase.format('channel_dev')
     x['plt_temporaldev'] = savebase.format('temporal_dev')
-    x['plt_artefacts'] = savebase.format('artefacts')
-    x['plt_zoom_artefacts'] = savebase.format('artefacts_zoom')
+    x['plt_artefacts_eog'] = savebase.format('EOG')
+    x['plt_artefacts_ecg'] = savebase.format('ECG')
+    x['plt_digitisation'] = savebase.format('digitisation')
     x['plt_spectra'] = savebase.format('spectra_full')
     x['plt_zoom_spectra'] = savebase.format('spectra_zoom')
+
+    return x
+
+
+def gen_fif_html(raw, outf=None, fif_id=None, gen_plots=True):
+
+    x = gen_fif_data(raw)
 
     # Replace the target string
     filedata = fif_report
@@ -189,6 +205,14 @@ def gen_report(raws, outdir):
     with open(outpath, 'w') as f:
         f.write(html_base)
     print(outpath)
+
+def load_template(tname):
+    basedir = os.path.dirname(os.path.realpath(__file__))
+    fname = os.path.join(basedir, 'templates', '{0}.html.jinja2'.format(tname))
+    with open(fname, 'r') as file_:
+        template = Template(file_.read())
+
+    return template
 
 
 # ----------------------------------------------------------------------------------
@@ -249,6 +273,82 @@ def print_badsegs(raw):
         print(s.format(modality, mod_dur, full_dur, pc))
 
 
+def plot_ecg_summary(raw, savebase):
+
+    inds = mne.pick_types(raw.info, ecg=True)
+    if len(inds) == 0:
+        return 'ECG Channel Not Found'
+
+    x = raw.get_data(inds)
+    xinds = np.arange(0, raw.info['sfreq']*30).astype(int)
+
+    plt.figure(figsize=(16, 5))
+    plt.subplots_adjust(left=0.05, right=0.95)
+    plt.title('ECG')
+    plt.subplot(211)
+    plt.plot(raw.times, x.T)
+    plt.subplot(212)
+    plt.plot(raw.times[xinds], x[:, xinds].T)
+    plt.xlabel('Time (seconds)')
+
+    if savebase is not None:
+        plt.savefig(savebase.format('ECG'), dpi=150, transparent=True)
+
+def plot_ecg_summary_neurokit(raw, savebase):
+
+    inds = mne.pick_types(raw.info, ecg=True)
+    if len(inds) == 0:
+        return 'ECG Channel Not Found'
+
+    x = raw.get_data(inds)
+    if np.abs(x.min()) > x.max():
+        x = -x
+    signals, info = nk.ecg_process(x[0, :], sampling_rate=raw.info['sfreq'])
+    fig = nk.ecg_plot(signals, sampling_rate=raw.info['sfreq'])
+    fig.set_size_inches(16,7)
+    plt.subplots_adjust(left=0.075, right=0.95)
+
+    fig.savefig(savebase.format('ECG'), dpi=150, transparent=True)
+
+
+def plot_eog_summary(raw, savebase):
+
+    inds = mne.pick_types(raw.info, eog=True)
+    if len(inds) == 0:
+        return 'EOG Channel Not Found'
+
+    x = raw.get_data(inds)
+    xinds = np.arange(0, raw.info['sfreq']*30).astype(int)
+
+    plt.figure(figsize=(16, 5))
+    plt.subplots_adjust(left=0.05, right=0.95)
+    plt.title('EOG')
+    plt.subplot(211)
+    plt.plot(raw.times, x.T)
+    plt.subplot(212)
+    plt.plot(raw.times[xinds], x[:, xinds].T)
+    plt.xlabel('Time (seconds)')
+
+    if savebase is not None:
+        plt.savefig(savebase.format('EOG'), dpi=150, transparent=True)
+
+def plot_eog_summary_neurokit(raw, savebase):
+
+    inds = mne.pick_types(raw.info, eog=True)
+    if len(inds) == 0:
+        return 'ECG Channel Not Found'
+
+    x = raw.get_data(inds)
+    ind = np.argmax(x.max(axis=1))
+    x = x[ind, :]
+    signals, info = nk.eog_process(x, sampling_rate=raw.info['sfreq'])
+    fig = nk.eog_plot(signals, sampling_rate=raw.info['sfreq'])
+    fig.set_size_inches(16,7)
+    plt.subplots_adjust(left=0.075, right=0.95)
+
+    fig.savefig(savebase.format('ECG'), dpi=150, transparent=True)
+
+
 def plot_artefact_channels(raw, savebase):
     """Plot ECG+EOG channels."""
     # ECG
@@ -284,28 +384,29 @@ def plot_artefact_channels(raw, savebase):
 def plot_spectra(raw, savebase=None):
     """Plot power spectra for each sensor modality."""
     fig = raw.plot_psd(show=False)
-    fig.set_size_inches(10, 10)
+    fig.set_size_inches(8, 7)
     if savebase is not None:
         fig.savefig(savebase.format('spectra_full'), dpi=150, transparent=True)
 
     fig = raw.plot_psd(show=False, fmin=1, fmax=48)
-    fig.set_size_inches(10, 10)
+    fig.set_size_inches(8, 7)
     if savebase is not None:
         fig.savefig(savebase.format('spectra_zoom'), dpi=150, transparent=True)
 
 
 def plot_channel_dists(raw, savebase=None):
     """Plot summary distributions of sensors."""
-    fig = plt.figure(figsize=(16, 4))
+    fig = plt.figure(figsize=(16, 2))
+    plt.subplots_adjust(left=0.05, right=0.95)
     plt.subplot(131)
     inds = mne.pick_types(raw.info, meg='mag')
-    plt.hist(raw.get_data()[inds, :].std(axis=1))
+    plt.hist(raw.get_data()[inds, :].std(axis=1), 24)
     plt.xlabel('St-Dev')
     plt.ylabel('Channel Count')
     plt.title('Magnetometers temporal std-dev')
     plt.subplot(132)
     inds = mne.pick_types(raw.info, meg='grad')
-    plt.hist(raw.get_data()[inds, :].std(axis=1))
+    plt.hist(raw.get_data()[inds, :].std(axis=1), 24)
     plt.title('Gradiometers temporal st-dev')
     plt.xlabel('St-Dev')
     plt.subplot(133)
@@ -316,18 +417,18 @@ def plot_channel_dists(raw, savebase=None):
     if savebase is not None:
         fig.savefig(savebase.format('channel_dev'), dpi=150, transparent=True)
 
-    fig = plt.figure(figsize=(16, 4))
+    fig = plt.figure(figsize=(16, 2))
+    plt.subplots_adjust(left=0.05, right=0.95)
     plt.subplot(131)
     inds = mne.pick_types(raw.info, meg='mag')
     plt.plot(raw.times, raw.get_data()[inds, :].std(axis=0))
-    plt.title('EEG channel st-dev')
+    plt.title('Magnetometers channel st-dev')
     plt.ylabel('St-Dev over Channels')
     plt.title('Magnetometers channel std-dev')
     plt.xlabel('Time (seconds)')
     plt.subplot(132)
     inds = mne.pick_types(raw.info, meg='grad')
     plt.plot(raw.times, raw.get_data()[inds, :].std(axis=0))
-    plt.title('EEG channel st-dev')
     plt.title('Gradiometers channel st-dev')
     plt.xlabel('Time (seconds)')
     plt.subplot(133)
@@ -337,6 +438,62 @@ def plot_channel_dists(raw, savebase=None):
     plt.xlabel('Time (seconds)')
     if savebase is not None:
         fig.savefig(savebase.format('temporal_dev'), dpi=150, transparent=True)
+
+def plot_digitisation_2d(raw, savebase=None):
+
+    fig = plt.figure(figsize=(16, 4))
+    plt.subplots_adjust(left=0.05, right=0.95)
+    plt.subplot(141)
+    plt.gca().set_aspect('equal')
+    for dp in raw.info['dig']:
+        if dp['kind'] == 1:
+            plt.plot(dp['r'][0], dp['r'][1], 'r^')
+        if dp['kind'] == 2:
+            plt.plot(dp['r'][0], dp['r'][1], 'mo')
+        if dp['kind'] == 3:
+            plt.plot(dp['r'][0], dp['r'][1], 'g+')
+        if dp['kind'] == 4:
+            plt.plot(dp['r'][0], dp['r'][1], 'b.')
+    plt.title('Top View')
+
+    plt.subplot(142)
+    plt.gca().set_aspect('equal')
+    for dp in raw.info['dig']:
+        if dp['kind'] == 1:
+            plt.plot(dp['r'][0], dp['r'][2], 'r^')
+        if dp['kind'] == 2:
+            plt.plot(dp['r'][0], dp['r'][2], 'mo')
+        if dp['kind'] == 3:
+            plt.plot(dp['r'][0], dp['r'][2], 'g+')
+        if dp['kind'] == 4:
+            plt.plot(dp['r'][0], dp['r'][2], 'b.')
+    plt.title('Front View')
+
+    plt.subplot(143)
+    plt.gca().set_aspect('equal')
+    for dp in raw.info['dig']:
+        if dp['kind'] == 1:
+            plt.plot(dp['r'][1], dp['r'][2], 'r^')
+        if dp['kind'] == 2:
+            plt.plot(dp['r'][1], dp['r'][2], 'mo')
+        if dp['kind'] == 3:
+            plt.plot(dp['r'][1], dp['r'][2], 'g*')
+        if dp['kind'] == 4:
+            plt.plot(dp['r'][1], dp['r'][2], 'b.')
+    plt.title('Side View')
+
+    plt.subplot(144, frameon=False)
+    plt.xticks([])
+    plt.yticks([])
+    from matplotlib.lines import Line2D
+    legend_elements = [Line2D([0], [0], marker='^', color='w', lw=4, label='Fiducial', markerfacecolor='r',markersize=14),
+                       Line2D([0], [0], marker='o', color='w', label='HPI', markerfacecolor='m', markersize=14),
+                       Line2D([0], [0], marker='*', color='w', label='EEG', markerfacecolor='g', markersize=14),
+                       Line2D([0], [0], marker='.', color='w', label='Headshape', markerfacecolor='b', markersize=14)]
+    plt.legend(handles=legend_elements, loc='center', frameon=False)
+
+    if savebase is not None:
+        fig.savefig(savebase.format('digitisation'), dpi=150, transparent=True)
 
 
 def plot_headmovement(raw, savebase=None):

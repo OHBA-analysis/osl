@@ -15,5 +15,5 @@ setup(name='osl',
               'osl_report = osl.report.raw_report:main',
               ]},
       install_requires=['mne', 'sklearn', 'fslpy', 'sails', 'tabulate', 'PyYAML'],
-      package_data={'osl': ['utils/*tree']},
+      package_data={'osl': ['utils/*tree', 'report/templates/*']},
       )

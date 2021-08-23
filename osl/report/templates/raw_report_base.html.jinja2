@@ -1,0 +1,52 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <title>OSL Report</title>
+    <style>
+        body { background-color: White; }
+        p { color: #fff; }
+        div.figbox { width: 50%; display: table-cell; text-align: center; }
+        div.tablebox { width: 30%; display: table-cell; text-align: left; margin; 20px }
+        th, td { border-bottom: 1px solid #ddd; }
+        table { border-collapse: collapse; width: 75%; }
+        .button1 {
+              background-color: #4CAF50; /* Green */
+              border: none;
+              color: white;
+              padding: 15px 32px;
+              text-align: center;
+              text-decoration: none;
+              display: inline-block;
+              font-size: 16px;
+            }
+    </style>
+</head>
+<body>
+
+
+<div style='width:80%; margin: 100px; text-align: center' >
+    <h2>OSL Quality Check</h2>
+    @headershere
+</div>
+
+<div style='width:80%; margin: 100px; text-align: center' >
+{% for run in runs %}
+    {{ run }}
+{% endfor %}
+</div>
+
+<script>
+
+function filterSelection(c) {
+  console.log(c)
+  var x = document.getElementById(c);
+  if (x.style.display === "none") {
+    x.style.display = "block";
+  } else {
+    x.style.display = "none";
+  }
+}
+</script>
+
+</body>
+
