@@ -6,7 +6,6 @@ reqs = ['numpy', 'scipy', 'matplotlib', 'mne<0.24.0', 'sklearn', 'fslpy',
         'file-tree']
 dev_reqs = ['setuptools>=41.0.1', 'pytest', 'pytest-cov', 'coverage', 'flake8']
 
-
 setup(name='osl',
       version='0.0.1.dev',
       description='OHBA Software Library',
@@ -26,4 +25,9 @@ setup(name='osl',
                             'utils/simulate/*npy',
                             'utils/simulate/*fif',
                             'report/templates/*']},
+      command_options={
+        'build_sphinx': {
+            'project': ('setup.py', name),
+            'version': ('setup.py', name),
+            'release': ('setup.py', name)}},
       )
