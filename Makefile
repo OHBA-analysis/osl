@@ -11,3 +11,6 @@ clean-all:
 cleanpy:
 	find . -name \*.pyc -delete
 	find . -name \*__pycache__ -delete
+
+doc: clean-all
+	python3 setup.py build_sphinx

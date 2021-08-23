@@ -1,6 +1,8 @@
 from setuptools import setup
 
-setup(name='osl',
+name = 'osl'
+
+setup(name=name,
       version='0.0.1.dev',
       description='OHBA Software Library',
       author='OHBA Analysis Group',
@@ -14,6 +16,13 @@ setup(name='osl',
               'osl_maxfilter = osl.maxfilter.maxfilter:main',
               'osl_report = osl.report.raw_report:main',
               ]},
-      install_requires=['mne', 'sklearn', 'fslpy', 'sails', 'tabulate', 'PyYAML'],
-      package_data={'osl': ['utils/*tree']},
+      install_requires=['mne', 'sklearn', 'fslpy', 'sails', 'tabulate', 'PyYAML', 'pydata-sphinx-theme'],
+      package_data={'osl': ['utils/*tree',  'utils/reduced_mvar_*', 'utils/megin*fif']},
+
+      command_options={
+        'build_sphinx': {
+            'project': ('setup.py', name),
+            'version': ('setup.py', name),
+            'release': ('setup.py', name)}},
+
       )
