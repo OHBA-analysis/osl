@@ -24,12 +24,14 @@
 <body>
 
 
-<div style='width:80%; margin: 100px; text-align: center' >
+<div style='width:80%; margin: auto; text-align: center; margin-bottom: 50px' >
     <h2>OSL Quality Check</h2>
-    @headershere
+    {{ toplinks }}
+
+    {{ preproc }}
 </div>
 
-<div style='width:80%; margin: 100px; text-align: center' >
+<div style='width:80%; margin: auto; text-align: center' >
 {% for run in runs %}
     {{ run }}
 {% endfor %}

@@ -45,6 +45,9 @@ def import_data2(infile, preload=True):
 
 def find_run_id(infile, preload=True):
 
+    if isinstance(infile, mne.io.fiff.raw.Raw):
+        infile = infile.filenames[0]
+
     if os.path.split(infile)[1] == 'c,rfDC':
         # We have a BTI scan
         runname = os.path.basename(os.path.dirname(infile))
@@ -373,9 +376,15 @@ def find_func(method):
 
 def check_inconfig(config):
     if isinstance(config, str):
-        with open(config, 'r') as f:
-            config = yaml.load(f, Loader=yaml.FullLoader)
+        try:
+            # See if we have a filepath
+            with open(config, 'r') as f:
+                config = yaml.load(f, Loader=yaml.FullLoader)
+        except (UnicodeDecodeError, FileNotFoundError):
+            # We have a string
+            config = yaml.load(config, Loader=yaml.FullLoader)
     elif isinstance(config, dict):
+        # Its already a dict
         pass
 
     return config

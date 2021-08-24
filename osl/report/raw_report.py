@@ -5,6 +5,7 @@
 import os
 import mne
 import sys
+import yaml
 import sails
 import numpy as np
 import argparse
@@ -13,97 +14,8 @@ from tabulate import tabulate
 import matplotlib.pyplot as plt
 import neurokit2 as nk
 
-# -------------------------------------------------------------------
-# Global (within script...) variables containing html templates. Should
-# probably load these from a file or something more organised.
-
-# Overall page template
-html_base = """
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <title>NTAD-QC</title>
-    <style>
-        body { background-color: White; }
-        p { color: #fff; }
-        div.figbox { width: 50%; display: table-cell; text-align: center; }
-        div.tablebox { width: 30%; display: table-cell; text-align: left; margin; 20px }
-        th, td { border-bottom: 1px solid #ddd; }
-        table { border-collapse: collapse; width: 75%; }
-    </style>
-</head>
-<body>
-
-
-<div style='width:80%; margin: 100px; text-align: center' >
-    <h2>NTAD Quality Check Report</h2>
-    @headershere
-</div>
-
-@scanshere
-
-</body>
-"""
-
-# Single file report template - added per-file at @scanshere in html_base
-fif_report = """
-<div style='width: 100%; margin-left: 100px; margin-top: 100px'>
-    <h3 id="@fif_id">@filename</h3>
-    <b>Datafile:</b> @filename</br>
-    <b>Project name:</b> @projname</br>
-    <b>Experimenter:</b> @experimenter</br>
-    <b>Data acquired:</b> @meas_date</br>
-    @acq_samples samples at @acq_sfreq Hz - @acq_duration seconds
-</div>
-
-<div style="width: 70%; display: table; margin-left: 100px; margin-top: 50px">
-    <div style="display: table-row; height: 100px;">
-        <div class='tablebox'>
-            @chantable
-    </div>
-        <div class='tablebox'>
-            @digitable
-    </div>
-        <div class='tablebox'>
-            @eventtable
-        </div>
-    </div>
-</div>
-
-<div style="width: 80%; padding-top: 50px">
-    <img src="@plt_temporaldev" alt="" style='max-width: 1536px'/>
-</div>
-
-<div style="width: 80%; padding-top: 50px">
-    <img src="@plt_channeldev" alt="" style='max-width: 1536px'/>
-</div>
-
-<div style="width: 80%; display: table; padding-top: 50px">
-    <div style="display: table-row; height: 100px;">
-        <div class='figbox'>
-            <h3>Full Power Spectra</h3>
-            <img src="@plt_spectra" alt="" style='max-width: 768px'/>
-        </div>
-        <div class='figbox'>
-            <h3>1-48Hz Power Spectra</h3>
-            <img src="@plt_zoom_spectra" alt="", style='max-width: 768px'/>
-        </div>
-    </div>
-</div>
-
-<div style="width: 80%; display: table;">
-    <div style="display: table-row; height: 100px;">
-        <div class='figbox'>
-            <h3>Artefact Channels</h3>
-            <img src="@plt_artefacts" alt="" style='max-width: 768px'/>
-        </div>
-        <div class='figbox'>
-            <h3>First 30 Seconds of Artefact Channels</h3>
-            <img src="@plt_zoom_artefacts" alt="" style='max-width: 768px'/>
-        </div>
-    </div>
-</div>
-"""
+from ..utils import process_file_inputs
+from ..preprocessing import import_data, check_inconfig, run_proc_chain
 
 
 # ----------------------------------------------------------------------------------
@@ -183,28 +95,51 @@ def gen_fif_html(raw, outf=None, fif_id=None, gen_plots=True):
     return filedata
 
 
-def gen_report(raws, outdir):
+def gen_report(infiles, outdir=None, preproc_config=None):
     """Generate web-report for a set of MNE data objects."""
-    html = [gen_fif_html(raw, outf=outdir) for raw in raws]
-    html = '\n'.join(html)
 
-    names = [raw.filenames[0] for raw in raws]
-    fif_ids = [get_header_id(raw) for raw in raws]
+    infiles, outnames, good_files = process_file_inputs(infiles)
+
+    if outdir is None:
+        import tempfile
+        tempdir = tempfile.TemporaryDirectory()
+        outdir = tempdir.name
+
+    if preproc_config is not None:
+        config = check_inconfig(preproc_config)
 
     s = "<a href='#{0}'>{1}</a><br />"
-    top_links = [s.format(fif_ids[ii], names[ii]) for ii in range(len(names))]
+    top_links = [s.format(outnames[ii], infiles[ii]) for ii in range(len(infiles))]
     top_links = '\n'.join(top_links)
 
-    # Replace the target string
-    global html_base
-    html_base = html_base.replace("@scanshere", html)
-    html_base = html_base.replace("@headershere", top_links)
+    renders = []
+    run_template = load_template('fif_base')
+
+    for infile in infiles:
+        raw = import_data(infile)
+        if preproc_config is not None:
+            raw = run_proc_chain(raw, config)['raw']
+        data = gen_fif_data(raw, outf=outdir, fif_id='TEST', gen_plots=True)
+        renders.append(run_template.render(run=data))
+
+    if preproc_config is not None:
+        preproc = '<div style="margin: 30px"><h3>preprocessing applied</h3>'
+        for method in config['preproc']:
+            preproc += "{0}</br>".format(method)
+        #preproc = "<div style='margin: 30px'>{0}</div>".format(yaml.dump(config).__str__())
+        preproc += '</div>'
+    else:
+        preproc = None
+
+    page_template = load_template('raw_report_base')
+    page = page_template.render(runs=renders, toplinks=top_links, preproc=preproc)
 
     # Write the file out again
-    outpath = '{0}/ntad_qc_index.html'.format(outdir)
+    outpath = '{0}/osl_raw_report.html'.format(outdir)
     with open(outpath, 'w') as f:
-        f.write(html_base)
+        f.write(page)
     print(outpath)
+
 
 def load_template(tname):
     basedir = os.path.dirname(os.path.realpath(__file__))
@@ -213,46 +148,6 @@ def load_template(tname):
         template = Template(file_.read())
 
     return template
-
-
-# ----------------------------------------------------------------------------------
-# Scan processing
-
-
-def base_sensor_proc(raw):
-    """Run a very simple preprocessing."""
-    raw.resample(400)
-    raw.filter(0.5, 125, picks=['meg', 'eeg'])
-    gra = get_badseg_annotations(raw, picks='grad')
-    mag = get_badseg_annotations(raw, picks='mag')
-    eeg = get_badseg_annotations(raw, picks='eeg')
-    raw.set_annotations(gra+mag+eeg)
-
-    return raw
-
-
-def get_badseg_annotations(raw, segment_len=400, picks=None):
-    """Set bad segments in MNE object."""
-    bdinds = sails.utils.detect_artefacts(raw.get_data(picks=picks), 1,
-                                          reject_mode='segments',
-                                          segment_len=segment_len,
-                                          ret_mode='bad_inds')
-
-    onsets = np.where(np.diff(bdinds.astype(float)) == 1)[0]
-    if bdinds[0] is True:
-        onsets = np.r_[0, onsets]
-    offsets = np.where(np.diff(bdinds.astype(float)) == -1)[0]
-
-    if bdinds[-1] is True:
-        offsets = np.r_[offsets, len(bdinds)-1]
-    assert(len(onsets) == len(offsets))
-    durations = offsets - onsets
-    descriptions = np.repeat('bad_segment_{0}'.format(picks), len(onsets))
-
-    onsets = onsets / raw.info['sfreq']
-    durations = durations / raw.info['sfreq']
-
-    return mne.Annotations(onsets, durations, descriptions)
 
 
 # ----------------------------------------------------------------------------------
@@ -294,6 +189,7 @@ def plot_ecg_summary(raw, savebase):
     if savebase is not None:
         plt.savefig(savebase.format('ECG'), dpi=150, transparent=True)
 
+
 def plot_ecg_summary_neurokit(raw, savebase):
 
     inds = mne.pick_types(raw.info, ecg=True)
@@ -331,6 +227,7 @@ def plot_eog_summary(raw, savebase):
 
     if savebase is not None:
         plt.savefig(savebase.format('EOG'), dpi=150, transparent=True)
+
 
 def plot_eog_summary_neurokit(raw, savebase):
 
@@ -438,6 +335,7 @@ def plot_channel_dists(raw, savebase=None):
     plt.xlabel('Time (seconds)')
     if savebase is not None:
         fig.savefig(savebase.format('temporal_dev'), dpi=150, transparent=True)
+
 
 def plot_digitisation_2d(raw, savebase=None):
 
@@ -565,23 +463,18 @@ def main(argv=None):
     print(argv)
 
     parser = argparse.ArgumentParser(description='Run a quick Quality Control summary on data.')
-    parser.add_argument('files', type=str,
+    parser.add_argument('files', type=str, nargs='+',
                         help='plain text file containing full paths to files to be processed')
-    parser.add_argument('outdir', type=str,
+    parser.add_argument('--outdir', type=str, default=None,
                         help='Path to output directory to save data in')
+    parser.add_argument('--config', type=str,
+                        help='yaml defining preproc')
 
     args = parser.parse_args(argv)
-    print(args)
 
     # -------------------------------------------
 
-    with open(args.files, 'r') as f:
-        infifs = f.readlines()
-    infifs = [fif.strip('\n') for fif in infifs]
-
-    raws = [mne.io.read_raw_fif(m) for m in infifs]
-
-    gen_report(raws, args.outdir)
+    gen_report(args.files, args.outdir)
 
 
 # ----------------------------------------------------------------------
