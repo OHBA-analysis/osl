@@ -26,7 +26,7 @@ def get_header_id(raw):
     return raw.filenames[0].split('/')[-1].strip('.fif')
 
 
-def gen_fif_data(raw, outf=None, fif_id=None, gen_plots=True):
+def gen_fif_data(raw, outf=None, fif_id=None, gen_plots=True, artefact_scan=False):
     """Generate HTML web-report for an MNE data object."""
     x = {}
     x['filename'] = raw.filenames[0]
@@ -70,15 +70,41 @@ def gen_fif_data(raw, outf=None, fif_id=None, gen_plots=True):
         plot_digitisation_2d(raw, savebase=savebase)
         plot_spectra(raw, savebase=savebase)
         plot_channel_dists(raw, savebase=savebase)
+        if artefact_scan:
+            plot_artefact_scan(raw, savebase=savebase)
+
     plt.close('all')
 
-    x['plt_channeldev'] = savebase.format('channel_dev')
-    x['plt_temporaldev'] = savebase.format('temporal_dev')
-    x['plt_artefacts_eog'] = savebase.format('EOG')
-    x['plt_artefacts_ecg'] = savebase.format('ECG')
-    x['plt_digitisation'] = savebase.format('digitisation')
-    x['plt_spectra'] = savebase.format('spectra_full')
-    x['plt_zoom_spectra'] = savebase.format('spectra_zoom')
+    # HTML can use the relative paths
+    savebase2 = os.path.split(savebase)[1]
+
+    x['plt_channeldev'] = savebase2.format('channel_dev')
+    x['plt_temporaldev'] = savebase2.format('temporal_dev')
+    x['plt_artefacts_eog'] = savebase2.format('EOG')
+    x['plt_artefacts_ecg'] = savebase2.format('ECG')
+    x['plt_digitisation'] = savebase2.format('digitisation')
+    x['plt_spectra'] = savebase2.format('spectra_full')
+    x['plt_zoom_spectra'] = savebase2.format('spectra_zoom')
+
+    if artefact_scan:
+        x['artefact_scan'] = True
+        x['plt_eyemove_grad'] = savebase2.format('eyemove_grad')
+        x['plt_eyemove_mag'] = savebase2.format('eyemove_mag')
+        x['plt_eyemove_eog'] = savebase2.format('eyemove_eog')
+        x['plt_blink_grad'] = savebase2.format('blink_grad')
+        x['plt_blink_mag'] = savebase2.format('blink_mag')
+        x['plt_swallow_grad'] = savebase2.format('swallow_grad')
+        x['plt_swallow_mag'] = savebase2.format('swallow_mag')
+        x['plt_breathe_grad'] = savebase2.format('breathe_grad')
+        x['plt_breathe_mag'] = savebase2.format('breathe_mag')
+        x['plt_shrug_grad'] = savebase2.format('shrug_grad')
+        x['plt_shrug_mag'] = savebase2.format('shrug_mag')
+        x['plt_clench_grad'] = savebase2.format('clench_grad')
+        x['plt_clench_mag'] = savebase2.format('clench_mag')
+        x['plt_buttonpress_grad'] = savebase2.format('buttonpress_grad')
+        x['plt_buttonpress_mag'] = savebase2.format('buttonpress_mag')
+    else:
+        x['artefact_scan'] = False
 
     return x
 
@@ -95,7 +121,7 @@ def gen_fif_html(raw, outf=None, fif_id=None, gen_plots=True):
     return filedata
 
 
-def gen_report(infiles, outdir=None, preproc_config=None):
+def gen_report(infiles, outdir=None, preproc_config=None, artefact_scan=False):
     """Generate web-report for a set of MNE data objects."""
 
     infiles, outnames, good_files = process_file_inputs(infiles)
@@ -119,7 +145,8 @@ def gen_report(infiles, outdir=None, preproc_config=None):
         raw = import_data(infile)
         if preproc_config is not None:
             raw = run_proc_chain(raw, config)['raw']
-        data = gen_fif_data(raw, outf=outdir, fif_id='TEST', gen_plots=True)
+        data = gen_fif_data(raw, outf=outdir, fif_id='TEST',
+                            gen_plots=True, artefact_scan=artefact_scan)
         renders.append(run_template.render(run=data))
 
     if preproc_config is not None:
@@ -403,6 +430,153 @@ def plot_headmovement(raw, savebase=None):
 
     if savebase is not None:
         fig.savefig(savebase.format('headpos'), dpi=150, transparent=True)
+
+
+def plot_artefact_scan(raw, savebase=None):
+
+    events = mne.find_events(raw, min_duration=2/raw.info['sfreq'])
+    modalities = ['mag', 'grad']
+
+    # Plot eye movements
+    event_dict = {'moves': 1}
+    epochs = mne.Epochs(raw, events, event_id=event_dict, tmin=-1, tmax=16.5,
+                        preload=True)
+    x = epochs.get_data()
+
+    yl = np.abs(x[:,:2,:]).max() * 1.1
+
+    plt.figure(figsize=(16,5))
+    ax = plt.subplot(121)
+    from matplotlib.patches import Rectangle
+    patches = [Rectangle((-1,-yl),1,yl*2, alpha=0.2, facecolor='grey'),
+               Rectangle((0,-yl),2,yl*2, alpha=0.2, facecolor='r'),
+               Rectangle((2,-yl),2,yl*2, alpha=0.2, facecolor='grey'),
+               Rectangle((4,-yl),2,yl*2, alpha=0.2, facecolor='r'),
+               Rectangle((6,-yl),2,yl*2, alpha=0.2, facecolor='grey'),
+               Rectangle((8,-yl),2,yl*2, alpha=0.2, facecolor='r'),
+               Rectangle((10,-yl),2,yl*2, alpha=0.2, facecolor='grey'),
+               Rectangle((12,-yl),2,yl*2, alpha=0.2, facecolor='r'),
+               Rectangle((14,-yl),2,yl*2, alpha=0.2, facecolor='grey')]
+    for rec in patches:
+        ax.add_artist(rec)
+    plt.text(-0.5, yl, 'fix', ha='center')
+    plt.text(1, yl, 'Up', ha='center')
+    plt.text(5, yl, 'Right', ha='center')
+    plt.text(9, yl, 'Down', ha='center')
+    plt.text(13, yl, 'Left', ha='center')
+    plt.plot(epochs.times, x[:,0,:].T)
+    plt.ylim(-yl, yl*1.1)
+    ax = plt.subplot(122)
+    patches = [Rectangle((-1,-yl),1,yl*2, alpha=0.2, facecolor='grey'),
+               Rectangle((0,-yl),2,yl*2, alpha=0.2, facecolor='r'),
+               Rectangle((2,-yl),2,yl*2, alpha=0.2, facecolor='grey'),
+               Rectangle((4,-yl),2,yl*2, alpha=0.2, facecolor='r'),
+               Rectangle((6,-yl),2,yl*2, alpha=0.2, facecolor='grey'),
+               Rectangle((8,-yl),2,yl*2, alpha=0.2, facecolor='r'),
+               Rectangle((10,-yl),2,yl*2, alpha=0.2, facecolor='grey'),
+               Rectangle((12,-yl),2,yl*2, alpha=0.2, facecolor='r'),
+               Rectangle((14,-yl),2,yl*2, alpha=0.2, facecolor='grey')]
+    for rec in patches:
+        ax.add_artist(rec)
+    plt.text(-0.5, yl, 'fix', ha='center')
+    plt.text(1, yl, 'Up', ha='center')
+    plt.text(5, yl, 'Right', ha='center')
+    plt.text(9, yl, 'Down', ha='center')
+    plt.text(13, yl, 'Left', ha='center')
+    plt.plot(epochs.times, x[:,1,:].T)
+    plt.ylim(-yl, yl*1.1)
+    plt.savefig(savebase.format('eyemove_eog'), dpi=300, transparent=True)
+
+    ev = epochs.average()
+    for m in modalities:
+        fig = ev.plot_joint(show=False, picks=m)
+        name = 'eyemove_{0}'.format(m)
+        fig.savefig(savebase.format(name), dpi=300, transparent=True)
+    plt.close('all')
+
+    # Plot blinks
+    event_dict = {'blinks': 5}
+    epochs = mne.Epochs(raw, events, event_id=event_dict, tmin=-0.2, tmax=2,
+                        preload=True)
+    x = epochs.get_data()
+
+    plt.figure()
+    plt.subplot(121)
+    plt.plot(epochs.times, x[:,0,:].T)
+    plt.subplot(122)
+    plt.plot(epochs.times, x[:,1,:].T)
+
+    ev = epochs.average()
+    for m in modalities:
+        fig = ev.plot_joint(show=False, picks=m)
+        name = 'blink_{0}'.format(m)
+        fig.savefig(savebase.format(name), dpi=300, transparent=True)
+    plt.close('all')
+
+    # Plot swallow
+
+    event_dict = {'swallow': 6}
+    epochs = mne.Epochs(raw, events, event_id=event_dict, tmin=-0.2, tmax=2,
+                        preload=True)
+
+    ev = epochs.average()
+    for m in modalities:
+        fig = ev.plot_joint(show=False, picks=m)
+        name = 'swallow_{0}'.format(m)
+        fig.savefig(savebase.format(name), dpi=300, transparent=True)
+    plt.close('all')
+
+    # Plot breathe
+
+    event_dict = {'breath': 7}
+    epochs = mne.Epochs(raw, events, event_id=event_dict, tmin=-0.5, tmax=5,
+                        preload=True)
+
+    ev = epochs.average()
+    for m in modalities:
+        fig = ev.plot_joint(show=False, picks=m)
+        name = 'breathe_{0}'.format(m)
+        fig.savefig(savebase.format(name), dpi=300, transparent=True)
+    plt.close('all')
+
+    # Plot shrug
+
+    event_dict = {'shrug': 8}
+    epochs = mne.Epochs(raw, events, event_id=event_dict, tmin=-0.5, tmax=3,
+                        preload=True)
+
+    ev = epochs.average()
+    for m in modalities:
+        fig = ev.plot_joint(show=False, picks=m)
+        name = 'shrug_{0}'.format(m)
+        fig.savefig(savebase.format(name), dpi=300, transparent=True)
+    plt.close('all')
+
+    # Plot clench
+
+    if len(np.where(events[:,2]==9)[0]) > 0:
+        event_dict = {'clench': 9}
+        epochs = mne.Epochs(raw, events, event_id=event_dict, tmin=-0.5, tmax=3,
+                            preload=True)
+
+        ev = epochs.average()
+        for m in modalities:
+            fig = ev.plot_joint(show=False, picks=m)
+            name = 'clench_{0}'.format(m)
+            fig.savefig(savebase.format(name), dpi=300, transparent=True)
+        plt.close('all')
+
+    # Plot button press
+    event_dict = {'button_press': 257}
+    epochs = mne.Epochs(raw, events, event_id=event_dict, tmin=-0.5, tmax=2,
+                        preload=True)
+
+    ev = epochs.average()
+    for m in modalities:
+        fig = ev.plot_joint(show=False, picks=m)
+        name = 'buttonpress_{0}'.format(m)
+        fig.savefig(savebase.format(name), dpi=300, transparent=True)
+    plt.close('all')
 
 
 def print_scan_summary(raw):
