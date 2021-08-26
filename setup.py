@@ -25,6 +25,7 @@ setup(name='osl',
                             'utils/simulate/*npy',
                             'utils/simulate/*fif',
                             'report/templates/*']},
+
       command_options={
         'build_sphinx': {
             'project': ('setup.py', name),
