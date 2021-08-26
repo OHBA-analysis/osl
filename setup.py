@@ -16,7 +16,7 @@ setup(name=name,
               'osl_maxfilter = osl.maxfilter.maxfilter:main',
               'osl_report = osl.report.raw_report:main',
               ]},
-      install_requires=['mne', 'sklearn', 'fslpy', 'sails', 'tabulate', 'PyYAML', 'pydata-sphinx-theme'],
+      install_requires=['mne', 'sklearn', 'fslpy', 'sails', 'tabulate', 'PyYAML', 'pydata-sphinx-theme', 'sphinx_gallery'],
       package_data={'osl': ['utils/*tree',  'utils/reduced_mvar_*', 'utils/megin*fif']},
 
       command_options={
