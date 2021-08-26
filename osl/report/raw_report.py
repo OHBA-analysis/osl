@@ -93,6 +93,7 @@ def gen_fif_data(raw, outf=None, fif_id=None, gen_plots=True, artefact_scan=Fals
         x['plt_eyemove_eog'] = savebase2.format('eyemove_eog')
         x['plt_blink_grad'] = savebase2.format('blink_grad')
         x['plt_blink_mag'] = savebase2.format('blink_mag')
+        x['plt_blink_eog'] = savebase2.format('blink_eog')
         x['plt_swallow_grad'] = savebase2.format('swallow_grad')
         x['plt_swallow_mag'] = savebase2.format('swallow_mag')
         x['plt_breathe_grad'] = savebase2.format('breathe_grad')
@@ -500,11 +501,15 @@ def plot_artefact_scan(raw, savebase=None):
                         preload=True)
     x = epochs.get_data()
 
-    plt.figure()
+    plt.figure(figsize=(16,4))
     plt.subplot(121)
     plt.plot(epochs.times, x[:,0,:].T)
+    plt.title(raw.info['ch_names'][0])
     plt.subplot(122)
     plt.plot(epochs.times, x[:,1,:].T)
+    plt.title(raw.info['ch_names'][1])
+    name = 'blink_eog'.format(m)
+    plt.savefig(savebase.format(name), dpi=300, transparent=True)
 
     ev = epochs.average()
     for m in modalities:
@@ -514,7 +519,6 @@ def plot_artefact_scan(raw, savebase=None):
     plt.close('all')
 
     # Plot swallow
-
     event_dict = {'swallow': 6}
     epochs = mne.Epochs(raw, events, event_id=event_dict, tmin=-0.2, tmax=2,
                         preload=True)
@@ -527,7 +531,6 @@ def plot_artefact_scan(raw, savebase=None):
     plt.close('all')
 
     # Plot breathe
-
     event_dict = {'breath': 7}
     epochs = mne.Epochs(raw, events, event_id=event_dict, tmin=-0.5, tmax=5,
                         preload=True)
@@ -540,7 +543,6 @@ def plot_artefact_scan(raw, savebase=None):
     plt.close('all')
 
     # Plot shrug
-
     event_dict = {'shrug': 8}
     epochs = mne.Epochs(raw, events, event_id=event_dict, tmin=-0.5, tmax=3,
                         preload=True)
@@ -553,7 +555,6 @@ def plot_artefact_scan(raw, savebase=None):
     plt.close('all')
 
     # Plot clench
-
     if len(np.where(events[:,2]==9)[0]) > 0:
         event_dict = {'clench': 9}
         epochs = mne.Epochs(raw, events, event_id=event_dict, tmin=-0.5, tmax=3,
