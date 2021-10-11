@@ -84,14 +84,13 @@ def phantom_report(ascii_report, savebase=None, *, figsize=(15, 4), dpi=150, tra
     gmin = None
     gmax = None
 
+    scale = lambda x: np.sign(x) * ((int((np.abs(x) + 0.1) * 10)) / 10.0)
+
     for cr in ['dx', 'dy', 'dz']:
         coord[cr] = np.array(coord[cr], dtype='float64')
 
-        lb = coord[cr].min()
-        lb = np.sign(lb) * ((int((np.abs(lb) + 0.1) * 10)) / 10.0)
-
-        ub = coord[cr].max()
-        ub = np.sign(ub) * ((int((np.abs(ub) + 0.1) * 10)) / 10.0)
+        lb = scale(coord[cr].min())
+        ub = scale(coord[cr].max())
 
         if gmin is None or lb < gmin:
             gmin = lb
