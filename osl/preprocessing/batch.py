@@ -60,7 +60,9 @@ def find_run_id(infile, preload=True):
     elif os.path.splitext(infile)[1] == '.ds':
         runname = os.path.basename(infile).rstrip('.ds')
     else:
-        raise ValueError('Unable to determine run_id from file {0}'.format(infile))
+        # Strip to the left of the dot and hope for the best...
+        runname = os.path.basename(infile).split('.')[0]
+        #raise ValueError('Unable to determine run_id from file {0}'.format(infile))
 
     return runname
 
@@ -83,6 +85,8 @@ def import_data(infile, preload=True, logfile=None):
         raw = mne.io.read_raw_ctf(os.path.dirname(infile), preload=preload)
     elif os.path.splitext(infile)[1] == '.ds':
         raw = mne.io.read_raw_ctf(infile, preload=preload)
+    elif os.path.splitext(infile)[1] == '.vhdr':
+        raw = mne.io.read_raw_brainvision(infile, preload=preload)
     else:
         raise ValueError('Unable to determine file type of input {0}'.format(infile))
 
@@ -359,7 +363,13 @@ def osl_print(s, logfile=None):
             f.write(s + '\n')
 
 
-def find_func(method):
+def find_func(method, extra_funcs=None):
+    print('FINDING {0}'.format(method))
+
+    if extra_funcs is not None:
+        func_ind = [idx if (f.__name__ == method) else -1 for idx, f in enumerate(extra_funcs)]
+        if np.max(func_ind) > -1:
+            return extra_funcs[np.argmax(func_ind)]
 
     # Find MNE function in local module
     func = globals().get('run_mne_{0}'.format(method))
@@ -453,7 +463,7 @@ def write_dataset(dataset, outbase, run_id, overwrite=False):
         dataset['ica'].save(outname)
 
 
-def run_proc_chain(infile, config, outname=None, outdir=None, ret_dataset=True, overwrite=False):
+def run_proc_chain(infile, config, outname=None, outdir=None, ret_dataset=True, overwrite=False, extra_funcs=None):
 
     if outname is None:
         #run_id = os.path.split(infile)[1].rstrip('.fif')
@@ -486,7 +496,7 @@ def run_proc_chain(infile, config, outname=None, outdir=None, ret_dataset=True, 
 
     for stage in deepcopy(config['preproc']):
         method = stage.pop('method')
-        func = find_func(method)
+        func = find_func(method, extra_funcs=extra_funcs)
         try:
             dataset = func(dataset, stage, logfile=logfile)
         except Exception as e:
