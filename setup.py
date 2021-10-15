@@ -1,5 +1,10 @@
 from setuptools import setup
 
+# Requirement categories
+reqs = ['numpy', 'scipy', 'matplotlib', 'mne', 'sklearn', 'fslpy', 'sails', 'tabulate', 'pyyaml>=5.1', 'neurokit2', 'jinja2']
+dev_reqs = ['setuptools>=41.0.1', 'pytest', 'pytest-cov', 'coverage', 'flake8']
+
+
 setup(name='osl',
       version='0.0.1.dev',
       description='OHBA Software Library',
@@ -14,6 +19,6 @@ setup(name='osl',
               'osl_maxfilter = osl.maxfilter.maxfilter:main',
               'osl_report = osl.report.raw_report:main',
               ]},
-      install_requires=['mne', 'sklearn', 'fslpy', 'sails', 'tabulate', 'PyYAML'],
+      install_requires=reqs + dev_reqs,
       package_data={'osl': ['utils/*tree', 'report/templates/*']},
       )
