@@ -70,6 +70,7 @@ def gen_fif_data(raw, outf=None, fif_id=None, gen_plots=True, artefact_scan=Fals
         plot_digitisation_2d(raw, savebase=savebase)
         plot_spectra(raw, savebase=savebase)
         plot_channel_dists(raw, savebase=savebase)
+        plot_channel_sumsq_timecourse(raw, savebase=savebase)
         if artefact_scan:
             plot_artefact_scan(raw, savebase=savebase)
 
@@ -79,7 +80,7 @@ def gen_fif_data(raw, outf=None, fif_id=None, gen_plots=True, artefact_scan=Fals
     savebase2 = os.path.split(savebase)[1]
 
     x['plt_channeldev'] = savebase2.format('channel_dev')
-    x['plt_temporaldev'] = savebase2.format('temporal_dev')
+    x['plt_temporaldev'] = savebase2.format('temporal_sumsq')
     x['plt_artefacts_eog'] = savebase2.format('EOG')
     x['plt_artefacts_ecg'] = savebase2.format('ECG')
     x['plt_digitisation'] = savebase2.format('digitisation')
@@ -140,7 +141,7 @@ def gen_report(infiles, outdir=None, preproc_config=None, artefact_scan=False):
     top_links = '\n'.join(top_links)
 
     renders = []
-    run_template = load_template('fif_base')
+    run_template = load_template('fif_base_tabs')
 
     for infile in infiles:
         raw = import_data(infile)
@@ -319,6 +320,48 @@ def plot_spectra(raw, savebase=None):
         fig.savefig(savebase.format('spectra_zoom'), dpi=150, transparent=True)
 
 
+def plot_channel_sumsq_timecourse(raw, savebase=None):
+    from scipy.ndimage.filters import uniform_filter1d
+
+    fig = plt.figure(figsize=(16, 4))
+    plt.subplots_adjust(hspace=0.3,left=0.05, right=0.95)
+    for tag in ['top', 'right']:
+        plt.gca().spines[tag].set_visible(False)
+    plt.subplot(311)
+    inds = mne.pick_types(raw.info, meg='mag')
+    x = np.sum(raw.get_data()[inds, :]**2, axis=0)
+    x = uniform_filter1d(x, int(raw.info['sfreq']))
+    plt.plot(raw.times, x)
+    plt.fill_between(raw.times, x, alpha=0.5)
+    plt.title('Sum-Square across channels')
+    plt.legend(['Magnetometers'], frameon=False)
+    plt.gca().set_xticklabels([])
+    for tag in ['top', 'right']:
+        plt.gca().spines[tag].set_visible(False)
+    plt.subplot(312)
+    inds = mne.pick_types(raw.info, meg='grad')
+    x = np.sum(raw.get_data()[inds, :]**2, axis=0)
+    x = uniform_filter1d(x, int(raw.info['sfreq']))
+    plt.plot(raw.times, x)
+    plt.fill_between(raw.times, x, alpha=0.5)
+    plt.legend(['Gradiometers'], frameon=False)
+    plt.gca().set_xticklabels([])
+    for tag in ['top', 'right']:
+        plt.gca().spines[tag].set_visible(False)
+    plt.subplot(313)
+    inds = mne.pick_types(raw.info, meg=False, eeg=True)
+    x = np.sum(raw.get_data()[inds, :]**2, axis=0)
+    x = uniform_filter1d(x, int(raw.info['sfreq']))
+    plt.plot(raw.times, x)
+    plt.fill_between(raw.times, x, alpha=0.5)
+    plt.legend(['EEG'], frameon=False)
+    plt.xlabel('Time (seconds)')
+    for tag in ['top', 'right']:
+        plt.gca().spines[tag].set_visible(False)
+    if savebase is not None:
+        fig.savefig(savebase.format('temporal_sumsq'), dpi=150, transparent=True)
+
+
 def plot_channel_dists(raw, savebase=None):
     """Plot summary distributions of sensors."""
     fig = plt.figure(figsize=(16, 2))
@@ -341,28 +384,6 @@ def plot_channel_dists(raw, savebase=None):
     plt.xlabel('St-Dev')
     if savebase is not None:
         fig.savefig(savebase.format('channel_dev'), dpi=150, transparent=True)
-
-    fig = plt.figure(figsize=(16, 2))
-    plt.subplots_adjust(left=0.05, right=0.95)
-    plt.subplot(131)
-    inds = mne.pick_types(raw.info, meg='mag')
-    plt.plot(raw.times, raw.get_data()[inds, :].std(axis=0))
-    plt.title('Magnetometers channel st-dev')
-    plt.ylabel('St-Dev over Channels')
-    plt.title('Magnetometers channel std-dev')
-    plt.xlabel('Time (seconds)')
-    plt.subplot(132)
-    inds = mne.pick_types(raw.info, meg='grad')
-    plt.plot(raw.times, raw.get_data()[inds, :].std(axis=0))
-    plt.title('Gradiometers channel st-dev')
-    plt.xlabel('Time (seconds)')
-    plt.subplot(133)
-    inds = mne.pick_types(raw.info, meg=False, eeg=True)
-    plt.plot(raw.times, raw.get_data()[inds, :].std(axis=0))
-    plt.title('EEG channel st-dev')
-    plt.xlabel('Time (seconds)')
-    if savebase is not None:
-        fig.savefig(savebase.format('temporal_dev'), dpi=150, transparent=True)
 
 
 def plot_digitisation_2d(raw, savebase=None):
@@ -644,12 +665,14 @@ def main(argv=None):
                         help='Path to output directory to save data in')
     parser.add_argument('--config', type=str,
                         help='yaml defining preproc')
+    parser.add_argument('--artefactscan', action="store_true",
+                        help='Generate additional plots assuming inputs are artefact scans')
 
     args = parser.parse_args(argv)
 
     # -------------------------------------------
 
-    gen_report(args.files, args.outdir)
+    gen_report(args.files, args.outdir, preproc_config=args.config,  artefact_scan=args.artefactscan)
 
 
 # ----------------------------------------------------------------------

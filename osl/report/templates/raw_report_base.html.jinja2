@@ -12,6 +12,21 @@
         .button1 {
               background-color: #4CAF50; /* Green */
               border: none;
+              border-bottom-style: solid;
+              border-color: black;
+              color: white;
+              padding: 15px 32px;
+              text-align: center;
+              text-decoration: none;
+              display: inline-block;
+              font-size: 16px;
+            }
+        .button1:active {
+             color: #f6f6f6;
+        }
+        .button2 {
+              background-color: #4CAF50; /* Green */
+              border: none;
               color: white;
               padding: 15px 32px;
               text-align: center;
@@ -28,7 +43,10 @@
     <h2>OSL Quality Check</h2>
     {{ toplinks }}
 
-    {{ preproc }}
+    <div>
+        <h3>Preprocessing applied</h3>
+        {{ preproc }}
+    </div>
 </div>
 
 <div style='width:80%; margin: auto; text-align: center' >
@@ -39,6 +57,11 @@
 
 <script>
 
+function jump(h){
+    h = h.replace('_figs', '')
+    document.getElementById(h).scrollIntoView({behavior: 'smooth'});
+}
+
 function filterSelection(c) {
   console.log(c)
   var x = document.getElementById(c);
@@ -46,8 +69,40 @@ function filterSelection(c) {
     x.style.display = "block";
   } else {
     x.style.display = "none";
+    jump(c);
   }
 }
+
+function openTab(evt, runID, figTag) {
+  // Declare all variables
+  var i, tabcontent, tablinks;
+
+  console.log(runID);
+  console.log(figTag);
+
+  // Get all elements with class="tabcontent" and hide them
+  tabcontent = document.getElementsByClassName("tabpage");
+  for (i = 0; i < tabcontent.length; i++) {
+    console.log(i);
+    if (tabcontent[i].id.indexOf(runID) > -1) {
+        tabcontent[i].style.display = "none";
+    }
+  }
+
+  // Get all elements with class="tablinks" and remove the class "active"
+  tablinks = document.getElementsByClassName("tablinks");
+  for (i = 0; i < tablinks.length; i++) {
+    console.log(i);
+    tablinks[i].className = tablinks[i].className.replace(" active", "");
+  }
+
+  // Show the current tab, and add an "active" class to the button that opened the tab
+  document.getElementById(runID.concat('_', figTag)).style.display = "block";
+  evt.currentTarget.className += " active";
+}
+
+
+
 </script>
 
 </body>
