@@ -147,7 +147,7 @@ class SPMMEEG:
         #    np.minimum(self.trials.end_samples, self.nsamples - 1)
         #]
 
-    def _print_info(self):
+    def print_info(self):
         print('SPM M/EEG data object - Loaded by OSL')
         print('Type: {0}'.format(self.type))
         print('Transform: {0}'.format(self.transform))
