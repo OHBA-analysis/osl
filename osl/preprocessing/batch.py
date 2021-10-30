@@ -123,6 +123,13 @@ def run_mne_filter(dataset, userargs, logfile=None):
     return dataset
 
 
+def run_mne_interpolate_bads(dataset, userargs, logfile=None):
+    osl_print('\nINTERPOLATING BAD CHANNELS', logfile=logfile)
+    osl_print(str(userargs), logfile=logfile)
+    dataset['raw'].interpolate_bads(**userargs)
+    return dataset
+
+
 def run_mne_notch_filter(dataset, userargs, logfile=None):
     osl_print('\nNOTCH-FILTERING', logfile=logfile)
     osl_print(str(userargs), logfile=logfile)
@@ -210,6 +217,12 @@ def run_osl_ica_manualreject(dataset, userargs):
         dataset['ica'].apply(dataset['raw'])
     else:
         print('\nCOMPONENTS WERE NOT REMOVED FROM RAW DATA')
+    return dataset
+
+
+def run_mne_apply_ica(dataset, userargs, logfile=None):
+    osl_print('\nAPPLYING ICA', logfile=logfile)
+    dataset['raw'] = dataset['ica'].apply(dataset['raw'])
     return dataset
 
 
