@@ -43,7 +43,6 @@ def import_data2(infile, preload=True):
     return mne.io.read_raw(infile, preload=preload)
 
 
-def find_run_id(infile, preload=True):
 
     # TODO: This is perhaps more complex than it needs to be - could just use
     # the fif option for everything except BTI scans? They're basically the
@@ -384,7 +383,6 @@ def osl_print(s, logfile=None):
 
 
 def find_func(method, extra_funcs=None):
-    print('FINDING {0}'.format(method))
 
     if extra_funcs is not None:
         func_ind = [idx if (f.__name__ == method) else -1 for idx, f in enumerate(extra_funcs)]
@@ -489,7 +487,7 @@ def run_proc_chain(infile, config, outname=None, outdir=None, ret_dataset=True, 
         #run_id = os.path.split(infile)[1].rstrip('.fif')
         run_id = find_run_id(infile)
     else:
-        run_id = outname.rstrip('.fif')
+        run_id = os.path.splitext(outname)[0]
 
     if outdir is not None:
         name_base = '{run_id}_{ftype}.{fext}'
