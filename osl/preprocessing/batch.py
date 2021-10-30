@@ -297,7 +297,6 @@ def get_badchan_labels(raw, userargs, logfile=None):
     osl_print('\nBAD-CHANNELS', logfile=logfile)
     osl_print(str(userargs), logfile=logfile)
     picks = userargs.get('picks', 'grad')
-    osl_print(picks, logfile=logfile)
     bdinds = sails.utils.detect_artefacts(raw.get_data(picks=picks), 0,
                                           reject_mode='dim',
                                           ret_mode='bad_inds')
@@ -396,6 +395,22 @@ def check_inconfig(config):
     elif isinstance(config, dict):
         # Its already a dict
         pass
+
+    # Initialise missing values in config
+    if 'meta' not in config:
+        config['meta'] = {'event_codes': None}
+    elif 'event_codes' not in config['meta']:
+        config['meta']['event_codes'] = None
+
+    # Validation
+    if 'preproc' not in config:
+        raise KeyError('Please specify preprocessing steps in config.')
+
+    for step in config['preproc']:
+        if config['meta']['event_codes'] is None and 'find_events' in step.values():
+            raise KeyError(
+                'event_codes must be passed in config if we are finding events.'
+            )
 
     return config
 
