@@ -363,7 +363,7 @@ def osl_print(s, logfile=None):
 
 
 def find_func(method, extra_funcs=None):
-    print('FINDING {0}'.format(method))
+    print('\nFINDING {0}'.format(method))
 
     if extra_funcs is not None:
         func_ind = [idx if (f.__name__ == method) else -1 for idx, f in enumerate(extra_funcs)]
@@ -516,7 +516,6 @@ def run_proc_chain(infile, config, outname=None, outdir=None, ret_dataset=True, 
         func = find_func(method, extra_funcs=extra_funcs)
         try:
             dataset = func(dataset, stage, logfile=logfile)
-            print()
         except Exception as e:
             print('PROCESSING FAILED!!!!')
             ex_type, ex_value, ex_traceback = sys.exc_info()
@@ -580,7 +579,7 @@ def run_proc_batch(config, files, outdir, overwrite=False, nprocesses=1, mnelog=
         else:
             # Parent doesn't exist
             raise ValueError(
-                "Please create the parent directory for /{0}".format(outdir.stem)
+                "Please create the parent directory: {0}".format(outdir.parent)
             )
 
     name_base = '{run_id}_{ftype}.{fext}'
