@@ -438,10 +438,12 @@ def check_infiles(infiles):
     if check_paths:
         for idx, fif in enumerate(checked_files):
             if fif.endswith('.ds'):
-                good_files[idx] = int(os.path.isdir(fif))
+                exists = os.path.isdir(fif)
             else:
-                good_files[idx] = int(os.path.isfile(fif))
-                print('File not found: {0}'.format(fif))
+                exists = os.path.isfile(fif)
+            good_files[idx] = int(exists)
+            if not exists:
+                print('File/directory not found: {0}'.format(fif))
 
     return checked_files, outnames, good_files
 
