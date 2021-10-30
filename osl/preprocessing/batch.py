@@ -24,6 +24,7 @@ import mne
 import csv
 import yaml
 import sails
+import pathlib
 import argparse
 import traceback
 import numpy as np
@@ -544,12 +545,29 @@ def run_proc_batch(config, files, outdir, overwrite=False, nprocesses=1, mnelog=
     infiles, outnames, good_files = check_infiles(files)
     print('Processing {0} files'.format(sum(good_files)))
 
-    if os.path.isdir(outdir) is False:
-        raise ValueError('Output dir not found!')
+    # Validate output directory
+    outdir = pathlib.Path(outdir)
+    if outdir.exists():
+        # Check outdir is a directory
+        if not outdir.is_dir():
+            raise ValueError("outdir must be the path to a directory.")
+
+        # Check we have write permission
+        if not os.access(outdir, os.W_OK):
+            raise PermissionError("No write access for {0}".format(outdir))
     else:
-        name_base = '{run_id}_{ftype}.{fext}'
-        outbase = os.path.join(outdir, name_base)
-        print(outbase)
+        # Output directory doesn't exist
+        if outdir.parent.exists():
+            # Parent exists, make the output directory
+            outdir.mkdir()
+        else:
+            # Parent doesn't exist
+            raise ValueError(
+                "Please create the parent directory for /{0}".format(outdir.stem)
+            )
+
+    name_base = '{run_id}_{ftype}.{fext}'
+    outbase = outdir / name_base
 
     print('Outputs saving to: {0}\n\n'.format(outdir))
     config = check_inconfig(config)
