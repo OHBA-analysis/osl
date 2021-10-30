@@ -11,7 +11,7 @@ setup(name='osl',
       author='OHBA Analysis Group',
       license='MIT',
       packages=['osl', 'osl.report', 'osl.maxfilter',
-                'osl.preprocessing', 'osl.utils'],
+                'osl.preprocessing', 'osl.utils', 'osl.utils.spmio'],
       zip_safe=False,
       entry_points={
           'console_scripts': [
