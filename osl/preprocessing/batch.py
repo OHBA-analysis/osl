@@ -128,7 +128,6 @@ def run_mne_notch_filter(dataset, userargs, logfile=None):
     osl_print('\nNOTCH-FILTERING', logfile=logfile)
     osl_print(str(userargs), logfile=logfile)
     freqs = np.array(userargs.pop('freqs').split(' ')).astype(float)
-    osl_print(freqs)
     dataset['raw'].notch_filter(freqs, **userargs)
     return dataset
 
@@ -502,6 +501,7 @@ def run_proc_chain(infile, config, outname=None, outdir=None, ret_dataset=True, 
         func = find_func(method, extra_funcs=extra_funcs)
         try:
             dataset = func(dataset, stage, logfile=logfile)
+            print()
         except Exception as e:
             print('PROCESSING FAILED!!!!')
             ex_type, ex_value, ex_traceback = sys.exc_info()
