@@ -43,7 +43,7 @@ def import_data2(infile, preload=True):
     osl_print('IMPORTING: {0}'.format(infile))
     return mne.io.read_raw(infile, preload=preload)
 
-
+def find_run_id(infile, preload=True):
 
     # TODO: This is perhaps more complex than it needs to be - could just use
     # the fif option for everything except BTI scans? They're basically the
