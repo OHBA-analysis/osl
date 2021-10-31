@@ -24,7 +24,6 @@ import mne
 import csv
 import yaml
 import sails
-import pathlib
 import argparse
 import traceback
 import numpy as np
@@ -32,6 +31,8 @@ from copy import deepcopy
 import multiprocessing as mp
 from functools import partial
 from time import strftime, localtime
+
+from ..utils import validate_outdir
 
 
 # --------------------------------------------------------------
@@ -584,26 +585,7 @@ def run_proc_batch(config, files, outdir, overwrite=False, nprocesses=1, mnelog=
     infiles, outnames, good_files = check_infiles(files)
     print('Processing {0} files'.format(sum(good_files)))
 
-    # Validate output directory
-    outdir = pathlib.Path(outdir)
-    if outdir.exists():
-        # Check outdir is a directory
-        if not outdir.is_dir():
-            raise ValueError("outdir must be the path to a directory.")
-
-        # Check we have write permission
-        if not os.access(outdir, os.W_OK):
-            raise PermissionError("No write access for {0}".format(outdir))
-    else:
-        # Output directory doesn't exist
-        if outdir.parent.exists():
-            # Parent exists, make the output directory
-            outdir.mkdir()
-        else:
-            # Parent doesn't exist
-            raise ValueError(
-                "Please create the parent directory: {0}".format(outdir.parent)
-            )
+    outdir = validate_outdir(outdir)
 
     name_base = '{run_id}_{ftype}.{fext}'
     outbase = outdir / name_base

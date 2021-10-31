@@ -14,7 +14,7 @@ from tabulate import tabulate
 import matplotlib.pyplot as plt
 import neurokit2 as nk
 
-from ..utils import process_file_inputs
+from ..utils import process_file_inputs, validate_outdir
 from ..preprocessing import import_data, check_inconfig, run_proc_chain
 
 
@@ -132,6 +132,8 @@ def gen_report(infiles, outdir=None, preproc_config=None, artefact_scan=False):
         import tempfile
         tempdir = tempfile.TemporaryDirectory()
         outdir = tempdir.name
+    else:
+        outdir = validate_outdir(outdir)
 
     if preproc_config is not None:
         config = check_inconfig(preproc_config)

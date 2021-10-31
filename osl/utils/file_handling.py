@@ -2,6 +2,7 @@ import os
 import mne
 import csv
 import glob
+import pathlib
 import numpy as np
 
 
@@ -90,3 +91,30 @@ def find_run_id(infile):
         raise ValueError('Unable to determine run_id from file {0}'.format(infile))
 
     return runname
+
+
+def validate_outdir(outdir):
+    """Checks if an output directory exists and if not creates it."""
+
+    outdir = pathlib.Path(outdir)
+    if outdir.exists():
+        if not os.access(outdir, os.W_OK):
+            # Check outdir is a directory
+            if not outdir.is_dir():
+                raise ValueError("outdir must be the path to a directory.")
+
+            # Check we have write permission
+            if not os.access(outdir, os.W_OK):
+                raise PermissionError("No write access for {0}".format(outdir))
+    else:
+        # Output directory doesn't exist
+        if outdir.parent.exists():
+            # Parent exists, make the output directory
+            outdir.mkdir()
+        else:
+            # Parent doesn't exist
+            raise ValueError(
+                "Please create the parent directory: {0}".format(outdir.parent)
+            )
+
+    return outdir
