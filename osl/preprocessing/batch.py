@@ -69,6 +69,11 @@ def find_run_id(infile, preload=True):
 
 
 def import_data(infile, preload=True, logfile=None):
+    if not isinstance(infile, str):
+        raise ValueError(
+            "infile must be a str. Got type(infile)={0}.".format(type(infile))
+        )
+
     osl_print('IMPORTING: {0}'.format(infile), logfile=logfile)
 
     if os.path.split(infile)[1] == 'c,rfDC':
