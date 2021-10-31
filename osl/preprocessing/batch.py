@@ -24,6 +24,7 @@ import mne
 import csv
 import yaml
 import sails
+import pathlib
 import argparse
 import traceback
 import numpy as np
@@ -74,6 +75,11 @@ def import_data2(infile, preload=True):
 
 
 def import_data(infile, preload=True, logfile=None):
+    if not isinstance(infile, str):
+        raise ValueError(
+            "infile must be a str. Got type(infile)={0}.".format(type(infile))
+        )
+
     osl_print('IMPORTING: {0}'.format(infile), logfile=logfile)
 
     if os.path.split(infile)[1] == 'c,rfDC':
@@ -140,7 +146,6 @@ def run_mne_notch_filter(dataset, userargs, logfile=None):
     osl_print('\nNOTCH-FILTERING', logfile=logfile)
     osl_print(str(userargs), logfile=logfile)
     freqs = np.array(userargs.pop('freqs').split(' ')).astype(float)
-    osl_print(freqs)
     dataset['raw'].notch_filter(freqs, **userargs)
     return dataset
 
@@ -316,7 +321,6 @@ def get_badchan_labels(raw, userargs, logfile=None):
     osl_print('\nBAD-CHANNELS', logfile=logfile)
     osl_print(str(userargs), logfile=logfile)
     picks = userargs.get('picks', 'grad')
-    osl_print(picks, logfile=logfile)
     bdinds = sails.utils.detect_artefacts(raw.get_data(picks=picks), 0,
                                           reject_mode='dim',
                                           ret_mode='bad_inds')
@@ -415,6 +419,22 @@ def check_inconfig(config):
         # Its already a dict
         pass
 
+    # Initialise missing values in config
+    if 'meta' not in config:
+        config['meta'] = {'event_codes': None}
+    elif 'event_codes' not in config['meta']:
+        config['meta']['event_codes'] = None
+
+    # Validation
+    if 'preproc' not in config:
+        raise KeyError('Please specify preprocessing steps in config.')
+
+    for step in config['preproc']:
+        if config['meta']['event_codes'] is None and 'find_events' in step.values():
+            raise KeyError(
+                'event_codes must be passed in config if we are finding events.'
+            )
+
     return config
 
 
@@ -455,10 +475,12 @@ def check_infiles(infiles):
     if check_paths:
         for idx, fif in enumerate(checked_files):
             if fif.endswith('.ds'):
-                good_files[idx] = int(os.path.isdir(fif))
+                exists = os.path.isdir(fif)
             else:
-                good_files[idx] = int(os.path.isfile(fif))
-                print('File not found: {0}'.format(fif))
+                exists = os.path.isfile(fif)
+            good_files[idx] = int(exists)
+            if not exists:
+                print('File/directory not found: {0}'.format(fif))
 
     return checked_files, outnames, good_files
 
@@ -562,12 +584,29 @@ def run_proc_batch(config, files, outdir, overwrite=False, nprocesses=1, mnelog=
     infiles, outnames, good_files = check_infiles(files)
     print('Processing {0} files'.format(sum(good_files)))
 
-    if os.path.isdir(outdir) is False:
-        raise ValueError('Output dir not found!')
+    # Validate output directory
+    outdir = pathlib.Path(outdir)
+    if outdir.exists():
+        # Check outdir is a directory
+        if not outdir.is_dir():
+            raise ValueError("outdir must be the path to a directory.")
+
+        # Check we have write permission
+        if not os.access(outdir, os.W_OK):
+            raise PermissionError("No write access for {0}".format(outdir))
     else:
-        name_base = '{run_id}_{ftype}.{fext}'
-        outbase = os.path.join(outdir, name_base)
-        print(outbase)
+        # Output directory doesn't exist
+        if outdir.parent.exists():
+            # Parent exists, make the output directory
+            outdir.mkdir()
+        else:
+            # Parent doesn't exist
+            raise ValueError(
+                "Please create the parent directory: {0}".format(outdir.parent)
+            )
+
+    name_base = '{run_id}_{ftype}.{fext}'
+    outbase = outdir / name_base
 
     print('Outputs saving to: {0}\n\n'.format(outdir))
     config = check_inconfig(config)
