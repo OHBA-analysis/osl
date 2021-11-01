@@ -75,20 +75,33 @@ def _load_unicode_inputs(fname):
     return checked_files, outnames
 
 
-def find_run_id(infile):
+def find_run_id(infile, preload=True):
+
+    # TODO: This is perhaps more complex than it needs to be - could just use
+    # the fif option for everything except BTI scans? They're basically the
+    # same now.
+
+    if isinstance(infile, mne.io.fiff.raw.Raw):
+        infile = infile.filenames[0]
+
     if os.path.split(infile)[1] == 'c,rfDC':
         # We have a BTI scan
         runname = os.path.basename(os.path.dirname(infile))
     elif os.path.splitext(infile)[1] == '.fif':
         # We have a FIF file
-        runname = os.path.basename(infile).rstrip('.fif')
+        #runname = os.path.basename(infile).rstrip('.fif')
+        runname = os.path.splitext(os.path.basename(infile))[0]
     elif os.path.splitext(infile)[1] == '.meg4':
         # We have the meg file from a ds directory
-        runname = os.path.basename(infile).rstrip('.ds')
+        #runname = os.path.basename(infile).rstrip('.ds')
+        runname = os.path.splitext(os.path.basename(infile))[0]
     elif os.path.splitext(infile)[1] == '.ds':
-        runname = os.path.basename(infile).rstrip('.ds')
+        #runname = os.path.basename(infile).rstrip('.ds')
+        runname = os.path.splitext(os.path.basename(infile))[0]
     else:
-        raise ValueError('Unable to determine run_id from file {0}'.format(infile))
+        # Strip to the left of the dot and hope for the best...
+        runname = os.path.basename(infile).split('.')[0]
+        #raise ValueError('Unable to determine run_id from file {0}'.format(infile))
 
     return runname
 
