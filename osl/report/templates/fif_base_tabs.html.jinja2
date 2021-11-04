@@ -10,6 +10,7 @@
         <button class="button1" onclick="openTab(event, '{{run.fif_id}}', 'digitisation')">Digitisation</button>
         <button class="button1" onclick="openTab(event, '{{run.fif_id}}', 'eog')">EOG</button>
         <button class="button1" onclick="openTab(event, '{{run.fif_id}}', 'ecg')">ECG</button>
+        <button class="button1" onclick="openTab(event, '{{run.fif_id}}', 'ica')">ICA</button>
         <button class="button1" onclick="openTab(event, '{{run.fif_id}}', 'spectra')">Power Spectra</button>
     </div>
   </div>
@@ -72,6 +73,13 @@
         <div style="width: 100%; padding-top: 50px">
             <h3>ECG Recording</h3>
             <img src="{{ run.plt_artefacts_ecg }}" alt="" style='max-width: 100%'/>
+        </div>
+    </div>
+
+    <div class="tabpage" style="width: 100%; display: none" id={{ run.fif_id }}_ica>
+        <div style="width: 100%; padding-top: 50px">
+            <h3>Bad ICA components</h3>
+            <img src="{{ run.plt_artefacts_ica }}" alt="" style='max-width: 100%'/>
         </div>
     </div>
         
