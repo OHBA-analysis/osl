@@ -318,8 +318,9 @@ def plot_artefact_channels(raw, savebase):
 
 def plot_bad_ica(raw, ica, savebase):
     """Plot ICA characteristics for rejected components."""
-    nbad = len(ica.exclude)
-    figsize = [16., 3.5*nbad]
+    exclude_uniq = np.sort(np.unique(ica.exclude))
+    nbad = len(exclude_uniq)
+    figsize = [16., 5*nbad]
     fig = plt.figure(figsize=figsize, facecolor=[0.95] * 3)
     axes = []
     for i in np.arange(nbad):
@@ -332,13 +333,13 @@ def plot_bad_ica(raw, ica, savebase):
                    ('spectrum', [0.08, lowerlimit+0.1/multiplier, 0.32, 0.3/multiplier]),
                    ('variance', [0.5, lowerlimit+0.025/multiplier, 0.45, 0.25/multiplier]))
         axes += [[fig.add_axes(loc, label=name) for name, loc in axes_params]]
-        ica.plot_properties(raw, picks=ica.exclude[i], axes=axes[i])
+        ica.plot_properties(raw, picks=exclude_uniq[i], axes=axes[i])
         if np.any([x in ica.labels_.keys() for x in ica._ica_names]): # this is for the osl_plot_ica convention
-            title = "".join((ica._ica_names[ica.exclude[i]]," - ", ica.labels_[ica._ica_names[ica.exclude[i]]]))
+            title = "".join((ica._ica_names[exclude_uniq[i]]," - ", ica.labels_[ica._ica_names[exclude_uniq[i]]].upper()))
         elif np.logical_or('eog' in ica.labels_.keys(), 'ecg' in ica.labels_.keys()): # this is for the MNE automatic labelling convention
-            flag_eog = ica.exclude[i] in ica.labels_['eog']
-            flag_ecg = ica.exclude[i] in ica.labels_['ecg']
-            title = "".join((ica._ica_names[ica.exclude[i]]," - ", flag_eog*'EOG', flag_ecg*flag_eog*'/', flag_ecg*'ECG'))
+            flag_eog = exclude_uniq[i] in ica.labels_['eog']
+            flag_ecg = exclude_uniq[i] in ica.labels_['ecg']
+            title = "".join((ica._ica_names[exclude_uniq[i]]," - ", flag_eog*'EOG', flag_ecg*flag_eog*'/', flag_ecg*'ECG'))
         else: # this is for if there is nothing in ica.labels_
             title = None
         if title is not None:
