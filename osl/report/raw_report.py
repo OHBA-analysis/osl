@@ -26,7 +26,7 @@ def get_header_id(raw):
     return raw.filenames[0].split('/')[-1].strip('.fif')
 
 
-def gen_fif_data(raw, outf=None, fif_id=None, gen_plots=True, artefact_scan=False):
+def gen_fif_data(raw, ica=None, outf=None, fif_id=None, gen_plots=True, artefact_scan=False):
     """Generate HTML web-report for an MNE data object."""
     x = {}
     x['filename'] = raw.filenames[0]
@@ -67,6 +67,7 @@ def gen_fif_data(raw, outf=None, fif_id=None, gen_plots=True, artefact_scan=Fals
         #plot_artefact_channels(raw, savebase=savebase)
         plot_eog_summary(raw, savebase=savebase)
         plot_ecg_summary_neurokit(raw, savebase=savebase)
+        plot_bad_ica(raw, ica, savebase=savebase)
         plot_digitisation_2d(raw, savebase=savebase)
         plot_spectra(raw, savebase=savebase)
         plot_channel_dists(raw, savebase=savebase)
@@ -83,6 +84,7 @@ def gen_fif_data(raw, outf=None, fif_id=None, gen_plots=True, artefact_scan=Fals
     x['plt_temporaldev'] = savebase2.format('temporal_sumsq')
     x['plt_artefacts_eog'] = savebase2.format('EOG')
     x['plt_artefacts_ecg'] = savebase2.format('ECG')
+    x['plt_artefacts_ica'] = savebase2.format('ICA')
     x['plt_digitisation'] = savebase2.format('digitisation')
     x['plt_spectra'] = savebase2.format('spectra_full')
     x['plt_zoom_spectra'] = savebase2.format('spectra_zoom')
@@ -125,7 +127,6 @@ def gen_fif_html(raw, outf=None, fif_id=None, gen_plots=True):
 
 def gen_report(infiles, outdir=None, preproc_config=None, artefact_scan=False):
     """Generate web-report for a set of MNE data objects."""
-
     infiles, outnames, good_files = process_file_inputs(infiles)
 
     if outdir is None:
@@ -147,9 +148,16 @@ def gen_report(infiles, outdir=None, preproc_config=None, artefact_scan=False):
 
     for infile in infiles:
         raw = import_data(infile)
+        if os.path.exists(infile.replace('raw.fif', 'ica.fif')):
+            ica = mne.preprocessing.read_ica(infile.replace('raw.fif', 'ica.fif')) # todo: could potentially be incorporated in 'import_data'
+        else:
+            ica = None
         if preproc_config is not None:
-            raw = run_proc_chain(raw, config)['raw']
-        data = gen_fif_data(raw, outf=outdir, fif_id='TEST',
+            dataset = run_proc_chain(raw, config)
+            raw = dataset['raw']
+            ica = dataset['ica']
+
+        data = gen_fif_data(raw, ica=ica, outf=outdir, fif_id='TEST',
                             gen_plots=True, artefact_scan=artefact_scan)
         renders.append(run_template.render(run=data))
 
@@ -308,6 +316,36 @@ def plot_artefact_channels(raw, savebase):
     if savebase is not None:
         plt.savefig(savebase.format('artefacts_zoom'), dpi=150, transparent=True)
 
+def plot_bad_ica(raw, ica, savebase):
+    """Plot ICA characteristics for rejected components."""
+    exclude_uniq = np.sort(np.unique(ica.exclude))
+    nbad = len(exclude_uniq)
+    figsize = [16., 5*nbad]
+    fig = plt.figure(figsize=figsize, facecolor=[0.95] * 3)
+    axes = []
+    for i in np.arange(nbad):
+        lowerlimit = 0.1+i/(nbad*1.1)
+        multiplier=nbad*1.3
+        # adapted from mne/viz/ica._create_properties_layout
+        axes_params = (('topomap', [0.08, lowerlimit+0.5/multiplier, 0.3, 0.45/multiplier]),
+                   ('image', [0.5, lowerlimit+0.6/multiplier, 0.45, 0.35/multiplier]),
+                   ('erp', [0.5, lowerlimit+0.5/multiplier, 0.45, 0.1/multiplier]),
+                   ('spectrum', [0.08, lowerlimit+0.1/multiplier, 0.32, 0.3/multiplier]),
+                   ('variance', [0.5, lowerlimit+0.025/multiplier, 0.45, 0.25/multiplier]))
+        axes += [[fig.add_axes(loc, label=name) for name, loc in axes_params]]
+        ica.plot_properties(raw, picks=exclude_uniq[i], axes=axes[i])
+        if np.any([x in ica.labels_.keys() for x in ica._ica_names]): # this is for the osl_plot_ica convention
+            title = "".join((ica._ica_names[exclude_uniq[i]]," - ", ica.labels_[ica._ica_names[exclude_uniq[i]]].upper()))
+        elif np.logical_or('eog' in ica.labels_.keys(), 'ecg' in ica.labels_.keys()): # this is for the MNE automatic labelling convention
+            flag_eog = exclude_uniq[i] in ica.labels_['eog']
+            flag_ecg = exclude_uniq[i] in ica.labels_['ecg']
+            title = "".join((ica._ica_names[exclude_uniq[i]]," - ", flag_eog*'EOG', flag_ecg*flag_eog*'/', flag_ecg*'ECG'))
+        else: # this is for if there is nothing in ica.labels_
+            title = None
+        if title is not None:
+            axes[i][0].set_title(title, fontsize=12)
+    if savebase is not None:
+        plt.savefig(savebase.format('ica'), dpi=150, transparent=True)
 
 def plot_spectra(raw, savebase=None):
     """Plot power spectra for each sensor modality."""
