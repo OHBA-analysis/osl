@@ -1,5 +1,6 @@
 from dataclasses import dataclass
 
+import os
 import numpy as np
 from scipy.io import loadmat
 
@@ -10,6 +11,7 @@ from ._spmmeeg_utils import check_lowered_string
 
 class SPMMEEG:
     def __init__(self, filename):
+        self.filename = filename
         D = loadmat(filename, simplify_cells=True)["D"]
         self._D = D
         self.type = D["type"]
@@ -18,6 +20,7 @@ class SPMMEEG:
         self.fsample = D["Fsample"]
         self.time_onset = D["timeOnset"]
         self.channels = [Channel.from_dict(channel) for channel in D["channels"]]
+        self._find_dat_file()
         self.data = Data(**D["data"])
         self.fname = D["fname"]
         self.fullpath = filename
@@ -46,7 +49,7 @@ class SPMMEEG:
 
         # Build some metadata lists - copying spm naming conventions
         self.conditions = [t.label for t in self.trials]
-        self.condition_values = [_get_trial_trigger_value(t) for t in self.trials]
+        self.condition_values = [int(_get_trial_trigger_value(t)) for t in self.trials]
         self.condlist = np.unique(self.conditions)
 
 
@@ -164,6 +167,25 @@ class SPMMEEG:
                 print('\t{0} : {1}'.format(ind, mon.name))
 
         print("\nUse syntax 'X = D.get_data(montage_index)[channels, samples, trials]' to get data")
+
+    def _find_dat_file(self):
+        matname = self.filename
+        datname = self._D["data"]['fname']
+
+        dat = None
+        if os.path.exists(datname):
+            dat = datname
+        else:
+            datname2 = os.path.join(os.path.dirname(matname),
+                                    os.path.basename(datname))
+            print(datname2)
+            if os.path.exists(datname2):
+                dat = datname2
+        if dat is None:
+            raise FileNotFoundError("Associated 'dat' file not found ({0})".format(datname))
+        else:
+            self._D["data"]['fname'] = dat
+
 
     # ------------- SPM Style Helpers
 
