@@ -18,25 +18,25 @@ https://mne.tools/dev/auto_tutorials/preprocessing/30_filtering_resampling.html#
 XML sanity check on config file. pre-parser to avoid mad sequences of methods.
 """
 
+import argparse
+import csv
+import multiprocessing as mp
 import os
 import sys
-import mne
-import csv
-import yaml
-import sails
-import argparse
 import traceback
-import numpy as np
 from copy import deepcopy
-import multiprocessing as mp
 from functools import partial
-from time import strftime, localtime
+from time import localtime, strftime
+
+import mne
+import numpy as np
+import sails
+import yaml
 
 from ..utils import find_run_id, validate_outdir
 
-
 # --------------------------------------------------------------
-# Preproc funcs from MNE
+# Data importers
 
 
 def import_data2(infile, preload=True):
@@ -75,28 +75,64 @@ def import_data(infile, preload=True, logfile=None):
 
     return raw
 
+# --------------------------------------------------------------
+# MNE Raw Object Methods
+#
+# Not included (for the moment at least) typically functions which just
+# describe or display info and functions which require inputs that aren't
+# simple to batch together.
+#
+# describe
+# export
+# get_channel_types
+# get_data
+# get_montage
+# load_data
+# plot
+# plot_projs_topomap
+# plot_psd
+# plot_psd_topo
+# plot_sensors
+# save
+# time_as_index
+# to_data_frame
 
-def run_mne_set_channel_types(dataset, userargs, logfile=None):
-    osl_print('\nSETTING CHANNEL TYPES', logfile=logfile)
-    osl_print(str(userargs), logfile=logfile)
+def run_mne_add_channels(dataset, userargs, logfile=None):
+    raise NotImplementedError('Function not callable via OSL-batch')
 
-    dataset['raw'].set_channel_types(userargs)
+
+def run_mne_add_events(dataset, userargs, logfile=None):
+    raise NotImplementedError('Function not callable via OSL-batch')
+
+
+def run_mne_add_proj(dataset, userargs, logfile=None):
+    raise NotImplementedError('Function not callable via OSL-batch')
+
+
+def run_mne_add_reference_channels(dataset, userargs, logfile=None):
+    raise NotImplementedError('Function not callable via OSL-batch')
+
+
+def run_mne_close(dataset, userargs, logfile=None):
+    raise NotImplementedError('Function not callable via OSL-batch')
+
+
+def run_mne_copy(dataset, userargs, logfile=None):
+    raise NotImplementedError('Function not callable via OSL-batch')
+
+
+def run_mne_crop(dataset, userargs, logfile=None):
+    osl_print('\nCROPPING', logfile=logfile)
+    dataset['raw'].crop(**userargs)
     return dataset
 
 
-def run_mne_pick_types(dataset, userargs, logfile=None):
-    osl_print('\nPICKING CHANNEL TYPES', logfile=logfile)
-    osl_print(str(userargs), logfile=logfile)
-
-    dataset['raw'].pick_types(**userargs)
-    return dataset
+def run_mne_del_proj(dataset, userargs, logfile=None):
+    raise NotImplementedError('Function not callable via OSL-batch')
 
 
-def run_mne_find_events(dataset, userargs, logfile=None):
-    osl_print('\nFINDING EVENTS', logfile=logfile)
-    osl_print(str(userargs), logfile=logfile)
-    dataset['events'] = mne.find_events(dataset['raw'], **userargs)
-    return dataset
+def run_mne_drop_channels(dataset, userargs, logfile=None):
+    raise NotImplementedError('Function not callable via OSL-batch')
 
 
 def run_mne_filter(dataset, userargs, logfile=None):
@@ -113,6 +149,10 @@ def run_mne_interpolate_bads(dataset, userargs, logfile=None):
     return dataset
 
 
+def run_mne_load_bad_channels(dataset, userargs, logfile=None):
+    raise NotImplementedError('Function not callable via OSL-batch')
+
+
 def run_mne_notch_filter(dataset, userargs, logfile=None):
     osl_print('\nNOTCH-FILTERING', logfile=logfile)
     osl_print(str(userargs), logfile=logfile)
@@ -121,15 +161,86 @@ def run_mne_notch_filter(dataset, userargs, logfile=None):
     return dataset
 
 
+def run_mne_pick(dataset, userargs, logfile=None):
+    osl_print('\nPICKING', logfile=logfile)
+    osl_print(str(userargs), logfile=logfile)
+    dataset['raw'].pick(**userargs)
+    return dataset
+
+
+def run_mne_pick_channels(dataset, userargs, logfile=None):
+    osl_print('\nPICKING CHANNELS ', logfile=logfile)
+    osl_print(str(userargs), logfile=logfile)
+    dataset['raw'].pick_channels(**userargs)
+    return dataset
+
+
+def run_mne_pick_types(dataset, userargs, logfile=None):
+    osl_print('\nPICKING CHANNEL TYPES', logfile=logfile)
+    osl_print(str(userargs), logfile=logfile)
+    dataset['raw'].pick_types(**userargs)
+    return dataset
+
+
+def run_mne_reorder_channels(dataset, userargs, logfile=None):
+    raise NotImplementedError('Function not callable via OSL-batch')
+
+
+def run_mne_rename_channels(dataset, userargs, logfile=None):
+    raise NotImplementedError('Function not callable via OSL-batch')
+
+
 def run_mne_resample(dataset, userargs, logfile=None):
-    """The MNE guys don't seem to like resampling so much...
-    """
+    """The MNE guys don't seem to like resampling so much..."""
     osl_print('\nRESAMPLING', logfile=logfile)
     osl_print(str(userargs), logfile=logfile)
     if ('events' in dataset) and (dataset['events'] is not None):
         dataset['raw'], dataset['events'] = dataset['raw'].resample(events=dataset['events'], **userargs)
     else:
         dataset['raw'].resample(**userargs)
+    return dataset
+
+
+def run_mne_savgol_filter(dataset, userargs, logfile=None):
+    raise NotImplementedError('Function not callable via OSL-batch')
+
+
+def run_mne_set_annotations(dataset, userargs, logfile=None):
+    raise NotImplementedError('Function not callable via OSL-batch')
+
+
+def run_mne_set_channel_types(dataset, userargs, logfile=None):
+    osl_print('\nSETTING CHANNEL TYPES', logfile=logfile)
+    osl_print(str(userargs), logfile=logfile)
+    dataset['raw'].set_channel_types(userargs)
+    return dataset
+
+
+def run_mne_set_eeg_reference(dataset, userargs, logfile=None):
+    raise NotImplementedError('Function not callable via OSL-batch')
+
+
+def run_mne_set_meas_date(dataset, userargs, logfile=None):
+    raise NotImplementedError('Function not callable via OSL-batch')
+
+
+def run_mne_set_montage(dataset, userargs, logfile=None):
+    raise NotImplementedError('Function not callable via OSL-batch')
+
+
+# --------------------------------------------------------------
+# MNE Events and Epochs Object Methods
+#
+# Not included (for the moment at least) typically functions which just
+# describe or display info and functions which require inputs that aren't
+# simple to batch together.
+#
+
+
+def run_mne_find_events(dataset, userargs, logfile=None):
+    osl_print('\nFINDING EVENTS', logfile=logfile)
+    osl_print(str(userargs), logfile=logfile)
+    dataset['events'] = mne.find_events(dataset['raw'], **userargs)
     return dataset
 
 
@@ -145,10 +256,58 @@ def run_mne_epochs(dataset, userargs, logfile=None):
     return dataset
 
 
-def run_mne_crop(dataset, userargs, logfile=None):
-    osl_print('\nCROPPING', logfile=logfile)
-    dataset['raw'].crop(**userargs)
+# Time-frequency transforms
+
+
+def run_mne_tfr_multitaper(dataset, userargs, logfile=None):
+    osl_print('\nTFR MULTITAPER', logfile=logfile)
+    osl_print(str(userargs), logfile=logfile)
+    from mne.time_frequency import tfr_multitaper
+
+    freqs = np.array(userargs.pop('freqs').split(' ')).astype('float')
+    freqs = np.linspace(freqs[0], freqs[1], int(freqs[2]))
+    out = tfr_multitaper(dataset['epochs'],
+                         freqs,
+                         **userargs)
+    if 'return_itc' in userargs and userargs['return_itc']:
+        dataset['power'], dataset['itc'] = out
+    else:
+        dataset['power'] = out
+
     return dataset
+
+
+def run_mne_tfr_morlet(dataset, userargs, logfile=None):
+    osl_print('\nTFR MORLET', logfile=logfile)
+    osl_print(str(userargs), logfile=logfile)
+    from mne.time_frequency import tfr_morlet
+
+    freqs = np.array(userargs.pop('freqs').split(' ')).astype('float')
+    print(freqs)
+    freqs = np.linspace(freqs[0], freqs[1], int(freqs[2]))
+    dataset['power'], dataset['itc'] = tfr_morlet(dataset['epochs'],
+                                                  freqs,
+                                                  **userargs)
+
+    return dataset
+
+
+def run_mne_tfr_stockwell(dataset, userargs, logfile=None):
+    osl_print('\nTFR STOCKWELL', logfile=logfile)
+    osl_print(str(userargs), logfile=logfile)
+    from mne.time_frequency import tfr_stockwell
+
+    out = tfr_stockwell(dataset['epochs'], **userargs)
+    if 'return_itc' in userargs and userargs['return_itc']:
+        dataset['power'], dataset['itc'] = out
+    else:
+        dataset['power'] = out
+
+    return dataset
+
+
+# --------------------------------------------------------------
+# MNE ICA Tools
 
 
 def run_mne_ica_raw(dataset, userargs, logfile=None):
@@ -208,55 +367,8 @@ def run_mne_apply_ica(dataset, userargs, logfile=None):
     return dataset
 
 
-def run_mne_tfr_multitaper(dataset, userargs, logfile=None):
-    osl_print('\nTFR MULTITAPER', logfile=logfile)
-    osl_print(str(userargs), logfile=logfile)
-    from mne.time_frequency import tfr_multitaper
-
-    freqs = np.array(userargs.pop('freqs').split(' ')).astype('float')
-    freqs = np.linspace(freqs[0], freqs[1], int(freqs[2]))
-    out = tfr_multitaper(dataset['epochs'],
-                         freqs,
-                         **userargs)
-    if 'return_itc' in userargs and userargs['return_itc']:
-        dataset['power'], dataset['itc'] = out
-    else:
-        dataset['power'] = out
-
-    return dataset
-
-
-def run_mne_tfr_morlet(dataset, userargs, logfile=None):
-    osl_print('\nTFR MORLET', logfile=logfile)
-    osl_print(str(userargs), logfile=logfile)
-    from mne.time_frequency import tfr_morlet
-
-    freqs = np.array(userargs.pop('freqs').split(' ')).astype('float')
-    print(freqs)
-    freqs = np.linspace(freqs[0], freqs[1], int(freqs[2]))
-    dataset['power'], dataset['itc'] = tfr_morlet(dataset['epochs'],
-                                                  freqs,
-                                                  **userargs)
-
-    return dataset
-
-
-def run_mne_tfr_stockwell(dataset, userargs, logfile=None):
-    osl_print('\nTFR STOCKWELL', logfile=logfile)
-    osl_print(str(userargs), logfile=logfile)
-    from mne.time_frequency import tfr_stockwell
-
-    out = tfr_stockwell(dataset['epochs'], **userargs)
-    if 'return_itc' in userargs and userargs['return_itc']:
-        dataset['power'], dataset['itc'] = out
-    else:
-        dataset['power'] = out
-
-    return dataset
-
-
 # --------------------------------------------------------------
-# Preproc funcs from OHBA
+# OHBA Preprocessing functions
 
 
 def get_badseg_annotations(raw, userargs):
@@ -348,7 +460,7 @@ def _print_badsegs(raw, modality):
 
 
 # --------------------------------------------------------------
-# Utils
+# Bach processing utilities
 
 def osl_print(s, logfile=None):
     print(s)
@@ -473,6 +585,8 @@ def write_dataset(dataset, outbase, run_id, overwrite=False):
         outname = outbase.format(run_id=run_id, ftype='ica', fext='fif')
         dataset['ica'].save(outname)
 
+# --------------------------------------------------------------
+# Bach processing
 
 def run_proc_chain(infile, config, outname=None, outdir=None, ret_dataset=True, overwrite=False, extra_funcs=None):
 
@@ -592,6 +706,10 @@ def run_proc_batch(config, files, outdir, overwrite=False, nprocesses=1, mnelog=
     return proc_flags
 
 
+# ----------------------------------------------------------
+# Main CLI user function
+
+
 def main(argv=None):
 
     if argv is None:
@@ -617,10 +735,6 @@ def main(argv=None):
     print(args)
 
     run_proc_batch(**vars(args))
-
-
-# ----------------------------------------------------------
-# Main user function
 
 
 if __name__ == '__main__':
