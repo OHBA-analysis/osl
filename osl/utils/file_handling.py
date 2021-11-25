@@ -131,3 +131,11 @@ def validate_outdir(outdir):
             )
 
     return outdir
+
+
+# Should not be final home for this function - Needs replacing with logger
+def osl_print(s, logfile=None):
+    print(s)
+    if logfile is not None:
+        with open(logfile, 'a') as f:
+            f.write(s + '\n')

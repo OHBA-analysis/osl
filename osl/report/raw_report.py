@@ -15,7 +15,7 @@ import matplotlib.pyplot as plt
 import neurokit2 as nk
 
 from ..utils import process_file_inputs, validate_outdir
-from ..preprocessing import import_data, check_inconfig, run_proc_chain
+from ..preprocessing import import_data, load_config, run_proc_chain
 
 
 # ----------------------------------------------------------------------------------
@@ -137,7 +137,7 @@ def gen_report(infiles, outdir=None, preproc_config=None, artefact_scan=False):
         outdir = validate_outdir(outdir)
 
     if preproc_config is not None:
-        config = check_inconfig(preproc_config)
+        config = load_config(preproc_config)
 
     s = "<a href='#{0}'>{1}</a><br />"
     top_links = [s.format(outnames[ii], infiles[ii]) for ii in range(len(infiles))]
@@ -316,6 +316,7 @@ def plot_artefact_channels(raw, savebase):
     if savebase is not None:
         plt.savefig(savebase.format('artefacts_zoom'), dpi=150, transparent=True)
 
+
 def plot_bad_ica(raw, ica, savebase):
     """Plot ICA characteristics for rejected components."""
     exclude_uniq = np.sort(np.unique(ica.exclude))
@@ -346,6 +347,7 @@ def plot_bad_ica(raw, ica, savebase):
             axes[i][0].set_title(title, fontsize=12)
     if savebase is not None:
         plt.savefig(savebase.format('ica'), dpi=150, transparent=True)
+
 
 def plot_spectra(raw, savebase=None):
     """Plot power spectra for each sensor modality."""
