@@ -74,14 +74,12 @@ def import_data(infile, preload=True, logfile=None):
 # --------------------------------------------------------------
 # OHBA Preprocessing functions
 #
-# TODO - probably wants moving to its own module similar to _mne_wrappers (with
-# ICA functions?)
+# TODO - probably want to move the working functions their own OSL module
+# similar to _mne_wrappers (with ICA functions?).
 
 
-def get_badseg_annotations(raw, userargs):
+def detect_badsegments(raw, segment_len=1000, picks='grad', logfile=None):
     """Set bad segments in MNE object."""
-    segment_len = userargs.get('segment_len', raw.info['sfreq'])
-    picks = userargs.get('picks', 'grad')
     bdinds = sails.utils.detect_artefacts(raw.get_data(picks=picks), 1,
                                           reject_mode='segments',
                                           segment_len=segment_len,
@@ -101,16 +99,19 @@ def get_badseg_annotations(raw, userargs):
     onsets = onsets / raw.info['sfreq']
     durations = durations / raw.info['sfreq']
 
-    #orig_time = [None for ii in range(len(onsets))]
+    raw.annotations.append(onsets, durations, descriptions)
 
-    return onsets, durations, descriptions
+    mod_dur = durations.sum()
+    full_dur = raw.n_times/raw.info['sfreq']
+    pc = (mod_dur / full_dur) * 100
+    s = 'Modality {0} - {1:02f}/{2} seconds rejected     ({3:02f}%)'
+    osl_print(s.format('picks', mod_dur, full_dur, pc), logfile=logfile)
+
+    return raw
 
 
-def get_badchan_labels(raw, userargs, logfile=None):
+def detect_badchannels(raw, picks='grad', logfile=None):
     """Set bad channels in MNE object."""
-    osl_print('\nBAD-CHANNELS', logfile=logfile)
-    osl_print(str(userargs), logfile=logfile)
-    picks = userargs.get('picks', 'grad')
     bdinds = sails.utils.detect_artefacts(raw.get_data(picks=picks), 0,
                                           reject_mode='dim',
                                           ret_mode='bad_inds')
@@ -125,45 +126,28 @@ def get_badchan_labels(raw, userargs, logfile=None):
 
     s = 'Modality {0} - {1}/{2} channels rejected     ({3:02f}%)'
     pc = (bdinds.sum() / len(bdinds)) * 100
-    osl_print(s.format(userargs['picks'], bdinds.sum(), len(bdinds), pc), logfile=logfile)
+    osl_print(s.format(picks, bdinds.sum(), len(bdinds), pc), logfile=logfile)
 
     if np.any(bdinds):
-        return list(ch_names[np.where(bdinds)[0]])
-    else:
-        return []
+        raw.info['bads'] = list(ch_names[np.where(bdinds)[0]])
 
+    return raw
+
+# Wrapper functions
 
 def run_osl_bad_segments(dataset, userargs, logfile=None):
     osl_print('\nBAD-SEGMENTS', logfile=logfile)
     osl_print(str(userargs), logfile=logfile)
-    #anns = dataset['raw'].annotations
-    new = get_badseg_annotations(dataset['raw'], userargs)
-    dataset['raw'].annotations.append(*new)
+    dataset['raw'] = detect_badsegments(dataset['raw'], **userargs)
 
-    mod_dur = new[1].sum()
-    full_dur = dataset['raw'].n_times/dataset['raw'].info['sfreq']
-    pc = (mod_dur / full_dur) * 100
-    s = 'Modality {0} - {1:02f}/{2} seconds rejected     ({3:02f}%)'
-    osl_print(s.format(userargs['picks'], mod_dur, full_dur, pc), logfile=logfile)
     return dataset
 
 
 def run_osl_bad_channels(dataset, userargs, logfile=None):
-    badchans = get_badchan_labels(dataset['raw'], userargs, logfile=logfile)
-    dataset['raw'].info['bads'].extend(badchans)
+    osl_print('\nBAD-CHANNELS', logfile=logfile)
+    osl_print(str(userargs), logfile=logfile)
+    dataset['raw'] = detect_badchannels(dataset['raw'], **userargs, logfile=logfile)
     return dataset
-
-
-def _print_badsegs(raw, modality):
-    """CURRENTLY BROKEN : Print a text-summary of the bad segments marked in a
-    dataset."""
-    types = [r['description'] for r in raw.annotations]
-
-    inds = [s.find(modality) > 0 for s in types]
-    mod_dur = np.sum(durs[inds])
-    pc = (mod_dur / full_dur) * 100
-    s = 'Modality {0} - {1:02f}/{2} seconds rejected     ({3:02f}%)'
-    print(s.format(modality, mod_dur, full_dur, pc))
 
 
 # --------------------------------------------------------------
