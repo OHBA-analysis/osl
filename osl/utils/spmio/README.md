@@ -10,7 +10,7 @@ For example, an intended useage would be to complete a whole preprocessing pipel
 Files can be loaded through the `SPMMEEG` object.
 
 ```
-D = D = osl.utils.spmio.SPMMEEG('/path/to/my/spmfile.mat')
+D = osl.utils.spmio.SPMMEEG('/path/to/my/spmfile.mat')
 ```
 
 A summary of the file contents can then be printed to the screen.
