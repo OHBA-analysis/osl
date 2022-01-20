@@ -330,7 +330,7 @@ def run_proc_batch(config, files, outdir, overwrite=False, nprocesses=1, mnelog=
 
     print('\n\nOHBA Auto-Proc\n\n')
 
-    infiles, outnames, good_files = check_infiles(files)
+    infiles, outnames, good_files = process_file_inputs(files)
     print('Processing {0} files'.format(sum(good_files)))
 
     outdir = validate_outdir(outdir)
