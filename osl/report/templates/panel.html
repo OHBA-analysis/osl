@@ -18,27 +18,27 @@
     <h3>{{ data.filename }}</h3>
 
     <div class="tabpage" style='width: 100%' id={{ data.fif_id }}_info>
-    <div>
-        <b>Datafile:</b> {{ data.filename }}</br>
-        <b>Project name:</b> {{ data.projname }}</br>
-        <b>Experimenter:</b> {{ data.experimenter }}</br>
-        <b>Data acquired:</b> {{ data.meas_date }}</br>
-        {{ data.acq_samples }} samples at {{ data.acq_sfreq }} Hz - {{ data.acq_duration}} seconds
-    </div>
-    
-    <div style="width: 100%; display: table; margin-top: 50px">
-        <div style="display: table-row; height: 100px;">
-            <div class='tablebox'>
-                {{ data.chantable }}
+        <div>
+            <b>Datafile:</b> {{ data.filename }}</br>
+            <b>Project name:</b> {{ data.projname }}</br>
+            <b>Experimenter:</b> {{ data.experimenter }}</br>
+            <b>Data acquired:</b> {{ data.meas_date }}</br>
+            {{ data.acq_samples }} samples at {{ data.acq_sfreq }} Hz - {{ data.acq_duration}} seconds
         </div>
-            <div class='tablebox'>
-                {{ data.digitable }}
-        </div>
-            <div class='tablebox'>
-                {{ data.eventtable }}
+        
+        <div style="width: 100%; display: table; margin-top: 50px">
+            <div style="display: table-row; height: 100px;">
+                <div class='tablebox'>
+                    {{ data.chantable }}
+            </div>
+                <div class='tablebox'>
+                    {{ data.digitable }}
+            </div>
+                <div class='tablebox'>
+                    {{ data.eventtable }}
+                </div>
             </div>
         </div>
-    </div>
     </div>
     
     <div class="tabpage" style="width: 100%; display: none" id={{ data.fif_id }}_timeseries>

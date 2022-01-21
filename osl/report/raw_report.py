@@ -32,7 +32,7 @@ def get_header_id(raw):
     """Extract scan name from MNE data object."""
     return raw.filenames[0].split('/')[-1].strip('.fif')
 
-def gen_html_data(raw, ica=None, outf=None, artefact_scan=False):
+def gen_html_data(raw, ica=None, outdir=None, artefact_scan=False):
     """Generate HTML web-report for an MNE data object."""
 
     data = {}
@@ -96,7 +96,7 @@ def gen_html_data(raw, ica=None, outf=None, artefact_scan=False):
         data['bad_chans'] = 'Bad channels: {}'.format(', '.join(bad_chans))
 
     # Path to save plots
-    savebase = '{0}/{1}'.format(outf, data['fif_id']) + '_{0}.png'
+    savebase = '{0}/{1}'.format(outdir, data['fif_id']) + '_{0}.png'
     
     # Generate plots for the report
     print('Generating plots:')
@@ -163,12 +163,12 @@ def gen_report(infiles, outdir, preproc_config=None, artefact_scan=False):
 
     # Hyperlink to each panel on the page
     s = "<a href='#{0}'>{1}</a><br />"
-    top_links = [s.format(outnames[ii], infiles[ii]) for ii in range(len(infiles))]
-    top_links = '\n'.join(top_links)
+    toplinks = [s.format(outnames[ii], infiles[ii]) for ii in range(len(infiles))]
+    toplinks = '\n'.join(toplinks)
 
     # Load HTML template
     panels = []
-    panel_template = load_template('fif_base_tabs')
+    panel_template = load_template('panel')
 
     # Generate a panel for each file
     for infile in infiles:
@@ -190,7 +190,7 @@ def gen_report(infiles, outdir, preproc_config=None, artefact_scan=False):
             ica = dataset['ica']
 
         # Generate data and plots for the panel
-        data = gen_html_data(raw, ica=ica, outf=outdir, artefact_scan=artefact_scan)
+        data = gen_html_data(raw, ica=ica, outdir=outdir, artefact_scan=artefact_scan)
 
         # Render the panel
         panels.append(panel_template.render(data=data))
@@ -206,8 +206,8 @@ def gen_report(infiles, outdir, preproc_config=None, artefact_scan=False):
         preproc = None
 
     # Render the full page
-    page_template = load_template('raw_report_base')
-    page = page_template.render(panels=panels, toplinks=top_links, preproc=preproc)
+    page_template = load_template('raw_report')
+    page = page_template.render(panels=panels, toplinks=toplinks, preproc=preproc)
 
     # Write the output file
     outpath = '{0}/osl_raw_report.html'.format(outdir)
@@ -218,7 +218,7 @@ def gen_report(infiles, outdir, preproc_config=None, artefact_scan=False):
 
 def load_template(tname):
     basedir = os.path.dirname(os.path.realpath(__file__))
-    fname = os.path.join(basedir, 'templates', '{0}.html.jinja2'.format(tname))
+    fname = os.path.join(basedir, 'templates', '{0}.html'.format(tname))
     with open(fname, 'r') as file:
         template = Template(file.read())
     return template
