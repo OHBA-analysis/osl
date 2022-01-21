@@ -22,7 +22,6 @@ from ..utils import osl_print
 # the direct method call.
 
 def run_mne_anonymous(dataset, userargs, method, logfile=None):
-    print('here')
     osl_print('\nMNE ANON - {0}'.format(method), logfile=logfile)
     osl_print(str(userargs), logfile=logfile)
     target = userargs.pop('target', 'raw')
