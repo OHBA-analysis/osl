@@ -32,51 +32,68 @@ def get_header_id(raw):
     """Extract scan name from MNE data object."""
     return raw.filenames[0].split('/')[-1].strip('.fif')
 
-
 def gen_html_data(raw, ica=None, outf=None, artefact_scan=False):
     """Generate HTML web-report for an MNE data object."""
 
-    x = {}
-    x['filename'] = raw.filenames[0]
-    x['fif_id'] = get_header_id(raw)
+    data = {}
+    data['filename'] = raw.filenames[0]
+    data['fif_id'] = get_header_id(raw)
 
-    print('Processing : {0}'.format(x['filename']))
+    print('Processing : {0}'.format(data['filename']))
 
-    x['projname'] = raw.info['proj_name']
-    x['experimenter'] = raw.info['experimenter']
-    x['meas_date'] = raw.info['meas_date'].__str__()
+    # Scan info
+    data['projname'] = raw.info['proj_name']
+    data['edataperimenter'] = raw.info['experimenter']
+    data['meas_date'] = raw.info['meas_date'].__str__()
 
-    x['acq_samples'] = raw.n_times
-    x['acq_sfreq'] = raw.info['sfreq']
-    x['acq_duration'] = raw.n_times/raw.info['sfreq']
+    data['acq_samples'] = raw.n_times
+    data['acq_sfreq'] = raw.info['sfreq']
+    data['acq_duration'] = raw.n_times/raw.info['sfreq']
 
-    x['nchans'] = raw.info['nchan']
-    x['nhpi'] = len(raw.info['hpi_meas'][0]['hpi_coils'])
+    # Channels/coils
+    data['nchans'] = raw.info['nchan']
+    data['nhpi'] = len(raw.info['hpi_meas'][0]['hpi_coils'])
 
-    chtype = [channel_type(raw.info, c) for c in range(x['nchans'])]
+    chtype = [channel_type(raw.info, c) for c in range(data['nchans'])]
     chs, chcounts = np.unique(chtype, return_counts=True)
-    x['chantable'] = tabulate(np.c_[chs, chcounts], tablefmt='html',
-                              headers=['Channel Type', 'Number Acquired'])
+    data['chantable'] = tabulate(np.c_[chs, chcounts], tablefmt='html',
+                                 headers=['Channel Type', 'Number Acquired'])
 
+    # Head digitisation
     dig_codes = ('Cardinal', 'HPI', 'EEG', 'Extra')
     dig_counts = np.zeros((4,))
     for ii in range(1, 5):
         dig_counts[ii-1] = np.sum([d['kind'] == ii for d in raw.info['dig']])
     #d, dcounts = np.unique(digs, return_counts=True)
-    x['digitable'] = tabulate(np.c_[dig_codes, dig_counts], tablefmt='html',
-                              headers=['Digitisation Stage', 'Points Acquired'])
+    data['digitable'] = tabulate(np.c_[dig_codes, dig_counts], tablefmt='html',
+                                 headers=['Digitisation Stage', 'Points Acquired'])
 
+    # Events
     ev = mne.find_events(raw, min_duration=5/raw.info['sfreq'], verbose=False)
     ev, evcounts = np.unique(ev[:, 2], return_counts=True)
-    x['eventtable'] = tabulate(np.c_[ev, evcounts], tablefmt='html',
-                               headers=['Event Code', 'Value'])
+    data['eventtable'] = tabulate(np.c_[ev, evcounts], tablefmt='html',
+                                  headers=['Event Code', 'Value'])
+
+    # Bad segments
+    durs = np.array([r['duration'] for r in raw.annotations])
+    full_dur = raw.n_times/raw.info['sfreq']
+    types = [r['description'] for r in raw.annotations]
+
+    data['bad_seg'] = []
+    for modality in ['grad', 'mag', 'eeg']:
+        inds = [s.find(modality) > 0 for s in types]
+        mod_dur = np.sum(durs[inds])
+        pc = (mod_dur / full_dur) * 100
+        s = 'Modality {0} - {1:.2f}/{2} seconds rejected     ({3:.2f}%)'
+        if mod_dur > 0:
+            data['bad_seg'].append(s.format(modality, mod_dur, full_dur, pc))
 
     # Path to save plots
-    savebase = '{0}/{1}'.format(outf, x['fif_id']) + '_{0}.png'
+    savebase = '{0}/{1}'.format(outf, data['fif_id']) + '_{0}.png'
     
     # Generate plots for the report
     print('Generating plots:')
-    plot_channel_sumsq_timecourse(raw, savebase)
+    plot_channel_time_series(raw, savebase)
     plot_channel_dists(raw, savebase)
     plot_digitisation_2d(raw, savebase)
     plot_eog_summary(raw, savebase)
@@ -90,37 +107,38 @@ def gen_html_data(raw, ica=None, outf=None, artefact_scan=False):
     filebase = os.path.split(savebase)[1]
 
     # Full filenames of each plot
-    x['plt_channeldev'] = filebase.format('channel_dev')
-    x['plt_temporaldev'] = filebase.format('temporal_sumsq')
-    x['plt_artefacts_eog'] = filebase.format('EOG')
-    x['plt_artefacts_ecg'] = filebase.format('ECG')
-    x['plt_artefacts_ica'] = filebase.format('ICA')
-    x['plt_digitisation'] = filebase.format('digitisation')
-    x['plt_spectra'] = filebase.format('spectra_full')
-    x['plt_zoom_spectra'] = filebase.format('spectra_zoom')
+    data['plt_channeldev'] = filebase.format('channel_dev')
+    data['plt_badseg'] = filebase.format('bad_seg')
+    data['plt_temporaldev'] = filebase.format('temporal_sumsq')
+    data['plt_artefacts_eog'] = filebase.format('EOG')
+    data['plt_artefacts_ecg'] = filebase.format('ECG')
+    data['plt_artefacts_ica'] = filebase.format('ICA')
+    data['plt_digitisation'] = filebase.format('digitisation')
+    data['plt_spectra'] = filebase.format('spectra_full')
+    data['plt_zoom_spectra'] = filebase.format('spectra_zoom')
 
     if artefact_scan:
-        x['artefact_scan'] = True
-        x['plt_eyemove_grad'] = filebase.format('eyemove_grad')
-        x['plt_eyemove_mag'] = filebase.format('eyemove_mag')
-        x['plt_eyemove_eog'] = filebase.format('eyemove_eog')
-        x['plt_blink_grad'] = filebase.format('blink_grad')
-        x['plt_blink_mag'] = filebase.format('blink_mag')
-        x['plt_blink_eog'] = filebase.format('blink_eog')
-        x['plt_swallow_grad'] = filebase.format('swallow_grad')
-        x['plt_swallow_mag'] = filebase.format('swallow_mag')
-        x['plt_breathe_grad'] = filebase.format('breathe_grad')
-        x['plt_breathe_mag'] = filebase.format('breathe_mag')
-        x['plt_shrug_grad'] = filebase.format('shrug_grad')
-        x['plt_shrug_mag'] = filebase.format('shrug_mag')
-        x['plt_clench_grad'] = filebase.format('clench_grad')
-        x['plt_clench_mag'] = filebase.format('clench_mag')
-        x['plt_buttonpress_grad'] = filebase.format('buttonpress_grad')
-        x['plt_buttonpress_mag'] = filebase.format('buttonpress_mag')
+        data['artefact_scan'] = True
+        data['plt_eyemove_grad'] = filebase.format('eyemove_grad')
+        data['plt_eyemove_mag'] = filebase.format('eyemove_mag')
+        data['plt_eyemove_eog'] = filebase.format('eyemove_eog')
+        data['plt_blink_grad'] = filebase.format('blink_grad')
+        data['plt_blink_mag'] = filebase.format('blink_mag')
+        data['plt_blink_eog'] = filebase.format('blink_eog')
+        data['plt_swallow_grad'] = filebase.format('swallow_grad')
+        data['plt_swallow_mag'] = filebase.format('swallow_mag')
+        data['plt_breathe_grad'] = filebase.format('breathe_grad')
+        data['plt_breathe_mag'] = filebase.format('breathe_mag')
+        data['plt_shrug_grad'] = filebase.format('shrug_grad')
+        data['plt_shrug_mag'] = filebase.format('shrug_mag')
+        data['plt_clench_grad'] = filebase.format('clench_grad')
+        data['plt_clench_mag'] = filebase.format('clench_mag')
+        data['plt_buttonpress_grad'] = filebase.format('buttonpress_grad')
+        data['plt_buttonpress_mag'] = filebase.format('buttonpress_mag')
     else:
-        x['artefact_scan'] = False
+        data['artefact_scan'] = False
 
-    return x
+    return data
 
 
 def gen_report(infiles, outdir, preproc_config=None, artefact_scan=False):
@@ -150,8 +168,9 @@ def gen_report(infiles, outdir, preproc_config=None, artefact_scan=False):
         raw = import_data(infile)
 
         # Load ICA file if it exists
+        # TODO: could potentially be incorporated in 'import_data'
         if os.path.exists(infile.replace('raw.fif', 'ica.fif')):
-            ica = mne.preprocessing.read_ica(infile.replace('raw.fif', 'ica.fif')) # todo: could potentially be incorporated in 'import_data'
+            ica = mne.preprocessing.read_ica(infile.replace('raw.fif', 'ica.fif'))
         else:
             ica = None
 
@@ -200,23 +219,19 @@ def load_template(tname):
 # Scan stats and figures
 
 
-def print_badsegs(raw):
-    """Print a text-summary of the bad segments marked in a dataset."""
 
-    durs = np.array([r['duration'] for r in raw.annotations])
-    full_dur = raw.n_times/raw.info['sfreq']
-    types = [r['description'] for r in raw.annotations]
+def plot_channel_time_series(raw, savebase=None):
+    """Plots bad segments and sum-square time courses."""
 
-    for modality in ['grad', 'mag', 'eeg']:
-        inds = [s.find(modality) > 0 for s in types]
-        mod_dur = np.sum(durs[inds])
-        pc = (mod_dur / full_dur) * 100
-        s = 'Modality {0} - {1:02f}/{2} seconds rejected     ({3:02f}%)'
-        print(s.format(modality, mod_dur, full_dur, pc))
+    # Make bad segment plots
+    fig = raw.plot(duration=30, show=False, verbose=0)
+    fig.set_size_inches(16, 4)
 
-
-def plot_channel_sumsq_timecourse(raw, savebase=None):
-    """Plots sum-square time courses."""
+    # Save
+    figname = savebase.format('bad_seg')
+    print(figname)
+    fig.savefig(figname, dpi=150, transparent=True)
+    plt.close(fig)
 
     # Raw data
     channel_types = {
@@ -235,8 +250,8 @@ def plot_channel_sumsq_timecourse(raw, savebase=None):
 
     if nrows == 0:
         return 'No MEG or EEG channels.'
-    
-    # Make plots
+
+    # Make sum-square plots
     fig, ax = plt.subplots(nrows=nrows, ncols=1, figsize=(16, 4))
     row = 0
     for name, chan_inds in channel_types.items():
@@ -698,8 +713,17 @@ def print_scan_summary(raw):
     for ii in range(len(ev)):
         print('\t{0}:{1}'.format(ev[ii], evcounts[ii]))
 
-    # Annotations - bad segments
-    print_badsegs(raw)
+    # Bad segments
+    durs = np.array([r['duration'] for r in raw.annotations])
+    full_dur = raw.n_times/raw.info['sfreq']
+    types = [r['description'] for r in raw.annotations]
+
+    for modality in ['grad', 'mag', 'eeg']:
+        inds = [s.find(modality) > 0 for s in types]
+        mod_dur = np.sum(durs[inds])
+        pc = (mod_dur / full_dur) * 100
+        s = 'Modality {0} - {1:02f}/{2} seconds rejected     ({3:02f}%)'
+        print(s.format(modality, mod_dur, full_dur, pc))
 
 
 def main(argv=None):

@@ -43,6 +43,11 @@
     
     <div class="tabpage" style="width: 100%; display: none" id={{ data.fif_id }}_timeseries>
         <div style="width: 100%; padding-top: 50px">
+            <h3>Bad segments</h3>
+            <img src="{{ data.plt_badseg }}" alt="" style='max-width: 100%'/>
+            {{ '<br/>'.join(data.bad_seg[::-1]) }}
+        </div>
+        <div style="width: 100%; padding-top: 50px">
             <h3>Time course of variance across sensors for recording</h3>
             <img src="{{ data.plt_temporaldev }}" alt="" style='max-width: 100%'/>
         </div>
