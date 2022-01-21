@@ -88,12 +88,20 @@ def gen_html_data(raw, ica=None, outf=None, artefact_scan=False):
         if mod_dur > 0:
             data['bad_seg'].append(s.format(modality, mod_dur, full_dur, pc))
 
+    # Bad channels
+    bad_chans = raw.info['bads']
+    if len(bad_chans) == 0:
+        data['bad_chans'] = 'No bad channels.'
+    else:
+        data['bad_chans'] = 'Bad channels: {}'.format(', '.join(bad_chans))
+
     # Path to save plots
     savebase = '{0}/{1}'.format(outf, data['fif_id']) + '_{0}.png'
     
     # Generate plots for the report
     print('Generating plots:')
     plot_channel_time_series(raw, savebase)
+    plot_sensors(raw, savebase)
     plot_channel_dists(raw, savebase)
     plot_digitisation_2d(raw, savebase)
     plot_eog_summary(raw, savebase)
@@ -109,6 +117,7 @@ def gen_html_data(raw, ica=None, outf=None, artefact_scan=False):
     # Full filenames of each plot
     data['plt_channeldev'] = filebase.format('channel_dev')
     data['plt_badseg'] = filebase.format('bad_seg')
+    data['plt_badchans'] = filebase.format('bad_chans')
     data['plt_temporaldev'] = filebase.format('temporal_sumsq')
     data['plt_artefacts_eog'] = filebase.format('EOG')
     data['plt_artefacts_ecg'] = filebase.format('ECG')
@@ -273,6 +282,15 @@ def plot_channel_time_series(raw, savebase=None):
         print(figname)
         fig.savefig(figname, dpi=150, transparent=True)
         plt.close(fig)
+
+
+def plot_sensors(raw, savebase=None):
+    """Plots sensors with bad channels highlighted."""
+    fig = raw.plot_sensors(show=False)
+    figname = savebase.format('bad_chans')
+    print(figname)
+    fig.savefig(figname, dpi=150, transparent=True)
+    plt.close(fig)
 
 
 def plot_channel_dists(raw, savebase=None):

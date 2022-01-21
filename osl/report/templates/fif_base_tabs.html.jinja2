@@ -45,7 +45,7 @@
         <div style="width: 100%; padding-top: 50px">
             <h3>Bad segments</h3>
             <img src="{{ data.plt_badseg }}" alt="" style='max-width: 100%'/>
-            {{ '<br/>'.join(data.bad_seg[::-1]) }}
+            <span>{{ '<br/>'.join(data.bad_seg[::-1]) }}</span>
         </div>
         <div style="width: 100%; padding-top: 50px">
             <h3>Time course of variance across sensors for recording</h3>
@@ -57,6 +57,13 @@
         <div style="width: 100%; padding-top: 50px">
             <h3>Distribution of per-sensor variance across recording</h3>
             <img src="{{ data.plt_channeldev }}" alt="" style='max-width: 100%'/>
+        </div>
+        <div style="width: 100%; padding-top: 50px">
+            <h3>Bad channels</h3>
+            <div style="width: 50%; margin:0 auto">
+                <img src="{{ data.plt_badchans }}" alt="" style='max-width: 100%'/>
+            </div>
+            <span>{{ data.bad_chans }}</span>
         </div>
     </div>
         
