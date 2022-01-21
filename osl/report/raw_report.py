@@ -7,12 +7,19 @@ import mne
 import sys
 import yaml
 import sails
-import numpy as np
 import argparse
-from jinja2 import Template
-from tabulate import tabulate
+import tempfile
+
+import numpy as np
 import matplotlib.pyplot as plt
 import neurokit2 as nk
+
+from jinja2 import Template
+from tabulate import tabulate
+from mne.channels.channels import channel_type
+from scipy.ndimage.filters import uniform_filter1d
+from matplotlib.lines import Line2D
+from matplotlib.patches import Rectangle
 
 from ..utils import process_file_inputs, validate_outdir
 from ..preprocessing import import_data, load_config, run_proc_chain
@@ -26,12 +33,15 @@ def get_header_id(raw):
     return raw.filenames[0].split('/')[-1].strip('.fif')
 
 
-def gen_fif_data(raw, ica=None, outf=None, fif_id=None, gen_plots=True, artefact_scan=False):
+def gen_html_data(raw, ica=None, outf=None, artefact_scan=False):
     """Generate HTML web-report for an MNE data object."""
+
     x = {}
     x['filename'] = raw.filenames[0]
     x['fif_id'] = get_header_id(raw)
+
     print('Processing : {0}'.format(x['filename']))
+
     x['projname'] = raw.info['proj_name']
     x['experimenter'] = raw.info['experimenter']
     x['meas_date'] = raw.info['meas_date'].__str__()
@@ -43,7 +53,6 @@ def gen_fif_data(raw, ica=None, outf=None, fif_id=None, gen_plots=True, artefact
     x['nchans'] = raw.info['nchan']
     x['nhpi'] = len(raw.info['hpi_meas'][0]['hpi_coils'])
 
-    from mne.channels.channels import channel_type
     chtype = [channel_type(raw.info, c) for c in range(x['nchans'])]
     chs, chcounts = np.unique(chtype, return_counts=True)
     x['chantable'] = tabulate(np.c_[chs, chcounts], tablefmt='html',
@@ -62,105 +71,102 @@ def gen_fif_data(raw, ica=None, outf=None, fif_id=None, gen_plots=True, artefact
     x['eventtable'] = tabulate(np.c_[ev, evcounts], tablefmt='html',
                                headers=['Event Code', 'Value'])
 
+    # Path to save plots
     savebase = '{0}/{1}'.format(outf, x['fif_id']) + '_{0}.png'
-    if gen_plots:
-        #plot_artefact_channels(raw, savebase=savebase)
-        plot_eog_summary(raw, savebase=savebase)
-        plot_ecg_summary_neurokit(raw, savebase=savebase)
-        plot_bad_ica(raw, ica, savebase=savebase)
-        plot_digitisation_2d(raw, savebase=savebase)
-        plot_spectra(raw, savebase=savebase)
-        plot_channel_dists(raw, savebase=savebase)
-        plot_channel_sumsq_timecourse(raw, savebase=savebase)
-        if artefact_scan:
-            plot_artefact_scan(raw, savebase=savebase)
+    
+    # Generate plots for the report
+    plot_channel_sumsq_timecourse(raw, savebase)
+    plot_channel_dists(raw, savebase)
+    plot_digitisation_2d(raw, savebase)
+    plot_eog_summary(raw, savebase)
+    plot_ecg_summary(raw, savebase)
+    plot_bad_ica(raw, ica, savebase)
+    plot_spectra(raw, savebase)
+    if artefact_scan:
+        plot_artefact_scan(raw, savebase)
 
-    plt.close('all')
+    # Stem of the filename
+    filebase = os.path.split(savebase)[1]
 
-    # HTML can use the relative paths
-    savebase2 = os.path.split(savebase)[1]
-
-    x['plt_channeldev'] = savebase2.format('channel_dev')
-    x['plt_temporaldev'] = savebase2.format('temporal_sumsq')
-    x['plt_artefacts_eog'] = savebase2.format('EOG')
-    x['plt_artefacts_ecg'] = savebase2.format('ECG')
-    x['plt_artefacts_ica'] = savebase2.format('ICA')
-    x['plt_digitisation'] = savebase2.format('digitisation')
-    x['plt_spectra'] = savebase2.format('spectra_full')
-    x['plt_zoom_spectra'] = savebase2.format('spectra_zoom')
+    # Full filenames of each plot
+    x['plt_channeldev'] = filebase.format('channel_dev')
+    x['plt_temporaldev'] = filebase.format('temporal_sumsq')
+    x['plt_artefacts_eog'] = filebase.format('EOG')
+    x['plt_artefacts_ecg'] = filebase.format('ECG')
+    x['plt_artefacts_ica'] = filebase.format('ICA')
+    x['plt_digitisation'] = filebase.format('digitisation')
+    x['plt_spectra'] = filebase.format('spectra_full')
+    x['plt_zoom_spectra'] = filebase.format('spectra_zoom')
 
     if artefact_scan:
         x['artefact_scan'] = True
-        x['plt_eyemove_grad'] = savebase2.format('eyemove_grad')
-        x['plt_eyemove_mag'] = savebase2.format('eyemove_mag')
-        x['plt_eyemove_eog'] = savebase2.format('eyemove_eog')
-        x['plt_blink_grad'] = savebase2.format('blink_grad')
-        x['plt_blink_mag'] = savebase2.format('blink_mag')
-        x['plt_blink_eog'] = savebase2.format('blink_eog')
-        x['plt_swallow_grad'] = savebase2.format('swallow_grad')
-        x['plt_swallow_mag'] = savebase2.format('swallow_mag')
-        x['plt_breathe_grad'] = savebase2.format('breathe_grad')
-        x['plt_breathe_mag'] = savebase2.format('breathe_mag')
-        x['plt_shrug_grad'] = savebase2.format('shrug_grad')
-        x['plt_shrug_mag'] = savebase2.format('shrug_mag')
-        x['plt_clench_grad'] = savebase2.format('clench_grad')
-        x['plt_clench_mag'] = savebase2.format('clench_mag')
-        x['plt_buttonpress_grad'] = savebase2.format('buttonpress_grad')
-        x['plt_buttonpress_mag'] = savebase2.format('buttonpress_mag')
+        x['plt_eyemove_grad'] = filebase.format('eyemove_grad')
+        x['plt_eyemove_mag'] = filebase.format('eyemove_mag')
+        x['plt_eyemove_eog'] = filebase.format('eyemove_eog')
+        x['plt_blink_grad'] = filebase.format('blink_grad')
+        x['plt_blink_mag'] = filebase.format('blink_mag')
+        x['plt_blink_eog'] = filebase.format('blink_eog')
+        x['plt_swallow_grad'] = filebase.format('swallow_grad')
+        x['plt_swallow_mag'] = filebase.format('swallow_mag')
+        x['plt_breathe_grad'] = filebase.format('breathe_grad')
+        x['plt_breathe_mag'] = filebase.format('breathe_mag')
+        x['plt_shrug_grad'] = filebase.format('shrug_grad')
+        x['plt_shrug_mag'] = filebase.format('shrug_mag')
+        x['plt_clench_grad'] = filebase.format('clench_grad')
+        x['plt_clench_mag'] = filebase.format('clench_mag')
+        x['plt_buttonpress_grad'] = filebase.format('buttonpress_grad')
+        x['plt_buttonpress_mag'] = filebase.format('buttonpress_mag')
     else:
         x['artefact_scan'] = False
 
     return x
 
 
-def gen_fif_html(raw, outf=None, fif_id=None, gen_plots=True):
-
-    x = gen_fif_data(raw)
-
-    # Replace the target string
-    filedata = fif_report
-    for key in x.keys():
-        filedata = filedata.replace("@{0}".format(key), str(x[key]))
-
-    return filedata
-
-
-def gen_report(infiles, outdir=None, preproc_config=None, artefact_scan=False):
+def gen_report(infiles, outdir, preproc_config=None, artefact_scan=False):
     """Generate web-report for a set of MNE data objects."""
+
+    # Validate input files and directory to save html file and plots to
     infiles, outnames, good_files = process_file_inputs(infiles)
+    outdir = validate_outdir(outdir)
 
-    if outdir is None:
-        import tempfile
-        tempdir = tempfile.TemporaryDirectory()
-        outdir = tempdir.name
-    else:
-        outdir = validate_outdir(outdir)
-
+    # Load config for preprocessing to apply
     if preproc_config is not None:
         config = load_config(preproc_config)
 
+    # Hyperlink to each panel on the page
     s = "<a href='#{0}'>{1}</a><br />"
     top_links = [s.format(outnames[ii], infiles[ii]) for ii in range(len(infiles))]
     top_links = '\n'.join(top_links)
 
+    # Load HTML template
     renders = []
     run_template = load_template('fif_base_tabs')
 
+    # Generate a panel for each file
     for infile in infiles:
+
+        # Load preprocessed data file
         raw = import_data(infile)
+
+        # Load ICA file if it exists
         if os.path.exists(infile.replace('raw.fif', 'ica.fif')):
             ica = mne.preprocessing.read_ica(infile.replace('raw.fif', 'ica.fif')) # todo: could potentially be incorporated in 'import_data'
         else:
             ica = None
+
+        # Apply some preprocessing if a config has been passed
         if preproc_config is not None:
             dataset = run_proc_chain(raw, config)
             raw = dataset['raw']
             ica = dataset['ica']
 
-        data = gen_fif_data(raw, ica=ica, outf=outdir, fif_id='TEST',
-                            gen_plots=True, artefact_scan=artefact_scan)
+        # Generate data and plots for the panel
+        data = gen_html_data(raw, ica=ica, outf=outdir, artefact_scan=artefact_scan)
+
+        # Render the panel
         renders.append(run_template.render(run=data))
 
+    # Add info about preproc applid by this function at the top of the page
     if preproc_config is not None:
         preproc = '<div style="margin: 30px"><h3>preprocessing applied</h3>'
         for method in config['preproc']:
@@ -170,22 +176,22 @@ def gen_report(infiles, outdir=None, preproc_config=None, artefact_scan=False):
     else:
         preproc = None
 
+    # Render the full page
     page_template = load_template('raw_report_base')
     page = page_template.render(runs=renders, toplinks=top_links, preproc=preproc)
 
-    # Write the file out again
+    # Write the output file
     outpath = '{0}/osl_raw_report.html'.format(outdir)
     with open(outpath, 'w') as f:
         f.write(page)
-    print(outpath)
+    print('REPORT :', outpath)
 
 
 def load_template(tname):
     basedir = os.path.dirname(os.path.realpath(__file__))
     fname = os.path.join(basedir, 'templates', '{0}.html.jinja2'.format(tname))
-    with open(fname, 'r') as file_:
-        template = Template(file_.read())
-
+    with open(fname, 'r') as file:
+        template = Template(file.read())
     return template
 
 
@@ -195,6 +201,7 @@ def load_template(tname):
 
 def print_badsegs(raw):
     """Print a text-summary of the bad segments marked in a dataset."""
+
     durs = np.array([r['duration'] for r in raw.annotations])
     full_dur = raw.n_times/raw.info['sfreq']
     types = [r['description'] for r in raw.annotations]
@@ -207,231 +214,96 @@ def print_badsegs(raw):
         print(s.format(modality, mod_dur, full_dur, pc))
 
 
-def plot_ecg_summary(raw, savebase):
-
-    inds = mne.pick_types(raw.info, ecg=True)
-    if len(inds) == 0:
-        return 'ECG Channel Not Found'
-
-    x = raw.get_data(inds)
-    xinds = np.arange(0, raw.info['sfreq']*30).astype(int)
-
-    plt.figure(figsize=(16, 5))
-    plt.subplots_adjust(left=0.05, right=0.95)
-    plt.title('ECG')
-    plt.subplot(211)
-    plt.plot(raw.times, x.T)
-    plt.subplot(212)
-    plt.plot(raw.times[xinds], x[:, xinds].T)
-    plt.xlabel('Time (seconds)')
-
-    if savebase is not None:
-        plt.savefig(savebase.format('ECG'), dpi=150, transparent=True)
-
-
-def plot_ecg_summary_neurokit(raw, savebase):
-
-    inds = mne.pick_types(raw.info, ecg=True)
-    if len(inds) == 0:
-        return 'ECG Channel Not Found'
-
-    x = raw.get_data(inds)
-    if np.abs(x.min()) > x.max():
-        x = -x
-    signals, info = nk.ecg_process(x[0, :], sampling_rate=raw.info['sfreq'])
-    fig = nk.ecg_plot(signals, sampling_rate=raw.info['sfreq'])
-    fig.set_size_inches(16,7)
-    plt.subplots_adjust(left=0.075, right=0.95)
-
-    fig.savefig(savebase.format('ECG'), dpi=150, transparent=True)
-
-
-def plot_eog_summary(raw, savebase):
-
-    inds = mne.pick_types(raw.info, eog=True)
-    if len(inds) == 0:
-        return 'EOG Channel Not Found'
-
-    x = raw.get_data(inds)
-    xinds = np.arange(0, raw.info['sfreq']*30).astype(int)
-
-    plt.figure(figsize=(16, 5))
-    plt.subplots_adjust(left=0.05, right=0.95)
-    plt.title('EOG')
-    plt.subplot(211)
-    plt.plot(raw.times, x.T)
-    plt.subplot(212)
-    plt.plot(raw.times[xinds], x[:, xinds].T)
-    plt.xlabel('Time (seconds)')
-
-    if savebase is not None:
-        plt.savefig(savebase.format('EOG'), dpi=150, transparent=True)
-
-
-def plot_eog_summary_neurokit(raw, savebase):
-
-    inds = mne.pick_types(raw.info, eog=True)
-    if len(inds) == 0:
-        return 'ECG Channel Not Found'
-
-    x = raw.get_data(inds)
-    ind = np.argmax(x.max(axis=1))
-    x = x[ind, :]
-    signals, info = nk.eog_process(x, sampling_rate=raw.info['sfreq'])
-    fig = nk.eog_plot(signals, sampling_rate=raw.info['sfreq'])
-    fig.set_size_inches(16,7)
-    plt.subplots_adjust(left=0.075, right=0.95)
-
-    fig.savefig(savebase.format('ECG'), dpi=150, transparent=True)
-
-
-def plot_artefact_channels(raw, savebase):
-    """Plot ECG+EOG channels."""
-    # ECG
-    inds = mne.pick_channels(raw.ch_names, include=['EOG001', 'EOG002', 'ECG003'])
-    dat = raw.get_data()[inds, :]
-
-    plt.figure(figsize=(16, 10))
-    plt.subplot(211)
-    plt.plot(raw.times, dat[0, :])
-    plt.plot(raw.times, dat[1, :])
-    plt.title('EOG')
-    plt.subplot(212)
-    plt.plot(raw.times, dat[2, :])
-    plt.title('ECG')
-    plt.xlabel('Time (seconds)')
-    if savebase is not None:
-        plt.savefig(savebase.format('artefacts'), dpi=150, transparent=True)
-
-    xinds = np.arange(0, raw.info['sfreq']*30).astype(int)
-    plt.figure(figsize=(16, 10))
-    plt.subplot(211)
-    plt.plot(raw.times[xinds], dat[0, xinds])
-    plt.plot(raw.times[xinds], dat[1, xinds])
-    plt.title('EOG')
-    plt.subplot(212)
-    plt.plot(raw.times[xinds], dat[2, xinds])
-    plt.title('ECG')
-    plt.xlabel('Time (seconds)')
-    if savebase is not None:
-        plt.savefig(savebase.format('artefacts_zoom'), dpi=150, transparent=True)
-
-
-def plot_bad_ica(raw, ica, savebase):
-    """Plot ICA characteristics for rejected components."""
-    exclude_uniq = np.sort(np.unique(ica.exclude))
-    nbad = len(exclude_uniq)
-    figsize = [16., 5*nbad]
-    fig = plt.figure(figsize=figsize, facecolor=[0.95] * 3)
-    axes = []
-    for i in np.arange(nbad):
-        lowerlimit = 0.1+i/(nbad*1.1)
-        multiplier=nbad*1.3
-        # adapted from mne/viz/ica._create_properties_layout
-        axes_params = (('topomap', [0.08, lowerlimit+0.5/multiplier, 0.3, 0.45/multiplier]),
-                   ('image', [0.5, lowerlimit+0.6/multiplier, 0.45, 0.35/multiplier]),
-                   ('erp', [0.5, lowerlimit+0.5/multiplier, 0.45, 0.1/multiplier]),
-                   ('spectrum', [0.08, lowerlimit+0.1/multiplier, 0.32, 0.3/multiplier]),
-                   ('variance', [0.5, lowerlimit+0.025/multiplier, 0.45, 0.25/multiplier]))
-        axes += [[fig.add_axes(loc, label=name) for name, loc in axes_params]]
-        ica.plot_properties(raw, picks=exclude_uniq[i], axes=axes[i])
-        if np.any([x in ica.labels_.keys() for x in ica._ica_names]): # this is for the osl_plot_ica convention
-            title = "".join((ica._ica_names[exclude_uniq[i]]," - ", ica.labels_[ica._ica_names[exclude_uniq[i]]].upper()))
-        elif np.logical_or('eog' in ica.labels_.keys(), 'ecg' in ica.labels_.keys()): # this is for the MNE automatic labelling convention
-            flag_eog = exclude_uniq[i] in ica.labels_['eog']
-            flag_ecg = exclude_uniq[i] in ica.labels_['ecg']
-            title = "".join((ica._ica_names[exclude_uniq[i]]," - ", flag_eog*'EOG', flag_ecg*flag_eog*'/', flag_ecg*'ECG'))
-        else: # this is for if there is nothing in ica.labels_
-            title = None
-        if title is not None:
-            axes[i][0].set_title(title, fontsize=12)
-    if savebase is not None:
-        plt.savefig(savebase.format('ica'), dpi=150, transparent=True)
-
-
-def plot_spectra(raw, savebase=None):
-    """Plot power spectra for each sensor modality."""
-    fig = raw.plot_psd(show=False)
-    fig.set_size_inches(8, 7)
-    if savebase is not None:
-        fig.savefig(savebase.format('spectra_full'), dpi=150, transparent=True)
-
-    fig = raw.plot_psd(show=False, fmin=1, fmax=48)
-    fig.set_size_inches(8, 7)
-    if savebase is not None:
-        fig.savefig(savebase.format('spectra_zoom'), dpi=150, transparent=True)
-
-
 def plot_channel_sumsq_timecourse(raw, savebase=None):
-    from scipy.ndimage.filters import uniform_filter1d
+    """Plots sum-square time courses."""
 
-    fig = plt.figure(figsize=(16, 4))
-    plt.subplots_adjust(hspace=0.3,left=0.05, right=0.95)
-    for tag in ['top', 'right']:
-        plt.gca().spines[tag].set_visible(False)
-    plt.subplot(311)
-    inds = mne.pick_types(raw.info, meg='mag')
-    x = np.sum(raw.get_data()[inds, :]**2, axis=0)
-    x = uniform_filter1d(x, int(raw.info['sfreq']))
-    plt.plot(raw.times, x)
-    plt.fill_between(raw.times, x, alpha=0.5)
-    plt.title('Sum-Square across channels')
-    plt.legend(['Magnetometers'], frameon=False)
-    plt.gca().set_xticklabels([])
-    for tag in ['top', 'right']:
-        plt.gca().spines[tag].set_visible(False)
-    plt.subplot(312)
-    inds = mne.pick_types(raw.info, meg='grad')
-    x = np.sum(raw.get_data()[inds, :]**2, axis=0)
-    x = uniform_filter1d(x, int(raw.info['sfreq']))
-    plt.plot(raw.times, x)
-    plt.fill_between(raw.times, x, alpha=0.5)
-    plt.legend(['Gradiometers'], frameon=False)
-    plt.gca().set_xticklabels([])
-    for tag in ['top', 'right']:
-        plt.gca().spines[tag].set_visible(False)
-    plt.subplot(313)
-    inds = mne.pick_types(raw.info, meg=False, eeg=True)
-    x = np.sum(raw.get_data()[inds, :]**2, axis=0)
-    x = uniform_filter1d(x, int(raw.info['sfreq']))
-    plt.plot(raw.times, x)
-    plt.fill_between(raw.times, x, alpha=0.5)
-    plt.legend(['EEG'], frameon=False)
-    plt.xlabel('Time (seconds)')
-    for tag in ['top', 'right']:
-        plt.gca().spines[tag].set_visible(False)
+    # Raw data
+    channel_types = {
+        'Magnetometers': mne.pick_types(raw.info, meg='mag'),
+        'Gradiometers': mne.pick_types(raw.info, meg='grad'),
+        'EEG': mne.pick_types(raw.info, meg=False, eeg=True),
+    }
+    t = raw.times
+    x = raw.get_data()
+
+    # Number of subplots, i.e. the number of different channel types in the fif file
+    nrows = 0
+    for _, c in channel_types.items():
+        if len(c) > 0:
+            nrows += 1
+
+    if nrows == 0:
+        return 'No MEG or EEG channels.'
+    
+    # Make plots
+    fig, ax = plt.subplots(nrows=nrows, ncols=1, figsize=(16, 4))
+    row = 0
+    for name, chan_inds in channel_types.items():
+        if len(chan_inds) == 0:
+            continue
+        ss = np.sum(x[chan_inds] ** 2, axis=0)
+        ss = uniform_filter1d(ss, int(raw.info['sfreq']))
+        ax[row].plot(t, ss)
+        ax[row].legend([name], frameon=False)
+        ax[row].set_xlim(t[0], t[-1])
+        row += 1
+    ax[0].set_title('Sum-Square Across Channels')
+    ax[-1].set_xlabel('Time (seconds)')
+
+    # Save
     if savebase is not None:
+        plt.tight_layout()
         fig.savefig(savebase.format('temporal_sumsq'), dpi=150, transparent=True)
+        plt.close(fig)
 
 
 def plot_channel_dists(raw, savebase=None):
-    """Plot summary distributions of sensors."""
-    fig = plt.figure(figsize=(16, 2))
-    plt.subplots_adjust(left=0.05, right=0.95)
-    plt.subplot(131)
-    inds = mne.pick_types(raw.info, meg='mag')
-    plt.hist(raw.get_data()[inds, :].std(axis=1), 24)
-    plt.xlabel('St-Dev')
-    plt.ylabel('Channel Count')
-    plt.title('Magnetometers temporal std-dev')
-    plt.subplot(132)
-    inds = mne.pick_types(raw.info, meg='grad')
-    plt.hist(raw.get_data()[inds, :].std(axis=1), 24)
-    plt.title('Gradiometers temporal st-dev')
-    plt.xlabel('St-Dev')
-    plt.subplot(133)
-    inds = mne.pick_types(raw.info, meg=False, eeg=True)
-    plt.hist(raw.get_data()[inds, :].std(axis=1))
-    plt.title('EEG temporal st-dev')
-    plt.xlabel('St-Dev')
+    """Plot distributions of temporal standard deviation."""
+
+    # Raw data
+    channel_types = {
+        'Magnetometers': mne.pick_types(raw.info, meg='mag'),
+        'Gradiometers': mne.pick_types(raw.info, meg='grad'),
+        'EEG': mne.pick_types(raw.info, meg=False, eeg=True),
+    }
+    t = raw.times
+    x = raw.get_data()
+
+    # Number of subplots, i.e. the number of different channel types in the fif file
+    ncols = 0
+    for _, c in channel_types.items():
+        if len(c) > 0:
+            ncols += 1
+
+    if ncols == 0:
+        return 'No MEG or EEG channels.'
+    
+    # Make plots
+    fig, ax = plt.subplots(nrows=1, ncols=ncols, figsize=(12, 4))
+    row = 0
+    for name, chan_inds in channel_types.items():
+        if len(chan_inds) == 0:
+            continue
+        ax[row].hist(x[chan_inds, :].std(axis=1), bins=24, histtype='step')
+        ax[row].legend(['Temporal Std-Dev'], frameon=False)
+        ax[row].set_xlabel('Std-Dev')
+        ax[row].set_ylabel('Channel Count')
+        ax[row].set_title(name)
+        row += 1
+
+    # Save
     if savebase is not None:
+        plt.tight_layout()
         fig.savefig(savebase.format('channel_dev'), dpi=150, transparent=True)
+        plt.close(fig)
 
 
 def plot_digitisation_2d(raw, savebase=None):
+    """Plots the digitisation and headshape."""
 
+    # Make plot
     fig = plt.figure(figsize=(16, 4))
-    plt.subplots_adjust(left=0.05, right=0.95)
+
     plt.subplot(141)
     plt.gca().set_aspect('equal')
     for dp in raw.info['dig']:
@@ -474,7 +346,6 @@ def plot_digitisation_2d(raw, savebase=None):
     plt.subplot(144, frameon=False)
     plt.xticks([])
     plt.yticks([])
-    from matplotlib.lines import Line2D
     legend_elements = [Line2D([0], [0], marker='^', color='w', lw=4, label='Fiducial', markerfacecolor='r',markersize=14),
                        Line2D([0], [0], marker='o', color='w', label='HPI', markerfacecolor='m', markersize=14),
                        Line2D([0], [0], marker='*', color='w', label='EEG', markerfacecolor='g', markersize=14),
@@ -482,7 +353,9 @@ def plot_digitisation_2d(raw, savebase=None):
     plt.legend(handles=legend_elements, loc='center', frameon=False)
 
     if savebase is not None:
+        plt.tight_layout()
         fig.savefig(savebase.format('digitisation'), dpi=150, transparent=True)
+        plt.close(fig)
 
 
 def plot_headmovement(raw, savebase=None):
@@ -491,9 +364,122 @@ def plot_headmovement(raw, savebase=None):
     chpi_locs = mne.chpi.compute_chpi_locs(raw.info, chpi_amplitudes)
     head_pos = mne.chpi.compute_head_pos(raw.info, chpi_locs, verbose=False)
     fig = mne.viz.plot_head_positions(head_pos, mode='traces')
-
     if savebase is not None:
         fig.savefig(savebase.format('headpos'), dpi=150, transparent=True)
+        plt.close(fig)
+
+
+def plot_eog_summary(raw, savebase=None):
+    """Plot raw EOG time series."""
+
+    # Get the raw EOG data
+    chan_inds = mne.pick_types(raw.info, eog=True)
+    if len(chan_inds) == 0:
+        return 'EOG Channel Not Found'
+    t = raw.times
+    x = raw.get_data(chan_inds).T
+
+    # Make the plot
+    fig, ax = plt.subplots(nrows=2, ncols=1, figsize=(16, 5))
+    ax[0].set_title('Full Time Series')
+    ax[0].plot(t, x)
+    ax[0].set_xlim([t[0], t[-1]])
+
+    # Plot the first 30 seconds on the second row
+    n = int(raw.info['sfreq'] * 30)
+    ax[1].set_title('First 30 Seconds')
+    ax[1].plot(t[:n], x[:n])
+    ax[1].set_xlabel('Time (s)')
+    ax[1].set_xlim([t[0], t[n]])
+
+    # Save
+    if savebase is not None:
+        plt.tight_layout()
+        fig.savefig(savebase.format('EOG'), dpi=150, transparent=True)
+        plt.close(fig)
+
+
+def plot_ecg_summary(raw, savebase=None):
+    """Plot ECG summary."""
+
+    # Get ECG data
+    chan_inds = mne.pick_types(raw.info, ecg=True)
+    if len(chan_inds) == 0:
+        return 'ECG Channel Not Found'
+    x = raw.get_data(chan_inds)
+    if np.abs(x.min()) > x.max():
+        x = -x
+
+    # Process first ECG channel
+    signals, info = nk.ecg_process(x[0, :], sampling_rate=raw.info['sfreq'])
+    fig = nk.ecg_plot(signals, sampling_rate=raw.info['sfreq'])
+    fig.set_size_inches(16, 7)
+
+    # Save
+    if savebase is not None:
+        plt.tight_layout()
+        fig.savefig(savebase.format('ECG'), dpi=150, transparent=True)
+        plt.close(fig)
+
+
+def plot_bad_ica(raw, ica, savebase):
+    """Plot ICA characteristics for rejected components."""
+
+    exclude_uniq = np.sort(np.unique(ica.exclude))
+    nbad = len(exclude_uniq)
+    fig = plt.figure(figsize=(16, 5 * nbad), facecolor=[0.95] * 3)
+    axes = []
+
+    for i in np.arange(nbad):
+        lowerlimit = 0.1+i/(nbad*1.1)
+        multiplier = nbad*1.3
+        # adapted from mne/viz/ica._create_properties_layout
+        axes_params = (('topomap', [0.08, lowerlimit+0.5/multiplier, 0.3, 0.45/multiplier]),
+                       ('image', [0.5, lowerlimit+0.6/multiplier, 0.45, 0.35/multiplier]),
+                       ('erp', [0.5, lowerlimit+0.5/multiplier, 0.45, 0.1/multiplier]),
+                       ('spectrum', [0.08, lowerlimit+0.1/multiplier, 0.32, 0.3/multiplier]),
+                       ('variance', [0.5, lowerlimit+0.025/multiplier, 0.45, 0.25/multiplier]))
+        axes += [[fig.add_axes(loc, label=name) for name, loc in axes_params]]
+        ica.plot_properties(raw, picks=exclude_uniq[i], axes=axes[i])
+
+        if np.any([x in ica.labels_.keys() for x in ica._ica_names]): # this is for the osl_plot_ica convention
+            title = "".join((ica._ica_names[exclude_uniq[i]]," - ", ica.labels_[ica._ica_names[exclude_uniq[i]]].upper()))
+
+        elif np.logical_or('eog' in ica.labels_.keys(), 'ecg' in ica.labels_.keys()): # this is for the MNE automatic labelling convention
+            flag_eog = exclude_uniq[i] in ica.labels_['eog']
+            flag_ecg = exclude_uniq[i] in ica.labels_['ecg']
+            title = "".join((ica._ica_names[exclude_uniq[i]]," - ", flag_eog*'EOG', flag_ecg*flag_eog*'/', flag_ecg*'ECG'))
+
+        else: # this is for if there is nothing in ica.labels_
+            title = None
+
+        if title is not None:
+            axes[i][0].set_title(title, fontsize=12)
+
+    if savebase is not None:
+        plt.savefig(savebase.format('ica'), dpi=150, transparent=True)
+
+
+def plot_spectra(raw, savebase=None):
+    """Plot power spectra for each sensor modality."""
+
+    # Plot spectra
+    fig = raw.plot_psd(show=False)
+    fig.set_size_inches(8, 7)
+
+    # Save full spectra
+    if savebase is not None:
+        fig.savefig(savebase.format('spectra_full'), dpi=150, transparent=True)
+        plt.close(fig)
+
+    # Plot zoomed in spectra
+    fig = raw.plot_psd(show=False, fmin=1, fmax=48)
+    fig.set_size_inches(8, 7)
+
+    # Save zoomed in spectra
+    if savebase is not None:
+        fig.savefig(savebase.format('spectra_zoom'), dpi=150, transparent=True)
+        plt.close(fig)
 
 
 def plot_artefact_scan(raw, savebase=None):
@@ -511,7 +497,6 @@ def plot_artefact_scan(raw, savebase=None):
 
     plt.figure(figsize=(16,5))
     ax = plt.subplot(121)
-    from matplotlib.patches import Rectangle
     patches = [Rectangle((-1,-yl),1,yl*2, alpha=0.2, facecolor='grey'),
                Rectangle((0,-yl),2,yl*2, alpha=0.2, facecolor='r'),
                Rectangle((2,-yl),2,yl*2, alpha=0.2, facecolor='grey'),
@@ -668,7 +653,6 @@ def print_scan_summary(raw):
     print('{0} channels acquired'.format(nchans))
 
     # Breakdown channels into channel types
-    from mne.channels.channels import channel_type
     chtype = [channel_type(raw.info, c) for c in range(nchans)]
     chs, chcounts = np.unique(chtype, return_counts=True)
 
