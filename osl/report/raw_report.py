@@ -75,6 +75,7 @@ def gen_html_data(raw, ica=None, outf=None, artefact_scan=False):
     savebase = '{0}/{1}'.format(outf, x['fif_id']) + '_{0}.png'
     
     # Generate plots for the report
+    print('Generating plots:')
     plot_channel_sumsq_timecourse(raw, savebase)
     plot_channel_dists(raw, savebase)
     plot_digitisation_2d(raw, savebase)
@@ -139,8 +140,8 @@ def gen_report(infiles, outdir, preproc_config=None, artefact_scan=False):
     top_links = '\n'.join(top_links)
 
     # Load HTML template
-    renders = []
-    run_template = load_template('fif_base_tabs')
+    panels = []
+    panel_template = load_template('fif_base_tabs')
 
     # Generate a panel for each file
     for infile in infiles:
@@ -164,7 +165,7 @@ def gen_report(infiles, outdir, preproc_config=None, artefact_scan=False):
         data = gen_html_data(raw, ica=ica, outf=outdir, artefact_scan=artefact_scan)
 
         # Render the panel
-        renders.append(run_template.render(run=data))
+        panels.append(panel_template.render(data=data))
 
     # Add info about preproc applid by this function at the top of the page
     if preproc_config is not None:
@@ -178,7 +179,7 @@ def gen_report(infiles, outdir, preproc_config=None, artefact_scan=False):
 
     # Render the full page
     page_template = load_template('raw_report_base')
-    page = page_template.render(runs=renders, toplinks=top_links, preproc=preproc)
+    page = page_template.render(panels=panels, toplinks=top_links, preproc=preproc)
 
     # Write the output file
     outpath = '{0}/osl_raw_report.html'.format(outdir)
@@ -253,7 +254,9 @@ def plot_channel_sumsq_timecourse(raw, savebase=None):
     # Save
     if savebase is not None:
         plt.tight_layout()
-        fig.savefig(savebase.format('temporal_sumsq'), dpi=150, transparent=True)
+        figname = savebase.format('temporal_sumsq')
+        print(figname)
+        fig.savefig(figname, dpi=150, transparent=True)
         plt.close(fig)
 
 
@@ -294,7 +297,9 @@ def plot_channel_dists(raw, savebase=None):
     # Save
     if savebase is not None:
         plt.tight_layout()
-        fig.savefig(savebase.format('channel_dev'), dpi=150, transparent=True)
+        figname = savebase.format('channel_dev')
+        print(figname)
+        fig.savefig(figname, dpi=150, transparent=True)
         plt.close(fig)
 
 
@@ -354,7 +359,9 @@ def plot_digitisation_2d(raw, savebase=None):
 
     if savebase is not None:
         plt.tight_layout()
-        fig.savefig(savebase.format('digitisation'), dpi=150, transparent=True)
+        figname = savebase.format('digitisation')
+        print(figname)
+        fig.savefig(figname, dpi=150, transparent=True)
         plt.close(fig)
 
 
@@ -365,7 +372,9 @@ def plot_headmovement(raw, savebase=None):
     head_pos = mne.chpi.compute_head_pos(raw.info, chpi_locs, verbose=False)
     fig = mne.viz.plot_head_positions(head_pos, mode='traces')
     if savebase is not None:
-        fig.savefig(savebase.format('headpos'), dpi=150, transparent=True)
+        figname = savebase.format('headpos')
+        print(figname)
+        fig.savefig(figname, dpi=150, transparent=True)
         plt.close(fig)
 
 
@@ -395,7 +404,9 @@ def plot_eog_summary(raw, savebase=None):
     # Save
     if savebase is not None:
         plt.tight_layout()
-        fig.savefig(savebase.format('EOG'), dpi=150, transparent=True)
+        figname = savebase.format('EOG')
+        print(figname)
+        fig.savefig(figname, dpi=150, transparent=True)
         plt.close(fig)
 
 
@@ -418,7 +429,9 @@ def plot_ecg_summary(raw, savebase=None):
     # Save
     if savebase is not None:
         plt.tight_layout()
-        fig.savefig(savebase.format('ECG'), dpi=150, transparent=True)
+        figname = savebase.format('ECG')
+        print(figname)
+        fig.savefig(figname, dpi=150, transparent=True)
         plt.close(fig)
 
 
@@ -461,7 +474,9 @@ def plot_bad_ica(raw, ica, savebase):
             axes[i][0].set_title(title, fontsize=12)
 
     if savebase is not None:
-        fig.savefig(savebase.format('ica'), dpi=150, transparent=True)
+        figname = savebase.format('ica')
+        print(figname)
+        fig.savefig(figname, dpi=150, transparent=True)
         plt.close(fig)
 
 
@@ -469,21 +484,25 @@ def plot_spectra(raw, savebase=None):
     """Plot power spectra for each sensor modality."""
 
     # Plot spectra
-    fig = raw.plot_psd(show=False)
+    fig = raw.plot_psd(show=False, verbose=0)
     fig.set_size_inches(8, 7)
 
     # Save full spectra
     if savebase is not None:
-        fig.savefig(savebase.format('spectra_full'), dpi=150, transparent=True)
+        figname = savebase.format('spectra_full')
+        print(figname)
+        fig.savefig(figname, dpi=150, transparent=True)
         plt.close(fig)
 
     # Plot zoomed in spectra
-    fig = raw.plot_psd(show=False, fmin=1, fmax=48)
+    fig = raw.plot_psd(show=False, fmin=1, fmax=48, verbose=0)
     fig.set_size_inches(8, 7)
 
     # Save zoomed in spectra
     if savebase is not None:
-        fig.savefig(savebase.format('spectra_zoom'), dpi=150, transparent=True)
+        figname = savebase.format('spectra_zoom')
+        print(figname)
+        fig.savefig(figname, dpi=150, transparent=True)
         plt.close(fig)
 
 
