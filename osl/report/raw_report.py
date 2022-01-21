@@ -427,20 +427,24 @@ def plot_bad_ica(raw, ica, savebase):
 
     exclude_uniq = np.sort(np.unique(ica.exclude))
     nbad = len(exclude_uniq)
+
+    # Create figure
     fig = plt.figure(figsize=(16, 5 * nbad), facecolor=[0.95] * 3)
     axes = []
-
     for i in np.arange(nbad):
-        lowerlimit = 0.1+i/(nbad*1.1)
-        multiplier = nbad*1.3
+        lowerlimit = 0.1 + i / (nbad * 1.1)
+        multiplier = nbad * 1.3
+
+        # Create axis for subplot
         # adapted from mne/viz/ica._create_properties_layout
-        axes_params = (('topomap', [0.08, lowerlimit+0.5/multiplier, 0.3, 0.45/multiplier]),
-                       ('image', [0.5, lowerlimit+0.6/multiplier, 0.45, 0.35/multiplier]),
-                       ('erp', [0.5, lowerlimit+0.5/multiplier, 0.45, 0.1/multiplier]),
-                       ('spectrum', [0.08, lowerlimit+0.1/multiplier, 0.32, 0.3/multiplier]),
-                       ('variance', [0.5, lowerlimit+0.025/multiplier, 0.45, 0.25/multiplier]))
+        axes_params = (('topomap', [0.08, lowerlimit + 0.5 / multiplier, 0.3, 0.45 / multiplier]),
+                       ('image', [0.5, lowerlimit + 0.6 / multiplier, 0.45, 0.35 / multiplier]),
+                       ('erp', [0.5, lowerlimit + 0.5 / multiplier, 0.45, 0.1 / multiplier]),
+                       ('spectrum', [0.08, lowerlimit + 0.1 / multiplier, 0.32, 0.3 / multiplier]),
+                       ('variance', [0.5, lowerlimit + 0.025 / multiplier, 0.45, 0.25 / multiplier]))
         axes += [[fig.add_axes(loc, label=name) for name, loc in axes_params]]
-        ica.plot_properties(raw, picks=exclude_uniq[i], axes=axes[i])
+
+        ica.plot_properties(raw, picks=exclude_uniq[i], axes=axes[i], show=False, verbose=0)
 
         if np.any([x in ica.labels_.keys() for x in ica._ica_names]): # this is for the osl_plot_ica convention
             title = "".join((ica._ica_names[exclude_uniq[i]]," - ", ica.labels_[ica._ica_names[exclude_uniq[i]]].upper()))
@@ -457,7 +461,8 @@ def plot_bad_ica(raw, ica, savebase):
             axes[i][0].set_title(title, fontsize=12)
 
     if savebase is not None:
-        plt.savefig(savebase.format('ica'), dpi=150, transparent=True)
+        fig.savefig(savebase.format('ica'), dpi=150, transparent=True)
+        plt.close(fig)
 
 
 def plot_spectra(raw, savebase=None):
