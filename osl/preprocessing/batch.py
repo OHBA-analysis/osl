@@ -21,6 +21,7 @@ XML sanity check on config file. pre-parser to avoid mad sequences of methods.
 import argparse
 import csv
 import multiprocessing as mp
+import matplotlib.pyplot as plt
 import os
 import sys
 import traceback
@@ -236,12 +237,61 @@ def write_dataset(dataset, outbase, run_id, overwrite=False):
         np.save(outname, dataset['events'])
 
     if dataset['epochs'] is not None:
-        outname = outbase.format(run_id=run_id, ftype='epochs', fext='fif')
+        outname = outbase.format(run_id=run_id, ftype='epo', fext='fif')
         dataset['epochs'].save(outname, overwrite=overwrite)
 
     if dataset['ica'] is not None:
         outname = outbase.format(run_id=run_id, ftype='ica', fext='fif')
         dataset['ica'].save(outname)
+
+
+def plot_preproc_flowchart(config, outname=None, show=True):
+    """Make a summary flowchart of a preprocessing chain."""
+    config = load_config(config)
+
+    fig = plt.figure(figsize=(8, 12))
+    ax = plt.subplot(111, frame_on=False)
+    ax.set_xticks([])
+    ax.set_yticks([])
+    ax.set_title('OSL Preprocessing Recipe', fontsize=24)
+
+    stage_height = 1/(1+len(config['preproc']))
+    box = dict(boxstyle='round', facecolor='wheat', alpha=1, pad=0.3)
+    startbox = dict(boxstyle='round', facecolor='red', alpha=1)
+    font = {'family': 'serif',
+            'color':  'k',
+            'weight': 'normal',
+            'size': 16,
+            }
+
+    stages = [{'method': 'input'}, *config['preproc'], {'method': 'output'}]
+    stage_str = "$\\bf{{{0}}}$ {1}"
+
+    ax.arrow( 0.5, 1, 0.0, -1, fc="k", ec="k",
+    head_width=0.045, head_length=0.035, length_includes_head=True)
+
+
+    for idx, stage in enumerate(stages):
+
+        b = box if stage['method'] not in ['input', 'output'] else startbox
+        stage = stage.copy()
+        method = stage.pop('method')
+        method = method.replace('_', '\_')
+
+        ax.text(0.5, 1-stage_height*idx, stage_str.format(method, str(stage)[1:-1]),
+                ha='center', va='center', bbox=b, fontdict=font, wrap=True)
+
+    ax.set_ylim(0, 1.05)
+    ax.set_xlim(0.25, 0.75)
+
+    if outname is not None:
+        fig.savefig(outname, dpi=300, transparent=True)
+
+    if show is True:
+        fig.show()
+
+    return fig
+
 
 # --------------------------------------------------------------
 # Bach processing
