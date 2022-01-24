@@ -82,6 +82,15 @@ def run_mne_resample(dataset, userargs, logfile=None):
     return dataset
 
 
+def run_mne_set_channel_types(dataset, userargs, logfile=None):
+    osl_print('\nSETTING CHANNEL TYPES', logfile=logfile)
+    osl_print(str(userargs), logfile=logfile)
+    target = userargs.pop('target', 'raw')
+    # Separate function as we don't explode userargs
+    dataset[target].set_channel_types(userargs)
+    return dataset
+
+
 # Epochs Functions
 
 def run_mne_drop_bad(dataset, userargs, logfile=None):
@@ -100,7 +109,7 @@ def run_mne_drop_bad(dataset, userargs, logfile=None):
     return dataset
 
 
-# TFR 
+# TFR
 
 def run_mne_apply_baseline(dataset, userargs, logfile=None):
     osl_print('\nAPPLY BASELINE', logfile=logfile)
