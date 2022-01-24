@@ -48,7 +48,7 @@ osl.preprocessing.run_proc_batch(config, list_of_raw_files, outdir, overwrite=Tr
 If your config is saved to disk in a text file, you can load it in like this
 
 ```
-config = osl.preprocessing.check_inconfig('/path/to/my/config.yaml')
+config = osl.preprocessing.load_config('/path/to/my/config.yaml')
 ```
 
 ### An example with epoching
@@ -80,7 +80,7 @@ preproc:
 and the following code runs the chain on a file:
 
 ```
-config = osl.preprocessing.check_inconfig('myconfig.yaml`)
+config = osl.preprocessing.load_config('myconfig.yaml`)
 
 fname = '/path/to/my/dataset.fif'
 
@@ -122,18 +122,25 @@ dataset = osl.preprocessing.run_proc_chain(fname, config)
 The command line function osl_batch is installed with the package. This is a command line interface to run_proc_batch
 
 ```
-usage: usage: osl_batch [-h] [--overwrite] config files outdir
+usage: usage: osl_batch [-h] [--overwrite] [--nprocesses NPROCESSES]
+                 [--mnelog MNELOG]
+                 config files outdir
 
 Batch preprocess some fif files.
 
 positional arguments:
-  config       yaml defining preproc
-  files        plain text file containing full paths to files to be processed
-  outdir       Path to output directory to save data in
+  config                yaml defining preproc
+  files                 plain text file containing full paths to files to be
+                        processed
+  outdir                Path to output directory to save data in
 
 optional arguments:
-  -h, --help   show this help message and exit
-  --overwrite  Overwrite previous output files if they're in the way
+  -h, --help            show this help message and exit
+  --overwrite           Overwrite previous output files if they're in the way
+  --nprocesses NPROCESSES
+                        Number of jobs to process in parallel
+  --mnelog MNELOG       Set the logging level for MNE python functions
+
 ```
 
 for example...
