@@ -138,4 +138,4 @@ def osl_print(s, logfile=None):
     print(s)
     if logfile is not None:
         with open(logfile, 'a') as f:
-            f.write(s + '\n')
+            f.write(str(s) + '\n')
