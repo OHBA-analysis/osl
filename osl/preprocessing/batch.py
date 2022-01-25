@@ -33,9 +33,15 @@ import mne
 import numpy as np
 import sails
 import yaml
+from joblib import Parallel, delayed
 
-from ..utils import find_run_id, validate_outdir, process_file_inputs, osl_print
+from ..utils import find_run_id, validate_outdir, process_file_inputs
+from ..utils import logger as osl_logger
 from . import _mne_wrappers
+
+# Housekeeping for logging
+import logging
+logger = logging.getLogger(__name__)
 
 # --------------------------------------------------------------
 # Data importers
@@ -47,9 +53,10 @@ def import_data(infile, preload=True, logfile=None):
             "infile must be a str. Got type(infile)={0}.".format(type(infile))
         )
 
-    osl_print('IMPORTING: {0}'.format(infile), logfile=logfile)
+    logger.info('IMPORTING: {0}'.format(infile))
 
     if os.path.split(infile)[1] == 'c,rfDC':
+        logger.info('Detected BTI file format, using: mne.io.read_raw_bti')
         # We have a BTI scan
         if os.path.isfile(os.path.join(os.path.split(infile)[0], 'hs_file')):
             head_shape_fname = 'hs_file'
@@ -57,17 +64,23 @@ def import_data(infile, preload=True, logfile=None):
             head_shape_fname = None
         raw = mne.io.read_raw_bti(infile, head_shape_fname=head_shape_fname, preload=preload)
     elif os.path.splitext(infile)[1] == '.fif':
+        logger.info('Detected fif file format, using: mne.io.read_raw_fif')
         # We have a FIF file
         raw = mne.io.read_raw_fif(infile, preload=preload)
     elif os.path.splitext(infile)[1] == '.meg4':
+        logger.info('Detected CTF file format, using: mne.io.read_raw_ctf')
         # We have the meg file from a ds directory
         raw = mne.io.read_raw_ctf(os.path.dirname(infile), preload=preload)
+        logger.info('Detected CTF file format, using: mne.io.read_raw_ctf')
     elif os.path.splitext(infile)[1] == '.ds':
         raw = mne.io.read_raw_ctf(infile, preload=preload)
     elif os.path.splitext(infile)[1] == '.vhdr':
+        logger.info('Detected brainvision file format, using: mne.io.read_raw_brainvision')
         raw = mne.io.read_raw_brainvision(infile, preload=preload)
     else:
-        raise ValueError('Unable to determine file type of input {0}'.format(infile))
+        msg = 'Unable to determine file type of input {0}'.format(infile)
+        logger.error(msg)
+        raise ValueError(msg)
 
     return raw
 
@@ -79,7 +92,7 @@ def import_data(infile, preload=True, logfile=None):
 # similar to _mne_wrappers (with ICA functions?).
 
 
-def detect_badsegments(raw, segment_len=1000, picks='grad', logfile=None):
+def detect_badsegments(raw, segment_len=1000, picks='grad'):
     """Set bad segments in MNE object."""
     bdinds = sails.utils.detect_artefacts(raw.get_data(picks=picks), 1,
                                           reject_mode='segments',
@@ -106,12 +119,12 @@ def detect_badsegments(raw, segment_len=1000, picks='grad', logfile=None):
     full_dur = raw.n_times/raw.info['sfreq']
     pc = (mod_dur / full_dur) * 100
     s = 'Modality {0} - {1:02f}/{2} seconds rejected     ({3:02f}%)'
-    osl_print(s.format('picks', mod_dur, full_dur, pc), logfile=logfile)
+    logger.info(s.format('picks', mod_dur, full_dur, pc))
 
     return raw
 
 
-def detect_badchannels(raw, picks='grad', logfile=None):
+def detect_badchannels(raw, picks='grad'):
     """Set bad channels in MNE object."""
     bdinds = sails.utils.detect_artefacts(raw.get_data(picks=picks), 0,
                                           reject_mode='dim',
@@ -127,7 +140,7 @@ def detect_badchannels(raw, picks='grad', logfile=None):
 
     s = 'Modality {0} - {1}/{2} channels rejected     ({3:02f}%)'
     pc = (bdinds.sum() / len(bdinds)) * 100
-    osl_print(s.format(picks, bdinds.sum(), len(bdinds), pc), logfile=logfile)
+    logger.info(s.format(picks, bdinds.sum(), len(bdinds), pc))
 
     if np.any(bdinds):
         raw.info['bads'] = list(ch_names[np.where(bdinds)[0]])
@@ -137,17 +150,18 @@ def detect_badchannels(raw, picks='grad', logfile=None):
 # Wrapper functions
 
 def run_osl_bad_segments(dataset, userargs, logfile=None):
-    osl_print('\nBAD-SEGMENTS', logfile=logfile)
-    osl_print(str(userargs), logfile=logfile)
+    target = userargs.pop('target', 'raw')
+    logger.info('OSL Stage - {0} : {1}'.format(target, 'detect_badsegments'))
+    logger.info('userargs: {0}'.format(str(userargs)))
     dataset['raw'] = detect_badsegments(dataset['raw'], **userargs)
-
     return dataset
 
 
 def run_osl_bad_channels(dataset, userargs, logfile=None):
-    osl_print('\nBAD-CHANNELS', logfile=logfile)
-    osl_print(str(userargs), logfile=logfile)
-    dataset['raw'] = detect_badchannels(dataset['raw'], **userargs, logfile=logfile)
+    target = userargs.pop('target', 'raw')
+    logger.info('OSL Stage - {0} : {1}'.format(target, 'detect_badchannels'))
+    logger.info('userargs: {0}'.format(str(userargs)))
+    dataset['raw'] = detect_badchannels(dataset['raw'], **userargs)
     return dataset
 
 
@@ -190,7 +204,7 @@ def find_func(method, target='raw', extra_funcs=None):
                 func = partial(_mne_wrappers.run_mne_anonymous, method=method)
 
     if func is None:
-        print('Func not found! {0}'.format(method))
+        logger.critical('Func not found! {0}'.format(method))
 
     return func
 
@@ -296,7 +310,8 @@ def plot_preproc_flowchart(config, outname=None, show=True):
 # --------------------------------------------------------------
 # Bach processing
 
-def run_proc_chain(infile, config, outname=None, outdir=None, ret_dataset=True, overwrite=False, extra_funcs=None):
+def run_proc_chain(infile, config, outname=None, outdir=None, ret_dataset=True,
+                   overwrite=False, extra_funcs=None, verbose='INFO', mneverbose='WARNING'):
 
     if outname is None:
         #run_id = os.path.split(infile)[1].rstrip('.fif')
@@ -311,12 +326,15 @@ def run_proc_chain(infile, config, outname=None, outdir=None, ret_dataset=True, 
         name_base = '{run_id}_{ftype}.{fext}'
         outbase = os.path.join(outdir, name_base)
         logfile = outbase.format(run_id=run_id, ftype='preproc', fext='log')
+        print(logfile)
         mne.utils._logging.set_log_file(logfile)
     else:
         logfile = None
+    osl_logger.set_up(prefix=run_id, log_file=logfile, level=verbose, startup=False)
+    logger = logging.getLogger(__name__)
     now = strftime("%Y-%m-%d %H:%M:%S", localtime())
-    osl_print('{0} : Starting OSL Processing'.format(now), logfile=logfile)
-    osl_print('input : {0}'.format(infile), logfile=logfile)
+    logger.info('{0} : Starting OSL Processing'.format(now))
+    logger.info('input : {0}'.format(infile))
 
     if isinstance(infile, str):
         raw = import_data(infile)
@@ -335,17 +353,17 @@ def run_proc_chain(infile, config, outname=None, outdir=None, ret_dataset=True, 
         target = stage.get('target', 'raw')  # Raw is default
         func = find_func(method, target=target, extra_funcs=extra_funcs)
         try:
-            dataset = func(dataset, stage, logfile=logfile)
+            dataset = func(dataset, stage)
         except Exception as e:
-            print('PROCESSING FAILED!!!!')
+            logger.critical('PROCESSING FAILED!!!!')
             ex_type, ex_value, ex_traceback = sys.exc_info()
-            print("{0} : {1}".format(method, func))
-            print(ex_type)
-            print(ex_value)
-            print(traceback.print_tb(ex_traceback))
+            logger.error("{0} : {1}".format(method, func))
+            logger.error(ex_type)
+            logger.error(ex_value)
+            logger.error(traceback.print_tb(ex_traceback))
             if outdir is not None:
                 with open(logfile.replace('.log', '.error.log'), 'w') as f:
-                    f.write('Processing filed during stage : "{0}"\n\n'.format(method))
+                    f.write('Processing filed during stage : "{0}"'.format(method))
                     f.write(str(ex_type))
                     f.write('\n')
                     f.write(str(ex_value))
@@ -357,7 +375,7 @@ def run_proc_chain(infile, config, outname=None, outdir=None, ret_dataset=True, 
         write_dataset(dataset, outbase, run_id, overwrite=overwrite)
 
     now = strftime("%Y-%m-%d %H:%M:%S", localtime())
-    osl_print('{0} : Processing Complete'.format(now), logfile=logfile)
+    logger.info('{0} : Processing Complete'.format(now))
 
     if ret_dataset:
         return dataset
@@ -365,7 +383,7 @@ def run_proc_chain(infile, config, outname=None, outdir=None, ret_dataset=True, 
         return 1
 
 
-def run_proc_batch(config, files, outdir, overwrite=False, nprocesses=1, mnelog='INFO'):
+def run_proc_batch(config, files, outdir, overwrite=False, nprocesses=1, verbose='INFO', mneverbose='WARNING'):
     """
     files can be a list of Raw objects or a list of filenames or a path to a
     textfile list of filenames
@@ -376,21 +394,23 @@ def run_proc_batch(config, files, outdir, overwrite=False, nprocesses=1, mnelog=
     """
 
     # -------------------------------------------------------------
-    mne.set_log_level(mnelog)
+    mne.set_log_level(mneverbose)
+    logfile = os.path.join(outdir, 'osl_batch.log')
+    osl_logger.set_up(log_file=logfile, level=verbose, startup=False)
 
-    print('\n\nOHBA Auto-Proc\n\n')
+    logger.info('Starting OSL Batch Processing')
 
     infiles, outnames, good_files = process_file_inputs(files)
-    print('Processing {0} files'.format(sum(good_files)))
+    logger.info('Processing {0} files'.format(sum(good_files)))
 
     outdir = validate_outdir(outdir)
 
     name_base = '{run_id}_{ftype}.{fext}'
     outbase = outdir / name_base
 
-    print('Outputs saving to: {0}\n\n'.format(outdir))
+    logger.info('Outputs saving to: {0}\n\n'.format(outdir))
     config = load_config(config)
-    print(yaml.dump(config))
+    #print(yaml.dump(config))
 
     # -------------------------------------------------------------
     # Create partial function with fixed options
@@ -410,11 +430,10 @@ def run_proc_batch(config, files, outdir, overwrite=False, nprocesses=1, mnelog=
         args.append((infif, config, outname))
 
     # Actually run the processes
-    p = mp.Pool(processes=nprocesses)
-    proc_flags = p.starmap(pool_func, args)
-    p.close()
+    with Parallel(n_jobs=nprocesses, verbose=50) as parallel:
+        proc_flags = parallel(delayed(pool_func)(*aa) for aa in args)
 
-    print('Processed {0}/{1} files successfully'.format(np.sum(proc_flags), len(proc_flags)))
+    logger.info('Processed {0}/{1} files successfully'.format(np.sum(proc_flags), len(proc_flags)))
 
     # Return failed flags
     return proc_flags
@@ -428,7 +447,6 @@ def main(argv=None):
 
     if argv is None:
         argv = sys.argv[1:]
-    print(argv)
 
     parser = argparse.ArgumentParser(description='Batch preprocess some fif files.')
     parser.add_argument('config', type=str,
@@ -441,12 +459,13 @@ def main(argv=None):
                         help="Overwrite previous output files if they're in the way")
     parser.add_argument('--nprocesses', type=int, default=1,
                         help="Number of jobs to process in parallel")
-    parser.add_argument('--mnelog', type=str, default='INFO',
-                        help="Set the logging level for MNE python functions")
+    parser.add_argument('--verbose', type=str, default='INFO',
+                        help="Set the logging level for OSL functions")
+    parser.add_argument('--mneverbose', type=str, default='WARNING',
+                        help="Set the logging level for MNE functions")
 
     parser.usage = parser.format_help()
     args = parser.parse_args(argv)
-    print(args)
 
     run_proc_batch(**vars(args))
 

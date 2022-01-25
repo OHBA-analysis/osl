@@ -5,7 +5,9 @@
 import mne
 import numpy as np
 
-from ..utils import osl_print
+# Housekeeping for logging
+import logging
+logger = logging.getLogger(__name__)
 
 # --------------------------------------------------------------
 # MNE Raw/Epochs Object Methods
@@ -21,10 +23,10 @@ from ..utils import osl_print
 # call if a wrapper is present. If no wrapper is present then we fall back to
 # the direct method call.
 
-def run_mne_anonymous(dataset, userargs, method, logfile=None):
-    osl_print('\nMNE ANON - {0}'.format(method), logfile=logfile)
-    osl_print(str(userargs), logfile=logfile)
+def run_mne_anonymous(dataset, userargs, method):
     target = userargs.pop('target', 'raw')
+    logger.info('MNE Stage - {0}.{1}'.format(target, method))
+    logger.info('userargs: {0}'.format(str(userargs)))
     if hasattr(dataset[target], method) and callable(getattr(dataset[target], method)):
         getattr(dataset[target], method)(**userargs)
     else:
@@ -37,44 +39,43 @@ def run_mne_anonymous(dataset, userargs, method, logfile=None):
 
 # General wrapper functions - work on Raw and Epochs
 
-def run_mne_notch_filter(dataset, userargs, logfile=None):
-    osl_print('\nNOTCH-FILTERING', logfile=logfile)
-    osl_print(str(userargs), logfile=logfile)
+def run_mne_notch_filter(dataset, userargs):
     target = userargs.pop('target', 'raw')
+    logger.info('MNE Stage - {0}.{1}'.format(target, 'notch_filter'))
+    logger.info('userargs: {0}'.format(str(userargs)))
     freqs = np.array(userargs.pop('freqs').split(' ')).astype(float)
     dataset[target].notch_filter(freqs, **userargs)
     return dataset
 
 
-def run_mne_pick(dataset, userargs, logfile=None):
-    osl_print('\nPICKING', logfile=logfile)
-    osl_print(str(userargs), logfile=logfile)
+def run_mne_pick(dataset, userargs):
     target = userargs.pop('target', 'raw')
+    logger.info('MNE Stage - {0}.{1}'.format(target, 'pick'))
+    logger.info('userargs: {0}'.format(str(userargs)))
     dataset[target].pick(**userargs)
     return dataset
 
 
-def run_mne_pick_channels(dataset, userargs, logfile=None):
-    osl_print('\nPICKING CHANNELS ', logfile=logfile)
-    osl_print(str(userargs), logfile=logfile)
+def run_mne_pick_channels(dataset, userargs):
     target = userargs.pop('target', 'raw')
+    logger.info('MNE Stage - {0}.{1}'.format(target, 'pick_channels'))
+    logger.info('userargs: {0}'.format(str(userargs)))
     dataset[target].pick_channels(**userargs)
     return dataset
 
 
-def run_mne_pick_types(dataset, userargs, logfile=None):
-    osl_print('\nPICKING CHANNEL TYPES', logfile=logfile)
-    osl_print(str(userargs), logfile=logfile)
+def run_mne_pick_types(dataset, userargs):
     target = userargs.pop('target', 'raw')
+    logger.info('MNE Stage - {0}.{1}'.format(target, 'pick_types'))
+    logger.info('userargs: {0}'.format(str(userargs)))
     dataset[target].pick_types(**userargs)
     return dataset
 
 
-def run_mne_resample(dataset, userargs, logfile=None):
-    """The MNE guys don't seem to like resampling so much..."""
-    osl_print('\nRESAMPLING', logfile=logfile)
-    osl_print(str(userargs), logfile=logfile)
+def run_mne_resample(dataset, userargs):
     target = userargs.pop('target', 'raw')
+    logger.info('MNE Stage - {0}.{1}'.format(target, 'resample'))
+    logger.info('userargs: {0}'.format(str(userargs)))
     if ('events' in dataset) and (dataset['events'] is not None):
         dataset[target], dataset['events'] = dataset[target].resample(events=dataset['events'], **userargs)
     else:
@@ -82,10 +83,10 @@ def run_mne_resample(dataset, userargs, logfile=None):
     return dataset
 
 
-def run_mne_set_channel_types(dataset, userargs, logfile=None):
-    osl_print('\nSETTING CHANNEL TYPES', logfile=logfile)
-    osl_print(str(userargs), logfile=logfile)
+def run_mne_set_channel_types(dataset, userargs):
     target = userargs.pop('target', 'raw')
+    logger.info('MNE Stage - {0}.{1}'.format(target, 'set_channel_types'))
+    logger.info('userargs: {0}'.format(str(userargs)))
     # Separate function as we don't explode userargs
     dataset[target].set_channel_types(userargs)
     return dataset
@@ -93,10 +94,10 @@ def run_mne_set_channel_types(dataset, userargs, logfile=None):
 
 # Epochs Functions
 
-def run_mne_drop_bad(dataset, userargs, logfile=None):
-    osl_print('\nMNE DROP BAD', logfile=logfile)
-    osl_print(str(userargs), logfile=logfile)
+def run_mne_drop_bad(dataset, userargs):
     target = userargs.pop('target', 'epochs')  # should only be epochs
+    logger.info('MNE Stage - {0}.{1}'.format(target, 'drop_bad'))
+    logger.info('userargs: {0}'.format(str(userargs)))
 
     # Need to sanitise values in 'reject' dictionary - these are strings after
     # being read in from yaml.
@@ -111,10 +112,11 @@ def run_mne_drop_bad(dataset, userargs, logfile=None):
 
 # TFR
 
-def run_mne_apply_baseline(dataset, userargs, logfile=None):
-    osl_print('\nAPPLY BASELINE', logfile=logfile)
-    osl_print(str(userargs), logfile=logfile)
-    target = userargs.pop('target', 'raw')
+def run_mne_apply_baseline(dataset, userargs):
+    target = userargs.pop('target', 'epochs')  # should only be epochs
+    logger.info('MNE Stage - {0}.{1}'.format(target, 'apply_baseline'))
+    logger.info('userargs: {0}'.format(str(userargs)))
+
     freqs = np.array(userargs.pop('baseline').split(' ')).astype(float)
     dataset[target].apply_baseline(freqs, **userargs)
     return dataset
@@ -127,16 +129,17 @@ def run_mne_apply_baseline(dataset, userargs, logfile=None):
 # These wrappers use MNE functions which use one or more different data types
 # and typically create a new data object in the dataset dictionary.
 
-def run_mne_find_events(dataset, userargs, logfile=None):
-    osl_print('\nFINDING EVENTS', logfile=logfile)
-    osl_print(str(userargs), logfile=logfile)
+def run_mne_find_events(dataset, userargs):
+    logger.info('MNE Stage - {0}.{1}'.format('mne', 'find_events'))
+    logger.info('userargs: {0}'.format(str(userargs)))
+
     dataset['events'] = mne.find_events(dataset['raw'], **userargs)
     return dataset
 
 
-def run_mne_epochs(dataset, userargs, logfile=None):
-    osl_print('\nEPOCHING', logfile=logfile)
-    osl_print(userargs, logfile=logfile)
+def run_mne_epochs(dataset, userargs):
+    logger.info('MNE Stage - {0}.{1}'.format('mne', 'epochs'))
+    logger.info('userargs: {0}'.format(str(userargs)))
     tmin = userargs.pop('tmin', -0.2)
     tmax = userargs.pop('tmax', 0.5)
     dataset['epochs'] = mne.Epochs(dataset['raw'],
@@ -149,10 +152,10 @@ def run_mne_epochs(dataset, userargs, logfile=None):
 # Time-frequency transforms
 
 
-def run_mne_tfr_multitaper(dataset, userargs, logfile=None):
-    osl_print('\nTFR MULTITAPER', logfile=logfile)
-    osl_print(str(userargs), logfile=logfile)
+def run_mne_tfr_multitaper(dataset, userargs):
     target = userargs.pop('target', 'epochs')
+    logger.info('MNE Stage - {0} on {1}'.format('tfr_multitaper', target))
+    logger.info('userargs: {0}'.format(str(userargs)))
     from mne.time_frequency import tfr_multitaper
 
     freqs = np.array(userargs.pop('freqs').split(' ')).astype('float')
@@ -168,10 +171,10 @@ def run_mne_tfr_multitaper(dataset, userargs, logfile=None):
     return dataset
 
 
-def run_mne_tfr_morlet(dataset, userargs, logfile=None):
-    osl_print('\nTFR MORLET', logfile=logfile)
-    osl_print(str(userargs), logfile=logfile)
+def run_mne_tfr_morlet(dataset, userargs):
     target = userargs.pop('target', 'epochs')
+    logger.info('MNE Stage - {0} on {1}'.format('tfr_morlet', target))
+    logger.info('userargs: {0}'.format(str(userargs)))
     from mne.time_frequency import tfr_morlet
 
     freqs = np.array(userargs.pop('freqs').split(' ')).astype('float')
@@ -183,10 +186,10 @@ def run_mne_tfr_morlet(dataset, userargs, logfile=None):
     return dataset
 
 
-def run_mne_tfr_stockwell(dataset, userargs, logfile=None):
-    osl_print('\nTFR STOCKWELL', logfile=logfile)
-    osl_print(str(userargs), logfile=logfile)
+def run_mne_tfr_stockwell(dataset, userargs):
     target = userargs.pop('target', 'epochs')
+    logger.info('MNE Stage - {0} on {1}'.format('tfr_stockwell', target))
+    logger.info('userargs: {0}'.format(str(userargs)))
     from mne.time_frequency import tfr_stockwell
 
     out = tfr_stockwell(dataset[target], **userargs)
@@ -203,8 +206,11 @@ def run_mne_tfr_stockwell(dataset, userargs, logfile=None):
 # Currently assuming ICA on Raw data - no Epochs support yet
 
 
-def run_mne_ica_raw(dataset, userargs, logfile=None):
-    osl_print('\nICA', logfile=logfile)
+def run_mne_ica_raw(dataset, userargs):
+    target = userargs.pop('target', 'raw')
+    logger.info('MNE Stage - {0}'.format('mne.preprocessing.ICA'))
+    logger.info('userargs: {0}'.format(str(userargs)))
+
     # NOTE: **userargs doesn't work because 'picks' is in there
     ica = mne.preprocessing.ICA(n_components=userargs['n_components'])
     ica.fit(dataset['raw'], picks=userargs['picks'])
@@ -212,8 +218,11 @@ def run_mne_ica_raw(dataset, userargs, logfile=None):
     return dataset
 
 
-def run_mne_ica_autoreject(dataset, userargs, logfile=None):
-    osl_print('\nICA AUTOREJECT', logfile=logfile)
+def run_mne_ica_autoreject(dataset, userargs):
+    target = userargs.pop('target', 'raw')
+    logger.info('OSL Stage - {0}'.format('ICA Autoreject'))
+    logger.info('userargs: {0}'.format(str(userargs)))
+
     if np.logical_or('ecgmethod' not in userargs, userargs['ecgmethod'] == 'ctps'):
         ecgmethod = 'ctps'
     elif userargs['ecgmethod'] == 'correlation':
@@ -227,34 +236,39 @@ def run_mne_ica_autoreject(dataset, userargs, logfile=None):
                                                            measure='correlation')
 
     dataset['ica'].exclude.extend(eog_indices)
-    osl_print('Marking {0} as EOG ICs'.format(len(dataset['ica'].exclude)), logfile=logfile)
+    logger.info('Marking {0} as EOG ICs'.format(len(dataset['ica'].exclude)))
     ecg_indices, ecg_scores = dataset['ica'].find_bads_ecg(dataset['raw'],
                                                            threshold=ecgthreshold,
                                                            method=ecgmethod)
     dataset['ica'].exclude.extend(ecg_indices)
-    osl_print('Marking {0} as ECG ICs'.format(len(dataset['ica'].exclude)), logfile=logfile)
+    logger.info('Marking {0} as ECG ICs'.format(len(dataset['ica'].exclude)))
     if ('apply' not in userargs) or (userargs['apply'] is True):
-        osl_print('\nREMOVING SELECTED COMPONENTS FROM RAW DATA', logfile=logfile)
+        logger.info('Removing selected components from raw data')
         dataset['ica'].apply(dataset['raw'])
     else:
-        osl_print('\nCOMPONENTS WERE NOT REMOVED FROM RAW DATA', logfile=logfile)
+        logger.info('Components were not removed from raw data')
     return dataset
 
 
 def run_osl_ica_manualreject(dataset, userargs):
-    print('\nICA MANUAL REJECT')
+    target = userargs.pop('target', 'raw')
+    logger.info('OSL Stage - {0}'.format('ICA Manual Reject'))
+    logger.info('userargs: {0}'.format(str(userargs)))
+
     from .osl_plot_ica import plot_ica
     plot_ica(dataset['ica'], dataset['raw'], block=True)
-    print('Removing {0} IC'.format(len(dataset['ica'].exclude)))
+    logger.info('Removing {0} IC'.format(len(dataset['ica'].exclude)))
     if np.logical_or('apply' not in userargs, userargs['apply'] is True):
-        print('\nREMOVING SELECTED COMPONENTS FROM RAW DATA')
+        logger.info('Removing selected components from raw data')
         dataset['ica'].apply(dataset['raw'])
     else:
-        print('\nCOMPONENTS WERE NOT REMOVED FROM RAW DATA')
+        logger.info('Components were not removed from raw data')
     return dataset
 
 
-def run_mne_apply_ica(dataset, userargs, logfile=None):
-    osl_print('\nAPPLYING ICA', logfile=logfile)
+def run_mne_apply_ica(dataset, userargs):
+    target = userargs.pop('target', 'raw')
+    logger.info('MNE Stage - {0}'.format('ica.apply'))
+    logger.info('userargs: {0}'.format(str(userargs)))
     dataset['raw'] = dataset['ica'].apply(dataset['raw'])
     return dataset
