@@ -1,7 +1,7 @@
 from setuptools import setup
 
 # Requirement categories
-reqs = ['numpy', 'scipy', 'matplotlib', 'mne', 'sklearn', 'fslpy', 'sails', 'tabulate', 'pyyaml>=5.1', 'neurokit2', 'jinja2']
+reqs = ['numpy', 'scipy', 'matplotlib', 'mne<0.24.0', 'sklearn', 'fslpy', 'sails', 'tabulate', 'pyyaml>=5.1', 'neurokit2', 'jinja2']
 dev_reqs = ['setuptools>=41.0.1', 'pytest', 'pytest-cov', 'coverage', 'flake8']
 
 
