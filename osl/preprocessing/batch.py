@@ -383,7 +383,7 @@ def run_proc_chain(infile, config, outname=None, outdir=None, ret_dataset=True,
         return 1
 
 
-def run_proc_batch(config, files, outdir, overwrite=False, nprocesses=1, verbose='INFO', mneverbose='WARNING'):
+def run_proc_batch(config, files, outdir, overwrite=False, extra_funcs=None, nprocesses=1, verbose='INFO', mneverbose='WARNING'):
     """
     files can be a list of Raw objects or a list of filenames or a path to a
     textfile list of filenames
@@ -417,7 +417,8 @@ def run_proc_batch(config, files, outdir, overwrite=False, nprocesses=1, verbose
     pool_func = partial(run_proc_chain,
                         outdir=outdir,
                         ret_dataset=False,
-                        overwrite=overwrite)
+                        overwrite=overwrite,
+                        extra_funcs=extra_funcs)
 
     # For each file...
     args = []
