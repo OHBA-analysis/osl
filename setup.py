@@ -4,6 +4,7 @@ from setuptools import setup
 reqs = ['numpy', 'scipy', 'matplotlib', 'mne<0.24.0', 'sklearn', 'fslpy',
         'sails', 'tabulate', 'pyyaml>=5.1', 'neurokit2', 'jinja2', 'joblib',
         'file-tree']
+doc_reqs = ['numpydoc', 'sphinx_gallery', 'pydata-sphinx-theme']
 dev_reqs = ['setuptools>=41.0.1', 'pytest', 'pytest-cov', 'coverage', 'flake8']
 
 name = 'osl'
@@ -22,7 +23,14 @@ setup(name=name,
               'osl_maxfilter = osl.maxfilter.maxfilter:main',
               'osl_report = osl.report.raw_report:main',
               ]},
-      install_requires=reqs + dev_reqs,
+
+      install_requires=reqs,
+      extras_require={
+        'dev': dev_reqs,
+        'doc': doc_reqs,
+        'full': dev_reqs + doc_reqs,
+        },
+
       package_data={'osl': ['utils/*tree',
                             'utils/simulate/*npy',
                             'utils/simulate/*fif',
