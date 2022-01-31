@@ -6,7 +6,9 @@ reqs = ['numpy', 'scipy', 'matplotlib', 'mne<0.24.0', 'sklearn', 'fslpy',
         'file-tree']
 dev_reqs = ['setuptools>=41.0.1', 'pytest', 'pytest-cov', 'coverage', 'flake8']
 
-setup(name='osl',
+name = 'osl'
+
+setup(name=name,
       version='0.0.1.dev',
       description='OHBA Software Library',
       author='OHBA Analysis Group',
