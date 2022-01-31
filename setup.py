@@ -33,8 +33,8 @@ setup(name=name,
         },
 
       package_data={'osl': ['utils/*tree',
-                            'utils/simulate/*npy',
-                            'utils/simulate/*fif',
+                            'utils/simulation_config/*npy',
+                            'utils/simulation_config/*fif',
                             'report/templates/*']},
 
       command_options={

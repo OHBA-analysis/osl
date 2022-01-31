@@ -28,6 +28,7 @@ def simulate_data(model, num_samples=1000, num_realisations=1, use_cov=True):
 def simulate_raw_from_template(sim_samples, bad_segs=None):
 
     basedir = os.path.dirname(os.path.realpath(__file__))
+    basedir = os.path.join(basedir, 'simulation_config')
     info = mne.io.read_info(os.path.join(basedir, 'megin_template_info.fif'))
 
     Y = np.zeros((306, sim_samples))
