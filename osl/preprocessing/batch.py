@@ -109,6 +109,7 @@ def detect_badsegments(raw, segment_len=1000, picks='grad'):
     assert(len(onsets) == len(offsets))
     durations = offsets - onsets
     descriptions = np.repeat('bad_segment_{0}'.format(picks), len(onsets))
+    logger.info('Found {0} bad segments'.format(len(onsets)))
 
     onsets = onsets / raw.info['sfreq']
     durations = durations / raw.info['sfreq']

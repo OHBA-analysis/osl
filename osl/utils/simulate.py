@@ -3,6 +3,7 @@ import mne
 import sails
 import numpy as np
 
+
 def simulate_data(model, num_samples=1000, num_realisations=1, use_cov=True):
     num_sources = model.nsignals
 
@@ -25,7 +26,7 @@ def simulate_data(model, num_samples=1000, num_realisations=1, use_cov=True):
     return Y
 
 
-def simulate_raw_from_template(sim_samples, bad_segs=None):
+def simulate_raw_from_template(sim_samples, bad_segments=None, bad_channels=None, flat_channels=None):
 
     basedir = os.path.dirname(os.path.realpath(__file__))
     basedir = os.path.join(basedir, 'simulation_config')
@@ -45,16 +46,22 @@ def simulate_raw_from_template(sim_samples, bad_segs=None):
         Xsim = simulate_data(red_model, num_samples=sim_samples) * 2e-12
         Xsim = pcacomp.T.dot(Xsim[:,:,0])[:,:,None]  # back to full space
 
-
         Y[mne.pick_types(info, meg=mod), :] = Xsim[:, :, 0]
 
+    if flat_channels is not None:
+        Y[flat_channels, :] = 0
+
+    if bad_channels is not None:
+        std = Y[bad_channels, :].std(axis=1)[:, None]
+        Y[bad_channels, :] += np.random.randn(len(bad_channels), Y.shape[1]) * std*2
+
+    if bad_segments is not None:
+        for seg in bad_segments:
+            std = Y[:, seg[0]:seg[1]].std(axis=1)[:, None]
+            Y[:, seg[0]:seg[1]] += np.random.randn(Y.shape[0], seg[1]-seg[0]) * std*5
 
     sim = mne.io.RawArray(Y, info)
     sim.info['sfreq'] = 150
-
-    if bad_segs is not None:
-        for mod in ['mag', 'grad']:
-            mne.pick_types
 
     return sim
 
