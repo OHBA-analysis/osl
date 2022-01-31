@@ -4,7 +4,7 @@ from setuptools import setup
 reqs = ['numpy', 'scipy', 'matplotlib', 'mne<0.24.0', 'sklearn', 'fslpy',
         'sails', 'tabulate', 'pyyaml>=5.1', 'neurokit2', 'jinja2', 'joblib',
         'file-tree']
-doc_reqs = ['numpydoc', 'sphinx_gallery', 'pydata-sphinx-theme']
+doc_reqs = ['sphinx==4.0.2', 'numpydoc', 'sphinx_gallery', 'pydata-sphinx-theme']
 dev_reqs = ['setuptools>=41.0.1', 'pytest', 'pytest-cov', 'coverage', 'flake8']
 
 name = 'osl'
