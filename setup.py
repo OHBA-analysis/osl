@@ -24,7 +24,7 @@ setup(name=name,
               'osl_report = osl.report.raw_report:main',
               ]},
 
-      python_requires='>=3.8',
+      python_requires='>=3.7',
       install_requires=reqs,
       extras_require={
         'dev': dev_reqs,
