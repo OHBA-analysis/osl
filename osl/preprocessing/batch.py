@@ -314,7 +314,6 @@ def run_proc_chain(infile, config, outname=None, outdir=None, ret_dataset=True,
                    overwrite=False, extra_funcs=None, verbose='INFO', mneverbose='WARNING'):
 
     if outname is None:
-        #run_id = os.path.split(infile)[1].rstrip('.fif')
         run_id = find_run_id(infile)
     else:
         run_id = os.path.splitext(outname)[0]
@@ -326,11 +325,11 @@ def run_proc_chain(infile, config, outname=None, outdir=None, ret_dataset=True,
         name_base = '{run_id}_{ftype}.{fext}'
         outbase = os.path.join(outdir, name_base)
         logfile = outbase.format(run_id=run_id, ftype='preproc', fext='log')
-        print(logfile)
         mne.utils._logging.set_log_file(logfile)
     else:
         logfile = None
     osl_logger.set_up(prefix=run_id, log_file=logfile, level=verbose, startup=False)
+    mne.set_log_level(mneverbose)
     logger = logging.getLogger(__name__)
     now = strftime("%Y-%m-%d %H:%M:%S", localtime())
     logger.info('{0} : Starting OSL Processing'.format(now))
