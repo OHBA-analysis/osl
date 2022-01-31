@@ -38,7 +38,9 @@ def phantom_report(ascii_report, savebase=None, *, figsize=(15, 4), dpi=150, tra
         for line in file.readlines():
             line = line.strip()
 
-            if m := file_pat.match(line):
+            #if m := file_pat.match(line):  # Can include this if we restrict to python >=3.8
+            m = file_pat.match(line)
+            if m:
                 summary['file'] = m.group(1)
                 summary['active-shielding'] = 'off' if m.group(2) == 'NO' else 'on'
 
@@ -51,7 +53,9 @@ def phantom_report(ascii_report, savebase=None, *, figsize=(15, 4), dpi=150, tra
                 summary['maxfilter'] = maxfilter
                 continue
 
-            if m := dip_pat.match(line):
+            #if m := dip_pat.match(line):  # As above python >=3.8
+            m = dip_pat.match(line)
+            if m:
                 fields = re.split(r'\s+', line)
 
                 count[0] += 1
@@ -66,12 +70,16 @@ def phantom_report(ascii_report, savebase=None, *, figsize=(15, 4), dpi=150, tra
                     baddip = fields[0] if baddip is None else (baddip + ',' + fields[0])
                 continue
 
-            if m := qva_pat.match(line):
+            #if m := qva_pat.match(line):
+            m = qva_pat.match(line)
+            if m:
                 fields = re.split(r'\s+', line)
                 summary['Q-average'] = fields[-1].lower()
                 continue
 
-            if m := qvr_pat.match(line):
+            #if m := qvr_pat.match(line):
+            m = qvr_pat.match(line)
+            if m:
                 fields = re.split(r'\s+', line)
                 summary['Q-variance'] = fields[-1].lower()
                 continue

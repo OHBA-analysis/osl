@@ -9,3 +9,4 @@ __pycache__
 dist
 build
 doc/build
+doc/source/build_tutorials/
