@@ -1,7 +1,7 @@
 from setuptools import setup
 
 # Requirement categories
-reqs = ['numpy', 'scipy<1.8', 'matplotlib', 'mne<0.24.0', 'sklearn', 'fslpy',
+reqs = ['numpy', 'scipy', 'matplotlib', 'mne<0.24.0', 'sklearn', 'fslpy',
         'sails', 'tabulate', 'pyyaml>=5.1', 'neurokit2', 'jinja2', 'joblib',
         'file-tree']
 doc_reqs = ['numpydoc', 'sphinx_gallery', 'pydata-sphinx-theme']
@@ -24,7 +24,7 @@ setup(name=name,
               'osl_report = osl.report.raw_report:main',
               ]},
 
-      python_requires='>3.6',
+      python_requires='>=3.8',
       install_requires=reqs,
       extras_require={
         'dev': dev_reqs,
