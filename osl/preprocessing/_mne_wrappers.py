@@ -149,6 +149,62 @@ def run_mne_epochs(dataset, userargs):
     return dataset
 
 
+# --------------------------------------------------------------
+# mne.preprocessing functions
+
+
+def run_mne_annotate_flat(dataset, userargs):
+    logger.info('MNE Stage - {0}.{1}'.format('mne.preprocessing', 'annotate_flat'))
+    logger.info('userargs: {0}'.format(str(userargs)))
+    target = userargs.pop('target', 'raw')
+
+    # Import func - otherwise line is too long even for me
+    from mne.preprocessing import annotate_flat
+    # Run maxfilter
+    dataset[target] = annotate_flat(dataset[target], **userargs)
+
+    return dataset
+
+
+def run_mne_find_bad_channels_maxwell(dataset, userargs):
+    logger.info('MNE Stage - {0}.{1}'.format('mne.preprocessing', 'find_bad_channels_maxwell'))
+    logger.info('userargs: {0}'.format(str(userargs)))
+    target = userargs.pop('target', 'raw')
+
+    # Import func - otherwise line is too long even for me
+    from mne.preprocessing import find_bad_channels_maxwell
+    # Run maxfilter
+    dataset[target] = find_bad_channels_maxwell(dataset[target], **userargs)
+
+    return dataset
+
+
+def run_mne_maxwell_filter(dataset, userargs):
+    logger.info('MNE Stage - {0}.{1}'.format('mne.preprocessing', 'maxwell_filter'))
+    logger.info('userargs: {0}'.format(str(userargs)))
+    target = userargs.pop('target', 'raw')
+
+    # Import func - otherwise line is too long even for me
+    from mne.preprocessing import maxwell_filter
+    # Run maxfilter
+    dataset[target] = maxwell_filter(dataset[target], **userargs)
+
+    return dataset
+
+
+def run_mne_compute_current_source_density(dataset, userargs):
+    logger.info('MNE Stage - {0}.{1}'.format('mne.preprocessing.', 'compute_current_source_density'))
+    logger.info('userargs: {0}'.format(str(userargs)))
+    target = userargs.pop('target', 'raw')
+
+    # Import func - otherwise line is too long even for me
+    from mne.preprocessing import compute_current_source_density
+    # Run Laplacian
+    dataset[target] = compute_current_source_density(dataset[target], **userargs)
+
+    return dataset
+
+
 # Time-frequency transforms
 
 
