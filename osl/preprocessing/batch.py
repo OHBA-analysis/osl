@@ -238,6 +238,19 @@ def load_config(config):
     if 'preproc' not in config:
         raise KeyError('Please specify preprocessing steps in config.')
 
+    for stage in config['preproc']:
+        # Check each stage is a dictionary with a single key
+        if not isinstance(stage, dict):
+            raise ValueError("Preprocessing stage '{0}' is a {1} not a dict".format(stage, type(stage)))
+
+        if len(stage) != 1:
+            raise ValueError("Preprocessing stage '{0}' should only have a single key".format(stage))
+
+        for key, val in stage.items():
+            # internally we want options to be an empty dict (for now at least)
+            if val in ['null', 'None', None]:
+                stage[key] = {}
+
     for step in config['preproc']:
         if config['meta']['event_codes'] is None and 'find_events' in step.values():
             raise KeyError(
@@ -354,11 +367,11 @@ def run_proc_chain(infile, config, outname=None, outdir=None, ret_dataset=True,
                'event_id': config['meta']['event_codes']}
 
     for stage in deepcopy(config['preproc']):
-        method = stage.pop('method')
-        target = stage.get('target', 'raw')  # Raw is default
+        method, userargs = next(iter(stage.items()))  # next(iter( feels a bit clumsy..
+        target = userargs.get('target', 'raw')  # Raw is default
         func = find_func(method, target=target, extra_funcs=extra_funcs)
         try:
-            dataset = func(dataset, stage)
+            dataset = func(dataset, userargs)
         except Exception as e:
             logger.critical('PROCESSING FAILED!!!!')
             ex_type, ex_value, ex_traceback = sys.exc_info()
