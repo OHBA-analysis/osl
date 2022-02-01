@@ -116,7 +116,7 @@ def detect_badsegments(raw, segment_len=1000, picks='grad', mode=None):
     descriptions = np.repeat('bad_segment_{0}'.format(picks), len(onsets))
     logger.info('Found {0} bad segments'.format(len(onsets)))
 
-    onsets = onsets / raw.info['sfreq']
+    onsets = (onsets + raw.first_samp) / raw.info['sfreq']
     durations = durations / raw.info['sfreq']
 
     raw.annotations.append(onsets, durations, descriptions)
