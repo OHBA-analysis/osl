@@ -160,8 +160,53 @@ def run_mne_annotate_flat(dataset, userargs):
 
     # Import func - otherwise line is too long even for me
     from mne.preprocessing import annotate_flat
-    # Run maxfilter
-    dataset[target] = annotate_flat(dataset[target], **userargs)
+    bad_annotations, flat_channels = annotate_flat(dataset[target], **userargs)
+
+    dataset[target].info['bads'].extend(flat_channels)
+
+    # Can't combine annotations with different orig_times, the following line
+    # fails if uncommented >>
+    # dataset[target].set_annotations(dataset[target].annotations + bad_annotations)
+
+    # ...so I'm extracting and reforming the muscle annotations here. Feels like
+    # the line above would be better if it worked - must be missing something?
+    onsets = []
+    durations = []
+    descriptions = []
+    for ann in bad_annotations:
+        onsets.append(ann['onset'])
+        durations.append(ann['duration'])
+        descriptions.append(ann['description'])
+
+    dataset[target].annotations.append(onsets, durations, descriptions)
+
+    return dataset
+
+
+def run_mne_annotate_muscle_zscore(dataset, userargs):
+    logger.info('MNE Stage - {0}.{1}'.format('mne.preprocessing', 'annotate_muscle_zscore'))
+    logger.info('userargs: {0}'.format(str(userargs)))
+    target = userargs.pop('target', 'raw')
+
+    # Import func - otherwise line is too long even for me
+    from mne.preprocessing import annotate_muscle_zscore
+    bad_annotations, _= annotate_muscle_zscore(dataset[target], **userargs)
+
+    # Can't combine annotations with different orig_times, the following line
+    # fails if uncommented >>
+    # dataset[target].set_annotations(dataset[target].annotations + bad_annotations)
+
+    # ...so I'm extracting and reforming the muscle annotations here. Feels like
+    # the line above would be better if it worked.
+    onsets = []
+    durations = []
+    descriptions = []
+    for ann in bad_annotations:
+        onsets.append(ann['onset'])
+        durations.append(ann['duration'])
+        descriptions.append(ann['description'])
+
+    dataset[target].annotations.append(onsets, durations, descriptions)
 
     return dataset
 
@@ -174,7 +219,9 @@ def run_mne_find_bad_channels_maxwell(dataset, userargs):
     # Import func - otherwise line is too long even for me
     from mne.preprocessing import find_bad_channels_maxwell
     # Run maxfilter
-    dataset[target] = find_bad_channels_maxwell(dataset[target], **userargs)
+    noisy, flats, scores = find_bad_channels_maxwell(dataset[target], **userargs)
+
+    dataset[target].info['bads'].extend(noisy + flat)
 
     return dataset
 
