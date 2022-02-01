@@ -92,9 +92,14 @@ def import_data(infile, preload=True, logfile=None):
 # similar to _mne_wrappers (with ICA functions?).
 
 
-def detect_badsegments(raw, segment_len=1000, picks='grad'):
+def detect_badsegments(raw, segment_len=1000, picks='grad', mode=None):
     """Set bad segments in MNE object."""
-    bdinds = sails.utils.detect_artefacts(raw.get_data(picks=picks), 1,
+    if mode is None:
+        XX = raw.get_data(picks=picks)
+    elif mode == 'diff':
+        XX = np.diff(raw.get_data(picks=picks), axis=1)
+
+    bdinds = sails.utils.detect_artefacts(XX, 1,
                                           reject_mode='segments',
                                           segment_len=segment_len,
                                           ret_mode='bad_inds')
