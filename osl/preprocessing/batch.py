@@ -28,6 +28,7 @@ import traceback
 from copy import deepcopy
 from functools import partial
 from time import localtime, strftime
+from datetime import datetime
 
 import mne
 import numpy as np
@@ -259,7 +260,15 @@ def load_config(config):
 
     return config
 
+def append_preprocinfo(dataset, config):
+    preprocinfo = f"\n\nOSL BATCH PROCESSING APPLIED ON {datetime.datetime.today().strftime('%d/%m/%Y %H:%M:%S')} \n%% config start %% \n{config} \n%% config end %%")
+    dataset['raw'].info['description'] = dataset['raw'].info['description'] + preprocinfo
+ 
+    if dataset['epochs'] is not None:
+        dataset['raw'].info['description'] = dataset['raw'].info['description']
 
+ return dataset
+   
 def write_dataset(dataset, outbase, run_id, overwrite=False):
     # Save output
     outname = outbase.format(run_id=run_id, ftype='raw', fext='fif')
@@ -389,6 +398,8 @@ def run_proc_chain(infile, config, outname=None, outdir=None, ret_dataset=True,
                     traceback.print_tb(ex_traceback, file=f)
             return 0
 
+    dataset = append_preprocinfo(dataset, config)
+           
     if outdir is not None:
         write_dataset(dataset, outbase, run_id, overwrite=overwrite)
 
