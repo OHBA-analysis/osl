@@ -265,7 +265,7 @@ def append_preprocinfo(dataset, config):
     dataset['raw'].info['description'] = dataset['raw'].info['description'] + preprocinfo
  
     if dataset['epochs'] is not None:
-        dataset['raw'].info['description'] = dataset['raw'].info['description']
+        dataset['epochs'].info['description'] = dataset['epochs'].info['description'] + preprocinfo
 
  return dataset
    
