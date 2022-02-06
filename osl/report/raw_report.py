@@ -32,7 +32,7 @@ def get_header_id(raw):
     """Extract scan name from MNE data object."""
     return raw.filenames[0].split('/')[-1].strip('.fif')
 
-def gen_html_data(raw, ica=None, outdir=None, artefact_scan=False):
+def gen_html_data(raw, ica, outdir, level):
     """Generate HTML web-report for an MNE data object."""
 
     data = {}
@@ -40,6 +40,9 @@ def gen_html_data(raw, ica=None, outdir=None, artefact_scan=False):
     data['fif_id'] = get_header_id(raw)
 
     print('Processing : {0}'.format(data['filename']))
+
+    # Level of reporting
+    data['level'] = level
 
     # Scan info
     data['projname'] = raw.info['proj_name']
@@ -103,12 +106,13 @@ def gen_html_data(raw, ica=None, outdir=None, artefact_scan=False):
     plot_channel_time_series(raw, savebase)
     plot_sensors(raw, savebase)
     plot_channel_dists(raw, savebase)
-    plot_digitisation_2d(raw, savebase)
-    plot_eog_summary(raw, savebase)
-    plot_ecg_summary(raw, savebase)
-    plot_bad_ica(raw, ica, savebase)
     plot_spectra(raw, savebase)
-    if artefact_scan:
+    plot_digitisation_2d(raw, savebase)
+    if level > 0:
+        plot_eog_summary(raw, savebase)
+        plot_ecg_summary(raw, savebase)
+        plot_bad_ica(raw, ica, savebase)
+    if level > 1:
         plot_artefact_scan(raw, savebase)
 
     # Stem of the filename
@@ -116,18 +120,16 @@ def gen_html_data(raw, ica=None, outdir=None, artefact_scan=False):
 
     # Full filenames of each plot
     data['plt_channeldev'] = filebase.format('channel_dev')
-    data['plt_badseg'] = filebase.format('bad_seg')
     data['plt_badchans'] = filebase.format('bad_chans')
     data['plt_temporaldev'] = filebase.format('temporal_sumsq')
-    data['plt_artefacts_eog'] = filebase.format('EOG')
-    data['plt_artefacts_ecg'] = filebase.format('ECG')
-    data['plt_artefacts_ica'] = filebase.format('ICA')
-    data['plt_digitisation'] = filebase.format('digitisation')
     data['plt_spectra'] = filebase.format('spectra_full')
     data['plt_zoom_spectra'] = filebase.format('spectra_zoom')
-
-    if artefact_scan:
-        data['artefact_scan'] = True
+    data['plt_digitisation'] = filebase.format('digitisation')
+    if level > 0 :
+        data['plt_artefacts_eog'] = filebase.format('EOG')
+        data['plt_artefacts_ecg'] = filebase.format('ECG')
+        data['plt_artefacts_ica'] = filebase.format('ICA')
+    if level > 1:
         data['plt_eyemove_grad'] = filebase.format('eyemove_grad')
         data['plt_eyemove_mag'] = filebase.format('eyemove_mag')
         data['plt_eyemove_eog'] = filebase.format('eyemove_eog')
@@ -144,14 +146,26 @@ def gen_html_data(raw, ica=None, outdir=None, artefact_scan=False):
         data['plt_clench_mag'] = filebase.format('clench_mag')
         data['plt_buttonpress_grad'] = filebase.format('buttonpress_grad')
         data['plt_buttonpress_mag'] = filebase.format('buttonpress_mag')
-    else:
-        data['artefact_scan'] = False
 
     return data
 
 
-def gen_report(infiles, outdir, preproc_config=None, artefact_scan=False):
-    """Generate web-report for a set of MNE data objects."""
+def gen_report(infiles, outdir, preproc_config=None, level=1):
+    """Generate web-report for a set of MNE data objects.
+
+    Parameters
+    ----------
+    infiles : list of str
+        List of paths to fif files.
+    outdir : str
+        Directory to save HTML report and figures to.
+    preproc_config : dict
+        Preprocessing to apply before generating the report.
+    level : int
+        0 for a basic report.
+        1 basic report with EOG, ECG and ICA.
+        2 basic report with EOG, ECG, ICA and an artefact scan.
+    """
 
     # Validate input files and directory to save html file and plots to
     infiles, outnames, good_files = process_file_inputs(infiles)
@@ -190,7 +204,7 @@ def gen_report(infiles, outdir, preproc_config=None, artefact_scan=False):
             ica = dataset['ica']
 
         # Generate data and plots for the panel
-        data = gen_html_data(raw, ica=ica, outdir=outdir, artefact_scan=artefact_scan)
+        data = gen_html_data(raw, ica, outdir, level)
 
         # Render the panel
         panels.append(panel_template.render(data=data))
@@ -207,7 +221,7 @@ def gen_report(infiles, outdir, preproc_config=None, artefact_scan=False):
 
     # Render the full page
     page_template = load_template('raw_report')
-    page = page_template.render(panels=panels, toplinks=toplinks, preproc=preproc)
+    page = page_template.render(panels=panels, toplinks=toplinks, preproc=preproc, level=level)
 
     # Write the output file
     outpath = '{0}/osl_raw_report.html'.format(outdir)
@@ -230,17 +244,7 @@ def load_template(tname):
 
 
 def plot_channel_time_series(raw, savebase=None):
-    """Plots bad segments and sum-square time courses."""
-
-    # Make bad segment plots
-    fig = raw.plot(duration=30, show=False, verbose=0)
-    fig.set_size_inches(16, 4)
-
-    # Save
-    figname = savebase.format('bad_seg')
-    print(figname)
-    fig.savefig(figname, dpi=150, transparent=True)
-    plt.close(fig)
+    """Plots sum-square time courses."""
 
     # Raw data
     channel_types = {
@@ -745,29 +749,22 @@ def print_scan_summary(raw):
 
 
 def main(argv=None):
-
     if argv is None:
         argv = sys.argv[1:]
-    print(argv)
 
-    parser = argparse.ArgumentParser(description='Run a quick Quality Control summary on data.')
+    parser = argparse.ArgumentParser(description='Run a quality control summary on data.')
     parser.add_argument('files', type=str, nargs='+',
                         help='plain text file containing full paths to files to be processed')
     parser.add_argument('--outdir', type=str, default=None,
                         help='Path to output directory to save data in')
-    parser.add_argument('--config', type=str,
-                        help='yaml defining preproc')
-    parser.add_argument('--artefactscan', action="store_true",
-                        help='Generate additional plots assuming inputs are artefact scans')
+    parser.add_argument('--preproc_config', type=str,
+                        help='yaml defining preprocessing')
+    parser.add_argument('--level', type=int, default=1, help='Level of reporting')
 
     args = parser.parse_args(argv)
 
-    # -------------------------------------------
+    gen_report(args.files, args.outdir, args.preproc_config, args.level)
 
-    gen_report(args.files, args.outdir, preproc_config=args.config,  artefact_scan=args.artefactscan)
-
-
-# ----------------------------------------------------------------------
 
 if __name__ == '__main__':
     main()

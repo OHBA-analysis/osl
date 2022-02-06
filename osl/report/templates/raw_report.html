@@ -54,11 +54,13 @@
     <button class="button1" style="border-top-style: solid; border-left-style: solid; border-right-style: solid" onclick="openAllTabs(event, 'info')">Info</button>
     <button class="button1" style="border-top-style: solid; border-left-style: solid; border-right-style: solid" onclick="openAllTabs(event, 'timeseries')">Time-Series</button>
     <button class="button1" style="border-top-style: solid; border-left-style: solid; border-right-style: solid" onclick="openAllTabs(event, 'channels')">Channels</button>
-    <button class="button1" style="border-top-style: solid; border-left-style: solid; border-right-style: solid" onclick="openAllTabs(event, 'digitisation')">Digitisation</button>
-    <button class="button1" style="border-top-style: solid; border-left-style: solid; border-right-style: solid" onclick="openAllTabs(event, 'eog')">EOG</button>
-    <button class="button1" style="border-top-style: solid; border-left-style: solid; border-right-style: solid" onclick="openAllTabs(event, 'ecg')">ECG</button>
-    <button class="button1" style="border-top-style: solid; border-left-style: solid; border-right-style: solid" onclick="openAllTabs(event, 'ica')">ICA</button>
     <button class="button1" style="border-top-style: solid; border-left-style: solid; border-right-style: solid" onclick="openAllTabs(event, 'spectra')">Power Spectra</button>
+    <button class="button1" style="border-top-style: solid; border-left-style: solid; border-right-style: solid" onclick="openAllTabs(event, 'digitisation')">Digitisation</button>
+    {% if level > 0 %}
+        <button class="button1" style="border-top-style: solid; border-left-style: solid; border-right-style: solid" onclick="openAllTabs(event, 'eog')">EOG</button>
+        <button class="button1" style="border-top-style: solid; border-left-style: solid; border-right-style: solid" onclick="openAllTabs(event, 'ecg')">ECG</button>
+        <button class="button1" style="border-top-style: solid; border-left-style: solid; border-right-style: solid" onclick="openAllTabs(event, 'ica')">ICA</button>
+    {% endif %}
 </div>
 
 <div style='width:80%; margin: auto; text-align: center' >

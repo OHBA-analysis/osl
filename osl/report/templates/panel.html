@@ -7,11 +7,13 @@
         <button class="button1" onclick="openTab(event, '{{data.fif_id}}', 'info')" style="border-top-style: solid">Info</button>
         <button class="button1" onclick="openTab(event, '{{data.fif_id}}', 'timeseries')">Time-Series</button>
         <button class="button1" onclick="openTab(event, '{{data.fif_id}}', 'channels')">Channels</button>
-        <button class="button1" onclick="openTab(event, '{{data.fif_id}}', 'digitisation')">Digitisation</button>
-        <button class="button1" onclick="openTab(event, '{{data.fif_id}}', 'eog')">EOG</button>
-        <button class="button1" onclick="openTab(event, '{{data.fif_id}}', 'ecg')">ECG</button>
-        <button class="button1" onclick="openTab(event, '{{data.fif_id}}', 'ica')">ICA</button>
         <button class="button1" onclick="openTab(event, '{{data.fif_id}}', 'spectra')">Power Spectra</button>
+        <button class="button1" onclick="openTab(event, '{{data.fif_id}}', 'digitisation')">Digitisation</button>
+        {% if data.level > 0 %}
+            <button class="button1" onclick="openTab(event, '{{data.fif_id}}', 'eog')">EOG</button>
+            <button class="button1" onclick="openTab(event, '{{data.fif_id}}', 'ecg')">ECG</button>
+            <button class="button1" onclick="openTab(event, '{{data.fif_id}}', 'ica')">ICA</button>
+        {% endif %}
     </div>
   </div>
   <div class="flex-child" style="flex: 5; padding-left: 25px">
@@ -43,13 +45,13 @@
     
     <div class="tabpage" style="width: 100%; display: none" id={{ data.fif_id }}_timeseries>
         <div style="width: 100%; padding-top: 50px">
-            <h3>Bad segments</h3>
-            <img src="{{ data.plt_badseg }}" alt="" style='max-width: 100%'/>
-            <span>{{ '<br/>'.join(data.bad_seg[::-1]) }}</span>
-        </div>
-        <div style="width: 100%; padding-top: 50px">
             <h3>Time course of variance across sensors for recording</h3>
             <img src="{{ data.plt_temporaldev }}" alt="" style='max-width: 100%'/>
+        </div>
+        <div style="width: 100%; padding-top: 50px">
+            <h3>Bad segments</h3>
+            <span>{{ '<br/>'.join(data.bad_seg[::-1]) }}</span>
+            <span><br/><br/>Use MNE's raw.plot() to examine the raw time series.</span>
         </div>
     </div>
         
@@ -64,34 +66,6 @@
                 <img src="{{ data.plt_badchans }}" alt="" style='max-width: 100%'/>
             </div>
             <span>{{ data.bad_chans }}</span>
-        </div>
-    </div>
-        
-    <div class="tabpage" style="width: 100%; display: none" id={{ data.fif_id }}_digitisation>
-        <div style="width: 100%; padding-top: 50px">
-            <h3>Digitisation and Headshape</h3>
-            <img src="{{ data.plt_digitisation }}" alt="" style='max-width: 100%'/>
-        </div>
-    </div>
-
-    <div class="tabpage" style="width: 100%; display: none" id={{ data.fif_id }}_eog>
-        <div style="width: 100%; padding-top: 50px">
-            <h3>EOG Recording</h3>
-            <img src="{{ data.plt_artefacts_eog }}" alt="" style='max-width: 100%'/>
-        </div>
-    </div>
-        
-    <div class="tabpage" style="width: 100%; display: none" id={{ data.fif_id }}_ecg>
-        <div style="width: 100%; padding-top: 50px">
-            <h3>ECG Recording</h3>
-            <img src="{{ data.plt_artefacts_ecg }}" alt="" style='max-width: 100%'/>
-        </div>
-    </div>
-
-    <div class="tabpage" style="width: 100%; display: none" id={{ data.fif_id }}_ica>
-        <div style="width: 100%; padding-top: 50px">
-            <h3>Bad ICA Components</h3>
-            <img src="{{ data.plt_artefacts_ica }}" alt="" style='max-width: 100%'/>
         </div>
     </div>
         
@@ -110,7 +84,37 @@
         </div>
     </div>
 
-    {% if data.artefact_scan %}
+    <div class="tabpage" style="width: 100%; display: none" id={{ data.fif_id }}_digitisation>
+        <div style="width: 100%; padding-top: 50px">
+            <h3>Digitisation and Headshape</h3>
+            <img src="{{ data.plt_digitisation }}" alt="" style='max-width: 100%'/>
+        </div>
+    </div>
+        
+    {% if data.level > 0 %}
+        <div class="tabpage" style="width: 100%; display: none" id={{ data.fif_id }}_eog>
+            <div style="width: 100%; padding-top: 50px">
+                <h3>EOG Recording</h3>
+                <img src="{{ data.plt_artefacts_eog }}" alt="" style='max-width: 100%'/>
+            </div>
+        </div>
+            
+        <div class="tabpage" style="width: 100%; display: none" id={{ data.fif_id }}_ecg>
+            <div style="width: 100%; padding-top: 50px">
+                <h3>ECG Recording</h3>
+                <img src="{{ data.plt_artefacts_ecg }}" alt="" style='max-width: 100%'/>
+            </div>
+        </div>
+
+        <div class="tabpage" style="width: 100%; display: none" id={{ data.fif_id }}_ica>
+            <div style="width: 100%; padding-top: 50px">
+                <h3>Bad ICA Components</h3>
+                <img src="{{ data.plt_artefacts_ica }}" alt="" style='max-width: 100%'/>
+            </div>
+        </div>
+    {% endif %}
+
+    {% if data.level > 1 %}
         <h3>Blinks</h3>
         <img src="{{ data.plt_blink_eog}}" alt="" style='max-width: 100%'/>
         <div style="width: 100%; display: table">
@@ -196,10 +200,8 @@
                 </div>
             </div>
         </div>
-
     {% endif %}
 
-          </div>
-
     </div>
+  </div>
 </div>
