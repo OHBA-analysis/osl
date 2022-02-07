@@ -279,7 +279,7 @@ def append_preprocinfo(dataset, config):
     if dataset['epochs'] is not None:
         dataset['epochs'].info['description'] = dataset['epochs'].info['description'] + preprocinfo
 
- return dataset
+     return dataset
    
  
 def write_dataset(dataset, outbase, run_id, overwrite=False):
