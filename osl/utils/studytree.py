@@ -6,7 +6,6 @@ import os
 import inspect
 import file_tree
 
-
 class StudyTree:
     """Find and iterate through files in structured directories.
 
