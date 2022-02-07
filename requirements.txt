@@ -9,7 +9,6 @@ tabulate
 pyyaml>=5.1
 neurokit2
 jinja2
-joblib
 file-tree
 # Docs
 sphinx==4.0.2

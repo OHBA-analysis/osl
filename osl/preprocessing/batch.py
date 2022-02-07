@@ -18,32 +18,32 @@ https://mne.tools/dev/auto_tutorials/preprocessing/30_filtering_resampling.html#
 XML sanity check on config file. pre-parser to avoid mad sequences of methods.
 """
 
-import argparse
-import csv
-import multiprocessing as mp
-import matplotlib.pyplot as plt
+import re
 import os
 import sys
+import csv
+import click
+import pprint
+import argparse
 import traceback
+import matplotlib.pyplot as plt
 from copy import deepcopy
 from functools import partial
 from time import localtime, strftime
 from datetime import datetime
-import re
 
 import mne
 import numpy as np
 import sails
 import yaml
-from joblib import Parallel, delayed
 
-from ..utils import find_run_id, validate_outdir, process_file_inputs
-from ..utils import logger as osl_logger
+from ..utils import osl_logger as osl_logger
+from .. import utils
 from . import _mne_wrappers
 
 # Housekeeping for logging
 import logging
-logger = logging.getLogger(__name__)
+osl_logger = logging.getLogger(__name__)
 
 # --------------------------------------------------------------
 # Data importers
@@ -55,10 +55,10 @@ def import_data(infile, preload=True, logfile=None):
             "infile must be a str. Got type(infile)={0}.".format(type(infile))
         )
 
-    logger.info('IMPORTING: {0}'.format(infile))
+    osl_logger.info('IMPORTING: {0}'.format(infile))
 
     if os.path.split(infile)[1] == 'c,rfDC':
-        logger.info('Detected BTI file format, using: mne.io.read_raw_bti')
+        osl_logger.info('Detected BTI file format, using: mne.io.read_raw_bti')
         # We have a BTI scan
         if os.path.isfile(os.path.join(os.path.split(infile)[0], 'hs_file')):
             head_shape_fname = 'hs_file'
@@ -66,22 +66,22 @@ def import_data(infile, preload=True, logfile=None):
             head_shape_fname = None
         raw = mne.io.read_raw_bti(infile, head_shape_fname=head_shape_fname, preload=preload)
     elif os.path.splitext(infile)[1] == '.fif':
-        logger.info('Detected fif file format, using: mne.io.read_raw_fif')
+        osl_logger.info('Detected fif file format, using: mne.io.read_raw_fif')
         # We have a FIF file
         raw = mne.io.read_raw_fif(infile, preload=preload)
     elif os.path.splitext(infile)[1] == '.meg4':
-        logger.info('Detected CTF file format, using: mne.io.read_raw_ctf')
+        osl_logger.info('Detected CTF file format, using: mne.io.read_raw_ctf')
         # We have the meg file from a ds directory
         raw = mne.io.read_raw_ctf(os.path.dirname(infile), preload=preload)
-        logger.info('Detected CTF file format, using: mne.io.read_raw_ctf')
+        osl_logger.info('Detected CTF file format, using: mne.io.read_raw_ctf')
     elif os.path.splitext(infile)[1] == '.ds':
         raw = mne.io.read_raw_ctf(infile, preload=preload)
     elif os.path.splitext(infile)[1] == '.vhdr':
-        logger.info('Detected brainvision file format, using: mne.io.read_raw_brainvision')
+        osl_logger.info('Detected brainvision file format, using: mne.io.read_raw_brainvision')
         raw = mne.io.read_raw_brainvision(infile, preload=preload)
     else:
         msg = 'Unable to determine file type of input {0}'.format(infile)
-        logger.error(msg)
+        osl_logger.error(msg)
         raise ValueError(msg)
 
     return raw
@@ -116,7 +116,7 @@ def detect_badsegments(raw, segment_len=1000, picks='grad', mode=None):
     assert(len(onsets) == len(offsets))
     durations = offsets - onsets
     descriptions = np.repeat('bad_segment_{0}'.format(picks), len(onsets))
-    logger.info('Found {0} bad segments'.format(len(onsets)))
+    osl_logger.info('Found {0} bad segments'.format(len(onsets)))
 
     onsets = (onsets + raw.first_samp) / raw.info['sfreq']
     durations = durations / raw.info['sfreq']
@@ -127,7 +127,7 @@ def detect_badsegments(raw, segment_len=1000, picks='grad', mode=None):
     full_dur = raw.n_times/raw.info['sfreq']
     pc = (mod_dur / full_dur) * 100
     s = 'Modality {0} - {1:02f}/{2} seconds rejected     ({3:02f}%)'
-    logger.info(s.format('picks', mod_dur, full_dur, pc))
+    osl_logger.info(s.format('picks', mod_dur, full_dur, pc))
 
     return raw
 
@@ -148,7 +148,7 @@ def detect_badchannels(raw, picks='grad'):
 
     s = 'Modality {0} - {1}/{2} channels rejected     ({3:02f}%)'
     pc = (bdinds.sum() / len(bdinds)) * 100
-    logger.info(s.format(picks, bdinds.sum(), len(bdinds), pc))
+    osl_logger.info(s.format(picks, bdinds.sum(), len(bdinds), pc))
 
     if np.any(bdinds):
         raw.info['bads'] = list(ch_names[np.where(bdinds)[0]])
@@ -159,16 +159,16 @@ def detect_badchannels(raw, picks='grad'):
 
 def run_osl_bad_segments(dataset, userargs, logfile=None):
     target = userargs.pop('target', 'raw')
-    logger.info('OSL Stage - {0} : {1}'.format(target, 'detect_badsegments'))
-    logger.info('userargs: {0}'.format(str(userargs)))
+    osl_logger.info('OSL Stage - {0} : {1}'.format(target, 'detect_badsegments'))
+    osl_logger.info('userargs: {0}'.format(str(userargs)))
     dataset['raw'] = detect_badsegments(dataset['raw'], **userargs)
     return dataset
 
 
 def run_osl_bad_channels(dataset, userargs, logfile=None):
     target = userargs.pop('target', 'raw')
-    logger.info('OSL Stage - {0} : {1}'.format(target, 'detect_badchannels'))
-    logger.info('userargs: {0}'.format(str(userargs)))
+    osl_logger.info('OSL Stage - {0} : {1}'.format(target, 'detect_badchannels'))
+    osl_logger.info('userargs: {0}'.format(str(userargs)))
     dataset['raw'] = detect_badchannels(dataset['raw'], **userargs)
     return dataset
 
@@ -212,7 +212,7 @@ def find_func(method, target='raw', extra_funcs=None):
                 func = partial(_mne_wrappers.run_mne_anonymous, method=method)
 
     if func is None:
-        logger.critical('Func not found! {0}'.format(method))
+        osl_logger.critical('Func not found! {0}'.format(method))
 
     return func
 
@@ -368,7 +368,7 @@ def run_proc_chain(infile, config, outname=None, outdir=None, ret_dataset=True,
                    overwrite=False, extra_funcs=None, verbose='INFO', mneverbose='WARNING'):
 
     if outname is None:
-        run_id = find_run_id(infile)
+        run_id = utils.find_run_id(infile)
     else:
         run_id = os.path.splitext(outname)[0]
 
@@ -382,47 +382,53 @@ def run_proc_chain(infile, config, outname=None, outdir=None, ret_dataset=True,
         mne.utils._logging.set_log_file(logfile)
     else:
         logfile = None
-    osl_logger.set_up(prefix=run_id, log_file=logfile, level=verbose, startup=False)
+    utils.logger.set_up(prefix=run_id, log_file=logfile, level=verbose, startup=False)
     mne.set_log_level(mneverbose)
-    logger = logging.getLogger(__name__)
+    osl_logger = logging.getLogger(__name__)
     now = strftime("%Y-%m-%d %H:%M:%S", localtime())
-    logger.info('{0} : Starting OSL Processing'.format(now))
-    logger.info('input : {0}'.format(infile))
+    osl_logger.info('{0} : Starting OSL Processing'.format(now))
+    osl_logger.info('input : {0}'.format(infile))
 
-    if isinstance(infile, str):
-        raw = import_data(infile)
-    elif isinstance(infile, mne.io.fiff.raw.Raw):
-        raw = infile
-        infile = raw.filenames[0]  # assuming only one file here
+    try:
+        if isinstance(infile, str):
+            raw = import_data(infile)
+        elif isinstance(infile, mne.io.fiff.raw.Raw):
+            raw = infile
+            infile = raw.filenames[0]  # assuming only one file here
 
-    dataset = {'raw': raw,
-               'ica': None,
-               'epochs': None,
-               'events': None,
-               'event_id': config['meta']['event_codes']}
+        dataset = {'raw': raw,
+                   'ica': None,
+                   'epochs': None,
+                   'events': None,
+                   'event_id': config['meta']['event_codes']}
 
-    for stage in deepcopy(config['preproc']):
-        method, userargs = next(iter(stage.items()))  # next(iter( feels a bit clumsy..
-        target = userargs.get('target', 'raw')  # Raw is default
-        func = find_func(method, target=target, extra_funcs=extra_funcs)
-        try:
+        # Run through processing stages
+        for stage in deepcopy(config['preproc']):
+            method, userargs = next(iter(stage.items()))  # next(iter( feels a bit clumsy..
+            target = userargs.get('target', 'raw')  # Raw is default
+            func = find_func(method, target=target, extra_funcs=extra_funcs)
+            # Actual function call
             dataset = func(dataset, userargs)
-        except Exception as e:
-            logger.critical('PROCESSING FAILED!!!!')
-            ex_type, ex_value, ex_traceback = sys.exc_info()
-            logger.error("{0} : {1}".format(method, func))
-            logger.error(ex_type)
-            logger.error(ex_value)
-            logger.error(traceback.print_tb(ex_traceback))
-            if outdir is not None:
-                with open(logfile.replace('.log', '.error.log'), 'w') as f:
-                    f.write('Processing filed during stage : "{0}"'.format(method))
-                    f.write(str(ex_type))
-                    f.write('\n')
-                    f.write(str(ex_value))
-                    f.write('\n')
-                    traceback.print_tb(ex_traceback, file=f)
-            return 0
+
+    except Exception as e:
+        if 'method' not in locals():
+            method = 'import_data'
+            func = import_data
+        osl_logger.critical('Processing Failed')
+        ex_type, ex_value, ex_traceback = sys.exc_info()
+        osl_logger.error("{0} : {1}".format(method, func))
+        osl_logger.error(ex_type)
+        osl_logger.error(ex_value)
+        osl_logger.error(traceback.print_tb(ex_traceback))
+        if outdir is not None:
+            with open(logfile.replace('.log', '.error.log'), 'w') as f:
+                f.write('Processing filed during stage : "{0}"'.format(method))
+                f.write(str(ex_type))
+                f.write('\n')
+                f.write(str(ex_value))
+                f.write('\n')
+                traceback.print_tb(ex_traceback, file=f)
+        return 0
 
     dataset = append_preprocinfo(dataset, config)
 
@@ -430,7 +436,7 @@ def run_proc_chain(infile, config, outname=None, outdir=None, ret_dataset=True,
         write_dataset(dataset, outbase, run_id, overwrite=overwrite)
 
     now = strftime("%Y-%m-%d %H:%M:%S", localtime())
-    logger.info('{0} : Processing Complete'.format(now))
+    osl_logger.info('{0} : Processing Complete'.format(now))
 
     if ret_dataset:
         return dataset
@@ -438,7 +444,8 @@ def run_proc_chain(infile, config, outname=None, outdir=None, ret_dataset=True,
         return 1
 
 
-def run_proc_batch(config, files, outdir, overwrite=False, extra_funcs=None, nprocesses=1, verbose='INFO', mneverbose='WARNING'):
+def run_proc_batch(config, files, outdir, overwrite=False, extra_funcs=None,
+                   nprocesses=1, verbose='INFO', mneverbose='WARNING', strictrun=False):
     """
     files can be a list of Raw objects or a list of filenames or a path to a
     textfile list of filenames
@@ -449,23 +456,46 @@ def run_proc_batch(config, files, outdir, overwrite=False, extra_funcs=None, npr
     """
 
     # -------------------------------------------------------------
+
+    # Initialise Loggers
     mne.set_log_level(mneverbose)
+    if strictrun and verbose not in ['INFO', 'DEBUG']:
+        # override logger level if strictrun requested but user won't see any info...
+        verobse = 'INFO'
     logfile = os.path.join(outdir, 'osl_batch.log')
-    osl_logger.set_up(log_file=logfile, level=verbose, startup=False)
+    utils.logger.set_up(log_file=logfile, level=verbose, startup=False)
 
-    logger.info('Starting OSL Batch Processing')
+    osl_logger.info('Starting OSL Batch Processing')
 
-    infiles, outnames, good_files = process_file_inputs(files)
-    logger.info('Processing {0} files'.format(sum(good_files)))
+    # Check through inputs and parameters
+    infiles, outnames, good_files = utils.process_file_inputs(files)
+    if strictrun and click.confirm('Is this correct set of inputs?') is False:
+        osl_logger.critical('Stopping : User indicated incorrect number of input files')
+        sys.exit(1)
+    else:
+        osl_logger.info('User confirms input files')
 
-    outdir = validate_outdir(outdir)
+    osl_logger.info('Outputs saving to: {0}'.format(outdir))
+    if strictrun and click.confirm('Is this correct output directory?') is False:
+        osl_logger.critical('Stopping : User indicated incorrect output directory')
+        sys.exit(1)
+    else:
+        osl_logger.info('User confirms output directory')
+
+    config = load_config(config)
+    config_str = pprint.PrettyPrinter().pformat(config)
+    osl_logger.info('Running config\n {0}'.format(config_str))
+    if strictrun and click.confirm('Is this the correct config?') is False:
+        osl_logger.critical('Stopping : User indicated incorrect preproc config')
+        sys.exit(1)
+    else:
+        osl_logger.info('User confirms input config')
+
+    outdir = utils.validate_outdir(outdir)
 
     name_base = '{run_id}_{ftype}.{fext}'
     outbase = outdir / name_base
 
-    logger.info('Outputs saving to: {0}\n\n'.format(outdir))
-    config = load_config(config)
-    #print(yaml.dump(config))
 
     # -------------------------------------------------------------
     # Create partial function with fixed options
@@ -486,10 +516,12 @@ def run_proc_batch(config, files, outdir, overwrite=False, extra_funcs=None, npr
         args.append((infif, config, outname))
 
     # Actually run the processes
-    with Parallel(n_jobs=nprocesses, verbose=50) as parallel:
-        proc_flags = parallel(delayed(pool_func)(*aa) for aa in args)
+    # with Parallel(n_jobs=nprocesses, verbose=50) as parallel:
+    #     proc_flags = parallel(delayed(pool_func)(*aa) for aa in args)
+    with utils.initialise_pool(nprocesses=nprocesses) as P:
+        proc_flags = P.starmap(pool_func, args)
 
-    logger.info('Processed {0}/{1} files successfully'.format(np.sum(proc_flags), len(proc_flags)))
+    osl_logger.info('Processed {0}/{1} files successfully'.format(np.sum(proc_flags), len(proc_flags)))
 
     # Return failed flags
     return proc_flags
@@ -519,6 +551,8 @@ def main(argv=None):
                         help="Set the logging level for OSL functions")
     parser.add_argument('--mneverbose', type=str, default='WARNING',
                         help="Set the logging level for MNE functions")
+    parser.add_argument('--strictrun', action='store_true',
+                        help="Ask for explicit confirmation of settings before starting.")
 
     parser.usage = parser.format_help()
     args = parser.parse_args(argv)
