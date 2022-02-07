@@ -267,13 +267,13 @@ def get_config_from_fif(data):
     config_list = re.findall('%% config start %%(.*?)%% config end %%', data.info['description'], flags=re.DOTALL)
     config=[]
     for config_text in config_list:
-    config.append(load_config(config_text))
+        config.append(load_config(config_text))
    
     return config
 
 
 def append_preprocinfo(dataset, config):
-    preprocinfo = f"\n\nOSL BATCH PROCESSING APPLIED ON {datetime.datetime.today().strftime('%d/%m/%Y %H:%M:%S')} \n%% config start %% \n{config} \n%% config end %%")
+    preprocinfo = f"\n\nOSL BATCH PROCESSING APPLIED ON {datetime.today().strftime('%d/%m/%Y %H:%M:%S')} \n%% config start %% \n{config} \n%% config end %%")
     dataset['raw'].info['description'] = dataset['raw'].info['description'] + preprocinfo
  
     if dataset['epochs'] is not None:
