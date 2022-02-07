@@ -151,3 +151,34 @@ for example...
 
 ```
 osl_batch my_config.yaml list_of_raw_files.txt /path/to/my/output_dir --overwrite
+```
+
+## Available processing options
+
+| Name              | Base Function | Description |
+| ---               |  ---          |  ---- |
+| anonymize         | mne.io.Raw       | Anonymize measurement information in place. |
+| apply_hilbert     | mne.io.Raw       | Compute analytic signal or envelope for a subset of channels. |
+| crop              | mne.io.Raw       | Crop raw data file. |
+| drop_channels     | mne.io.Raw       | Drop channel(s). |
+| filter            | mne.io.Raw       | Filter a subset of channels. |
+| interpolate_bads  | mne.io.Raw       | Interpolate bad MEG and EEG channels. |
+| notch_filter      | mne.io.Raw       | Notch filter a subset of channels. |
+| pick_channels     | mne.io.Raw       | Pick some channels. |
+| pick_types        | mne.io.Raw       | Pick some channels by type and names. |
+| rename_channels   | mne.io.Raw       | Rename channels. |
+| resample          | mne.io.Raw       | Resample all channels. |
+| savgol_filter     | mne.io.Raw       | Filter the data using Savitzky-Golay polynomial method. |
+| set_channel_types | mne.io.Raw       | Define the sensor type of channels. |
+| set_eeg_reference | mne.io.Raw       | Specify which reference to use for EEG data. |
+| set_meas_date     | mne.io.Raw       | Set the measurement start date. |
+| drop_bad          | mne.Epochs    | Drop bad epochs without retaining the epochs data. |
+| apply_baseline    | mne.Epochs    | Baseline correct epochs. |
+| annotate_flat     | mne.preprocessing | Annotate flat segments of raw data (or add to a bad channel list). |
+| annoatate_muscle_zscore | mne.preprocessing | Create annotations for segments that likely contain muscle artifacts. |
+| compute_current_source_density | mne.preprocessing | Get the current source density (CSD) transformation. |
+| tfr_multitaper | mne.time_frequency | Compute Time-Frequency Representation (TFR) using DPSS tapers. |
+| tfr_morlet     | mne.time_frequency | Compute Time-Frequency Representation (TFR) using Morlet wavelets. |
+| sft_stockwell  | mne.time_frequency | Compute Time-Frequency Representation (TFR) using Stockwell Transform. |
+| bad_channels   | OSL         | Detect bad channels using the GESD Algorithm. |
+| bad_segments   | OSL         | Annotate bad segments using the GESD Algorithm. |
