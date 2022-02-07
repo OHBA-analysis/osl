@@ -16,26 +16,30 @@ meta:
     auditory: 2
     button_press: 3
 preproc:
-  - {method: crop, tmin: 40}
-  - {method: find_events, min_duration: 0.005}
-  - {method: filter, l_freq: 0.1, h_freq: 175}
-  - {method: notch_filter, freqs: 50 100 150}
-  - {method: bad_channels, picks: 'mag'}
-  - {method: bad_channels, picks: 'grad'}
-  - {method: bad_channels, picks: 'eeg'}
-  - {method: bad_segments, segment_len: 800, picks: 'mag'}
-  - {method: bad_segments, segment_len: 800, picks: 'grad'}
-  - {method: bad_segments, segment_len: 800, picks: 'eeg'}
-  - {method: resample, sfreq: 400, n_jobs: 6}
-  - {method: ica_raw, picks: 'meg', n_components: 64}
-  - {method: ica_autoreject, picks: 'meg', ecgmethod: 'correlation'}
+  - crop:           {tmin: 40}
+  - find_events:    {min_duration: 0.005}
+  - filter:         {l_freq: 0.1, h_freq: 175}
+  - notch_filter:   {freqs: 50 100 150}
+  - bad_channels:   {picks: 'mag'}
+  - bad_channels:   {picks: 'grad'}
+  - bad_channels:   {picks: 'eeg'}
+  - bad_segments:   {segment_len: 800, picks: 'mag'}
+  - bad_segments:   {segment_len: 800, picks: 'grad'}
+  - bad_segments:   {segment_len: 800, picks: 'eeg'}
+  - resample:       {sfreq: 400, n_jobs: 6}
+  - ica_raw:        {picks: 'meg', n_components: 64}
+  - ica_autoreject: {picks: 'meg', ecgmethod: 'correlation'}
 """
 
-config = yaml.load(config_text, Loader=yaml.FullLoader)
-raw = mne.io.read_raw_fif('/path/to/my/raw_data.fif', preload=True)
+config = osl.preprocessing.load_config(config_text)
+infile = '/path/to/my/raw_data.fif'
 outdir = '/where/do/i/want/my/output_dir'
 
-# Process a single file
+# Process a single file from disk
+dataset = osl.preprocessing.run_proc_chain(infile, config)
+
+# Process a single file from the workspace
+raw = mne.io.read_raw_fif('/path/to/my/raw_data.fif', preload=True)
 dataset = osl.preprocessing.run_proc_chain(raw, config)
 
 # Process a list of files
@@ -62,19 +66,19 @@ meta:
     motor_short: 2
     motor_long: 3
 preproc:
-  - {method: crop, tmin: 10}
-  - {method: set_channel_types, EEG057: eog, EEG058: eog, EEG059: ecg}
-  - {method: pick_types, meg: true, eeg: false, eog: true,
-                         ecg: true, stim: true, ref_meg: false}
-  - {method: find_events, min_duration: 0.005}
-  - {method: filter, l_freq: 1, h_freq: 175}
-  - {method: notch_filter, freqs: 50 100 150}
-  - {method: bad_channels, picks: 'meg'}
-  - {method: bad_segments, segment_len: 2000, picks: 'meg'}
-  - {method: epochs, tmin: -0.3, tmax: 1 }
-  - {method: tfr_multitaper, freqs: 4 45 41, n_jobs: 6, return_itc: false,
-                             average: false, use_fft: false,
-                             decim: 3, n_cycles: 2, time_bandwidth: 8}
+  - crop:              {tmin: 10}
+  - set_channel_types: {EEG057: eog, EEG058: eog, EEG059: ecg}
+  - pick_types:        {meg: true, eeg: false, eog: true,
+                       ecg: true, stim: true, ref_meg: false}
+  - find_events:       {min_duration: 0.005}
+  - filter:            {l_freq: 1, h_freq: 175}
+  - notch_filter:      {freqs: 50 100 150}
+  - bad_channels:      {picks: 'meg'}
+  - bad_segments:      {segment_len: 2000, picks: 'meg'}
+  - epochs:            {tmin: -0.3, tmax: 1 }
+  - tfr_multitaper:    {freqs: 4 45 41, n_jobs: 6, return_itc: false,
+                        average: false, use_fft: false,
+                        decim: 3, n_cycles: 2, time_bandwidth: 8}
 ```
 
 and the following code runs the chain on a file:
