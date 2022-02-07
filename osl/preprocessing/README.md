@@ -155,7 +155,7 @@ osl_batch my_config.yaml list_of_raw_files.txt /path/to/my/output_dir --overwrit
 
 ## Available processing options
 
-| Name              | Base Function | Description |
+| Name              | Base Module | Description |
 | ---               |  ---          |  ---- |
 | anonymize         | mne.io.Raw       | Anonymize measurement information in place. |
 | apply_hilbert     | mne.io.Raw       | Compute analytic signal or envelope for a subset of channels. |
@@ -180,5 +180,5 @@ osl_batch my_config.yaml list_of_raw_files.txt /path/to/my/output_dir --overwrit
 | tfr_multitaper | mne.time_frequency | Compute Time-Frequency Representation (TFR) using DPSS tapers. |
 | tfr_morlet     | mne.time_frequency | Compute Time-Frequency Representation (TFR) using Morlet wavelets. |
 | sft_stockwell  | mne.time_frequency | Compute Time-Frequency Representation (TFR) using Stockwell Transform. |
-| bad_channels   | OSL         | Detect bad channels using the GESD Algorithm. |
-| bad_segments   | OSL         | Annotate bad segments using the GESD Algorithm. |
+| bad_channels   | osl.preprocessing  | Detect bad channels using the GESD Algorithm. |
+| bad_segments   | osl.preprocessing  | Annotate bad segments using the GESD Algorithm. |
