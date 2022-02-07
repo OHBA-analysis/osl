@@ -300,40 +300,45 @@ def write_dataset(dataset, outbase, run_id, overwrite=False):
         dataset['ica'].save(outname)
 
 
-def plot_preproc_flowchart(config, outname=None, show=True):
+def plot_preproc_flowchart(config, outname=None, show=True, stagecol='wheat', startcol='red'):
     """Make a summary flowchart of a preprocessing chain."""
     config = load_config(config)
 
     fig = plt.figure(figsize=(8, 12))
+    plt.subplots_adjust(top=0.95, bottom=0.05)
     ax = plt.subplot(111, frame_on=False)
     ax.set_xticks([])
     ax.set_yticks([])
     ax.set_title('OSL Preprocessing Recipe', fontsize=24)
 
     stage_height = 1/(1+len(config['preproc']))
-    box = dict(boxstyle='round', facecolor='wheat', alpha=1, pad=0.3)
-    startbox = dict(boxstyle='round', facecolor='red', alpha=1)
+
+    box = dict(boxstyle='round', facecolor=stagecol, alpha=1, pad=0.3)
+    startbox = dict(boxstyle='round', facecolor=startcol, alpha=1)
     font = {'family': 'serif',
             'color':  'k',
             'weight': 'normal',
             'size': 16,
             }
 
-    stages = [{'method': 'input'}, *config['preproc'], {'method': 'output'}]
+    stages = [{'input': ''}, *config['preproc'], {'output': ''}]
     stage_str = "$\\bf{{{0}}}$ {1}"
 
     ax.arrow( 0.5, 1, 0.0, -1, fc="k", ec="k",
     head_width=0.045, head_length=0.035, length_includes_head=True)
 
-
     for idx, stage in enumerate(stages):
 
-        b = box if stage['method'] not in ['input', 'output'] else startbox
-        stage = stage.copy()
-        method = stage.pop('method')
-        method = method.replace('_', '\_')
+        method, userargs = next(iter(stage.items()))
 
-        ax.text(0.5, 1-stage_height*idx, stage_str.format(method, str(stage)[1:-1]),
+        method = method.replace('_', '\_')
+        if method in ['input', 'output']:
+            b = startbox
+        else:
+            b = box
+            method = method + ':'
+
+        ax.text(0.5, 1-stage_height*idx, stage_str.format(method, str(userargs)[1:-1]),
                 ha='center', va='center', bbox=b, fontdict=font, wrap=True)
 
     ax.set_ylim(0, 1.05)
