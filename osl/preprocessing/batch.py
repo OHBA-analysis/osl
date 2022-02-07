@@ -273,7 +273,7 @@ def get_config_from_fif(data):
 
 
 def append_preprocinfo(dataset, config):
-    preprocinfo = f"\n\nOSL BATCH PROCESSING APPLIED ON {datetime.today().strftime('%d/%m/%Y %H:%M:%S')} \n%% config start %% \n{config} \n%% config end %%")
+    preprocinfo = f"\n\nOSL BATCH PROCESSING APPLIED ON {datetime.today().strftime('%d/%m/%Y %H:%M:%S')} \n%% config start %% \n{config} \n%% config end %%"
     dataset['raw'].info['description'] = dataset['raw'].info['description'] + preprocinfo
  
     if dataset['epochs'] is not None:
