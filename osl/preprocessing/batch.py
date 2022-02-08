@@ -300,16 +300,20 @@ def write_dataset(dataset, outbase, run_id, overwrite=False):
         dataset['ica'].save(outname)
 
 
-def plot_preproc_flowchart(config, outname=None, show=True, stagecol='wheat', startcol='red'):
+def plot_preproc_flowchart(config, outname=None, show=True, stagecol='wheat', startcol='red', fig=None, ax=None, title=None):
     """Make a summary flowchart of a preprocessing chain."""
     config = load_config(config)
-
-    fig = plt.figure(figsize=(8, 12))
-    plt.subplots_adjust(top=0.95, bottom=0.05)
-    ax = plt.subplot(111, frame_on=False)
+    
+    if np.logical_or(ax==None, fig==None):
+        fig = plt.figure(figsize=(8, 12))
+        plt.subplots_adjust(top=0.95, bottom=0.05)
+        ax = plt.subplot(111, frame_on=False)
     ax.set_xticks([])
     ax.set_yticks([])
-    ax.set_title('OSL Preprocessing Recipe', fontsize=24)
+    if title==None:
+        ax.set_title('OSL Preprocessing Recipe', fontsize=24)
+    else:
+        ax.set_title(title, fontsize=24)
 
     stage_height = 1/(1+len(config['preproc']))
 
@@ -350,7 +354,7 @@ def plot_preproc_flowchart(config, outname=None, show=True, stagecol='wheat', st
     if show is True:
         fig.show()
 
-    return fig
+    return fig, ax
 
 
 # --------------------------------------------------------------

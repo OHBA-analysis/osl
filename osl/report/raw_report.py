@@ -22,7 +22,7 @@ from matplotlib.lines import Line2D
 from matplotlib.patches import Rectangle
 
 from ..utils import process_file_inputs, validate_outdir
-from ..preprocessing import import_data, load_config, run_proc_chain
+from ..preprocessing import import_data, load_config, run_proc_chain, get_config_from_fif, plot_preproc_flowchart    
 
 
 # ----------------------------------------------------------------------------------
@@ -103,6 +103,7 @@ def gen_html_data(raw, ica, outdir, level):
     
     # Generate plots for the report
     print('Generating plots:')
+    plot_flowchart(raw, savebase)
     plot_channel_time_series(raw, savebase)
     plot_sensors(raw, savebase)
     plot_channel_dists(raw, savebase)
@@ -125,6 +126,7 @@ def gen_html_data(raw, ica, outdir, level):
     data['plt_spectra'] = filebase.format('spectra_full')
     data['plt_zoom_spectra'] = filebase.format('spectra_zoom')
     data['plt_digitisation'] = filebase.format('digitisation')
+    data['plt_flowchart'] = filebase.format('flowchart')
     if level > 0 :
         data['plt_artefacts_eog'] = filebase.format('EOG')
         data['plt_artefacts_ecg'] = filebase.format('ECG')
@@ -241,7 +243,33 @@ def load_template(tname):
 # ----------------------------------------------------------------------------------
 # Scan stats and figures
 
+def plot_flowchart(raw, savebase=None):
+    """Plots preprocessing flowchart(s)"""
+    
+    # Get config info from raw.info['description']
+    config_list = get_config_from_fif(raw)
+    # Number of subplots, i.e. the number of times osl preprocessing was applied
+    nrows = len(config_list)
 
+    # Plot flowchart in subplots
+    fig, ax = plt.subplots(nrows=nrows, ncols=1, figsize=(12, 6*(nrows+1)))
+
+    cnt=0
+    for config in config_list:
+        if type(ax)==np.ndarray:
+            axes=ax[cnt]
+            title=f"OSL Preprocessing Stage {cnt+1}"
+        else:
+            axes=ax
+            title=None
+        fig, axes = plot_preproc_flowchart(config, fig=fig, ax=axes, title=title)
+        cnt=cnt+1
+
+    # save figure
+    figname = savebase.format('flowchart')
+    print(figname)
+    fig.savefig(figname, dpi=150, transparent=True)
+    plt.close(fig)
 
 def plot_channel_time_series(raw, savebase=None):
     """Plots sum-square time courses."""
