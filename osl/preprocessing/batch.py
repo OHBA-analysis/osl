@@ -508,8 +508,6 @@ def run_proc_batch(config, files, outdir, overwrite=False, extra_funcs=None,
         args.append((infif, config, outname))
 
     # Actually run the processes
-    # with Parallel(n_jobs=nprocesses, verbose=50) as parallel:
-    #     proc_flags = parallel(delayed(pool_func)(*aa) for aa in args)
     with utils.initialise_pool(nprocesses=nprocesses) as P:
         proc_flags = P.starmap(pool_func, args)
 
