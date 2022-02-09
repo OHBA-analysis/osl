@@ -83,7 +83,7 @@ def set_up(prefix='', log_file=None, level=None, console_format=None, startup=Tr
 
     # Remove log file from dict if not user requested
     if log_file is None:
-        new_config['osl_loggers']['osl']['handlers'] = ['console']
+        new_config['loggers']['osl']['handlers'] = ['console']
         del new_config['handlers']['file']
 
     # Configure osl_logger with dict

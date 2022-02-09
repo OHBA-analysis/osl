@@ -1,4 +1,5 @@
-import multiprocessing
+#import multiprocessing as mp
+import multiprocess as mp
 
 
 def initialise_pool(nprocesses=1):
@@ -15,11 +16,11 @@ def initialise_pool(nprocesses=1):
 
     """
     # Ensure we have a resonable number of parallel processes compared to number of CPUs
-    cpus = multiprocessing.cpu_count()
+    cpus = mp.cpu_count()
     if nprocesses > cpus:
         msg = 'Requested {0} processes but only {1} CPUs available'
         raise ValueError(msg.format(nprocesses, cpus))
 
-    P = multiprocessing.get_context('spawn').Pool(processes=nprocesses)
+    P = mp.get_context('spawn').Pool(processes=nprocesses)
 
     return P
