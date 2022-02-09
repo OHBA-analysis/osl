@@ -22,7 +22,7 @@ from matplotlib.lines import Line2D
 from matplotlib.patches import Rectangle
 
 from ..utils import process_file_inputs, validate_outdir
-from ..preprocessing import import_data, load_config, run_proc_chain
+from ..preprocessing import import_data, load_config, run_proc_chain, get_config_from_fif, plot_preproc_flowchart    
 
 
 # ----------------------------------------------------------------------------------
@@ -103,49 +103,19 @@ def gen_html_data(raw, ica, outdir, level):
     
     # Generate plots for the report
     print('Generating plots:')
-    plot_channel_time_series(raw, savebase)
-    plot_sensors(raw, savebase)
-    plot_channel_dists(raw, savebase)
-    plot_spectra(raw, savebase)
-    plot_digitisation_2d(raw, savebase)
+    data['plt_flowchart'] = plot_flowchart(raw, savebase)
+    data['plt_temporalsumsq'] = plot_channel_time_series(raw, savebase)
+    data['plt_badchans'] = plot_sensors(raw, savebase)
+    data['plt_channeldev'] = plot_channel_dists(raw, savebase)
+    data['plt_spectra'], data['plt_zoomspectra'] = plot_spectra(raw, savebase)
+    data['plt_digitisation'] = plot_digitisation_2d(raw, savebase)
     if level > 0:
-        plot_eog_summary(raw, savebase)
-        plot_ecg_summary(raw, savebase)
-        plot_bad_ica(raw, ica, savebase)
+        data['plt_artefacts_eog'] = plot_eog_summary(raw, savebase)
+        data['plt_artefacts_ecg'] = plot_ecg_summary(raw, savebase)
+        data['plt_artefacts_ica'] = plot_bad_ica(raw, ica, savebase)
     if level > 1:
-        plot_artefact_scan(raw, savebase)
-
-    # Stem of the filename
-    filebase = os.path.split(savebase)[1]
-
-    # Full filenames of each plot
-    data['plt_channeldev'] = filebase.format('channel_dev')
-    data['plt_badchans'] = filebase.format('bad_chans')
-    data['plt_temporaldev'] = filebase.format('temporal_sumsq')
-    data['plt_spectra'] = filebase.format('spectra_full')
-    data['plt_zoom_spectra'] = filebase.format('spectra_zoom')
-    data['plt_digitisation'] = filebase.format('digitisation')
-    if level > 0 :
-        data['plt_artefacts_eog'] = filebase.format('EOG')
-        data['plt_artefacts_ecg'] = filebase.format('ECG')
-        data['plt_artefacts_ica'] = filebase.format('ICA')
-    if level > 1:
-        data['plt_eyemove_grad'] = filebase.format('eyemove_grad')
-        data['plt_eyemove_mag'] = filebase.format('eyemove_mag')
-        data['plt_eyemove_eog'] = filebase.format('eyemove_eog')
-        data['plt_blink_grad'] = filebase.format('blink_grad')
-        data['plt_blink_mag'] = filebase.format('blink_mag')
-        data['plt_blink_eog'] = filebase.format('blink_eog')
-        data['plt_swallow_grad'] = filebase.format('swallow_grad')
-        data['plt_swallow_mag'] = filebase.format('swallow_mag')
-        data['plt_breathe_grad'] = filebase.format('breathe_grad')
-        data['plt_breathe_mag'] = filebase.format('breathe_mag')
-        data['plt_shrug_grad'] = filebase.format('shrug_grad')
-        data['plt_shrug_mag'] = filebase.format('shrug_mag')
-        data['plt_clench_grad'] = filebase.format('clench_grad')
-        data['plt_clench_mag'] = filebase.format('clench_mag')
-        data['plt_buttonpress_grad'] = filebase.format('buttonpress_grad')
-        data['plt_buttonpress_mag'] = filebase.format('buttonpress_mag')
+        filenames = plot_artefact_scan(raw, savebase)
+        data.update(filenames)
 
     return data
 
@@ -162,9 +132,9 @@ def gen_report(infiles, outdir, preproc_config=None, level=1):
     preproc_config : dict
         Preprocessing to apply before generating the report.
     level : int
-        0 for a basic report.
-        1 basic report with EOG, ECG and ICA.
-        2 basic report with EOG, ECG, ICA and an artefact scan.
+        0 - basic report.
+        1 - basic report with EOG, ECG and ICA.
+        2 - basic report with EOG, ECG, ICA and an artefact scan.
     """
 
     # Validate input files and directory to save html file and plots to
@@ -209,19 +179,9 @@ def gen_report(infiles, outdir, preproc_config=None, level=1):
         # Render the panel
         panels.append(panel_template.render(data=data))
 
-    # Add info about preproc applid by this function at the top of the page
-    if preproc_config is not None:
-        preproc = '<div style="margin: 30px"><h3>preprocessing applied</h3>'
-        for method in config['preproc']:
-            preproc += "{0}</br>".format(method)
-        #preproc = "<div style='margin: 30px'>{0}</div>".format(yaml.dump(config).__str__())
-        preproc += '</div>'
-    else:
-        preproc = None
-
     # Render the full page
     page_template = load_template('raw_report')
-    page = page_template.render(panels=panels, toplinks=toplinks, preproc=preproc, level=level)
+    page = page_template.render(panels=panels, toplinks=toplinks, level=level)
 
     # Write the output file
     outpath = '{0}/osl_raw_report.html'.format(outdir)
@@ -241,7 +201,42 @@ def load_template(tname):
 # ----------------------------------------------------------------------------------
 # Scan stats and figures
 
+def plot_flowchart(raw, savebase=None):
+    """Plots preprocessing flowchart(s)"""
+    
+    # Get config info from raw.info['description']
+    config_list = get_config_from_fif(raw)
 
+    # Number of subplots, i.e. the number of times osl preprocessing was applied
+    nrows = len(config_list)
+
+    if nrows == 0:
+        # No preprocessing was applied
+        return None
+
+    # Plot flowchart in subplots
+    fig, ax = plt.subplots(nrows=nrows, ncols=1, figsize=(12, 6*(nrows+1)))
+
+    cnt=0
+    for config in config_list:
+        if type(ax)==np.ndarray:
+            axes=ax[cnt]
+            title=f"OSL Preprocessing Stage {cnt+1}"
+        else:
+            axes=ax
+            title=None
+        fig, axes = plot_preproc_flowchart(config, fig=fig, ax=axes, title=title)
+        cnt=cnt+1
+
+    # Save figure
+    figname = savebase.format('flowchart')
+    print(figname)
+    fig.savefig(figname, dpi=150, transparent=True)
+    plt.close(fig)
+
+    # Return the filename
+    filebase = os.path.split(savebase)[1]
+    return filebase.format('flowchart')
 
 def plot_channel_time_series(raw, savebase=None):
     """Plots sum-square time courses."""
@@ -287,14 +282,23 @@ def plot_channel_time_series(raw, savebase=None):
         fig.savefig(figname, dpi=150, transparent=True)
         plt.close(fig)
 
+    # Return the filename
+    filebase = os.path.split(savebase)[1]
+    return filebase.format('temporal_sumsq')
+
 
 def plot_sensors(raw, savebase=None):
     """Plots sensors with bad channels highlighted."""
+
     fig = raw.plot_sensors(show=False)
     figname = savebase.format('bad_chans')
     print(figname)
     fig.savefig(figname, dpi=150, transparent=True)
     plt.close(fig)
+
+    # Return the filename
+    filebase = os.path.split(savebase)[1]
+    return filebase.format('bad_chans')
 
 
 def plot_channel_dists(raw, savebase=None):
@@ -338,6 +342,40 @@ def plot_channel_dists(raw, savebase=None):
         print(figname)
         fig.savefig(figname, dpi=150, transparent=True)
         plt.close(fig)
+
+    # Return the filename
+    filebase = os.path.split(savebase)[1]
+    return filebase.format('channel_dev')
+
+
+def plot_spectra(raw, savebase=None):
+    """Plot power spectra for each sensor modality."""
+
+    # Plot spectra
+    fig = raw.plot_psd(show=False, verbose=0)
+    fig.set_size_inches(8, 7)
+
+    # Save full spectra
+    if savebase is not None:
+        figname = savebase.format('spectra_full')
+        print(figname)
+        fig.savefig(figname, dpi=150, transparent=True)
+        plt.close(fig)
+
+    # Plot zoomed in spectra
+    fig = raw.plot_psd(show=False, fmin=1, fmax=48, verbose=0)
+    fig.set_size_inches(8, 7)
+
+    # Save zoomed in spectra
+    if savebase is not None:
+        figname = savebase.format('spectra_zoom')
+        print(figname)
+        fig.savefig(figname, dpi=150, transparent=True)
+        plt.close(fig)
+
+    # Return filenames
+    filebase = os.path.split(savebase)[1]
+    return filebase.format('spectra_full'), filebase.format('spectra_zoom')
 
 
 def plot_digitisation_2d(raw, savebase=None):
@@ -401,6 +439,10 @@ def plot_digitisation_2d(raw, savebase=None):
         fig.savefig(figname, dpi=150, transparent=True)
         plt.close(fig)
 
+    # Return the filename
+    filebase = os.path.split(savebase)[1]
+    return filebase.format('digitisation')
+
 
 def plot_headmovement(raw, savebase=None):
     """Plot headmovement - WORK IN PROGRESS... seems v-slow atm"""
@@ -446,6 +488,10 @@ def plot_eog_summary(raw, savebase=None):
         fig.savefig(figname, dpi=150, transparent=True)
         plt.close(fig)
 
+    # Return the filename
+    filebase = os.path.split(savebase)[1]
+    return filebase.format('EOG')
+
 
 def plot_ecg_summary(raw, savebase=None):
     """Plot ECG summary."""
@@ -470,6 +516,10 @@ def plot_ecg_summary(raw, savebase=None):
         print(figname)
         fig.savefig(figname, dpi=150, transparent=True)
         plt.close(fig)
+
+    # Return the filename
+    filebase = os.path.split(savebase)[1]
+    return filebase.format('ECG')
 
 
 def plot_bad_ica(raw, ica, savebase):
@@ -516,31 +566,9 @@ def plot_bad_ica(raw, ica, savebase):
         fig.savefig(figname, dpi=150, transparent=True)
         plt.close(fig)
 
-
-def plot_spectra(raw, savebase=None):
-    """Plot power spectra for each sensor modality."""
-
-    # Plot spectra
-    fig = raw.plot_psd(show=False, verbose=0)
-    fig.set_size_inches(8, 7)
-
-    # Save full spectra
-    if savebase is not None:
-        figname = savebase.format('spectra_full')
-        print(figname)
-        fig.savefig(figname, dpi=150, transparent=True)
-        plt.close(fig)
-
-    # Plot zoomed in spectra
-    fig = raw.plot_psd(show=False, fmin=1, fmax=48, verbose=0)
-    fig.set_size_inches(8, 7)
-
-    # Save zoomed in spectra
-    if savebase is not None:
-        figname = savebase.format('spectra_zoom')
-        print(figname)
-        fig.savefig(figname, dpi=150, transparent=True)
-        plt.close(fig)
+    # Return the filename
+    filebase = os.path.split(savebase)[1]
+    return filebase.format('ICA')
 
 
 def plot_artefact_scan(raw, savebase=None):
@@ -687,6 +715,28 @@ def plot_artefact_scan(raw, savebase=None):
         name = 'buttonpress_{0}'.format(m)
         fig.savefig(savebase.format(name), dpi=300, transparent=True)
     plt.close('all')
+
+    # Return filenames
+    filebase = os.path.split(savebase)[1]
+    filenames = {
+        'plt_eyemove_grad': filebase.format('eyemove_grad'),
+        'plt_eyemove_mag': filebase.format('eyemove_mag'),
+        'plt_eyemove_eog': filebase.format('eyemove_eog'),
+        'plt_blink_grad': filebase.format('blink_grad'),
+        'plt_blink_mag': filebase.format('blink_mag'),
+        'plt_blink_eog': filebase.format('blink_eog'),
+        'plt_swallow_grad': filebase.format('swallow_grad'),
+        'plt_swallow_mag': filebase.format('swallow_mag'),
+        'plt_breathe_grad': filebase.format('breathe_grad'),
+        'plt_breathe_mag': filebase.format('breathe_mag'),
+        'plt_shrug_grad': filebase.format('shrug_grad'),
+        'plt_shrug_mag': filebase.format('shrug_mag'),
+        'plt_clench_grad': filebase.format('clench_grad'),
+        'plt_clench_mag': filebase.format('clench_mag'),
+        'plt_buttonpress_grad': filebase.format('buttonpress_grad'),
+        'plt_buttonpress_mag': filebase.format('buttonpress_mag'),
+    }
+    return filenames
 
 
 def print_scan_summary(raw):
