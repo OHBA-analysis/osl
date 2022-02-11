@@ -6,12 +6,7 @@ Created on Fri Oct 15 16:40:02 2021
 @author: woolrich
 """
 
-# cope with poor T1s not allocating inner skull properly (use standard canonical T1)
-# run fsleyes from cmd line
-
-# RHINO-based source recon example.
-# This is the RHINO version of:
-# https://mne.tools/dev/auto_tutorials/inverse/50_beamformer_lcmv.html
+# Run RHINO-based source recon on Wakeman-Henson dataset
 
 import os
 import os.path as op
