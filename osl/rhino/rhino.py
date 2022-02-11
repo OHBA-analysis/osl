@@ -6,11 +6,6 @@ Created on Wed Oct 20 17:35:48 2021
 @author: woolrich
 """
 
-# write_nii4d for rhino audvis example
-# fix write_mni_nii
-# apply to henson/wakeman
-# get parcellations working
-
 import warnings
 import os
 import os.path as op
