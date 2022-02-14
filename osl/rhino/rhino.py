@@ -13,22 +13,23 @@ import numpy as np
 import nibabel as nib
 import matplotlib.pyplot as plt
 from shutil import copyfile
-import rhino_utils
+from osl.rhino import rhino_utils
 from scipy.ndimage import morphology
 from sklearn.mixture import GaussianMixture
-from cv2 import getStructuringElement, morphologyEx, MORPH_GRADIENT, MORPH_RECT 
+from cv2 import getStructuringElement, morphologyEx, MORPH_GRADIENT, MORPH_RECT
 
 from mne.viz.backends.renderer import _get_renderer
 from mne.transforms import write_trans, read_trans, apply_trans, _get_trans, \
-            combine_transforms, Transform, rotation, invert_transform
+    combine_transforms, Transform, rotation, invert_transform
 from mne.viz._3d import _sensor_shape
 from mne.forward import _create_meg_coils
 from mne.io.pick import pick_types
 from mne.io import _loc_to_coil_trans, read_info, read_raw
 from mne import read_epochs, read_forward_solution, make_bem_model, \
-            make_bem_solution, make_forward_solution, write_forward_solution
+    make_bem_solution, make_forward_solution, write_forward_solution
 from mne.io.constants import FIFF
 from mne.bem import ConductorModel, read_bem_solution
+
 
 #############################################################################
 
@@ -72,7 +73,7 @@ def get_surfaces_filenames(subjects_dir, subject):
     filenames = {
         'basefilename': basefilename,
         'smri_file': op.join(basefilename, 'smri.nii.gz'),
-        'mni2mri_flirt_file': op.join(basefilename, 'mni2mri_flirt.txt'),        
+        'mni2mri_flirt_file': op.join(basefilename, 'mni2mri_flirt.txt'),
         'mni_mri_t_file': op.join(basefilename, 'mni_mri-trans.fif'),
         'bet_smri_basefile': op.join(basefilename, 'bet_smri'),
         'bet_outskin_mesh_file': op.join(basefilename, 'outskin_mesh.nii.gz'),
@@ -87,10 +88,11 @@ def get_surfaces_filenames(subjects_dir, subject):
         'bet_outskull_mesh_vtk_file': op.join(basefilename, 'outskull_mesh.vtk'),
         'bet_outskull_surf_file': op.join(basefilename, 'outskull_surf.surf'),
         'std_brain': os.environ['FSLDIR'] + '/data/standard/MNI152_T1_1mm_brain.nii.gz',
-        'std_brain_bigfov': os.environ['FSLDIR'] + '/data/standard/MNI152_T1_1mm_BigFoV_facemask.nii.gz'        
+        'std_brain_bigfov': os.environ['FSLDIR'] + '/data/standard/MNI152_T1_1mm_BigFoV_facemask.nii.gz'
     }
 
     return filenames
+
 
 #############################################################################
 
@@ -127,7 +129,7 @@ def get_coreg_filenames(subjects_dir, subject):
 
     filenames = {
         'basefilename': basefilename,
-        'fif_file': op.join(basefilename, 'data-raw.fif'),        
+        'fif_file': op.join(basefilename, 'data-raw.fif'),
         'smri_file': op.join(basefilename, 'smri.nii.gz'),
         'head_mri_t_file': op.join(basefilename, 'head_mri-trans.fif'),
         'ctf_head_mri_t_file': op.join(basefilename, 'ctf_head_mri-trans.fif'),
@@ -145,11 +147,12 @@ def get_coreg_filenames(subjects_dir, subject):
 
     return filenames
 
+
 #############################################################################
 
-def extract_polhemus_from_info(fif_file, 
-                               outdir, 
-                               include_eeg_as_headshape=True, 
+def extract_polhemus_from_info(fif_file,
+                               outdir,
+                               include_eeg_as_headshape=True,
                                include_hpi_as_headshape=True):
     '''  
     # Extract polhemus fids and headshape points from MNE raw.info
@@ -187,9 +190,9 @@ def extract_polhemus_from_info(fif_file,
 
     if not os.path.isdir(outdir):
         os.mkdir(outdir)
-        
+
     # Setup polhemus files for coreg
-        
+
     polhemus_headshape_polhemus = []
     for dig in info['dig']:
 
@@ -213,23 +216,24 @@ def extract_polhemus_from_info(fif_file,
             polhemus_headshape_polhemus.append(dig['r'])
         elif dig['kind'] == FIFF.FIFFV_POINT_HPI and include_hpi_as_headshape:
             polhemus_headshape_polhemus.append(dig['r'])
-            
-    np.savetxt(polhemus_nasion_file, polhemus_nasion_polhemus*1000)
-    np.savetxt(polhemus_rpa_file, polhemus_rpa_polhemus*1000)
-    np.savetxt(polhemus_lpa_file, polhemus_lpa_polhemus*1000)
+
+    np.savetxt(polhemus_nasion_file, polhemus_nasion_polhemus * 1000)
+    np.savetxt(polhemus_rpa_file, polhemus_rpa_polhemus * 1000)
+    np.savetxt(polhemus_lpa_file, polhemus_lpa_polhemus * 1000)
     np.savetxt(polhemus_headshape_file, np.array(
-        polhemus_headshape_polhemus).T*1000)
+        polhemus_headshape_polhemus).T * 1000)
 
     return polhemus_headshape_file, polhemus_nasion_file, \
-        polhemus_rpa_file, polhemus_lpa_file
+           polhemus_rpa_file, polhemus_lpa_file
+
 
 #############################################################################
 
 def compute_surfaces(smri_file,
-          subjects_dir, 
-          subject,
-          include_nose=True,
-          cleanup_files=False):
+                     subjects_dir,
+                     subject,
+                     include_nose=True,
+                     cleanup_files=False):
     '''       
     Extracts inner skull, outer skin (scalp) and brain surfaces from 
     passed in smri_file, which is assumed to be a T1, using FSL.
@@ -308,7 +312,7 @@ def compute_surfaces(smri_file,
 Please ensure that the structural MRI has a FOV that includes the nose')
     else:
         print('The nose is not going to be added to the outer skin (scalp) surface')
-        
+
     # Check smri_file
     smri_path, smri_name = op.split(smri_file)
     smri_name, smri_ext2 = op.splitext(smri_name)  # split .gz
@@ -329,7 +333,7 @@ Please ensure that the structural MRI has a FOV that includes the nose')
     # (e.g. by flirt)
     cmd = 'fslorient -copysform2qform {}'.format(filenames['smri_file'])
     os.system(cmd)
-    
+
     # We will assume orientation of standard brain is RADIOLOGICAL
     # But let's check that is the case:
     std_orient = rhino_utils._get_orient(filenames['std_brain'])
@@ -354,23 +358,23 @@ please check output of:\n fslorient -orient {}'.format(filenames['smri_file']))
     ###########################################################################
     # 1) Transform sMRI to be aligned with the MNI axes so that BET works well
     ###########################################################################        
-    
+
     # We will start by transforming sMRI
     # so that its voxel indices axes are aligned to MNI's
     # This helps BET work.
     # CALCULATE mri2mniaxes 
     flirt_mri2mniaxes_xform = rhino_utils._get_flirt_xform_between_axes(
-                        filenames['smri_file'], filenames['std_brain'])
-    
+        filenames['smri_file'], filenames['std_brain'])
+
     # Write xform to disk so flirt can use it
     flirt_mri2mniaxes_xform_file = op.join(filenames['basefilename'],
-        'flirt_mri2mniaxes_xform.txt')
+                                           'flirt_mri2mniaxes_xform.txt')
     np.savetxt(flirt_mri2mniaxes_xform_file, flirt_mri2mniaxes_xform)
-    
+
     # Apply mri2mniaxes xform to smri to get smri_mniaxes, which means sMRIs
     # voxel indices axes are aligned to be the same as MNI's 
-    flirt_smri_mniaxes_file = op.join(filenames['basefilename'],\
-        'flirt_smri_mniaxes.nii.gz')
+    flirt_smri_mniaxes_file = op.join(filenames['basefilename'], \
+                                      'flirt_smri_mniaxes.nii.gz')
     os.system('flirt -in {} -ref {} -applyxfm -init {} -out {}'.format(
         filenames['smri_file'],
         filenames['std_brain'],
@@ -383,8 +387,8 @@ please check output of:\n fslorient -orient {}'.format(filenames['smri_file']))
 
     print('Running BET pre-FLIRT...')
 
-    flirt_smri_mniaxes_bet_file = op.join(filenames['basefilename'],\
-        'flirt_smri_mniaxes_bet')
+    flirt_smri_mniaxes_bet_file = op.join(filenames['basefilename'], \
+                                          'flirt_smri_mniaxes_bet')
     os.system('bet2 {} {}'.format(
         flirt_smri_mniaxes_file,
         flirt_smri_mniaxes_bet_file))
@@ -397,11 +401,11 @@ please check output of:\n fslorient -orient {}'.format(filenames['smri_file']))
 
     # Flirt is run on the skull stripped brains to register the smri_mniaxes
     # to the MNI standard brain
-    
-    flirt_mniaxes2mni_file = op.join(filenames['basefilename'],\
-        'flirt_mniaxes2mni.txt')
-    flirt_smri_mni_bet_file = op.join(filenames['basefilename'],\
-        'flirt_smri_mni_bet.nii.gz')
+
+    flirt_mniaxes2mni_file = op.join(filenames['basefilename'], \
+                                     'flirt_mniaxes2mni.txt')
+    flirt_smri_mni_bet_file = op.join(filenames['basefilename'], \
+                                      'flirt_smri_mni_bet.nii.gz')
     os.system('flirt -in {} -ref {} -omat {} -o {}'.format(
         flirt_smri_mniaxes_bet_file,
         filenames['std_brain'],
@@ -409,23 +413,23 @@ please check output of:\n fslorient -orient {}'.format(filenames['smri_file']))
         flirt_smri_mni_bet_file))
 
     # Calculate overall transform, flirt_mri2mni_xform_file, from smri to MNI
-    flirt_mri2mni_xform_file = op.join(filenames['basefilename'],\
-        'flirt_mri2mni_xform.txt')
+    flirt_mri2mni_xform_file = op.join(filenames['basefilename'], \
+                                       'flirt_mri2mni_xform.txt')
     os.system('convert_xfm -omat {} -concat {} {}'.format(
         flirt_mri2mni_xform_file,
         flirt_mniaxes2mni_file,
         flirt_mri2mniaxes_xform_file))
 
     # and calculate its inverse, flirt_mni2mri_xform_file, from MNI to smri
-    flirt_mni2mri_xform_file = op.join(filenames['basefilename'],\
-        'flirt_mni2mri_xform_file.txt')
+    flirt_mni2mri_xform_file = op.join(filenames['basefilename'], \
+                                       'flirt_mni2mri_xform_file.txt')
     os.system('convert_xfm -omat {}  -inverse {}'.format(
         flirt_mni2mri_xform_file,
         flirt_mri2mni_xform_file))
 
     # move full smri into MNI space to do full bet and betsurf
-    flirt_smri_mni_file = op.join(filenames['basefilename'],\
-        'flirt_smri_mni.nii.gz')
+    flirt_smri_mni_file = op.join(filenames['basefilename'], \
+                                  'flirt_smri_mni.nii.gz')
     os.system('flirt -in {} -ref {} -applyxfm -init {} -out {}'.format(
         filenames['smri_file'],
         filenames['std_brain'],
@@ -444,30 +448,30 @@ please check output of:\n fslorient -orient {}'.format(filenames['smri_file']))
     #     - bet_outskull_mesh_file is actually the inner skull surface
     #     - bet_outskin_mesh_file is the outer skin/scalp surface    
     ###########################################################################        
-    
+
     # Run BET on smri to get the surface mesh (in MNI space),
     # as BETSURF needs this.
-    
+
     print('Running BET pre-BETSURF...')
 
-    flirt_smri_mni_bet_file = op.join(filenames['basefilename'],\
-        'flirt_smri_mni_bet')
+    flirt_smri_mni_bet_file = op.join(filenames['basefilename'], \
+                                      'flirt_smri_mni_bet')
     os.system('bet2 {} {} --mesh'.format(
         flirt_smri_mni_file,
         flirt_smri_mni_bet_file))
 
     ## Run BETSURF - to get the head surfaces in MNI space
-    
+
     print('Running BETSURF...')
 
     # Need to provide BETSURF with transform to MNI space.
     # Since flirt_smri_mni_file is already in MNI space,
     # this will just be the identity matrix
-    
-    flirt_identity_xform_file = op.join(filenames['basefilename'],\
-        'flirt_identity_xform.txt')
+
+    flirt_identity_xform_file = op.join(filenames['basefilename'], \
+                                        'flirt_identity_xform.txt')
     np.savetxt(flirt_identity_xform_file, np.eye(4))
- 
+
     bet_mesh_file = op.join(flirt_smri_mni_bet_file + '_mesh.vtk')
     os.system('betsurf --t1only -o {} {} {} {}'.format(
         flirt_smri_mni_file,
@@ -482,67 +486,67 @@ please check output of:\n fslorient -orient {}'.format(filenames['smri_file']))
     print('Refining scalp surface...')
 
     # We do this in MNI big FOV space, to allow the full nose to be included
-    
+
     # Calculate flirt_mni2mnibigfov_xform 
     mni2mnibigfov_xform = rhino_utils._get_flirt_xform_between_axes(
-                                from_nii=flirt_smri_mni_file, 
-                                target_nii=filenames['std_brain_bigfov'])
-    
-    flirt_mni2mnibigfov_xform_file = op.join(filenames['basefilename'],\
-                'flirt_mni2mnibigfov_xform.txt')
+        from_nii=flirt_smri_mni_file,
+        target_nii=filenames['std_brain_bigfov'])
+
+    flirt_mni2mnibigfov_xform_file = op.join(filenames['basefilename'], \
+                                             'flirt_mni2mnibigfov_xform.txt')
     np.savetxt(flirt_mni2mnibigfov_xform_file, mni2mnibigfov_xform)
-    
+
     # Calculate overall transform, from smri to MNI big fov        
-    flirt_mri2mnibigfov_xform_file = op.join(filenames['basefilename'],\
-                'flirt_mri2mnibigfov_xform.txt')
+    flirt_mri2mnibigfov_xform_file = op.join(filenames['basefilename'], \
+                                             'flirt_mri2mnibigfov_xform.txt')
     os.system('convert_xfm -omat {} -concat {} {}'.format(
-         flirt_mri2mnibigfov_xform_file,
-         flirt_mni2mnibigfov_xform_file,
-         flirt_mri2mni_xform_file))
+        flirt_mri2mnibigfov_xform_file,
+        flirt_mni2mnibigfov_xform_file,
+        flirt_mri2mni_xform_file))
 
     # move MRI to MNI big FOV space and load in
-    flirt_smri_mni_bigfov_file = op.join(filenames['basefilename'],\
-        'flirt_smri_mni_bigfov')
+    flirt_smri_mni_bigfov_file = op.join(filenames['basefilename'], \
+                                         'flirt_smri_mni_bigfov')
     os.system('flirt -in {} -ref {} -applyxfm -init {} -out {}'.format(
         filenames['smri_file'],
         filenames['std_brain_bigfov'],
         flirt_mri2mnibigfov_xform_file,
         flirt_smri_mni_bigfov_file))
     vol = nib.load(flirt_smri_mni_bigfov_file + '.nii.gz')
-    
+
     # move scalp to MNI big FOV space and load in
     flirt_outskin_file = op.join(filenames['basefilename'], 'flirt_outskin_mesh')
-    flirt_outskin_bigfov_file = op.join(filenames['basefilename'],\
-        'flirt_outskin_mesh_bigfov')            
+    flirt_outskin_bigfov_file = op.join(filenames['basefilename'], \
+                                        'flirt_outskin_mesh_bigfov')
     os.system('flirt -in {} -ref {} -applyxfm -init {} -out {}'.format(
         flirt_outskin_file,
         filenames['std_brain_bigfov'],
         flirt_mni2mnibigfov_xform_file,
-        flirt_outskin_bigfov_file))                
+        flirt_outskin_bigfov_file))
     scalp = nib.load(flirt_outskin_bigfov_file + '.nii.gz')
 
     # CREATE MASK BY FILLING OUTLINE
-    
+
     # add a border of ones to the mask, in case the complete head is not in the
     # FOV, without this binary_fill_holes will not work 
     mask = np.ones(np.add(scalp.shape, 2))
     # note that z=100 is where the standard MNI FOV starts in the big FOV
-    mask[1:-1, 1:-1, 102:-1] = scalp.get_fdata()[:,:,101:]
+    mask[1:-1, 1:-1, 102:-1] = scalp.get_fdata()[:, :, 101:]
     mask[:, :, :101] = 0
-    
+
     # We assume that the top of the head is not cutoff by the FOV,
     # we need to assume this so that binary_fill_holes works:
-    mask[:,:,-1] = 0 
-    
+    mask[:, :, -1] = 0
+
     mask = morphology.binary_fill_holes(mask)
 
     # remove added border
     mask[:, :, :102] = 0
     mask = mask[1:-1, 1:-1, 1:-1]
 
-    #fig = plt.figure(frameon=False)
-    #plt.imshow(mask[99, :, :]); plt.show()
-        
+    # fig = plt.figure(frameon=False)
+    # plt.imshow(mask[99, :, :]); plt.show()
+
     if include_nose:
         print('Adding nose to scalp surface...')
 
@@ -552,7 +556,7 @@ please check output of:\n fslorient -orient {}'.format(filenames['smri_file']))
         vol_data = vol.get_fdata()
 
         # normalise vol data
-        vol_data = vol_data/np.max(vol_data.flatten())
+        vol_data = vol_data / np.max(vol_data.flatten())
 
         # estimate observation model params of 2 class GMM with diagonal
         # cov matrix where the two classes correspond to inside and
@@ -561,8 +565,8 @@ please check output of:\n fslorient -orient {}'.format(filenames['smri_file']))
         means[0] = np.mean(vol_data[np.where(mask == 0)])
         means[1] = np.mean(vol_data[np.where(mask == 1)])
         precisions = np.zeros([2, 1])
-        precisions[0] = 1/np.var(vol_data[np.where(mask == 0)])
-        precisions[1] = 1/np.var(vol_data[np.where(mask == 1)])
+        precisions[0] = 1 / np.var(vol_data[np.where(mask == 0)])
+        precisions[1] = 1 / np.var(vol_data[np.where(mask == 1)])
         weights = np.zeros([2])
         weights[0] = np.sum((mask == 0))
         weights[1] = np.sum((mask == 1))
@@ -577,14 +581,14 @@ please check output of:\n fslorient -orient {}'.format(filenames['smri_file']))
 
         # classify voxels outside BET mask with GMM
         labels = gm.predict(vol_data[np.where(mask == 0)].reshape(-1, 1))
-         
+
         # insert new labels for voxels outside BET mask into mask
         mask[np.where(mask == 0)] = labels
-                
+
         # ignore anything that is well below the nose and above top of head
-        mask[:,:,0:50] = 0
-        mask[:,:,300:] = 0
-        
+        mask[:, :, 0:50] = 0
+        mask[:, :, 300:] = 0
+
         # CLEAN UP MASK
         mask[:, :, 50:300] = morphology.binary_fill_holes(mask[:, :, 50:300])
         mask[:, :, 50:300] = rhino_utils._binary_majority3d(mask[:, :, 50:300])
@@ -594,35 +598,34 @@ please check output of:\n fslorient -orient {}'.format(filenames['smri_file']))
             mask[i, :, 50:300] = morphology.binary_fill_holes(mask[i, :, 50:300])
         for i in range(mask.shape[1]):
             mask[:, i, 50:300] = morphology.binary_fill_holes(mask[:, i, 50:300])
-        for i in range(50,300,1):
+        for i in range(50, 300, 1):
             mask[:, :, i] = morphology.binary_fill_holes(mask[:, :, i])
-   
 
     # end if include_nose
-    
+
     # EXTRACT OUTLINE
     outline = np.zeros(mask.shape)
     kernel = getStructuringElement(MORPH_RECT, (3, 3))
     mask = mask.astype(np.uint8)
 
-    #import pdb; pdb.pdb.set_trace()
-    
+    # import pdb; pdb.pdb.set_trace()
+
     # Use morph gradient to find the outline of the solid mask
     for i in range(outline.shape[0]):
         outline[i, :, :] += morphologyEx(mask[i, :, :],
-                                            MORPH_GRADIENT, kernel)
+                                         MORPH_GRADIENT, kernel)
     for i in range(outline.shape[1]):
         outline[:, i, :] += morphologyEx(mask[:, i, :],
-                                            MORPH_GRADIENT, kernel)
-    for i in range(50,300,1):
+                                         MORPH_GRADIENT, kernel)
+    for i in range(50, 300, 1):
         outline[:, :, i] += morphologyEx(mask[:, :, i],
-                                            MORPH_GRADIENT, kernel)
+                                         MORPH_GRADIENT, kernel)
     outline /= 3
-    
-    outline[np.where(outline>0.6)] = 1
-    outline[np.where(outline<=0.6)] = 0
+
+    outline[np.where(outline > 0.6)] = 1
+    outline[np.where(outline <= 0.6)] = 0
     outline = outline.astype(np.uint8)
-        
+
     if False:
         fig = plt.figure(frameon=False)
         plt.imshow(vol.get_fdata()[99, :, :])
@@ -636,27 +639,27 @@ please check output of:\n fslorient -orient {}'.format(filenames['smri_file']))
         fig = plt.figure(frameon=False)
         plt.imshow(outline[99, :, :])
         plt.show()
-    
+
     # SAVE AS NIFTI
-    mesh_name = 'outskin_mesh'    
+    mesh_name = 'outskin_mesh'
     outline_nii = nib.Nifti1Image(outline, scalp.affine)
-    
-    nib.save(outline_nii, 
-             op.join(flirt_outskin_bigfov_file + '_plus_nose.nii.gz'))                       
+
+    nib.save(outline_nii,
+             op.join(flirt_outskin_bigfov_file + '_plus_nose.nii.gz'))
 
     os.system('fslcpgeom {} {}'.format(
         op.join(flirt_outskin_bigfov_file + '.nii.gz'),
         op.join(flirt_outskin_bigfov_file + '_plus_nose.nii.gz')))
-         
+
     ## Transform outskin plus nose nii mesh from MNI big FOV to MRI space
-    
+
     # first we need to invert the flirt_mri2mnibigfov_xform_file xform:
-    flirt_mnibigfov2mri_xform_file = op.join(filenames['basefilename'],\
+    flirt_mnibigfov2mri_xform_file = op.join(filenames['basefilename'], \
                                              'flirt_mnibigfov2mri_xform.txt')
     os.system('convert_xfm -omat {} -inverse {}'.format(
         flirt_mnibigfov2mri_xform_file,
         flirt_mri2mnibigfov_xform_file))
-        
+
     os.system('flirt -in {} -ref {} -applyxfm -init {} -out {}'.format(
         op.join(flirt_outskin_bigfov_file + '_plus_nose.nii.gz'),
         filenames['smri_file'],
@@ -667,55 +670,54 @@ please check output of:\n fslorient -orient {}'.format(filenames['smri_file']))
     # 6) Output surfaces in sMRI (native) space and the transform from sMRI
     #    space to MNI
     ###########################################################################
-    
-    # Move BET surface to native sMRI space. They are currently in MNI space
-    
-    flirt_mni2mri = np.loadtxt(flirt_mni2mri_xform_file)
-    
-    xform_mni2mri = rhino_utils._get_xform_from_flirt_xform(
-                flirt_mni2mri, 
-                filenames['std_brain'], 
-                filenames['smri_file'])
 
-    mni_mri_t = Transform('mni_tal', 'mri',  xform_mni2mri)
+    # Move BET surface to native sMRI space. They are currently in MNI space
+
+    flirt_mni2mri = np.loadtxt(flirt_mni2mri_xform_file)
+
+    xform_mni2mri = rhino_utils._get_xform_from_flirt_xform(
+        flirt_mni2mri,
+        filenames['std_brain'],
+        filenames['smri_file'])
+
+    mni_mri_t = Transform('mni_tal', 'mri', xform_mni2mri)
     write_trans(filenames['mni_mri_t_file'], mni_mri_t)
 
     # Transform betsurf mask/mesh output from MNI to sMRI space
-    for mesh_name in {'outskin_mesh','inskull_mesh','outskull_mesh'}:
-
+    for mesh_name in {'outskin_mesh', 'inskull_mesh', 'outskull_mesh'}:
         # xform mask
         os.system('flirt -interp nearestneighbour -in {} -ref {} -applyxfm -init {} -out {}'.format(
             op.join(filenames['basefilename'], 'flirt_' + mesh_name + '.nii.gz'),
             filenames['smri_file'],
             flirt_mni2mri_xform_file,
             op.join(filenames['basefilename'], mesh_name)))
-        
+
         # xform vtk mesh
         rhino_utils._transform_vtk_mesh(
-                op.join(filenames['basefilename'], 'flirt_' + mesh_name + '.vtk'),
-                op.join(filenames['basefilename'], 'flirt_' + mesh_name + '.nii.gz'), 
-                op.join(filenames['basefilename'], mesh_name + '.vtk'),
-                op.join(filenames['basefilename'], mesh_name+ '.nii.gz'),                   
-                filenames['mni_mri_t_file'])
-    
+            op.join(filenames['basefilename'], 'flirt_' + mesh_name + '.vtk'),
+            op.join(filenames['basefilename'], 'flirt_' + mesh_name + '.nii.gz'),
+            op.join(filenames['basefilename'], mesh_name + '.vtk'),
+            op.join(filenames['basefilename'], mesh_name + '.nii.gz'),
+            filenames['mni_mri_t_file'])
+
     ###########################################################################
     # Clean up
     ###########################################################################
-    
+
     os.system('cp -f {} {}'.format(
-            flirt_mni2mri_xform_file,
-            filenames['mni2mri_flirt_file']))
-    
+        flirt_mni2mri_xform_file,
+        filenames['mni2mri_flirt_file']))
+
     if cleanup_files:
         # CLEAN UP FILES ON DISK
         os.system('rm -f {}'.format(op.join(filenames['basefilename'], 'flirt*')))
-        
+
     print('*** OSL RHINO COMPUTE SURFACES COMPLETE ***')
+
 
 #############################################################################
 
 def surfaces_display(subjects_dir, subject):
-    
     '''
     Displays the surfaces extracted from the sMRI using rhino.compute_surfaces
     Display is shown in sMRI (native) space
@@ -735,22 +737,23 @@ def surfaces_display(subjects_dir, subject):
     conventions used by BET
 
     '''
-    
+
     filenames = get_surfaces_filenames(subjects_dir, subject)
-    
+
     os.system('fsleyes {} {} {} {} {} &'
-          .format(filenames['smri_file'],
-                  filenames['bet_inskull_mesh_file'],
-                  filenames['bet_outskin_mesh_file'],
-                  filenames['bet_outskull_mesh_file'],
-                  filenames['bet_outskin_plus_nose_mesh_file']))  
-        
+              .format(filenames['smri_file'],
+                      filenames['bet_inskull_mesh_file'],
+                      filenames['bet_outskin_mesh_file'],
+                      filenames['bet_outskull_mesh_file'],
+                      filenames['bet_outskin_plus_nose_mesh_file']))
+
+
 #############################################################################
 
 def coreg(fif_file,
           subjects_dir, subject,
           polhemus_headshape_file,
-          polhemus_nasion_file, polhemus_rpa_file, polhemus_lpa_file,          
+          polhemus_nasion_file, polhemus_rpa_file, polhemus_lpa_file,
           use_headshape=True,
           use_nose=True,
           use_dev_ctf_t=True):
@@ -851,12 +854,12 @@ Please ensure that the polhemus headshape points include the nose. \n')
         else:
             print('The MRI-derived nose is not going to be used to aid coreg.\n\
 Please ensure that the polhemus headshape points do not include the nose')
-        
+
     # Copy passed in polhemus pnts
     for fil in ('polhemus_headshape_file',
                 'polhemus_nasion_file', 'polhemus_rpa_file', 'polhemus_lpa_file'):
         copyfile(locals()[fil], filenames[fil])
-            
+
     # Load in the "polhemus-derived fiducial points"
     polhemus_nasion_polhemus = np.loadtxt(polhemus_nasion_file)
     polhemus_rpa_polhemus = np.loadtxt(polhemus_rpa_file)
@@ -865,37 +868,36 @@ Please ensure that the polhemus headshape points do not include the nose')
 
     # Load in outskin_mesh_file to get the "sMRI-derived headshape points"
     if use_nose:
-        outskin_mesh_file = surfaces_filenames['bet_outskin_plus_nose_mesh_file']            
+        outskin_mesh_file = surfaces_filenames['bet_outskin_plus_nose_mesh_file']
     else:
         outskin_mesh_file = surfaces_filenames['bet_outskin_mesh_file']
-        
+
     smri_headshape_nativeindex = rhino_utils.niimask2indexpointcloud(outskin_mesh_file)
 
     ###########################################################################
     # Copy fif_file to new file for modification, and (optionally) changes 
     # dev_head_t to equal dev_ctf_t in fif file info
     ###########################################################################
-    
+
     if fif_file[-7:] == 'raw.fif':
         raw = read_raw(fif_file)
     elif fif_file[-10:] == 'epochs.fif':
         raw = read_epochs(fif_file)
     else:
         raise ValueError('Invalid fif file, needs to be a *raw.fif or a *epochs.fif file')
-            
-        
+
     if use_dev_ctf_t:
         dev_ctf_t = raw.info['dev_ctf_t']
-                        
+
         if dev_ctf_t != None:
             print('CTF data')
             print('Setting dev_head_t equal to dev_ctf_t in fif file info. \n\
 To turn this off, set use_dev_ctf_t=False')
-                
+
             dev_head_t, _ = _get_trans(raw.info['dev_head_t'], 'meg', 'head')
-            
+
             dev_head_t['trans'] = dev_ctf_t['trans']
-        
+
     raw.save(filenames['fif_file'], overwrite=True)
     fif_file = filenames['fif_file']
 
@@ -904,11 +906,11 @@ To turn this off, set use_dev_ctf_t=False')
     # space. These are then used as the location of the sMRI-derived fiducials
     # in native sMRI space.
     ###########################################################################
-    
+
     # Known locations of MNI derived fiducials in MNI coords in mm
-    mni_nasion_mni = np.asarray([1,   85,  -41])
-    mni_rpa_mni = np.asarray([83,  -20,  -65])
-    mni_lpa_mni = np.asarray([-83,  -20,  -65])
+    mni_nasion_mni = np.asarray([1, 85, -41])
+    mni_rpa_mni = np.asarray([83, -20, -65])
+    mni_lpa_mni = np.asarray([-83, -20, -65])
 
     mni_mri_t = read_trans(surfaces_filenames['mni_mri_t_file'])
 
@@ -943,27 +945,27 @@ To turn this off, set use_dev_ctf_t=False')
 
     smri_fid_polhemus = rhino_utils.xform_points(xform_native2polhemus,
                                                  smri_fid_native)
-    
+
     ## Now we can transform sMRI-derived headshape pnts into polhemus space:
-    
+
     # get native (mri) voxel index to native (mri) transform
     xform_nativeindex2native = rhino_utils._get_sform(outskin_mesh_file)['trans']
 
     # put sMRI-derived headshape points into native space (in mm)
-    smri_headshape_native = rhino_utils.xform_points(xform_nativeindex2native, 
-                                                 smri_headshape_nativeindex)
-    
+    smri_headshape_native = rhino_utils.xform_points(xform_nativeindex2native,
+                                                     smri_headshape_nativeindex)
+
     # put sMRI-derived headshape points into polhemus space
     smri_headshape_polhemus = rhino_utils.xform_points(xform_native2polhemus,
-                                                 smri_headshape_native)
-    
+                                                       smri_headshape_native)
+
     ###########################################################################
     # 3) We have the polhemus-derived headshape points in polhemus 
     # space and the sMRI-derived headshape (scalp surface) in native sMRI space.  
     # We use these to estimate the affine xform from native sMRI space using the 
     # ICP algorithm initilaised using the xform estimate in step 2.
     ###########################################################################
-    
+
     if use_headshape:
         print('Running ICP...')
 
@@ -975,13 +977,13 @@ To turn this off, set use_dev_ctf_t=False')
         # with them both in polhemus space
         # These are the "source" points that will be moved around
         polhemus_headshape_polhemus_4icp = np.concatenate(
-                (polhemus_headshape_polhemus, polhemus_fid_polhemus), axis=1)
-        
-        #import pdb; pdb.pdb.set_trace()
-        xform_icp, err, e = rhino_utils.rhino_icp(smri_headshape_polhemus, 
-                                            polhemus_headshape_polhemus_4icp, 
-                                            30)
-        #print((xform_icp*10).astype(int)/10)
+            (polhemus_headshape_polhemus, polhemus_fid_polhemus), axis=1)
+
+        # import pdb; pdb.pdb.set_trace()
+        xform_icp, err, e = rhino_utils.rhino_icp(smri_headshape_polhemus,
+                                                  polhemus_headshape_polhemus_4icp,
+                                                  30)
+        # print((xform_icp*10).astype(int)/10)
 
     else:
         # No refinement by ICP:
@@ -1010,9 +1012,8 @@ To turn this off, set use_dev_ctf_t=False')
         xform_native2polhemus_refined)
 
     head_mri_t = Transform('head', 'mri',
-                       np.linalg.inv(xform_native2polhemus_refined_copy))
+                           np.linalg.inv(xform_native2polhemus_refined_copy))
     write_trans(filenames['head_mri_t_file'], head_mri_t)
-
 
     nativeindex_native_t = np.copy(xform_nativeindex2native)
     mrivoxel_mri_t = Transform(
@@ -1042,25 +1043,25 @@ To turn this off, set use_dev_ctf_t=False')
     # Create sMRI-derived surfaces in native/mri space in mm,
     # for use by forward modelling
     ###########################################################################
-    
+
     rhino_utils.create_freesurfer_mesh(infile=surfaces_filenames['bet_inskull_mesh_vtk_file'],
-                            surf_outfile=surfaces_filenames['bet_inskull_surf_file'],
-                            nii_mesh_file=surfaces_filenames['bet_inskull_mesh_file'],
-                            xform_mri_voxel2mri=mrivoxel_mri_t['trans'],
-                            overwrite=True)
+                                       surf_outfile=surfaces_filenames['bet_inskull_surf_file'],
+                                       nii_mesh_file=surfaces_filenames['bet_inskull_mesh_file'],
+                                       xform_mri_voxel2mri=mrivoxel_mri_t['trans'],
+                                       overwrite=True)
 
     rhino_utils.create_freesurfer_mesh(infile=surfaces_filenames['bet_outskull_mesh_vtk_file'],
-                            surf_outfile=surfaces_filenames['bet_outskull_surf_file'],
-                            nii_mesh_file=surfaces_filenames['bet_outskull_mesh_file'],
-                            xform_mri_voxel2mri=mrivoxel_mri_t['trans'],
-                            overwrite=True)
+                                       surf_outfile=surfaces_filenames['bet_outskull_surf_file'],
+                                       nii_mesh_file=surfaces_filenames['bet_outskull_mesh_file'],
+                                       xform_mri_voxel2mri=mrivoxel_mri_t['trans'],
+                                       overwrite=True)
 
     rhino_utils.create_freesurfer_mesh(infile=surfaces_filenames['bet_outskin_mesh_vtk_file'],
-                            surf_outfile=surfaces_filenames['bet_outskin_surf_file'],
-                            nii_mesh_file=surfaces_filenames['bet_outskin_mesh_file'],
-                            xform_mri_voxel2mri=mrivoxel_mri_t['trans'],
-                            overwrite=True)
-    
+                                       surf_outfile=surfaces_filenames['bet_outskin_surf_file'],
+                                       nii_mesh_file=surfaces_filenames['bet_outskin_mesh_file'],
+                                       xform_mri_voxel2mri=mrivoxel_mri_t['trans'],
+                                       overwrite=True)
+
     print('*** OSL RHINO COREGISTRATION COMPLETE ***')
 
 
@@ -1112,17 +1113,17 @@ def coreg_display(subjects_dir, subject,
     # Rhino does everthing in mm
 
     surfaces_filenames = get_surfaces_filenames(subjects_dir, subject)
-    
+
     bet_outskin_plus_nose_mesh_file = surfaces_filenames['bet_outskin_plus_nose_mesh_file']
     bet_outskin_plus_nose_surf_file = surfaces_filenames['bet_outskin_plus_nose_surf_file']
     bet_outskin_mesh_file = surfaces_filenames['bet_outskin_mesh_file']
     bet_outskin_mesh_vtk_file = surfaces_filenames['bet_outskin_mesh_vtk_file']
     bet_outskin_surf_file = surfaces_filenames['bet_outskin_surf_file']
-    
+
     coreg_filenames = get_coreg_filenames(subjects_dir, subject)
     head_mri_t_file = coreg_filenames['head_mri_t_file']
     mrivoxel_mri_t_file = coreg_filenames['mrivoxel_mri_t_file']
-    
+
     smri_nasion_file = coreg_filenames['smri_nasion_file']
     smri_rpa_file = coreg_filenames['smri_rpa_file']
     smri_lpa_file = coreg_filenames['smri_lpa_file']
@@ -1141,10 +1142,10 @@ def coreg_display(subjects_dir, subject,
         outskin_mesh_file = bet_outskin_mesh_file
         outskin_mesh_4surf_file = bet_outskin_mesh_vtk_file
         outskin_surf_file = bet_outskin_surf_file
-        
+
     ###########################################################################
     # Setup xforms
-    
+
     info = read_info(fif_file)
 
     mrivoxel_mri_t = read_trans(mrivoxel_mri_t_file)
@@ -1157,7 +1158,7 @@ def coreg_display(subjects_dir, subject,
     # Note that MNE xform in fif.info assume metres, whereas we want it
     # in mm. To change units on an xform, just need to change the translation
     # part and leave the rotation alone
-    dev_head_t['trans'][0:3, -1] = dev_head_t['trans'][0:3, -1]*1000
+    dev_head_t['trans'][0:3, -1] = dev_head_t['trans'][0:3, -1] * 1000
 
     # We are going to display everything in MEG (device) coord frame in mm
     head_trans = invert_transform(dev_head_t)
@@ -1199,7 +1200,7 @@ def coreg_display(subjects_dir, subject,
 
     ###########################################################################
     # Setup MEG sensors
-    
+
     meg_picks = pick_types(info, meg=True, ref_meg=False, exclude=())
 
     coil_transs = [_loc_to_coil_trans(info['chs'][pick]['loc'])
@@ -1222,11 +1223,11 @@ def coreg_display(subjects_dir, subject,
         meg_tris = np.concatenate(meg_tris, axis=0)
 
     # convert to mm
-    meg_rrs = meg_rrs*1000
+    meg_rrs = meg_rrs * 1000
 
     ###########################################################################
     # Do plots
-    
+
     ###########################################################################
     if plot_type == 'surf':
         warnings.filterwarnings("ignore", category=Warning)
@@ -1240,7 +1241,7 @@ def coreg_display(subjects_dir, subject,
             polhemus_headshape_megt = polhemus_headshape_meg.T
             color, scale, alpha = (0, 0.7, 0.7), 0.006, 0.9
             renderer.sphere(center=polhemus_headshape_megt,
-                            color=color, scale=scale*1000,
+                            color=color, scale=scale * 1000,
                             opacity=alpha, backface_culling=True)
 
         # MRI-derived nasion, rpa, lpa
@@ -1248,7 +1249,7 @@ def coreg_display(subjects_dir, subject,
             color, scale, alpha = (1, 1, 0), 0.08, 1
             for data in [smri_nasion_meg.T, smri_rpa_meg.T, smri_lpa_meg.T]:
                 transform = np.eye(4)
-                transform[:3, :3] = mri_trans['trans'][:3, :3] * scale*1000
+                transform[:3, :3] = mri_trans['trans'][:3, :3] * scale * 1000
                 # rotate around Z axis 45 deg first
                 transform = transform @ rotation(0, 0, np.pi / 4)
                 renderer.quiver3d(
@@ -1261,7 +1262,7 @@ def coreg_display(subjects_dir, subject,
         if len(polhemus_nasion_meg.T) > 0:
             color, scale, alpha = (1, 0, 1), 0.01, 1.5
             for data in [polhemus_nasion_meg.T, polhemus_rpa_meg.T, polhemus_lpa_meg.T]:
-                renderer.sphere(center=data, color=color, scale=scale*1000,
+                renderer.sphere(center=data, color=color, scale=scale * 1000,
                                 opacity=alpha, backface_culling=True)
 
         if display_sensors:
@@ -1275,11 +1276,11 @@ def coreg_display(subjects_dir, subject,
         # sMRI-derived scalp surface
         # if surf file does not exist, then we must create it
         rhino_utils.create_freesurfer_mesh(infile=outskin_mesh_4surf_file,
-                                surf_outfile=outskin_surf_file,
-                                nii_mesh_file=outskin_mesh_file,
-                                xform_mri_voxel2mri=mrivoxel_mri_t['trans'],
-                                overwrite=True)
-        
+                                           surf_outfile=outskin_surf_file,
+                                           nii_mesh_file=outskin_mesh_file,
+                                           xform_mri_voxel2mri=mrivoxel_mri_t['trans'],
+                                           overwrite=True)
+
         coords_native, faces = nib.freesurfer.read_geometry(outskin_surf_file)
 
         # Move to MEG (device) space
@@ -1294,7 +1295,7 @@ def coreg_display(subjects_dir, subject,
         renderer.set_camera(azimuth=90, elevation=90,
                             distance=600, focalpoint=(0., 0., 0.))
         renderer.show()
-        
+
     ###########################################################################
     elif plot_type == 'scatter':
 
@@ -1359,9 +1360,10 @@ def coreg_display(subjects_dir, subject,
     with warnings.catch_warnings(record=True):
         warnings.simplefilter('ignore', Warning)
 
+
 #############################################################################
 def forward_model(subjects_dir, subject,
-                  model = 'Single Layer',
+                  model='Single Layer',
                   gridstep=8, mindist=4.0, exclude=0.0,
                   eeg=False, meg=True,
                   verbose=False):
@@ -1396,7 +1398,7 @@ def forward_model(subjects_dir, subject,
         
          gridstep=gridstep, mindist=mindist
     '''
-    
+
     # compute MNE bem solution  
     if model == 'Single Layer':
         conductivity = (0.3,)  # for single layer
@@ -1404,12 +1406,11 @@ def forward_model(subjects_dir, subject,
         conductivity = (0.3, 0.006, 0.3)  # for three layers
     else:
         raise ValueError('{} is an invalid model choice'.format(model))
-        
 
-    vol_src = setup_volume_source_space(subjects_dir, subject, 
-                                        gridstep=gridstep, 
+    vol_src = setup_volume_source_space(subjects_dir, subject,
+                                        gridstep=gridstep,
                                         mindist=mindist)
-     
+
     # The BEM solution requires a BEM model which describes the geometry of the 
     # head the conductivities of the different tissues.
     # See:
@@ -1424,21 +1425,22 @@ def forward_model(subjects_dir, subject,
     #
     # which is where rhino.setup_volume_source_space will have put it.
     model = make_bem_model(subjects_dir=subjects_dir,
-                               subject=subject, ico=None,
-                               conductivity=conductivity,
-                               verbose=verbose)
-    
-    bem = make_bem_solution(model)         
-        
-    fwd = make_fwd_solution(subjects_dir, subject, 
-                                        src=vol_src,
-                                        ignore_ref=True,
-                                        bem=bem, eeg=eeg, meg=meg,
-                                        verbose=verbose)
-    
-    fwd_fname=get_coreg_filenames(subjects_dir, subject)['forward_model_file']
-    
+                           subject=subject, ico=None,
+                           conductivity=conductivity,
+                           verbose=verbose)
+
+    bem = make_bem_solution(model)
+
+    fwd = make_fwd_solution(subjects_dir, subject,
+                            src=vol_src,
+                            ignore_ref=True,
+                            bem=bem, eeg=eeg, meg=meg,
+                            verbose=verbose)
+
+    fwd_fname = get_coreg_filenames(subjects_dir, subject)['forward_model_file']
+
     write_forward_solution(fwd_fname, fwd, overwrite=True)
+
 
 #############################################################################
 def bem_display(subjects_dir, subject,
@@ -1476,9 +1478,9 @@ def bem_display(subjects_dir, subject,
     # MRI (native) -- mri_mrivoxel_t (native2nativeindex) --> MRI (native) voxel indices
     #
     # Rhino does everthing in mm
-    
+
     surfaces_filenames = get_surfaces_filenames(subjects_dir, subject)
-        
+
     bet_outskin_plus_nose_mesh_file = surfaces_filenames['bet_outskin_plus_nose_mesh_file']
     bet_outskin_plus_nose_surf_file = surfaces_filenames['bet_outskin_plus_nose_surf_file']
     bet_outskin_mesh_file = surfaces_filenames['bet_outskin_mesh_file']
@@ -1486,13 +1488,13 @@ def bem_display(subjects_dir, subject,
     bet_outskin_surf_file = surfaces_filenames['bet_outskin_surf_file']
     bet_inskull_mesh_file = surfaces_filenames['bet_inskull_mesh_file']
     bet_inskull_surf_file = surfaces_filenames['bet_inskull_surf_file']
-    
+
     coreg_filenames = get_coreg_filenames(subjects_dir, subject)
     head_mri_t_file = coreg_filenames['head_mri_t_file']
     mrivoxel_mri_t_file = coreg_filenames['mrivoxel_mri_t_file']
 
     fif_file = coreg_filenames['fif_file']
-    
+
     if display_outskin_with_nose:
         outskin_mesh_file = bet_outskin_plus_nose_mesh_file
         outskin_mesh_4surf_file = bet_outskin_plus_nose_mesh_file
@@ -1505,10 +1507,10 @@ def bem_display(subjects_dir, subject,
     fwd_fname = get_coreg_filenames(subjects_dir, subject)['forward_model_file']
     forward = read_forward_solution(fwd_fname)
     src = forward['src']
-    
+
     ###########################################################################
     # Setup xforms
-    
+
     info = read_info(fif_file)
 
     mrivoxel_mri_t = read_trans(mrivoxel_mri_t_file)
@@ -1516,22 +1518,22 @@ def bem_display(subjects_dir, subject,
     # get meg to head xform in metres from info
     head_mri_t = read_trans(head_mri_t_file)
     dev_head_t, _ = _get_trans(info['dev_head_t'], 'meg', 'head')
-    
+
     # Change xform from metres to mm.
     # Note that MNE xform in fif.info assume metres, whereas we want it
     # in mm. To change units on an xform, just need to change the translation
     # part and leave the rotation alone
-    dev_head_t['trans'][0:3, -1] = dev_head_t['trans'][0:3, -1]*1000
+    dev_head_t['trans'][0:3, -1] = dev_head_t['trans'][0:3, -1] * 1000
 
     # We are going to display everything in MEG (device) coord frame in mm
     meg_trans = Transform('meg', 'meg')
     mri_trans = invert_transform(
         combine_transforms(dev_head_t, head_mri_t, 'meg', 'mri'))
     head_trans = invert_transform(dev_head_t)
-    
+
     ###########################################################################
     # Setup MEG sensors
-    
+
     if display_sensors:
         meg_picks = pick_types(info, meg=True, ref_meg=False, exclude=())
 
@@ -1555,21 +1557,21 @@ def bem_display(subjects_dir, subject,
             meg_tris = np.concatenate(meg_tris, axis=0)
 
         # convert to mm
-        meg_rrs = meg_rrs*1000
-        
+        meg_rrs = meg_rrs * 1000
+
     ###########################################################################
     # Setup vol source grid points
     if src is not None:
         # stored points are in metres, convert to mm
-        src_pnts = src[0]['rr'][src[0]['vertno'], :]*1000
+        src_pnts = src[0]['rr'][src[0]['vertno'], :] * 1000
         # Move from head space to MEG (device) space
         src_pnts = rhino_utils.xform_points(head_trans['trans'], src_pnts.T).T
-        
+
     print('Number of dipoles={}'.format(src_pnts.shape[0]))
 
     ###########################################################################
     # Do plots
-    
+
     ###########################################################################
     if plot_type == 'surf':
         warnings.filterwarnings("ignore", category=Warning)
@@ -1588,10 +1590,10 @@ def bem_display(subjects_dir, subject,
 
         # sMRI-derived scalp surface
         rhino_utils.create_freesurfer_mesh(infile=outskin_mesh_4surf_file,
-                                surf_outfile=outskin_surf_file,
-                                nii_mesh_file=outskin_mesh_file,
-                                xform_mri_voxel2mri=mrivoxel_mri_t['trans'],
-                                overwrite=True)
+                                           surf_outfile=outskin_surf_file,
+                                           nii_mesh_file=outskin_mesh_file,
+                                           xform_mri_voxel2mri=mrivoxel_mri_t['trans'],
+                                           overwrite=True)
 
         coords_native, faces = nib.freesurfer.read_geometry(outskin_surf_file)
 
@@ -1623,7 +1625,7 @@ def bem_display(subjects_dir, subject,
         # vol source grid points
         if src is not None and len(src_pnts.T) > 0:
             color, scale, alpha = (1, 0, 0), 0.001, 1
-            renderer.sphere(center=src_pnts, color=color, scale=scale*1000,
+            renderer.sphere(center=src_pnts, color=color, scale=scale * 1000,
                             opacity=alpha, backface_culling=True)
 
         renderer.set_camera(azimuth=90, elevation=90,
@@ -1771,12 +1773,12 @@ def setup_volume_source_space(subjects_dir, subject,
     ###########################################################################
     # Move the surfaces to where MNE expects to find them for the 
     # forward modelling, see make_bem_model in mne/bem.py
-    
+
     # First make sure bem directory exists:
     bem_dir_name = op.join(subjects_dir, subject, 'bem')
     if not os.path.isdir(bem_dir_name):
         os.mkdir(bem_dir_name)
-        
+
     # Note that due to the unusal naming conventions used by BET and MNE:
     # - bet_inskull_*_file is actually the brain surface 
     # - bet_outskull_*_file is actually the inner skull surface
@@ -1801,30 +1803,29 @@ def setup_volume_source_space(subjects_dir, subject,
     # https://imaging.mrc-cbu.cam.ac.uk/meg/SpmForwardModels
     #
     # To be continued... need to get in touch with mne folks perhaps?
-    
+
     if True:
-        verts, tris = read_surface(surfaces_filenames['bet_inskull_surf_file'])    
+        verts, tris = read_surface(surfaces_filenames['bet_inskull_surf_file'])
         tris = tris.astype(int)
         write_surface(op.join(bem_dir_name, 'inner_skull.surf'),
-                  verts, tris, file_format='freesurfer', overwrite=True)    
+                      verts, tris, file_format='freesurfer', overwrite=True)
         print('Using bet_inskull_surf_file for single shell surface')
     else:
-        verts, tris = read_surface(surfaces_filenames['bet_outskull_surf_file'])    
+        verts, tris = read_surface(surfaces_filenames['bet_outskull_surf_file'])
         tris = tris.astype(int)
         write_surface(op.join(bem_dir_name, 'inner_skull.surf'),
-                  verts, tris, file_format='freesurfer', overwrite=True)  
+                      verts, tris, file_format='freesurfer', overwrite=True)
         print('Using bet_outskull_surf_file for single shell surface')
-        
 
-    verts, tris = read_surface(surfaces_filenames['bet_outskull_surf_file'])    
+    verts, tris = read_surface(surfaces_filenames['bet_outskull_surf_file'])
     tris = tris.astype(int)
     write_surface(op.join(bem_dir_name, 'outer_skull.surf'),
-                  verts, tris, file_format='freesurfer', overwrite=True)    
+                  verts, tris, file_format='freesurfer', overwrite=True)
 
-    verts, tris = read_surface(surfaces_filenames['bet_outskin_surf_file'])    
+    verts, tris = read_surface(surfaces_filenames['bet_outskin_surf_file'])
     tris = tris.astype(int)
     write_surface(op.join(bem_dir_name, 'outer_skin.surf'),
-                  verts, tris, file_format='freesurfer', overwrite=True)    
+                  verts, tris, file_format='freesurfer', overwrite=True)
 
     ###########################################################################
     # Setup main MNE call to _make_volume_source_space
@@ -1844,7 +1845,7 @@ def setup_volume_source_space(subjects_dir, subject,
             mri_depth=dims[1], mri_volume_name=mri)
 
         return out
-    
+
     vol_info = get_mri_info_from_nii(
         surfaces_filenames['smri_file'], coreg_filenames['mrivoxel_mri_t_file'])
 
@@ -1852,17 +1853,17 @@ def setup_volume_source_space(subjects_dir, subject,
 
     surf = deepcopy(surf)
     surf['rr'] *= 1e-3  # must be in metres for MNE call
-    
+
     # Main MNE call to _make_volume_source_space
     sp = _make_volume_source_space(
         surf, pos, exclude, mindist, surfaces_filenames['smri_file'], None,
         vol_info=vol_info, single_volume=False)
 
     sp[0]['type'] = 'vol'
-    
+
     ###########################################################################
     # Save and return result
-    
+
     sp = _complete_vol_src(sp, subject)
 
     # add dummy mri_ras_t and vox_mri_t transforms as these are needed for the
@@ -1876,17 +1877,18 @@ def setup_volume_source_space(subjects_dir, subject,
 
     return sp
 
+
 #############################################################################
 
 def make_fwd_solution(subjects_dir, subject,
-                          src, 
-                          bem, 
-                          meg=True,
-                          eeg=True, 
-                          mindist=0.0, 
-                          ignore_ref=False,
-                          n_jobs=1, 
-                          verbose=None):
+                      src,
+                      bem,
+                      meg=True,
+                      eeg=True,
+                      mindist=0.0,
+                      ignore_ref=False,
+                      n_jobs=1,
+                      verbose=None):
     '''Calculate a forward solution for a subject. This is a RHINO wrapper
     for mne.make_forward_solution
 
@@ -1920,9 +1922,9 @@ def make_fwd_solution(subjects_dir, subject,
     '''
 
     fif_file = get_coreg_filenames(subjects_dir, subject)['fif_file']
-    
+
     # Note, forward model is done in Head space:
-    head_mri_trans_file=get_coreg_filenames(subjects_dir, subject)['head_mri_t_file']
+    head_mri_trans_file = get_coreg_filenames(subjects_dir, subject)['head_mri_t_file']
 
     # Src should be in MRI space. Let's just check that is the
     # case
@@ -1940,7 +1942,7 @@ def make_fwd_solution(subjects_dir, subject,
     # what MNE expects.
     # To change units on an xform, just need to change the translation
     # part and leave the rotation alone:
-    head_mri_t['trans'][0:3, -1] = head_mri_t['trans'][0:3, -1]/1000
+    head_mri_t['trans'][0:3, -1] = head_mri_t['trans'][0:3, -1] / 1000
 
     if isinstance(bem, str):
         bem = read_bem_solution(bem)
@@ -1959,7 +1961,7 @@ def make_fwd_solution(subjects_dir, subject,
     # Main MNE call    
     fwd = make_forward_solution(info, trans=head_mri_t, src=src,
                                 bem=bem, eeg=eeg, meg=meg,
-                                mindist=mindist,  ignore_ref=ignore_ref,
+                                mindist=mindist, ignore_ref=ignore_ref,
                                 n_jobs=n_jobs, verbose=verbose)
 
     # fwd should be in Head space. Let's just check that is the case:
@@ -1968,12 +1970,13 @@ def make_fwd_solution(subjects_dir, subject,
 
     return fwd
 
+
 #############################################################################
 
 def recon_ts2mri_nii(subjects_dir, subject,
-              recon_timeseries,
-              out_nii_fname,
-              times = None):
+                     recon_timeseries,
+                     out_nii_fname,
+                     times=None):
     '''
     Writes niftii files to native sMRI space for the passed in recon_timeseries
     
@@ -2003,46 +2006,46 @@ def recon_ts2mri_nii(subjects_dir, subject,
 
     '''
 
-    if len(recon_timeseries.shape)==1:
-        recon_timeseries = np.reshape(recon_timeseries,[recon_timeseries.shape[0],1])
-        
+    if len(recon_timeseries.shape) == 1:
+        recon_timeseries = np.reshape(recon_timeseries, [recon_timeseries.shape[0], 1])
+
     surfaces_filenames = get_surfaces_filenames(subjects_dir, subject)
     coreg_filenames = get_coreg_filenames(subjects_dir, subject)
-    
+
     smri_file = surfaces_filenames['smri_file']
-    head_mri_trans_file = coreg_filenames['head_mri_t_file']    
+    head_mri_trans_file = coreg_filenames['head_mri_t_file']
 
     fwd = read_forward_solution(coreg_filenames['forward_model_file'])
-    
+
     # fwd should be in Head space. Let's double just check that is the case
     if fwd['src'][0]['coord_frame'] != FIFF.FIFFV_COORD_HEAD:
         raise RuntimeError('fwd[\'src\'][0] is not in HEAD coordinates')
-    
+
     ##############
     # estimate gridstep from forward model
     rr = fwd['src'][0]['rr']
-    
-    store=[]
+
+    store = []
     for ii in range(rr.shape[0]):
-        store.append(np.sqrt(np.sum(np.square(rr[ii, :] - rr[0,:]))))
+        store.append(np.sqrt(np.sum(np.square(rr[ii, :] - rr[0, :]))))
     store = np.asarray(store)
-    gridstep = int(np.round(np.min(store[np.where(store>0)])*1000))
+    gridstep = int(np.round(np.min(store[np.where(store > 0)]) * 1000))
     print('Using gridstep = {}mm'.format(gridstep))
     ##############
-    
+
     ##############
     # Get hold of coords of points reconstructed to.
     # Note, MNE forward model is done in head space in metres.
     # Rhino does everything in mm
     vs = fwd['src'][0]
-    coords_head = vs['rr'][vs['vertno']]*1000  # in mm
+    coords_head = vs['rr'][vs['vertno']] * 1000  # in mm
     ##############
-    
+
     in_file = smri_file
-    
+
     # create background file name for chosen gridstep
     out_gridstep_mm_file = in_file.replace(
-                    '.nii.gz', '_{}mm.nii.gz'.format(gridstep))
+        '.nii.gz', '_{}mm.nii.gz'.format(gridstep))
 
     # Sample smri to the gridstep resolution
     # output is out_gridstep_mm_file
@@ -2051,57 +2054,58 @@ def recon_ts2mri_nii(subjects_dir, subject,
         in_file,
         out_gridstep_mm_file,
         gridstep))
-    
+
     # get transform from mri to mri voxel indices for smri at gridstep resolution
     mri2mri_vox_t = invert_transform(rhino_utils._get_sform(out_gridstep_mm_file))
 
     # Compute head to native MRI voxel index xform    
     head_vox2outspace_vox_t = combine_transforms(read_trans(head_mri_trans_file),
-                                       mri2mri_vox_t, 'head', 'mri_voxel')
-                
+                                                 mri2mri_vox_t, 'head', 'mri_voxel')
+
     # Convert to native voxel index output space
     coords_out_voxel = np.round(apply_trans(
         head_vox2outspace_vox_t, coords_head)).astype(int)
 
     out_gridstep_mm = nib.load(out_gridstep_mm_file)
-    
-    affine = out_gridstep_mm.affine        
-    
+
+    affine = out_gridstep_mm.affine
+
     if coords_out_voxel.shape[0] != recon_timeseries.shape[0]:
         raise ValueError('coords_out_voxel.shape[0] ~= recon_timeseries[0] \n\
 Passed in volumes are not compatible with passed in forward model, fwd.\n\
 Each volume should be a (nvoxels,) array')
-    
+
     vol = nib.load(out_gridstep_mm_file).get_fdata()
-    vol = np.zeros(np.append((vol.shape),recon_timeseries.shape[1]))
+    vol = np.zeros(np.append((vol.shape), recon_timeseries.shape[1]))
 
     for ii in range(coords_out_voxel.shape[0]):
         try:
             vol[coords_out_voxel[ii, 0], coords_out_voxel[ii, 1],
-                coords_out_voxel[ii, 2],:] = recon_timeseries[ii,:]
+            coords_out_voxel[ii, 2], :] = recon_timeseries[ii, :]
         except IndexError:
             print('Index out of bounds ignored')
-                           
+
     # SAVE AS NIFTI
     vol_nii = nib.Nifti1Image(vol, affine)
-            
-    vol_nii.header.set_xyzt_units(2) #mm        
-    if times is not None:        
-        vol_nii.header['pixdim'][4] = times[1]-times[0]
+
+    vol_nii.header.set_xyzt_units(2)  # mm
+    if times is not None:
+        vol_nii.header['pixdim'][4] = times[1] - times[0]
         vol_nii.header['toffset'] = -0.5
-        vol_nii.header.set_xyzt_units(2,8) # mm and secs
-        
+        vol_nii.header.set_xyzt_units(2, 8)  # mm and secs
+
     nib.save(vol_nii, out_nii_fname)
 
-    #os.system('fslcpgeom {} {}'.format(out_gridstep_mm_file, out_nii_fname))
+    # os.system('fslcpgeom {} {}'.format(out_gridstep_mm_file, out_nii_fname))
 
     return out_nii_fname
+
 
 #############################################################################
 
 def _write_mni_nii(subjects_dir, subject,
-                  nii_file_names,
-                  mni_resolution=2):
+                   nii_file_names,
+                   mni_resolution=2):
     '''
     Writes niftii files in MNI space at the resolution given by mni_resolution
     (in mm) for each of the passed in nii_file_names, which are assumed to
@@ -2141,12 +2145,12 @@ def _write_mni_nii(subjects_dir, subject,
         nii_file_names.append(single_item)
 
     surfaces_filenames = get_surfaces_filenames(subjects_dir, subject)
-    mni2mri_flirt_file=surfaces_filenames['mni2mri_flirt_file']
-    
+    mni2mri_flirt_file = surfaces_filenames['mni2mri_flirt_file']
+
     # first we need to invert the mni2mri_flirt xform:
     xform_path, xform_name = op.split(mni2mri_flirt_file)
     mri2mni_flirt_file = op.join(xform_path, 'mri2mni_flirt.txt')
-    
+
     os.system('convert_xfm -omat {} -inverse {}'.format(
         mri2mni_flirt_file,
         mni2mri_flirt_file))
@@ -2166,12 +2170,12 @@ def _write_mni_nii(subjects_dir, subject,
                            '_mni_{}mm.nii.gz'.format(mni_resolution))
 
         std_brain = os.environ['FSLDIR'] + \
-                        '/data/standard/MNI152_T1_1mm_brain.nii.gz'
+                    '/data/standard/MNI152_T1_1mm_brain.nii.gz'
 
         # Sample std_brain to the desired resolution
         # output is std_brain_mm_file
         std_mni_brain_file = op.join(nii_path,
-                        'MNI152_T1_{}mm_brain.nii.gz'.format(mni_resolution))
+                                     'MNI152_T1_{}mm_brain.nii.gz'.format(mni_resolution))
 
         # create std brain of the required resolution
         os.system('flirt -in {} -ref {} -out {} -applyisoxfm {}'.format(
@@ -2179,7 +2183,7 @@ def _write_mni_nii(subjects_dir, subject,
             std_brain,
             std_mni_brain_file,
             mni_resolution))
-        
+
         # move from native mri to MNI space
         os.system('flirt -in {} -ref {} -applyxfm \
 -init {} -out {}'.format(
@@ -2198,9 +2202,9 @@ def _write_mni_nii(subjects_dir, subject,
 
     return mni_files, std_mni_brain_file
 
+
 #############################################################################
 def get_recon_timeseries(subjects_dir, subject, coord_mni, recon_timeseries_head):
-    
     '''
     Gets the reconstructed time series nearest to the passed in coordinate
     in MNI space
@@ -2228,38 +2232,38 @@ def get_recon_timeseries(subjects_dir, subject, coord_mni, recon_timeseries_head
     The timecourse in recon_volume4d_head nearest to coord_mni
     
     '''
-    
+
     surfaces_filenames = get_surfaces_filenames(subjects_dir, subject)
     coreg_filenames = get_coreg_filenames(subjects_dir, subject)
-    
+
     # get coord_mni in mri space
     mni_mri_t = rhino_utils.read_trans(surfaces_filenames['mni_mri_t_file'])
     coord_mri = rhino_utils.xform_points(mni_mri_t['trans'], coord_mni)
-    
+
     # Get hold of coords of points reconstructed to.
     # Note, MNE forward model is done in head space in metres.
     # Rhino does everything in mm
     fwd = read_forward_solution(coreg_filenames['forward_model_file'])
     vs = fwd['src'][0]
-    recon_coords_head = vs['rr'][vs['vertno']]*1000  # in mm
-    
+    recon_coords_head = vs['rr'][vs['vertno']] * 1000  # in mm
+
     # convert coords_head from head to mri space to get index of reconstructed
     # coordinate nearest to coord_mni
     head_mri_t = rhino_utils.read_trans(coreg_filenames['head_mri_t_file'])
     recon_coords_mri = rhino_utils.xform_points(head_mri_t['trans'], recon_coords_head.T).T
-        
+
     recon_index, d = rhino_utils._closest_node(coord_mri.T, recon_coords_mri)
-    
-    recon_timeseries = np.abs(recon_timeseries_head[recon_index,:]).T
+
+    recon_timeseries = np.abs(recon_timeseries_head[recon_index, :]).T
 
     return recon_timeseries
 
 
 #############################################################################
-def resample_recon_ts(subjects_dir, subject, 
-                        recon_timeseries,
-                        spatial_resolution = None,
-                        reference_brain = 'mni'):
+def resample_recon_ts(subjects_dir, subject,
+                      recon_timeseries,
+                      spatial_resolution=None,
+                      reference_brain='mni'):
     '''
     Spatially resamples a (ndipoles x ntpts) array of reconstructed time 
     courses (in head/polhemus space) to dipoles on the brain
@@ -2306,49 +2310,48 @@ def resample_recon_ts(subjects_dir, subject,
     '''
 
     surfaces_filenames = get_surfaces_filenames(subjects_dir, subject)
-    coreg_filenames = get_coreg_filenames(subjects_dir, subject)    
-    
+    coreg_filenames = get_coreg_filenames(subjects_dir, subject)
+
     #########
     # Get hold of coords of points reconstructed to.
     # Note, MNE forward model is done in head space in metres.
     # Rhino does everything in mm
     fwd = read_forward_solution(coreg_filenames['forward_model_file'])
     vs = fwd['src'][0]
-    recon_coords_head = vs['rr'][vs['vertno']]*1000  # in mm
-         
+    recon_coords_head = vs['rr'][vs['vertno']] * 1000  # in mm
+
     ##############
-    if spatial_resolution is None:        
+    if spatial_resolution is None:
         # estimate gridstep from forward model
         rr = fwd['src'][0]['rr']
-        
-        store=[]
+
+        store = []
         for ii in range(rr.shape[0]):
-            store.append(np.sqrt(np.sum(np.square(rr[ii, :] - rr[0,:]))))
+            store.append(np.sqrt(np.sum(np.square(rr[ii, :] - rr[0, :]))))
         store = np.asarray(store)
-        spatial_resolution = int(np.round(np.min(store[np.where(store>0)])*1000))
+        spatial_resolution = int(np.round(np.min(store[np.where(store > 0)]) * 1000))
         print('Using spatial_resolution = {}mm'.format(spatial_resolution))
-          
+
     spatial_resolution = int(spatial_resolution)
 
-    
     if reference_brain == 'mni':
         # reference is mni stdbrain
-        
+
         #########
         # convert recon_coords_head from head to mni space
         head_mri_t = rhino_utils.read_trans(coreg_filenames['head_mri_t_file'])
         recon_coords_mri = rhino_utils.xform_points(head_mri_t['trans'], recon_coords_head.T).T
-        
+
         mni_mri_t = rhino_utils.read_trans(surfaces_filenames['mni_mri_t_file'])
         recon_coords_out = rhino_utils.xform_points(np.linalg.inv(mni_mri_t['trans']), recon_coords_mri.T).T
 
         reference_brain = os.environ['FSLDIR'] + \
-                        '/data/standard/MNI152_T1_1mm_brain.nii.gz'
-        
+                          '/data/standard/MNI152_T1_1mm_brain.nii.gz'
+
         # Sample reference_brain to the desired resolution
         reference_brain_resampled = op.join(coreg_filenames['basefilename'],
-                        'MNI152_T1_{}mm_brain.nii.gz'.format(spatial_resolution))
-        
+                                            'MNI152_T1_{}mm_brain.nii.gz'.format(spatial_resolution))
+
     elif reference_brain == 'mri':
         # reference is smri
 
@@ -2356,49 +2359,49 @@ def resample_recon_ts(subjects_dir, subject,
         # convert recon_coords_head from head to mri space
         head_mri_t = rhino_utils.read_trans(coreg_filenames['head_mri_t_file'])
         recon_coords_out = rhino_utils.xform_points(head_mri_t['trans'], recon_coords_head.T).T
-        
+
         reference_brain = surfaces_filenames['smri_file']
-        
+
         # Sample reference_brain to the desired resolution
         reference_brain_resampled = reference_brain.replace(
-                        '.nii.gz', '_{}mm.nii.gz'.format(spatial_resolution))
+            '.nii.gz', '_{}mm.nii.gz'.format(spatial_resolution))
 
     else:
-         ValueError('Invalid out_space, should be mni or mri')
-        
+        ValueError('Invalid out_space, should be mni or mri')
+
     #########
     # get coordinates from reference brain at resolution spatial_resolution
-    
+
     # create std brain of the required resolution
     os.system('flirt -in {} -ref {} -out {} -applyisoxfm {}'.format(
         reference_brain,
         reference_brain,
         reference_brain_resampled,
         spatial_resolution))
-    
+
     coords_out_mm, vals = rhino_utils.niimask2mmpointcloud(reference_brain_resampled)
-    
+
     #########
     # for each coords_mni find nearest coord in recon_coords_out
     recon_timeseries_out = np.zeros([coords_out_mm.shape[1], recon_timeseries.shape[1]])
     for cc in range(coords_out_mm.shape[1]):
-        recon_index, dist = rhino_utils._closest_node(coords_out_mm[:,cc], recon_coords_out)
-    
-        if dist<spatial_resolution:
-            recon_timeseries_out[cc,:] = recon_timeseries[recon_index,:]        
-    
+        recon_index, dist = rhino_utils._closest_node(coords_out_mm[:, cc], recon_coords_out)
+
+        if dist < spatial_resolution:
+            recon_timeseries_out[cc, :] = recon_timeseries[recon_index, :]
+
     reference_brain_fname = reference_brain_resampled
-    
+
     return recon_timeseries_out, reference_brain_fname
 
+
 #############################################################################
-def recon_ts2nii(subjects_dir, subject, 
-                        recon_volume, 
-                        out_nii_fname,
-                        spatial_resolution = None,
-                        reference_brain = 'mni',
-                        times = None):
-    
+def recon_ts2nii(subjects_dir, subject,
+                 recon_volume,
+                 out_nii_fname,
+                 spatial_resolution=None,
+                 reference_brain='mni',
+                 times=None):
     '''
     Converts a (ndipoles,tpts) array of reconstructed timeseries (in 
     head/polhemus space) to the corresponding
@@ -2449,87 +2452,85 @@ def recon_ts2nii(subjects_dir, subject,
             
 
     '''
-        
-    if len(recon_volume.shape)==1:
+
+    if len(recon_volume.shape) == 1:
         recon_volume = np.reshape(recon_volume,
-                                               [recon_volume.shape[0],1])
+                                  [recon_volume.shape[0], 1])
 
     #####
     # convert the recon_volume to the standard
     # space brain dipole grid at the specfied resolution 
     recon_ts_out, reference_brain_fname = resample_recon_ts \
-                            (subjects_dir, subject, 
-                              recon_timeseries=recon_volume,                              
-                              spatial_resolution = None,
-                              reference_brain = reference_brain)
-                            
+        (subjects_dir, subject,
+         recon_timeseries=recon_volume,
+         spatial_resolution=None,
+         reference_brain=reference_brain)
+
     #####
     # output recon_ts_out as niftii file
-    
+
     mni_nii_nib = nib.load(reference_brain_fname)
     coords_mni = rhino_utils.niimask2indexpointcloud(reference_brain_fname).T
 
     mni_nii_values = mni_nii_nib.get_fdata()
-    mni_nii_values = np.zeros(np.append((mni_nii_values.shape),recon_volume.shape[1]))
-    
+    mni_nii_values = np.zeros(np.append((mni_nii_values.shape), recon_volume.shape[1]))
+
     for ii in range(recon_ts_out.shape[0]):
         try:
             mni_nii_values[coords_mni[ii, 0], coords_mni[ii, 1],
-                coords_mni[ii, 2], :] = recon_ts_out[ii,:]
+            coords_mni[ii, 2], :] = recon_ts_out[ii, :]
         except IndexError:
             print('Index out of bounds ignored')
             print('Coords are {}'.format(coords_mni[ii, :]))
-               
-    #import pdb; pdb.set_trace()
-            
+
+    # import pdb; pdb.set_trace()
+
     # SAVE AS NIFTI
     vol_nii = nib.Nifti1Image(mni_nii_values, mni_nii_nib.affine)
 
-    vol_nii.header.set_xyzt_units(2) #mm        
-    if times is not None:        
-        vol_nii.header['pixdim'][4] = times[1]-times[0]
+    vol_nii.header.set_xyzt_units(2)  # mm
+    if times is not None:
+        vol_nii.header['pixdim'][4] = times[1] - times[0]
         vol_nii.header['toffset'] = -0.5
-        vol_nii.header.set_xyzt_units(2,8) # mm and secs
-        
+        vol_nii.header.set_xyzt_units(2, 8)  # mm and secs
+
     nib.save(vol_nii, out_nii_fname)
 
-    #os.system('fslcpgeom {} {}'.format(reference_brain_fname, out_nii_fname))
- 
+    # os.system('fslcpgeom {} {}'.format(reference_brain_fname, out_nii_fname))
+
     return out_nii_fname, reference_brain_fname
-    
-                       
+
+
 #############################################################################
 
 def fsleyes(image_list):
-    
     cmd = 'fsleyes '
     for img in image_list:
         cmd += img
         cmd += ' '
-        
+
     cmd += '&'
     print(cmd)
     os.system(cmd)
-    
-    
+
+
 #############################################################################
 
 def fsleyes_overlay(background_img, overlay_img):
-       
     if type(background_img) is str:
         if background_img == 'mni':
             mni_resolution = int(nib.load(overlay_img).header.get_zooms()[0])
-            background_img = op.join(os.environ['FSLDIR'], 'data/standard/MNI152_T1_{}mm_brain.nii.gz'.format(mni_resolution))
+            background_img = op.join(os.environ['FSLDIR'],
+                                     'data/standard/MNI152_T1_{}mm_brain.nii.gz'.format(mni_resolution))
         elif background_img[0:3] == 'mni':
             mni_resolution = int(background_img[3])
-            background_img = op.join(os.environ['FSLDIR'], 'data/standard/MNI152_T1_{}mm_brain.nii.gz'.format(mni_resolution))
-            
+            background_img = op.join(os.environ['FSLDIR'],
+                                     'data/standard/MNI152_T1_{}mm_brain.nii.gz'.format(mni_resolution))
+
     cmd = 'fsleyes {} --volume 0 {} --alpha 100.0 --cmap red-yellow \
 --negativeCmap blue-lightblue --useNegativeCmap &'.format(
-                    background_img,
-                    overlay_img)
+        background_img,
+        overlay_img)
 
     print(cmd)
     os.system(cmd)
-    
-

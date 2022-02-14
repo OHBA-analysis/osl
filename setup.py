@@ -1,9 +1,9 @@
 from setuptools import setup
 
 # Requirement categories
-reqs = ['numpy', 'scipy', 'matplotlib', 'mne<0.24.0', 'sklearn', 'fslpy',
+reqs = ['numpy', 'scipy', 'matplotlib', 'mne<0.24', 'sklearn', 'fslpy',
         'sails', 'tabulate', 'pyyaml>=5.1', 'neurokit2', 'jinja2', 'joblib',
-        'file-tree']
+        'file-tree', 'opencv-python', 'open3d', 'glmtools']
 doc_reqs = ['sphinx==4.0.2', 'numpydoc', 'sphinx_gallery', 'pydata-sphinx-theme']
 dev_reqs = ['setuptools>=41.0.1', 'pytest', 'pytest-cov', 'coverage', 'flake8']
 
@@ -15,22 +15,23 @@ setup(name=name,
       author='OHBA Analysis Group',
       license='MIT',
       packages=['osl', 'osl.report', 'osl.maxfilter',
-                'osl.preprocessing', 'osl.utils', 'osl.utils.spmio'],
+                'osl.preprocessing', 'osl.utils', 'osl.utils.spmio',
+                'osl.rhino'],
       zip_safe=False,
       entry_points={
           'console_scripts': [
               'osl_batch = osl.preprocessing.batch:main',
               'osl_maxfilter = osl.maxfilter.maxfilter:main',
               'osl_report = osl.report.raw_report:main',
-              ]},
+          ]},
 
       python_requires='>=3.7',
       install_requires=reqs,
       extras_require={
-        'dev': dev_reqs,
-        'doc': doc_reqs,
-        'full': dev_reqs + doc_reqs,
-        },
+          'dev': dev_reqs,
+          'doc': doc_reqs,
+          'full': dev_reqs + doc_reqs,
+      },
 
       package_data={'osl': ['utils/*tree',
                             'utils/simulation_config/*npy',
@@ -38,8 +39,8 @@ setup(name=name,
                             'report/templates/*']},
 
       command_options={
-        'build_sphinx': {
-            'project': ('setup.py', name),
-            'version': ('setup.py', name),
-            'release': ('setup.py', name)}},
+          'build_sphinx': {
+              'project': ('setup.py', name),
+              'version': ('setup.py', name),
+              'release': ('setup.py', name)}},
       )
