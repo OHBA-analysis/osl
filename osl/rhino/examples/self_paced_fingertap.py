@@ -6,6 +6,8 @@ Created on Tue Nov  9 15:39:24 2021
 @author: woolrich
 """
 
+import glmtools
+import os
 import os.path as op
 import numpy as np
 import pandas as pd
@@ -13,8 +15,7 @@ import matplotlib.pyplot as plt
 from osl import rhino
 import mne
 import yaml
-
-from importlib import reload
+import osl
 
 subjects_dir = '/Users/woolrich/homedir/vols_data/mne/self_paced_fingertap'
 subject = 'subject1'
@@ -31,8 +32,8 @@ smri_file = '/Users/woolrich/homedir/vols_data/ukmp/sub-not002/anat/sub-not002_T
 # smri_file='/Users/woolrich/sub-not002_T1w_play.nii.gz'
 
 run_preproc = False
-run_sensorspace = True
-run_compute_surfaces = True
+run_sensorspace = False
+run_compute_surfaces = False
 run_coreg = True
 run_forward_model = True
 
@@ -47,19 +48,15 @@ if run_preproc:
       event_codes:
 
     preproc:
-      - {method: resample, sfreq: 150, n_jobs: 6}      
+      - resample:       {sfreq: 150, n_jobs: 6}    
     """
 
     #    - {method: filter, l_freq: 13, h_freq: 30}
 
     config = yaml.load(config_text, Loader=yaml.FullLoader)
 
-    # Process a single file
-    # dataset = osl.preprocessing.run_proc_chain(ds_file, config, outdir=op.join(subjects_dir, subject),overwrite=True)
-
-## to do no preproc at all:
-# dataset = mne.io.read_raw_ctf(ds_file, preload=True)
-# dataset.save(fif_file, overwrite=True)
+    # Process a single file, this outputs fif_file
+    dataset = osl.preprocessing.run_proc_chain(ds_file, config, outdir=op.join(subjects_dir, subject),overwrite=True)
 
 # -------------------------------------------------------------
 # %% Get the data
@@ -138,11 +135,6 @@ plt.plot(tim_crop, design_matrix_crop)
 plt.show()
 
 ## Setup the GLM in glmtools
-
-import glmtools
-import os
-
-# contrasts = np.reshape(np.array([0, 1, -1, 0, 0]),[-1, 1]).T
 
 contrasts = np.array([(0, 1, -1, 0, 0),
                       (1, 0, -1, 0, 0)])
@@ -252,7 +244,7 @@ if run_compute_surfaces:
                            include_nose=True,
                            cleanup_files=True)
 
-rhino.surfaces_display(subjects_dir, subject)
+    rhino.surfaces_display(subjects_dir, subject)
 
 ##########################
 
@@ -264,14 +256,14 @@ if run_coreg:
                 polhemus_nasion_file, polhemus_rpa_file, polhemus_lpa_file,
                 use_headshape=True)
 
-# Purple dots are the polhemus derived fiducials 
-# Yellow diamonds are the sMRI derived fiducials
-# Position of sMRI derived fiducials are the ones that are refined if 
-# useheadshape=True was used for rhino.coreg
-rhino.coreg_display(subjects_dir, subject,
-                    plot_type='surf',
-                    display_outskin_with_nose=False,
-                    display_sensors=True)
+    # Purple dots are the polhemus derived fiducials
+    # Yellow diamonds are the sMRI derived fiducials
+    # Position of sMRI derived fiducials are the ones that are refined if
+    # useheadshape=True was used for rhino.coreg
+    rhino.coreg_display(subjects_dir, subject,
+                        plot_type='surf',
+                        display_outskin_with_nose=False,
+                        display_sensors=True)
 
 ###########################
 #  Forward modelling

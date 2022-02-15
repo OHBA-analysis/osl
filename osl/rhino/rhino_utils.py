@@ -576,7 +576,7 @@ def create_freesurfer_mesh(infile,
             # print('Num of vertices to create mesh from = {}'.format(nii_nativeindex.shape[1]))
 
             if nii_nativeindex.shape[1] > 100000:
-                step = 10
+                step = 50
                 radius_multiple = 3
             else:
                 step = 1
@@ -595,7 +595,7 @@ def create_freesurfer_mesh(infile,
 
             # import pdb; pdb.pdb.set_trace()
 
-            if True:
+            if False:
                 mesh = o3d.geometry.TriangleMesh.create_from_point_cloud_poisson(pcd, depth=8, width=0, scale=2,
                                                                                  linear_fit=False)[0]
 
@@ -604,7 +604,7 @@ def create_freesurfer_mesh(infile,
             else:
                 mesh = o3d.geometry.TriangleMesh.create_from_point_cloud_ball_pivoting(
                     pcd,
-                    o3d.utility.DoubleVector([radius * 0.75, radius, radius * 2]))
+                    o3d.utility.DoubleVector([radius, radius * 2]))
 
             mesh = mesh.simplify_quadric_decimation(100000)
             mesh.remove_degenerate_triangles()

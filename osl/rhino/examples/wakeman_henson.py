@@ -35,7 +35,7 @@ baseline_correct = True
 # %% Preproc
 if do_preproc:
     # Load config file
-    config = osl.preprocessing.check_inconfig(op.join(base_dir, 'wakehen_preproc.yml'))
+    config = osl.preprocessing.load_config(op.join(base_dir, 'wakehen_preproc.yml'))
 
     # Run preproc
     dataset = osl.preprocessing.run_proc_chain(fif_file_in, config, outdir=outbase, overwrite=True)
@@ -144,9 +144,9 @@ subject = 'subject1_run2'
 # input files
 smri_file = op.join('/Users/woolrich/homedir/vols_data/WakeHen', 'structurals', 'highres001.nii.gz')
 
-run_compute_surfaces = False
-run_coreg = False
-run_forward_model = False
+run_compute_surfaces = True
+run_coreg = True
+run_forward_model = True
 
 gridstep = 8  # mm
 
@@ -281,7 +281,7 @@ for cc in range(len(contrasts_of_interest)):
     if baseline_correct:
         baseline_mean = np.mean(abs(model_source.copes[contrasts_of_interest[cc]][:, epochs.times < 0]), 1)
         # acope = acope - np.reshape(baseline_mean.T,[acope.shape[0],1])
-        acope = acope - baseline_mean
+        acope = acope - np.reshape(baseline_mean, [-1, 1])
 
     acopes.append(acope)
 

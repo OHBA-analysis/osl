@@ -146,7 +146,7 @@ if more_plots:
 
 if do_rhino:
 
-    run_compute_surfaces = False
+    run_compute_surfaces = True
     run_coreg = True
     run_forward_model = True
 
@@ -214,27 +214,21 @@ else:
     # copy BEM into bem directory from backup
     os.system(
         'cp -rf /Users/woolrich/homedir/vols_data/BeamComp_DataRepo/MRI/BeamCompMRI/bem_backup/* /Users/woolrich/homedir/vols_data/BeamComp_DataRepo/MRI/BeamCompMRI/bem/')
-    model = mne.make_bem_model(subject=subject, ico=None, conductivity=(0.33,), subjects_dir=subjects_dir, verbose=True)
+    model = mne.make_bem_model(subject=subject, ico=4, conductivity=(0.33,), subjects_dir=subjects_dir, verbose=True)
     bem = mne.make_bem_solution(model)
 
-    if True:
-        src_vol = mne.setup_volume_source_space(subject=subject, pos=5.0, mri=mrifile, bem=None, surface=surffile,
-                                                mindist=2.5,
-                                                exclude=10.0, subjects_dir=subjects_dir,
-                                                volume_label=None, add_interpolator=True, verbose=True)
+    src_vol = mne.setup_volume_source_space(subject=subject, pos=5.0, mri=mrifile, bem=None, surface=surffile,
+                                            mindist=2.5,
+                                            exclude=10.0, subjects_dir=subjects_dir,
+                                            volume_label=None, add_interpolator=True, verbose=True)
 
-    else:
-        surface = op.join(subjects_dir, subject, 'bem', 'inner_skull.surf')
-
-        src_vol = mne.setup_volume_source_space(subject=subject, subjects_dir=subjects_dir, surface=surface)
-
-    # if more_plots:
-    mne.viz.plot_bem(subject=subject, subjects_dir=subjects_dir, orientation='coronal', slices=range(73, 193, 5),
-                     brain_surfaces='pial', src=src_vol, show=True)
-    mne.viz.plot_alignment(epochs.info, trans=trans, subject=subject, subjects_dir=subjects_dir, fig=None,
-                           surfaces=['head-dense', 'inner_skull'], coord_frame='head', show_axes=True,
-                           meg=True, eeg='original', dig=True, ecog=True, bem=None, seeg=True,
-                           src=src_vol, mri_fiducials=False, verbose=True)
+    if more_plots:
+        mne.viz.plot_bem(subject=subject, subjects_dir=subjects_dir, orientation='coronal', slices=range(73, 193, 5),
+                         brain_surfaces='pial', src=src_vol, show=True)
+        mne.viz.plot_alignment(epochs.info, trans=trans, subject=subject, subjects_dir=subjects_dir, fig=None,
+                               surfaces=['head-dense', 'inner_skull'], coord_frame='head', show_axes=True,
+                               meg=True, eeg='original', dig=True, ecog=True, bem=None, seeg=True,
+                               src=src_vol, mri_fiducials=False, verbose=True)
 
     fwd = mne.make_forward_solution(epochs.info, trans=trans, src=src_vol, bem=bem,
                                     meg=True, eeg=False, mindist=2.5, n_jobs=4)
@@ -308,7 +302,7 @@ for stimcat in list(par['event_dict'].keys()):
     est_loc = fwd['src'][0]['rr'][src_peak] * 1000
 
     # % % Calculate localization Error and Point spread volume
-    loc_err = np.sqrt(np.sum(np.square(par['act_loc'][stimcat] - est_loc)));
+    loc_err = np.sqrt(np.sum(np.square(par['act_loc'][stimcat] - est_loc)))
     stc_power_data = stc_power.copy().data
     n_act_grid = len(stc_power_data[stc_power_data > (stc_power_data.max() * 0.50)])
     PSVol = n_act_grid * (5.0 ** 3)
