@@ -262,7 +262,7 @@ if run_coreg:
     # useheadshape=True was used for rhino.coreg
     rhino.coreg_display(subjects_dir, subject,
                         plot_type='surf',
-                        display_outskin_with_nose=False,
+                        display_outskin_with_nose=True,
                         display_sensors=True)
 
 ###########################
@@ -273,10 +273,10 @@ if run_forward_model:
                         model='Single Layer',
                         gridstep=gridstep, mindist=4.0)
 
-rhino.bem_display(subjects_dir, subject,
-                  plot_type='surf',
-                  display_outskin_with_nose=False,
-                  display_sensors=True)
+    rhino.bem_display(subjects_dir, subject,
+                      plot_type='surf',
+                      display_outskin_with_nose=False,
+                      display_sensors=True)
 
 # -------------------------------------------------------------
 # %% Do source recon

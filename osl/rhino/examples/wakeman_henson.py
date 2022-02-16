@@ -160,7 +160,7 @@ polhemus_headshape_file, polhemus_nasion_file, polhemus_rpa_file, polhemus_lpa_f
 if run_compute_surfaces:
     rhino.compute_surfaces(smri_file,
                            subjects_dir, subject,
-                           include_nose=True,
+                           include_nose=False,
                            cleanup_files=True)
 
     rhino.surfaces_display(subjects_dir, subject)
@@ -173,7 +173,8 @@ if run_coreg:
                 subjects_dir, subject,
                 polhemus_headshape_file,
                 polhemus_nasion_file, polhemus_rpa_file, polhemus_lpa_file,
-                use_headshape=True)
+                use_headshape=True,
+                use_nose=False)
 
     # Purple dots are the polhemus derived fiducials 
     # Yellow diamonds are the sMRI derived fiducials

@@ -44,6 +44,10 @@ do_rhino = True
 warnings.simplefilter("ignore", category=DeprecationWarning)
 print(__doc__)
 
+data_dir = '/Users/woolrich/homedir/vols_data/BeamComp_DataRepo/'
+data_path = data_dir + 'MEG/Human_EF/'
+subjects_dir, subject = data_dir + 'MRI/', 'BeamCompMRI'
+
 def my_var_cut_fn(epochs, plow, phigh, to_plot=True):
     """
     Variance base trial rejection function
@@ -74,7 +78,6 @@ more_plots = False
 par = {'badch': [],
        'stimch': 'STI 014'}
 code_dir = '/Users/woolrich/CloudDocs/scripts/LCMV_pipelines/'
-data_dir = '/Users/woolrich/homedir/vols_data/BeamComp_DataRepo/'
 
 par['event_dict'] = OrderedDict()
 par['event_dict']['VEF_UR'] = 1
@@ -100,10 +103,8 @@ par['act_loc']['AEF_Re'] = act_dip[2]
 # par['act_loc']['SEF_Lh']=act_dip[6]
 # par['act_loc']['SEF_Rh']=act_dip[7]
 
-data_path = data_dir + 'MEG/Human_EF/'
 filename = 'multimodal_raw.fif'  # or, multimodal_raw_tsss.fif
 fname = data_path + filename
-subjects_dir, subject = data_dir + 'MRI/', 'BeamCompMRI'
 # trans = subjects_dir + subject + '/mri/transforms/' + subject + '-trans.fif'
 trans = subjects_dir + subject + '//mri/brain-neuromag/sets//' + 'BeamCompMRI-amit-131118-MNEicp-trans.fif'
 mrifile = subjects_dir + subject + '/mri/T1.mgz'
@@ -171,7 +172,7 @@ if do_rhino:
         rhino.compute_surfaces(smri_file,
                                subjects_dir, subject,
                                include_nose=True,
-                               cleanup_files=False)
+                               cleanup_files=True)
 
         rhino.surfaces_display(subjects_dir, subject)
 
@@ -192,7 +193,7 @@ if do_rhino:
         # useheadshape=True was used for rhino.coreg
         rhino.coreg_display(subjects_dir, subject,
                             plot_type='surf',
-                            display_outskin_with_nose=False,
+                            display_outskin_with_nose=True,
                             display_sensors=True)
 
     #############################################################################

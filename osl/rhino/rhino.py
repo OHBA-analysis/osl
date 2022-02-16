@@ -700,6 +700,7 @@ please check output of:\n fslorient -orient {}'.format(filenames['smri_file']))
             op.join(filenames['basefilename'], mesh_name + '.nii.gz'),
             filenames['mni_mri_t_file'])
 
+
     ###########################################################################
     # Clean up
     ###########################################################################
@@ -1101,7 +1102,6 @@ def coreg_display(subjects_dir, subject,
 
         display_sensors - bool
                 Whether to include sensors in the display
-                                 
 
     '''
 
@@ -1239,14 +1239,14 @@ def coreg_display(subjects_dir, subject,
         # Polhemus-derived headshape points
         if len(polhemus_headshape_meg.T) > 0:
             polhemus_headshape_megt = polhemus_headshape_meg.T
-            color, scale, alpha = (0, 0.7, 0.7), 0.006, 0.9
+            color, scale, alpha = (0, 0.7, 0.7), 0.007, 1
             renderer.sphere(center=polhemus_headshape_megt,
                             color=color, scale=scale * 1000,
                             opacity=alpha, backface_culling=True)
 
         # MRI-derived nasion, rpa, lpa
         if len(smri_nasion_meg.T) > 0:
-            color, scale, alpha = (1, 1, 0), 0.08, 1
+            color, scale, alpha = (1, 1, 0), 0.09, 1
             for data in [smri_nasion_meg.T, smri_rpa_meg.T, smri_lpa_meg.T]:
                 transform = np.eye(4)
                 transform[:3, :3] = mri_trans['trans'][:3, :3] * scale * 1000
@@ -1260,7 +1260,7 @@ def coreg_display(subjects_dir, subject,
 
         # Polhemus-derived nasion, rpa, lpa
         if len(polhemus_nasion_meg.T) > 0:
-            color, scale, alpha = (1, 0, 1), 0.01, 1.5
+            color, scale, alpha = (1, 0, 1), 0.012, 1.5
             for data in [polhemus_nasion_meg.T, polhemus_rpa_meg.T, polhemus_lpa_meg.T]:
                 renderer.sphere(center=data, color=color, scale=scale * 1000,
                                 opacity=alpha, backface_culling=True)
@@ -1289,8 +1289,8 @@ def coreg_display(subjects_dir, subject,
 
         surf_smri = dict(rr=coords_meg, tris=faces)
 
-        renderer.surface(surface=surf_smri, color=(1, 1, 1),
-                         opacity=0.2, backface_culling=False)
+        renderer.surface(surface=surf_smri, color=(1, 0.8, 1),
+                         opacity=0.4, backface_culling=False)
 
         renderer.set_camera(azimuth=90, elevation=90,
                             distance=600, focalpoint=(0., 0., 0.))
