@@ -491,9 +491,9 @@ def rhino_icp(smri_headshape_polhemus,
 
         #####
         # Give the registration a kick...
-        a = (np.random.uniform() - 0.5) * np.pi / 3
-        b = (np.random.uniform() - 0.5) * np.pi / 3
-        c = (np.random.uniform() - 0.5) * np.pi / 3
+        a = (np.random.uniform() - 0.5) * np.pi / 6
+        b = (np.random.uniform() - 0.5) * np.pi / 6
+        c = (np.random.uniform() - 0.5) * np.pi / 6
 
         Rx = np.array([
             (1, 0, 0),
@@ -508,7 +508,7 @@ def rhino_icp(smri_headshape_polhemus,
             (np.sin(c), np.cos(c), 0),
             (0, 0, 1)])
 
-        T = 15 * np.array((np.random.uniform() - 0.5, np.random.uniform() - 0.5, np.random.uniform() - 0.5))
+        T = 10 * np.array((np.random.uniform() - 0.5, np.random.uniform() - 0.5, np.random.uniform() - 0.5))
         Mr = np.eye(4)
         Mr[0:3, 0:3] = Rx @ Ry @ Rz
         Mr[0:3, -1] = np.reshape(T, (1, -1))
@@ -575,42 +575,21 @@ def create_freesurfer_mesh(infile,
 
             # print('Num of vertices to create mesh from = {}'.format(nii_nativeindex.shape[1]))
 
-            if nii_nativeindex.shape[1] > 100000:
-                step = 50
-                radius_multiple = 3
-            else:
-                step = 1
-                radius_multiple = 1.5
-
+            step = 1
             nii_native = xform_points(xform_mri_voxel2mri, nii_nativeindex[:, 0:-1:step])
 
             pcd = o3d.geometry.PointCloud()
             pcd.points = o3d.utility.Vector3dVector(nii_native.T)
             pcd.estimate_normals()
+            # to obtain a consistent normal orientation
+            pcd.orient_normals_towards_camera_location(pcd.get_center())
 
-            # estimate radius for rolling ball
-            distances = pcd.compute_nearest_neighbor_distance()
-            avg_dist = np.mean(distances)
-            radius = radius_multiple * avg_dist
+            # or you might want to flip the normals to make them point outward, not mandatory
+            pcd.normals = o3d.utility.Vector3dVector(- np.asarray(pcd.normals))
 
-            # import pdb; pdb.pdb.set_trace()
+            mesh = o3d.geometry.TriangleMesh.create_from_point_cloud_poisson(pcd, depth=8)[0]
 
-            if False:
-                mesh = o3d.geometry.TriangleMesh.create_from_point_cloud_poisson(pcd, depth=8, width=0, scale=2,
-                                                                                 linear_fit=False)[0]
-
-                bbox = pcd.get_axis_aligned_bounding_box()
-                mesh = mesh.crop(bbox)
-            else:
-                mesh = o3d.geometry.TriangleMesh.create_from_point_cloud_ball_pivoting(
-                    pcd,
-                    o3d.utility.DoubleVector([radius, radius * 2]))
-
-            mesh = mesh.simplify_quadric_decimation(100000)
-            mesh.remove_degenerate_triangles()
-            mesh.remove_duplicated_triangles()
-            mesh.remove_duplicated_vertices()
-            mesh.remove_non_manifold_edges()
+            #mesh = mesh.simplify_quadric_decimation(nii_nativeindex.shape[1])
 
             verts = np.asarray(mesh.vertices)
             tris = np.asarray(mesh.triangles).astype(int)
