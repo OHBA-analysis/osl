@@ -2229,7 +2229,7 @@ def get_recon_timeseries(subjects_dir, subject, coord_mni, recon_timeseries_head
 
     Returns
     -------
-    The timecourse in recon_volume4d_head nearest to coord_mni
+    The timecourse in recon_timeseries_head nearest to coord_mni
     
     '''
 
@@ -2397,7 +2397,7 @@ def resample_recon_ts(subjects_dir, subject,
 
 #############################################################################
 def recon_ts2nii(subjects_dir, subject,
-                 recon_volume,
+                 recon_timeseries,
                  out_nii_fname,
                  spatial_resolution=None,
                  reference_brain='mni',
@@ -2453,16 +2453,16 @@ def recon_ts2nii(subjects_dir, subject,
 
     '''
 
-    if len(recon_volume.shape) == 1:
-        recon_volume = np.reshape(recon_volume,
-                                  [recon_volume.shape[0], 1])
+    if len(recon_timeseries.shape) == 1:
+        recon_timeseries = np.reshape(recon_timeseries,
+                                  [recon_timeseries.shape[0], 1])
 
     #####
-    # convert the recon_volume to the standard
+    # convert the recon_timeseries to the standard
     # space brain dipole grid at the specfied resolution 
     recon_ts_out, reference_brain_fname = resample_recon_ts \
         (subjects_dir, subject,
-         recon_timeseries=recon_volume,
+         recon_timeseries=recon_timeseries,
          spatial_resolution=None,
          reference_brain=reference_brain)
 
@@ -2473,7 +2473,7 @@ def recon_ts2nii(subjects_dir, subject,
     coords_mni = rhino_utils.niimask2indexpointcloud(reference_brain_fname).T
 
     mni_nii_values = mni_nii_nib.get_fdata()
-    mni_nii_values = np.zeros(np.append((mni_nii_values.shape), recon_volume.shape[1]))
+    mni_nii_values = np.zeros(np.append((mni_nii_values.shape), recon_timeseries.shape[1]))
 
     for ii in range(recon_ts_out.shape[0]):
         try:
