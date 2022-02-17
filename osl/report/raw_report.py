@@ -112,7 +112,7 @@ def gen_html_data(raw, ica, outdir, level):
     if level > 0:
         data['plt_artefacts_eog'] = plot_eog_summary(raw, savebase)
         data['plt_artefacts_ecg'] = plot_ecg_summary(raw, savebase)
-        data['plt_artefacts_ica'] = plot_bad_ica(raw, ica, savebase)
+        data['plt_artefacts_ica'] = plot_bad_ica(raw, ica, savebase) if ica is not None else None
     if level > 1:
         filenames = plot_artefact_scan(raw, savebase)
         data.update(filenames)
