@@ -43,7 +43,8 @@ def run_mne_notch_filter(dataset, userargs):
     target = userargs.pop('target', 'raw')
     logger.info('MNE Stage - {0}.{1}'.format(target, 'notch_filter'))
     logger.info('userargs: {0}'.format(str(userargs)))
-    freqs = np.array(userargs.pop('freqs').split(' ')).astype(float)
+    freqs = userargs.pop('freqs')
+    freqs = [float(freqs) if np.logical_or(type(freqs)==int, type(freqs)==float) else np.array(freqs.split(' ')).astype(float)]
     dataset[target].notch_filter(freqs, **userargs)
     return dataset
 
