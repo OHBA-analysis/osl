@@ -24,6 +24,7 @@ import multiprocessing as mp
 import matplotlib.pyplot as plt
 import os
 import sys
+import pathlib
 import traceback
 from copy import deepcopy
 from functools import partial
@@ -288,7 +289,9 @@ def append_preprocinfo(dataset, config):
 
 def write_dataset(dataset, outbase, run_id, overwrite=False):
     # Save output
-    outname = outbase.format(run_id=run_id, ftype='raw', fext='fif')
+    outname = outbase.format(run_id=run_id.replace('_raw', ''), ftype='preproc_raw', fext='fif')
+    if pathlib.Path(outname).exists() and not overwrite:
+        raise ValueError('{} already exists. Please delete or do not use overwrite=False.'.format(outname))
     dataset['raw'].save(outname, overwrite=overwrite)
 
     if dataset['events'] is not None:
@@ -378,7 +381,7 @@ def run_proc_chain(infile, config, outname=None, outdir=None, ret_dataset=True,
     if outdir is not None:
         name_base = '{run_id}_{ftype}.{fext}'
         outbase = os.path.join(outdir, name_base)
-        logfile = outbase.format(run_id=run_id, ftype='preproc', fext='log')
+        logfile = outbase.format(run_id=run_id.replace('_raw', ''), ftype='preproc_raw', fext='log')
         mne.utils._logging.set_log_file(logfile)
     else:
         logfile = None
@@ -438,7 +441,8 @@ def run_proc_chain(infile, config, outname=None, outdir=None, ret_dataset=True,
         return 1
 
 
-def run_proc_batch(config, files, outdir, overwrite=False, extra_funcs=None, nprocesses=1, verbose='INFO', mneverbose='WARNING'):
+def run_proc_batch(config, files, outdir=None, overwrite=True, extra_funcs=None,
+                   nprocesses=1, verbose='INFO', mneverbose='WARNING'):
     """
     files can be a list of Raw objects or a list of filenames or a path to a
     textfile list of filenames
@@ -449,6 +453,11 @@ def run_proc_batch(config, files, outdir, overwrite=False, extra_funcs=None, npr
     """
 
     # -------------------------------------------------------------
+    if outdir is None:
+        # Use the current working directory
+        outdir = os.getcwd()
+    outdir = validate_outdir(outdir)
+
     mne.set_log_level(mneverbose)
     logfile = os.path.join(outdir, 'osl_batch.log')
     osl_logger.set_up(log_file=logfile, level=verbose, startup=False)
@@ -458,14 +467,8 @@ def run_proc_batch(config, files, outdir, overwrite=False, extra_funcs=None, npr
     infiles, outnames, good_files = process_file_inputs(files)
     logger.info('Processing {0} files'.format(sum(good_files)))
 
-    outdir = validate_outdir(outdir)
-
-    name_base = '{run_id}_{ftype}.{fext}'
-    outbase = outdir / name_base
-
     logger.info('Outputs saving to: {0}\n\n'.format(outdir))
     config = load_config(config)
-    #print(yaml.dump(config))
 
     # -------------------------------------------------------------
     # Create partial function with fixed options

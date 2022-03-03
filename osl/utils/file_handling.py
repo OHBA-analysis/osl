@@ -133,6 +133,17 @@ def validate_outdir(outdir):
     return outdir
 
 
+def get_rawdir(files):
+    """Gets the raw data directory from filename(s)."""
+
+    if isinstance(files, list):
+        rawfile = pathlib.Path(files[0])
+    else:
+        rawfile = pathlib.Path(files)
+
+    return rawfile.parent
+
+
 # Should not be final home for this function - Needs replacing with logger
 def osl_print(s, logfile=None):
     print(s)
