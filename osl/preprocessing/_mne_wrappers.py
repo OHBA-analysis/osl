@@ -327,7 +327,7 @@ def run_mne_ica_autoreject(dataset, userargs):
     logger.info('OSL Stage - {0}'.format('ICA Autoreject'))
     logger.info('userargs: {0}'.format(str(userargs)))
 
-    if np.logical_or('ecgmethod' not in userargs, userargs['ecgmethod'] == 'ctps'):
+    if ('ecgmethod' not in userargs) or (userargs['ecgmethod'] == 'ctps'):
         ecgmethod = 'ctps'
     elif userargs['ecgmethod'] == 'correlation':
         ecgmethod = 'correlation'
