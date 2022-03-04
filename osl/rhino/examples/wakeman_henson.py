@@ -27,20 +27,22 @@ fif_file_in = op.join(base_dir, 'raw/sub001/MEG/run_02_sss.fif')
 outbase = op.join(base_dir, 'wakehen_glm')
 fif_file_preproc = op.join(outbase, 'preproc_data/sub001_run_02_sss_raw.fif')
 
-do_preproc = True
-
 baseline_correct = True
+
+run_compute_surfaces = True
+run_coreg = True
+run_forward_model = True
+
+outname = os.path.join(outbase, fif_file_preproc.split('/')[-1])
 
 # -------------------------------------------------------------
 # %% Preproc
-if do_preproc:
-    # Load config file
-    config = osl.preprocessing.load_config(op.join(base_dir, 'wakehen_preproc.yml'))
 
-    # Run preproc
-    dataset = osl.preprocessing.run_proc_chain(fif_file_in, config, outdir=outbase, overwrite=True)
-else:
-    dataset = mne.io.read_raw_fif(op.join(outbase, 'run_02_sss_raw.fif'))
+# Load config file
+config = osl.preprocessing.load_config(op.join(base_dir, 'wakehen_preproc.yml'))
+
+# Run preproc
+dataset = osl.preprocessing.run_proc_chain(fif_file_in, config, outdir=outbase, overwrite=True)
 
 dataset['raw'].filter(l_freq=1, h_freq=30, method='iir',
                       iir_params={'order': 5, 'btype': 'bandpass', 'ftype': 'butter'})
@@ -54,7 +56,7 @@ epochs = mne.Epochs(dataset['raw'],
 epochs.drop_bad(reject={'eog': 250e-6, 'mag': 4e-12, 'grad': 4000e-13})
 
 # -------------------------------------------------------------
-# %% Design matrix
+# %% Setup design matrix
 
 DC = glm.design.DesignConfig()
 DC.add_regressor(name='FamousFirst', rtype='Categorical', codes=5)
@@ -80,10 +82,14 @@ DC.add_contrast(name='Visual', values={'FamousFirst': 1, 'FamousImmediate': 1, '
 
 print(DC.to_yaml())
 
+data = glm.io.load_mne_epochs(epochs)
+
+# Create Design Matrix
+des = DC.design_from_datainfo(data.info)
+des.plot_summary(show=True, savepath=outname.replace('.fif', '_design.png'))
+
 # -------------------------------------------------------------
 # %% Sensor Space Analysis
-
-outname = os.path.join(outbase, fif_file_preproc.split('/')[-1])
 
 # Create GLM data
 
@@ -92,18 +98,6 @@ con = 15
 epochs.load_data()
 epochs.pick(['grad'])
 data = glm.io.load_mne_epochs(epochs)
-
-# Create Design Matrix
-des = DC.design_from_datainfo(data.info)
-des.plot_summary(show=True, savepath=outname.replace('.fif', '_design.png'))
-
-if False:
-    epochs.info.ch_names[100]
-    plt.figure()
-    plt.plot(epochs.times, np.mean(data.data[:, 100, :], 0))
-    epochs.info.ch_names[101]
-    plt.figure()
-    plt.plot(epochs.times, np.mean(data.data[:, 101, :], 0))
 
 # ------------------------------------------------------
 
@@ -124,9 +118,7 @@ out.close()
 model_sensor = obj_from_hdf5file(glmname, 'model_sensor')
 
 # Make MNE object with contrast
-con = 15
 ev = mne.EvokedArray(np.abs(model_sensor.copes[con, :, :]), epochs.info, tmin=-0.5)
-DC.contrast_names[con]
 
 if baseline_correct:
     ev.apply_baseline()
@@ -143,10 +135,6 @@ subject = 'subject1_run2'
 
 # input files
 smri_file = op.join('/Users/woolrich/homedir/vols_data/WakeHen', 'structurals', 'highres001.nii.gz')
-
-run_compute_surfaces = True
-run_coreg = True
-run_forward_model = True
 
 gridstep = 8  # mm
 
@@ -203,8 +191,7 @@ if run_forward_model:
 epochs.load_data()
 
 # Use MEG sensors
-# epochs.pick(['meg'])
-epochs.pick(['grad'])
+epochs.pick_types(meg=True)
 
 tmin = -0.5
 data_cov = mne.compute_covariance(epochs, tmin=0,
@@ -223,11 +210,10 @@ filters = make_lcmv(epochs.info,
                     forward,
                     data_cov,
                     noise_cov=noise_cov,
-                    reg=0,
+                    reg=0.05,
+                    rank={'grad': 55, 'mag': 55},
                     pick_ori='max-power',
-                    rank={'grad': 50},
-                    # rank={'meg':50},
-                    # weight_norm='unit-noise-gain')
+                    reduce_rank=True,
                     weight_norm='nai')
 
 # ------------------------------------------------------
@@ -293,20 +279,20 @@ stats_dir = op.join(subjects_dir, subject, 'rhino', 'stats')
 if not os.path.isdir(stats_dir):
     os.mkdir(stats_dir)
 
-# output nii nearest to this time point in msecs: 
+# output nii nearest to this time point in msecs:
 tpt = 0.110 + 0.034
 volume_num = ev.time_as_index(tpt)[0]
 
 out_nii_fname = op.join(stats_dir, 'acope{}_vol{}_mni_{}mm.nii.gz'.format(con, volume_num, gridstep))
-out_nii_fname, stdbrain_mask_fname = rhino.recon_ts2nii \
-    (subjects_dir, subject,
-     recon_volume=acopes[0][:, volume_num],
-     out_nii_fname=out_nii_fname)
+out_nii_fname, stdbrain_mask_fname = rhino.recon_timeseries2niftii(
+    subjects_dir, subject,
+    recon_timeseries=acopes[0][:, volume_num],
+    out_nii_fname=out_nii_fname)
 
 rhino.fsleyes_overlay(stdbrain_mask_fname, out_nii_fname)
 
 # ------------------------------------------------------
-# %% plot time course at a specified MNI coordinate
+# %% plot time course of cope at a specified MNI coordinate
 
 coord_mni = np.array([18, -80, -7])
 
@@ -314,28 +300,35 @@ recon_timeseries = rhino.get_recon_timeseries(subjects_dir, subject, coord_mni, 
 
 plt.figure()
 plt.plot(epochs.times, recon_timeseries)
+plt.title('abs(cope) for contrast {}, at MNI coord={}mm'.format(
+    contrasts_of_interest[0], coord_mni))
+plt.xlabel('time (s)')
+plt.ylabel('abs(cope)')
 
 # ------------------------------------------------------
 # %% Convert cope to standard brain grid in MNI space, for doing group stats
+# (sourcespace_epoched_data and therefore acopes are in head/polhemus space)
 
-recon_timeseries_stdbrain, stdbrain_mask_fname = rhino.resample_recon_ts \
-    (subjects_dir, subject,
-     recon_timeseries=acopes[0],
-     reference_brain='mni')
+acope_timeseries_mni, reference_brain_fname, mni_coords_out = rhino.transform_recon_timeseries(
+    subjects_dir, subject,
+    recon_timeseries=acopes[0],
+    reference_brain='mni')
 
 # ------------------------------------------------------
-# %% Write cope as niftii file on a standard brain grid in MNI space
+# %% Write cope as 4D niftii file on a standard brain grid in MNI space
+# 4th dimension is timepoint within a trial
 
 out_nii_fname = op.join(stats_dir, 'acope{}_mni2_{}mm.nii.gz'.format(con, gridstep))
-out_nii_fname, stdbrain_mask_fname = rhino.recon_ts2nii \
-    (subjects_dir, subject,
-     recon_volume=acopes[0],
-     out_nii_fname=out_nii_fname,
-     reference_brain='mni',
-     times=epochs.times)
+out_nii_fname, stdbrain_mask_fname = rhino.recon_timeseries2niftii(
+    subjects_dir, subject,
+    recon_timeseries=acopes[0],
+    out_nii_fname=out_nii_fname,
+    reference_brain='mni',
+    times=epochs.times)
 
 rhino.fsleyes_overlay(stdbrain_mask_fname, out_nii_fname)
 
-# From fsleyes drop down menu Select "View/Time series"
-# In the Time series panel, select Settings
-# In the Time series settings popup, select "Use Pix Dims"
+# From fsleyes drop down menus Select "View/Time series"
+# To see time labelling in secs:
+#   - In the Time series panel, select Settings (the spanner icon)
+#   - In the Time series settings popup, select "Use Pix Dims"

@@ -15,6 +15,7 @@ import matplotlib.pyplot as plt
 from shutil import copyfile
 from osl.rhino import rhino_utils
 from scipy.ndimage import morphology
+from scipy.spatial import KDTree
 from sklearn.mixture import GaussianMixture
 from cv2 import getStructuringElement, morphologyEx, MORPH_GRADIENT, MORPH_RECT
 
@@ -34,14 +35,14 @@ from mne.bem import ConductorModel, read_bem_solution
 #############################################################################
 
 def get_surfaces_filenames(subjects_dir, subject):
-    '''
-    Generates a a dict of files generated and used by rhino.compute_surfaces. 
+    """
+    Generates a dict of files generated and used by rhino.compute_surfaces.
 
     Inputs
     ------
         subjects_dir - string
                 Directory to put RHINO subject dirs in.
-                Files will be in subjects_dir/subject/rhino/surfaces/                        
+                Files will be in subjects_dir/subject/rhino/surfaces/
         subject - string
                 Subject name dir to put RHINO files in.
                 Files will be in subjects_dir/subject/rhino/surfaces/
@@ -49,13 +50,13 @@ def get_surfaces_filenames(subjects_dir, subject):
     Returns
     -------
         filenames - dict
-                A dict of files generated and used by rhino.compute_surfaces. 
-                
+                A dict of files generated and used by rhino.compute_surfaces.
+
                 Note that  due to the unusal naming conventions used by BET:
-                 - bet_inskull_*_file is actually the brain surface 
+                 - bet_inskull_*_file is actually the brain surface
                  - bet_outskull_*_file is actually the inner skull surface
-                 - bet_outskin_*_file is the outer skin/scalp surface  
-    '''
+                 - bet_outskin_*_file is the outer skin/scalp surface
+    """
 
     filenames = []
 
@@ -98,7 +99,7 @@ def get_surfaces_filenames(subjects_dir, subject):
 
 def get_coreg_filenames(subjects_dir, subject):
     '''
-    Generates a a dict of files generated and used by RHINO. 
+    Generates a dict of files generated and used by RHINO.
 
     Inputs
     ------
@@ -194,6 +195,10 @@ def extract_polhemus_from_info(fif_file,
     # Setup polhemus files for coreg
 
     polhemus_headshape_polhemus = []
+    polhemus_rpa_polhemus = []
+    polhemus_lpa_polhemus = []
+    polhemus_nasion_polhemus = []
+
     for dig in info['dig']:
 
         # check dig is in HEAD/Polhemus space
@@ -223,8 +228,7 @@ def extract_polhemus_from_info(fif_file,
     np.savetxt(polhemus_headshape_file, np.array(
         polhemus_headshape_polhemus).T * 1000)
 
-    return polhemus_headshape_file, polhemus_nasion_file, \
-           polhemus_rpa_file, polhemus_lpa_file
+    return polhemus_headshape_file, polhemus_nasion_file, polhemus_rpa_file, polhemus_lpa_file
 
 
 #############################################################################
@@ -373,7 +377,7 @@ please check output of:\n fslorient -orient {}'.format(filenames['smri_file']))
 
     # Apply mri2mniaxes xform to smri to get smri_mniaxes, which means sMRIs
     # voxel indices axes are aligned to be the same as MNI's 
-    flirt_smri_mniaxes_file = op.join(filenames['basefilename'], \
+    flirt_smri_mniaxes_file = op.join(filenames['basefilename'],
                                       'flirt_smri_mniaxes.nii.gz')
     os.system('flirt -in {} -ref {} -applyxfm -init {} -out {}'.format(
         filenames['smri_file'],
@@ -387,7 +391,7 @@ please check output of:\n fslorient -orient {}'.format(filenames['smri_file']))
 
     print('Running BET pre-FLIRT...')
 
-    flirt_smri_mniaxes_bet_file = op.join(filenames['basefilename'], \
+    flirt_smri_mniaxes_bet_file = op.join(filenames['basefilename'],
                                           'flirt_smri_mniaxes_bet')
     os.system('bet2 {} {}'.format(
         flirt_smri_mniaxes_file,
@@ -402,9 +406,9 @@ please check output of:\n fslorient -orient {}'.format(filenames['smri_file']))
     # Flirt is run on the skull stripped brains to register the smri_mniaxes
     # to the MNI standard brain
 
-    flirt_mniaxes2mni_file = op.join(filenames['basefilename'], \
+    flirt_mniaxes2mni_file = op.join(filenames['basefilename'],
                                      'flirt_mniaxes2mni.txt')
-    flirt_smri_mni_bet_file = op.join(filenames['basefilename'], \
+    flirt_smri_mni_bet_file = op.join(filenames['basefilename'],
                                       'flirt_smri_mni_bet.nii.gz')
     os.system('flirt -in {} -ref {} -omat {} -o {}'.format(
         flirt_smri_mniaxes_bet_file,
@@ -413,7 +417,7 @@ please check output of:\n fslorient -orient {}'.format(filenames['smri_file']))
         flirt_smri_mni_bet_file))
 
     # Calculate overall transform, flirt_mri2mni_xform_file, from smri to MNI
-    flirt_mri2mni_xform_file = op.join(filenames['basefilename'], \
+    flirt_mri2mni_xform_file = op.join(filenames['basefilename'],
                                        'flirt_mri2mni_xform.txt')
     os.system('convert_xfm -omat {} -concat {} {}'.format(
         flirt_mri2mni_xform_file,
@@ -421,14 +425,14 @@ please check output of:\n fslorient -orient {}'.format(filenames['smri_file']))
         flirt_mri2mniaxes_xform_file))
 
     # and calculate its inverse, flirt_mni2mri_xform_file, from MNI to smri
-    flirt_mni2mri_xform_file = op.join(filenames['basefilename'], \
+    flirt_mni2mri_xform_file = op.join(filenames['basefilename'],
                                        'flirt_mni2mri_xform_file.txt')
     os.system('convert_xfm -omat {}  -inverse {}'.format(
         flirt_mni2mri_xform_file,
         flirt_mri2mni_xform_file))
 
     # move full smri into MNI space to do full bet and betsurf
-    flirt_smri_mni_file = op.join(filenames['basefilename'], \
+    flirt_smri_mni_file = op.join(filenames['basefilename'],
                                   'flirt_smri_mni.nii.gz')
     os.system('flirt -in {} -ref {} -applyxfm -init {} -out {}'.format(
         filenames['smri_file'],
@@ -454,7 +458,7 @@ please check output of:\n fslorient -orient {}'.format(filenames['smri_file']))
 
     print('Running BET pre-BETSURF...')
 
-    flirt_smri_mni_bet_file = op.join(filenames['basefilename'], \
+    flirt_smri_mni_bet_file = op.join(filenames['basefilename'],
                                       'flirt_smri_mni_bet')
     os.system('bet2 {} {} --mesh'.format(
         flirt_smri_mni_file,
@@ -468,7 +472,7 @@ please check output of:\n fslorient -orient {}'.format(filenames['smri_file']))
     # Since flirt_smri_mni_file is already in MNI space,
     # this will just be the identity matrix
 
-    flirt_identity_xform_file = op.join(filenames['basefilename'], \
+    flirt_identity_xform_file = op.join(filenames['basefilename'],
                                         'flirt_identity_xform.txt')
     np.savetxt(flirt_identity_xform_file, np.eye(4))
 
@@ -492,12 +496,12 @@ please check output of:\n fslorient -orient {}'.format(filenames['smri_file']))
         from_nii=flirt_smri_mni_file,
         target_nii=filenames['std_brain_bigfov'])
 
-    flirt_mni2mnibigfov_xform_file = op.join(filenames['basefilename'], \
+    flirt_mni2mnibigfov_xform_file = op.join(filenames['basefilename'],
                                              'flirt_mni2mnibigfov_xform.txt')
     np.savetxt(flirt_mni2mnibigfov_xform_file, mni2mnibigfov_xform)
 
     # Calculate overall transform, from smri to MNI big fov        
-    flirt_mri2mnibigfov_xform_file = op.join(filenames['basefilename'], \
+    flirt_mri2mnibigfov_xform_file = op.join(filenames['basefilename'],
                                              'flirt_mri2mnibigfov_xform.txt')
     os.system('convert_xfm -omat {} -concat {} {}'.format(
         flirt_mri2mnibigfov_xform_file,
@@ -505,7 +509,7 @@ please check output of:\n fslorient -orient {}'.format(filenames['smri_file']))
         flirt_mri2mni_xform_file))
 
     # move MRI to MNI big FOV space and load in
-    flirt_smri_mni_bigfov_file = op.join(filenames['basefilename'], \
+    flirt_smri_mni_bigfov_file = op.join(filenames['basefilename'],
                                          'flirt_smri_mni_bigfov')
     os.system('flirt -in {} -ref {} -applyxfm -init {} -out {}'.format(
         filenames['smri_file'],
@@ -516,7 +520,7 @@ please check output of:\n fslorient -orient {}'.format(filenames['smri_file']))
 
     # move scalp to MNI big FOV space and load in
     flirt_outskin_file = op.join(filenames['basefilename'], 'flirt_outskin_mesh')
-    flirt_outskin_bigfov_file = op.join(filenames['basefilename'], \
+    flirt_outskin_bigfov_file = op.join(filenames['basefilename'],
                                         'flirt_outskin_mesh_bigfov')
     os.system('flirt -in {} -ref {} -applyxfm -init {} -out {}'.format(
         flirt_outskin_file,
@@ -627,21 +631,20 @@ please check output of:\n fslorient -orient {}'.format(filenames['smri_file']))
     outline = outline.astype(np.uint8)
 
     if False:
-        fig = plt.figure(frameon=False)
+        plt.figure(frameon=False)
         plt.imshow(vol.get_fdata()[99, :, :])
         plt.show()
-        fig = plt.figure(frameon=False)
+        plt.figure(frameon=False)
         plt.imshow(scalp.get_fdata()[99, :, :])
         plt.show()
-        fig = plt.figure(frameon=False)
+        plt.figure(frameon=False)
         plt.imshow(mask[99, :, :])
         plt.show()
-        fig = plt.figure(frameon=False)
+        plt.figure(frameon=False)
         plt.imshow(outline[99, :, :])
         plt.show()
 
     # SAVE AS NIFTI
-    mesh_name = 'outskin_mesh'
     outline_nii = nib.Nifti1Image(outline, scalp.affine)
 
     nib.save(outline_nii,
@@ -654,7 +657,7 @@ please check output of:\n fslorient -orient {}'.format(filenames['smri_file']))
     ## Transform outskin plus nose nii mesh from MNI big FOV to MRI space
 
     # first we need to invert the flirt_mri2mnibigfov_xform_file xform:
-    flirt_mnibigfov2mri_xform_file = op.join(filenames['basefilename'], \
+    flirt_mnibigfov2mri_xform_file = op.join(filenames['basefilename'],
                                              'flirt_mnibigfov2mri_xform.txt')
     os.system('convert_xfm -omat {} -inverse {}'.format(
         flirt_mnibigfov2mri_xform_file,
@@ -699,7 +702,6 @@ please check output of:\n fslorient -orient {}'.format(filenames['smri_file']))
             op.join(filenames['basefilename'], mesh_name + '.vtk'),
             op.join(filenames['basefilename'], mesh_name + '.nii.gz'),
             filenames['mni_mri_t_file'])
-
 
     ###########################################################################
     # Clean up
@@ -890,7 +892,7 @@ Please ensure that the polhemus headshape points do not include the nose')
     if use_dev_ctf_t:
         dev_ctf_t = raw.info['dev_ctf_t']
 
-        if dev_ctf_t != None:
+        if dev_ctf_t is not None:
             print('CTF data')
             print('Setting dev_head_t equal to dev_ctf_t in fif file info. \n\
 To turn this off, set use_dev_ctf_t=False')
@@ -1048,20 +1050,17 @@ To turn this off, set use_dev_ctf_t=False')
     rhino_utils.create_freesurfer_mesh(infile=surfaces_filenames['bet_inskull_mesh_vtk_file'],
                                        surf_outfile=surfaces_filenames['bet_inskull_surf_file'],
                                        nii_mesh_file=surfaces_filenames['bet_inskull_mesh_file'],
-                                       xform_mri_voxel2mri=mrivoxel_mri_t['trans'],
-                                       overwrite=True)
+                                       xform_mri_voxel2mri=mrivoxel_mri_t['trans'])
 
     rhino_utils.create_freesurfer_mesh(infile=surfaces_filenames['bet_outskull_mesh_vtk_file'],
                                        surf_outfile=surfaces_filenames['bet_outskull_surf_file'],
                                        nii_mesh_file=surfaces_filenames['bet_outskull_mesh_file'],
-                                       xform_mri_voxel2mri=mrivoxel_mri_t['trans'],
-                                       overwrite=True)
+                                       xform_mri_voxel2mri=mrivoxel_mri_t['trans'])
 
     rhino_utils.create_freesurfer_mesh(infile=surfaces_filenames['bet_outskin_mesh_vtk_file'],
                                        surf_outfile=surfaces_filenames['bet_outskin_surf_file'],
                                        nii_mesh_file=surfaces_filenames['bet_outskin_mesh_file'],
-                                       xform_mri_voxel2mri=mrivoxel_mri_t['trans'],
-                                       overwrite=True)
+                                       xform_mri_voxel2mri=mrivoxel_mri_t['trans'])
 
     print('*** OSL RHINO COREGISTRATION COMPLETE ***')
 
@@ -1156,7 +1155,7 @@ def coreg_display(subjects_dir, subject,
 
     # Change xform from metres to mm.
     # Note that MNE xform in fif.info assume metres, whereas we want it
-    # in mm. To change units on an xform, just need to change the translation
+    # in mm. To change units for an xform, just need to change the translation
     # part and leave the rotation alone
     dev_head_t['trans'][0:3, -1] = dev_head_t['trans'][0:3, -1] * 1000
 
@@ -1278,8 +1277,7 @@ def coreg_display(subjects_dir, subject,
         rhino_utils.create_freesurfer_mesh(infile=outskin_mesh_4surf_file,
                                            surf_outfile=outskin_surf_file,
                                            nii_mesh_file=outskin_mesh_file,
-                                           xform_mri_voxel2mri=mrivoxel_mri_t['trans'],
-                                           overwrite=True)
+                                           xform_mri_voxel2mri=mrivoxel_mri_t['trans'])
 
         coords_native, faces = nib.freesurfer.read_geometry(outskin_surf_file)
 
@@ -1392,12 +1390,13 @@ def forward_model(subjects_dir, subject,
             of the bounding surface.
             
         eeg - bool
-            Whether or not to compute forward model for eeg sensors
+            Whether to compute forward model for eeg sensors
         meg - bool
-            Whether or not to compute forward model for meg sensors
+            Whether to compute forward model for meg sensors
         
-         gridstep=gridstep, mindist=mindist
     '''
+
+    print('*** RUNNING OSL RHINO FORWARD MODEL ***')
 
     # compute MNE bem solution  
     if model == 'Single Layer':
@@ -1409,7 +1408,8 @@ def forward_model(subjects_dir, subject,
 
     vol_src = setup_volume_source_space(subjects_dir, subject,
                                         gridstep=gridstep,
-                                        mindist=mindist)
+                                        mindist=mindist,
+                                        exclude=exclude)
 
     # The BEM solution requires a BEM model which describes the geometry of the 
     # head the conductivities of the different tissues.
@@ -1441,6 +1441,7 @@ def forward_model(subjects_dir, subject,
 
     write_forward_solution(fwd_fname, fwd, overwrite=True)
 
+    print('*** OSL RHINO FORWARD MODEL COMPLETE ***')
 
 #############################################################################
 def bem_display(subjects_dir, subject,
@@ -1567,7 +1568,7 @@ def bem_display(subjects_dir, subject,
         # Move from head space to MEG (device) space
         src_pnts = rhino_utils.xform_points(head_trans['trans'], src_pnts.T).T
 
-    print('Number of dipoles={}'.format(src_pnts.shape[0]))
+        print('Number of dipoles={}'.format(src_pnts.shape[0]))
 
     ###########################################################################
     # Do plots
@@ -1592,8 +1593,7 @@ def bem_display(subjects_dir, subject,
         rhino_utils.create_freesurfer_mesh(infile=outskin_mesh_4surf_file,
                                            surf_outfile=outskin_surf_file,
                                            nii_mesh_file=outskin_mesh_file,
-                                           xform_mri_voxel2mri=mrivoxel_mri_t['trans'],
-                                           overwrite=True)
+                                           xform_mri_voxel2mri=mrivoxel_mri_t['trans'])
 
         coords_native, faces = nib.freesurfer.read_geometry(outskin_surf_file)
 
@@ -1767,7 +1767,6 @@ def setup_volume_source_space(subjects_dir, subject,
 
     pos = int(gridstep)
 
-    coreg_filenames = get_coreg_filenames(subjects_dir, subject)
     surfaces_filenames = get_surfaces_filenames(subjects_dir, subject)
 
     ###########################################################################
@@ -1804,7 +1803,7 @@ def setup_volume_source_space(subjects_dir, subject,
     #
     # To be continued... need to get in touch with mne folks perhaps?
 
-    if True:
+    if False:
         verts, tris = read_surface(surfaces_filenames['bet_inskull_surf_file'])
         tris = tris.astype(int)
         write_surface(op.join(bem_dir_name, 'inner_skull.surf'),
@@ -1836,7 +1835,7 @@ def setup_volume_source_space(subjects_dir, subject,
     pos /= 1000.0  # convert pos to m from mm for MNE call
 
     ###################################################
-    def get_mri_info_from_nii(mri, mrivoxel_mri_t_file):
+    def get_mri_info_from_nii(mri):
         out = dict()
         dims = nib.load(mri).get_fdata().shape
 
@@ -1846,8 +1845,7 @@ def setup_volume_source_space(subjects_dir, subject,
 
         return out
 
-    vol_info = get_mri_info_from_nii(
-        surfaces_filenames['smri_file'], coreg_filenames['mrivoxel_mri_t_file'])
+    vol_info = get_mri_info_from_nii(surfaces_filenames['smri_file'])
 
     surf = read_surface(surface, return_dict=True)[-1]
 
@@ -1889,7 +1887,7 @@ def make_fwd_solution(subjects_dir, subject,
                       ignore_ref=False,
                       n_jobs=1,
                       verbose=None):
-    '''Calculate a forward solution for a subject. This is a RHINO wrapper
+    """Calculate a forward solution for a subject. This is a RHINO wrapper
     for mne.make_forward_solution
 
     Inputs
@@ -1912,14 +1910,14 @@ def make_fwd_solution(subjects_dir, subject,
     -----
     Forward modelling is done in head space.
 
-    The coords of points to reconstruct to can be found in the output here: 
+    The coords of points to reconstruct to can be found in the output here:
         fwd['src'][0]['rr'][fwd['src'][0]['vertno']]
     where they are in head space in metres.
 
-    The same coords of points to reconstruct to can be found in the input here: 
+    The same coords of points to reconstruct to can be found in the input here:
         src[0]['rr'][src[0]['vertno']]
     where they are in native MRI space in metres.
-    '''
+    """
 
     fif_file = get_coreg_filenames(subjects_dir, subject)['fif_file']
 
@@ -1969,238 +1967,6 @@ def make_fwd_solution(subjects_dir, subject,
         raise RuntimeError('fwd[\'src\'][0] is not in HEAD coordinates')
 
     return fwd
-
-
-#############################################################################
-
-def recon_ts2mri_nii(subjects_dir, subject,
-                     recon_timeseries,
-                     out_nii_fname,
-                     times=None):
-    '''
-    Writes niftii files to native sMRI space for the passed in recon_timeseries
-    
-    Inputs
-    ------
-
-    subjects_dir - string
-            Directory to find RHINO subject dirs in.
-    subject - string
-            Subject name dir to find RHINO files in.
-
-
-    recon_timeseries : numpy array
-            (nvoxels,) numpy array 
-            The coordinates of the
-            voxels will by assumed to be those contained in fwd, i.e.
-            fwd['src'][0]['rr'][fwd['src']['vertno']]
-
-    out_nii_fname : list of strings | string
-            Niftii filename to use for each volume in volumes.
-            
-
-    Returns
-    -------
-    out_nii_fname : list of strings
-            Niftii filenames written.
-
-    '''
-
-    if len(recon_timeseries.shape) == 1:
-        recon_timeseries = np.reshape(recon_timeseries, [recon_timeseries.shape[0], 1])
-
-    surfaces_filenames = get_surfaces_filenames(subjects_dir, subject)
-    coreg_filenames = get_coreg_filenames(subjects_dir, subject)
-
-    smri_file = surfaces_filenames['smri_file']
-    head_mri_trans_file = coreg_filenames['head_mri_t_file']
-
-    fwd = read_forward_solution(coreg_filenames['forward_model_file'])
-
-    # fwd should be in Head space. Let's double just check that is the case
-    if fwd['src'][0]['coord_frame'] != FIFF.FIFFV_COORD_HEAD:
-        raise RuntimeError('fwd[\'src\'][0] is not in HEAD coordinates')
-
-    ##############
-    # estimate gridstep from forward model
-    rr = fwd['src'][0]['rr']
-
-    store = []
-    for ii in range(rr.shape[0]):
-        store.append(np.sqrt(np.sum(np.square(rr[ii, :] - rr[0, :]))))
-    store = np.asarray(store)
-    gridstep = int(np.round(np.min(store[np.where(store > 0)]) * 1000))
-    print('Using gridstep = {}mm'.format(gridstep))
-    ##############
-
-    ##############
-    # Get hold of coords of points reconstructed to.
-    # Note, MNE forward model is done in head space in metres.
-    # Rhino does everything in mm
-    vs = fwd['src'][0]
-    coords_head = vs['rr'][vs['vertno']] * 1000  # in mm
-    ##############
-
-    in_file = smri_file
-
-    # create background file name for chosen gridstep
-    out_gridstep_mm_file = in_file.replace(
-        '.nii.gz', '_{}mm.nii.gz'.format(gridstep))
-
-    # Sample smri to the gridstep resolution
-    # output is out_gridstep_mm_file
-    os.system('flirt -in {} -ref {} -out {} -applyisoxfm {}'.format(
-        in_file,
-        in_file,
-        out_gridstep_mm_file,
-        gridstep))
-
-    # get transform from mri to mri voxel indices for smri at gridstep resolution
-    mri2mri_vox_t = invert_transform(rhino_utils._get_sform(out_gridstep_mm_file))
-
-    # Compute head to native MRI voxel index xform    
-    head_vox2outspace_vox_t = combine_transforms(read_trans(head_mri_trans_file),
-                                                 mri2mri_vox_t, 'head', 'mri_voxel')
-
-    # Convert to native voxel index output space
-    coords_out_voxel = np.round(apply_trans(
-        head_vox2outspace_vox_t, coords_head)).astype(int)
-
-    out_gridstep_mm = nib.load(out_gridstep_mm_file)
-
-    affine = out_gridstep_mm.affine
-
-    if coords_out_voxel.shape[0] != recon_timeseries.shape[0]:
-        raise ValueError('coords_out_voxel.shape[0] ~= recon_timeseries[0] \n\
-Passed in volumes are not compatible with passed in forward model, fwd.\n\
-Each volume should be a (nvoxels,) array')
-
-    vol = nib.load(out_gridstep_mm_file).get_fdata()
-    vol = np.zeros(np.append((vol.shape), recon_timeseries.shape[1]))
-
-    for ii in range(coords_out_voxel.shape[0]):
-        try:
-            vol[coords_out_voxel[ii, 0], coords_out_voxel[ii, 1],
-            coords_out_voxel[ii, 2], :] = recon_timeseries[ii, :]
-        except IndexError:
-            print('Index out of bounds ignored')
-
-    # SAVE AS NIFTI
-    vol_nii = nib.Nifti1Image(vol, affine)
-
-    vol_nii.header.set_xyzt_units(2)  # mm
-    if times is not None:
-        vol_nii.header['pixdim'][4] = times[1] - times[0]
-        vol_nii.header['toffset'] = -0.5
-        vol_nii.header.set_xyzt_units(2, 8)  # mm and secs
-
-    nib.save(vol_nii, out_nii_fname)
-
-    # os.system('fslcpgeom {} {}'.format(out_gridstep_mm_file, out_nii_fname))
-
-    return out_nii_fname
-
-
-#############################################################################
-
-def _write_mni_nii(subjects_dir, subject,
-                   nii_file_names,
-                   mni_resolution=2):
-    '''
-    Writes niftii files in MNI space at the resolution given by mni_resolution
-    (in mm) for each of the passed in nii_file_names, which are assumed to
-    be in native MRI space
-
-    Inputs
-    ------
-
-    subjects_dir - string
-            Directory to find RHINO subject dirs in.
-    subject - string
-            Subject name dir to find RHINO files in.
-
-    nii_file_names : list of strings
-            Niftii filenames to transform to MNI space. These input are 
-            assumed to be in native MRI space.
-            These will usually have come from calling rhino.write_nii
-
-    mni_resolution : float
-            Resolution to write out in MNI space, in mm
-
-    Returns
-    -------
-    mni_files : list of strings
-            Niftii filenames written.
-    
-    std_mni_brain_file : string
-            standard MNI brain at mni_resolution
-
-    '''
-
-    # check nii_file_names to see if it is a list, 
-    if type(nii_file_names) is not list:
-        # Create a list from the single input
-        single_item = nii_file_names
-        nii_file_names = []
-        nii_file_names.append(single_item)
-
-    surfaces_filenames = get_surfaces_filenames(subjects_dir, subject)
-    mni2mri_flirt_file = surfaces_filenames['mni2mri_flirt_file']
-
-    # first we need to invert the mni2mri_flirt xform:
-    xform_path, xform_name = op.split(mni2mri_flirt_file)
-    mri2mni_flirt_file = op.join(xform_path, 'mri2mni_flirt.txt')
-
-    os.system('convert_xfm -omat {} -inverse {}'.format(
-        mri2mni_flirt_file,
-        mni2mri_flirt_file))
-
-    mni_files = list()
-    for ii in range(len(nii_file_names)):
-
-        if not op.isfile(nii_file_names[ii]):
-            raise ValueError('nii_file_names[{}]:\n{}\n does not exist'
-                             .format(ii, nii_file_names[ii]))
-
-        nii_path, nii_name = op.split(nii_file_names[ii])
-        nii_name, nii_ext2 = op.splitext(nii_name)  # split .gz
-        nii_name, nii_ext1 = op.splitext(nii_name)  # split .nii
-
-        mni_file = op.join(nii_path, nii_name +
-                           '_mni_{}mm.nii.gz'.format(mni_resolution))
-
-        std_brain = os.environ['FSLDIR'] + \
-                    '/data/standard/MNI152_T1_1mm_brain.nii.gz'
-
-        # Sample std_brain to the desired resolution
-        # output is std_brain_mm_file
-        std_mni_brain_file = op.join(nii_path,
-                                     'MNI152_T1_{}mm_brain.nii.gz'.format(mni_resolution))
-
-        # create std brain of the required resolution
-        os.system('flirt -in {} -ref {} -out {} -applyisoxfm {}'.format(
-            std_brain,
-            std_brain,
-            std_mni_brain_file,
-            mni_resolution))
-
-        # move from native mri to MNI space
-        os.system('flirt -in {} -ref {} -applyxfm \
--init {} -out {}'.format(
-            nii_file_names[ii],
-            std_mni_brain_file,
-            mri2mni_flirt_file,
-            mni_file))
-
-        # apply MNI brain as mask:
-        os.system('fslmaths {} -mas {} {}'.format(
-            mni_file,
-            std_mni_brain_file,
-            mni_file))
-
-        mni_files.append(mni_file)
-
-    return mni_files, std_mni_brain_file
 
 
 #############################################################################
@@ -2260,10 +2026,10 @@ def get_recon_timeseries(subjects_dir, subject, coord_mni, recon_timeseries_head
 
 
 #############################################################################
-def resample_recon_ts(subjects_dir, subject,
-                      recon_timeseries,
-                      spatial_resolution=None,
-                      reference_brain='mni'):
+def transform_recon_timeseries(subjects_dir, subject,
+                               recon_timeseries,
+                               spatial_resolution=None,
+                               reference_brain='mni'):
     '''
     Spatially resamples a (ndipoles x ntpts) array of reconstructed time 
     courses (in head/polhemus space) to dipoles on the brain
@@ -2272,14 +2038,14 @@ def resample_recon_ts(subjects_dir, subject,
     Inputs
     ------
 
-    subjects_dir - string
+    subjects_dir: string
             Directory to find RHINO subject dirs in.
             
-    subject - string
+    subject: string
             Subject name dir to find RHINO files in.
             
-    recon_timeseries : (ndipoles, ntpts) np.array
-            Reconstructed time courses (in head (polhemus) space).
+    recon_timeseries: numpy.ndarray
+            (ndipoles, ntpts) or (ndipoles, ntpts, ntrials) of reconstructed time courses (in head (polhemus) space).
             Assumes that the dipoles are the same (and in the same order)
             as those in the forward model,
             coreg_filenames['forward_model_file'].
@@ -2287,26 +2053,28 @@ def resample_recon_ts(subjects_dir, subject,
             MNE source recon methods, e.g. mne.beamformer.apply_lcmv, obtained
             using a forward model generated by Rhino.
                                     
-    spatial_resolution - int
+    spatial_resolution: int
             Resolution to use for the reference brain in mm 
             (must be an integer, or will be cast to nearest int)
             If None, then the gridstep used in coreg_filenames['forward_model_file']
             is used.
     
-    reference_brain - string, 'mni' or 'mri'
+    reference_brain: string
             'mni' indicates that the reference_brain is the stdbrain in MNI space
-            'mri' indicates that the reference_brain is the sMRI in native/mri space
+            'mri' indicates that the reference_brain is the subject's sMRI in native/mri space
 
     Returns
     -------
-    recon_timeseries_out - (ndipoles, ntpts) np.array
-            Reconstructed time courses resampled on the reference brain grid
+    recon_timeseries_out: np.array
+            (ndipoles, ntpts) np.array of reconstructed time courses resampled on the reference brain grid
    
-    reference_brain_fname - string
-            File name of the requested reference brain at the requested 
+    reference_brain_fname: string
+            File name of the requested reference brain at the requested
             spatial resolution, int(spatial_resolution)
-            (with zero for background, and !=0 for brain)      
-            
+            (with zero for background, and !=0 for brain)
+
+    coords_out: np.array
+            (3, ndipoles) np.array of coordinates (in mm) of dipoles in recon_timeseries_out in "reference_brain" space
     '''
 
     surfaces_filenames = get_surfaces_filenames(subjects_dir, subject)
@@ -2345,8 +2113,7 @@ def resample_recon_ts(subjects_dir, subject,
         mni_mri_t = rhino_utils.read_trans(surfaces_filenames['mni_mri_t_file'])
         recon_coords_out = rhino_utils.xform_points(np.linalg.inv(mni_mri_t['trans']), recon_coords_mri.T).T
 
-        reference_brain = os.environ['FSLDIR'] + \
-                          '/data/standard/MNI152_T1_1mm_brain.nii.gz'
+        reference_brain = os.environ['FSLDIR'] + '/data/standard/MNI152_T1_1mm_brain.nii.gz'
 
         # Sample reference_brain to the desired resolution
         reference_brain_resampled = op.join(coreg_filenames['basefilename'],
@@ -2379,111 +2146,81 @@ def resample_recon_ts(subjects_dir, subject,
         reference_brain_resampled,
         spatial_resolution))
 
-    coords_out_mm, vals = rhino_utils.niimask2mmpointcloud(reference_brain_resampled)
+    coords_out, vals = rhino_utils.niimask2mmpointcloud(reference_brain_resampled)
 
     #########
-    # for each coords_mni find nearest coord in recon_coords_out
-    recon_timeseries_out = np.zeros([coords_out_mm.shape[1], recon_timeseries.shape[1]])
-    for cc in range(coords_out_mm.shape[1]):
-        recon_index, dist = rhino_utils._closest_node(coords_out_mm[:, cc], recon_coords_out)
+    # for each mni_coords_out find nearest coord in recon_coords_out
+
+    recon_timeseries_out = np.zeros(np.insert(recon_timeseries.shape[1:], 0, coords_out.shape[1]))
+    for cc in range(coords_out.shape[1]):
+        recon_index, dist = rhino_utils._closest_node(coords_out[:, cc], recon_coords_out)
 
         if dist < spatial_resolution:
-            recon_timeseries_out[cc, :] = recon_timeseries[recon_index, :]
+            recon_timeseries_out[cc, ...] = recon_timeseries[recon_index, ...]
 
-    reference_brain_fname = reference_brain_resampled
-
-    return recon_timeseries_out, reference_brain_fname
+    return recon_timeseries_out, reference_brain_resampled, coords_out
 
 
 #############################################################################
-def recon_ts2nii(subjects_dir, subject,
-                 recon_timeseries,
-                 out_nii_fname,
-                 spatial_resolution=None,
-                 reference_brain='mni',
-                 times=None):
-    '''
-    Converts a (ndipoles,tpts) array of reconstructed timeseries (in 
-    head/polhemus space) to the corresponding
-    dipoles in a standard brain grid in MNI space and outputs them as a 
-    niftii file.
+def _timeseries2nii(timeseries, timeseries_coords, reference_mask_fname, out_nii_fname, times=None):
+    """
+    Maps the (ndipoles,tpts) array of timeseries to
+    the grid defined by reference_mask_fname
+    and outputs them as a niftii file.
 
-    Inputs
-    ------
-            
-    subjects_dir - string
-            Directory to find RHINO subject dirs in.
-            
-    subject - string
-            Subject name dir to find RHINO files in.
-            
-    recon_timeseries : (ndipoles, ntpts) np.array
-            Reconstructed time courses (in head (polhemus) space).
-            Assumes that the dipoles are the same (and in the same order)
-            as those in the forward model,
-            coreg_filenames['forward_model_file'].
-            Typically derive from the VolSourceEstimate's output by
-            MNE source recon methods, e.g. mne.beamformer.apply_lcmv, obtained
-            using a forward model generated by Rhino.
-                                    
-    spatial_resolution - int
-            Resolution to use for the reference brain in mm 
-            (must be an integer, or will be cast to nearest int)
-            If None, then the gridstep used in coreg_filenames['forward_model_file']
-            is used.
-            
-    reference_brain - string, 'mni' or 'mri'
-            'mni' indicates that the reference_brain is the stdbrain in MNI space
-            'mri' indicates that the reference_brain is the sMRI in native/mri space
-            
-    times = (ntpts, ) np.array
-            Times points in seconds.
-            Will assume that these are regularly spaced
-            
-    Returns
-    -------
-    out_nii_fname - string
-            Name of output niftii file    
-   
-    reference_brain_fname - string
-            File name of standard brain mask in MNI space at requested resolution,
-            int(stdbrain_resolution)
-            (with zero for background, and !=0 for the mask)      
-            
+    Assumes the timeseries' dipoles correspond to those in reference_mask_fname.
+    Both timeseries and reference_mask_fname are often output from rhino.transform_recon_timeseries.
 
-    '''
+    Args:
 
-    if len(recon_timeseries.shape) == 1:
-        recon_timeseries = np.reshape(recon_timeseries,
-                                  [recon_timeseries.shape[0], 1])
+        timeseries : (ndipoles, ntpts) numpy.ndarray
+                Time courses.
+                Assumes the timeseries' dipoles correspond to those in reference_mask_fname.
+                Typically derives from rhino.transform_recon_timeseries
 
-    #####
-    # convert the recon_timeseries to the standard
-    # space brain dipole grid at the specfied resolution 
-    recon_ts_out, reference_brain_fname = resample_recon_ts \
-        (subjects_dir, subject,
-         recon_timeseries=recon_timeseries,
-         spatial_resolution=None,
-         reference_brain=reference_brain)
+        timeseries_coords : (ndipoles, 3) numpy.ndarray
+                Coords in mm for dipoles corresponding to passed in timeseries
 
-    #####
-    # output recon_ts_out as niftii file
+        reference_mask_fname: string
+                A nii.gz mask file name
+                (with zero for background, and !=0 for the mask)
+                Assumes the mask was used to set dipoles for timeseries,
+                typically derived from rhino.transform_recon_timeseries
 
-    mni_nii_nib = nib.load(reference_brain_fname)
-    coords_mni = rhino_utils.niimask2indexpointcloud(reference_brain_fname).T
+        out_nii_fname: string
+                output name of niftii file
+
+        times: (ntpts, ) numpy.ndarray
+                Times points in seconds.
+                Assume that times are regularly spaced.
+                Used to set nii file up correctly.
+
+    Returns:
+        out_nii_fname: string
+                Name of output niftii file
+
+    """
+
+    if len(timeseries.shape)==1:
+        timeseries = np.reshape(timeseries, [-1, 1])
+
+    mni_nii_nib = nib.load(reference_mask_fname)
+    coords_ind = rhino_utils.niimask2indexpointcloud(reference_mask_fname).T
+    coords_mni, tmp = rhino_utils.niimask2mmpointcloud(reference_mask_fname)
 
     mni_nii_values = mni_nii_nib.get_fdata()
-    mni_nii_values = np.zeros(np.append((mni_nii_values.shape), recon_timeseries.shape[1]))
+    mni_nii_values = np.zeros(np.append(mni_nii_values.shape, timeseries.shape[1]))
 
-    for ii in range(recon_ts_out.shape[0]):
-        try:
-            mni_nii_values[coords_mni[ii, 0], coords_mni[ii, 1],
-            coords_mni[ii, 2], :] = recon_ts_out[ii, :]
-        except IndexError:
-            print('Index out of bounds ignored')
-            print('Coords are {}'.format(coords_mni[ii, :]))
+    #import pdb; pdb.set_trace()
+    kdtree = KDTree(coords_mni.T)
+    gridstep = int(rhino_utils._get_gridstep(coords_mni.T) / 1000)
 
-    # import pdb; pdb.set_trace()
+    for ind in range(timeseries_coords.shape[1]):
+        distance, index = kdtree.query(timeseries_coords[:, ind])
+        # Exclude any timeseries_coords that are further than gridstep away from the best matching
+        # coords_mni
+        if distance < gridstep:
+            mni_nii_values[coords_ind[ind, 0], coords_ind[ind, 1], coords_ind[ind, 2], :] = timeseries[ind, :]
 
     # SAVE AS NIFTI
     vol_nii = nib.Nifti1Image(mni_nii_values, mni_nii_nib.affine)
@@ -2498,13 +2235,111 @@ def recon_ts2nii(subjects_dir, subject,
 
     # os.system('fslcpgeom {} {}'.format(reference_brain_fname, out_nii_fname))
 
+    return out_nii_fname
+
+
+#############################################################################
+def recon_timeseries2niftii(subjects_dir, subject,
+                            recon_timeseries,
+                            out_nii_fname,
+                            spatial_resolution=None,
+                            reference_brain='mni',
+                            times=None):
+    """
+    Converts a (ndipoles,tpts) array of reconstructed timeseries (in
+    head/polhemus space) to the corresponding
+    dipoles in a standard brain grid in MNI space and outputs them as a
+    niftii file.
+
+    Inputs
+    ------
+
+    subjects_dir - string
+            Directory to find RHINO subject dirs in.
+
+    subject - string
+            Subject name dir to find RHINO files in.
+
+    recon_timeseries : (ndipoles, ntpts) np.array
+            Reconstructed time courses (in head (polhemus) space).
+            Assumes that the dipoles are the same (and in the same order)
+            as those in the forward model,
+            coreg_filenames['forward_model_file'].
+            Typically derive from the VolSourceEstimate's output by
+            MNE source recon methods, e.g. mne.beamformer.apply_lcmv, obtained
+            using a forward model generated by Rhino.
+
+    spatial_resolution - int
+            Resolution to use for the reference brain in mm
+            (must be an integer, or will be cast to nearest int)
+            If None, then the gridstep used in coreg_filenames['forward_model_file']
+            is used.
+
+    reference_brain - string, 'mni' or 'mri'
+            'mni' indicates that the reference_brain is the stdbrain in MNI space
+            'mri' indicates that the reference_brain is the sMRI in native/mri space
+
+    times = (ntpts, ) np.array
+            Times points in seconds.
+            Will assume that these are regularly spaced
+
+    Returns
+    -------
+    out_nii_fname - string
+            Name of output niftii file
+
+    reference_brain_fname - string
+            Niftii file name of standard brain mask in MNI space at requested resolution,
+            int(stdbrain_resolution)
+            (with zero for background, and !=0 for the mask)
+
+
+    """
+
+    if len(recon_timeseries.shape) == 1:
+        recon_timeseries = np.reshape(recon_timeseries,
+                                      [recon_timeseries.shape[0], 1])
+
+    #####
+    # convert the recon_timeseries to the standard
+    # space brain dipole grid at the specified resolution
+    recon_ts_out, reference_brain_fname, recon_coords_out = transform_recon_timeseries(
+        subjects_dir, subject,
+        recon_timeseries=recon_timeseries,
+        spatial_resolution=spatial_resolution,
+        reference_brain=reference_brain)
+
+    #####
+    # output recon_ts_out as niftii file
+    out_nii_fname = _timeseries2nii(recon_ts_out, recon_coords_out,
+                                    reference_brain_fname, out_nii_fname,
+                                    times=times)
+
     return out_nii_fname, reference_brain_fname
 
 
 #############################################################################
 
 def fsleyes(image_list):
+    """
+    Displays list of niftii's using external command line call to fsleyes
+
+    Args:
+        image_list: string or tuple of strings
+            Niftii filenames or tuple of niftii filenames
+
+    Examples:
+         fsleyes(image)
+
+         fsleyes((image1, image2))
+    """
+
+    # check if image_list is a single file name
+    if isinstance(image_list, str):
+        image_list = (image_list,)
+
     cmd = 'fsleyes '
+
     for img in image_list:
         cmd += img
         cmd += ' '
@@ -2517,6 +2352,17 @@ def fsleyes(image_list):
 #############################################################################
 
 def fsleyes_overlay(background_img, overlay_img):
+    """
+    Displays overlay_img and background_img using external command line call to fsleyes
+
+    Args:
+        background_img: string
+            Background niftii filename
+        overlay_img: string
+            Overlay niftii filename
+
+    """
+
     if type(background_img) is str:
         if background_img == 'mni':
             mni_resolution = int(nib.load(overlay_img).header.get_zooms()[0])

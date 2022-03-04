@@ -22,22 +22,71 @@ import pandas as pd
 import open3d as o3d
 import matplotlib.pyplot as plt
 
+from numba import cfunc, carray
+from numba.types import intc, intp, float64, voidptr
+from numba.types import CPointer
+
 
 #############################################################################
-def niimask2indexpointcloud(nii_fname):
-    '''
-    Takes in a nii.gz mask file name (with neq one for background and ones for
+def get_gridstep(fwd):
+    """
+    Get gridstep (i.e. spatial resolution of dipole grid) in mm from forward model
+
+    Inputs
+    ------
+    fwd: mne.Forward
+            Forward model
+
+    Outputs
+    -------
+    gridstep: int
+            Spatial resolution of dipole grid in mm
+
+    """
+
+    rr = fwd['src'][0]['rr']
+    return _get_gridstep(rr)
+
+
+#############################################################################
+def _get_gridstep(coords):
+    store = []
+    for ii in range(coords.shape[0]):
+        store.append(np.sqrt(np.sum(np.square(coords[ii, :] - coords[0, :]))))
+    store = np.asarray(store)
+    gridstep = int(np.round(np.min(store[np.where(store > 0)]) * 1000))
+
+    return gridstep
+
+
+#############################################################################
+def niimask2indexpointcloud(nii_fname, volindex=None):
+    """
+    Takes in a nii.gz mask file name (which equals zero for background and neq zero for
     the mask) and returns the mask as a 3 x npoints point cloud
-    
-    Input:
-        nii_fname - a nii.gz mask file name 
-                    (with zero for background, and !=0 for the mask)
-        
-    Return:
-        pc - 3 x npoints point cloud as voxel indices
-    '''
+
+    Input
+    -----
+        nii_fname: string
+                A nii.gz mask file name
+                (with zero for background, and !=0 for the mask)
+        volindex: int
+                    Volume index, used if nii_mask is a 4D file
+
+    Output
+    ------
+        pc: nd.array
+                3 x npoints point cloud as voxel indices
+    """
 
     vol = nib.load(nii_fname).get_fdata()
+
+    if len(vol.shape) == 4 and volindex is not None:
+        vol = vol[:, :, :, volindex]
+
+    if not len(vol.shape) == 3:
+        Exception(
+            "nii_mask must be a 3D volume, or nii_mask must be a 4D volume with volindex specifying a volume index")
 
     # Turn the nvoxx x nvoxy x nvoxz volume into a 3 x npoints point cloud
     pc = np.asarray(np.where(vol != 0))
@@ -46,23 +95,33 @@ def niimask2indexpointcloud(nii_fname):
 
 
 #############################################################################
-def niimask2mmpointcloud(mask_nii_fname):
-    '''
-    Takes in a nii.gz mask file name (with neq one for background and ones for
+def niimask2mmpointcloud(nii_mask, volindex=None):
+    """
+    Takes in a nii.gz mask (which equals zero for background and neq zero for
     the mask) and returns the mask as a 3 x npoints point cloud in
     native space in mm's
-    
+
     Input:
-        mask_nii_fname - a nii.gz mask file name 
+        nii_mask: string
+                    A nii.gz mask file name or the [x,y,z] volume
                     (with zero for background, and !=0 for the mask)
-        
+        volindex: int
+                    Volume index, used if nii_mask is a 4D file
+
     Return:
         pc - 3 x npoints point cloud as mm in native space (using sform)
         values - npoints values
-        
-    '''
 
-    vol = nib.load(mask_nii_fname).get_fdata()
+    """
+
+    vol = nib.load(nii_mask).get_fdata()
+
+    if len(vol.shape) == 4 and volindex is not None:
+        vol = vol[:, :, :, volindex]
+
+    if not len(vol.shape) == 3:
+        Exception(
+            "nii_mask must be a 3D volume, or nii_mask must be a 4D volume with volindex specifying a volume index")
 
     # Turn the nvoxx x nvoxy x nvoxz volume into a 3 x npoints point cloud
     pc_nativeindex = np.asarray(np.where(vol != 0))
@@ -70,17 +129,17 @@ def niimask2mmpointcloud(mask_nii_fname):
     values = np.asarray(vol[vol != 0])
 
     # Move from native voxel indices to native space coordinates (in mm)
-    pc = xform_points(_get_sform(mask_nii_fname)['trans'], pc_nativeindex)
+    pc = xform_points(_get_sform(nii_mask)['trans'], pc_nativeindex)
 
     return pc, values
 
 
 #############################################################################
 def _closest_node(node, nodes):
-    '''
+    """
     Find nearest node in nodes to the passed in node.
     Returns the index to the nearest node in nodes.
-    '''
+    """
 
     if len(nodes) == 1:
         nodes = np.reshape(nodes, [-1, 1])
@@ -150,11 +209,6 @@ def _get_orient(nii_file):
 # def _majority(buffer, required_majority):
 #    return buffer.sum() >= required_majority
 
-from numba import cfunc, carray
-from numba.types import intc, intp, float64, voidptr
-from numba.types import CPointer
-
-
 # See https://ilovesymposia.com/2017/03/12/scipys-new-lowlevelcallable-is-a-game-changer/
 # Numba cfunc that takes in:
 # a double pointer pointing to the values within the footprint,
@@ -195,16 +249,19 @@ def _binary_majority3d(img):
 
 #############################################################################
 def rigid_transform_3D(B, A):
-    '''
+    """
     Calculate affine transform from points in A to point in B
-    Input: 
-        A and B expected to be 3 x num_points
-        B      - set of points to register to
-        A      - set of points to register from
+    Input:
+        A: numpy.ndarray
+                3 x num_points. Set of points to register from
+        B: numpy.ndarray
+                3 x num_points. Set of points to register to
     Returns:
-        xform
+        xform: numpy.ndarray
+                Calculated affine transform
+
     see http://nghiaho.com/?page_id=671
-    '''
+    """
 
     assert A.shape == B.shape
 
@@ -255,17 +312,20 @@ def rigid_transform_3D(B, A):
 
 #############################################################################
 def xform_points(xform, pnts):
-    '''
+    """
     Applies homogenous linear transformation to an array of 3D coordinates
-    
+
     Input:
-        xform - 4x4 matri containing the affine transform
-        pnts - points to transform should be 3 x num_points
-    
+        xform: numpy.ndarray
+                4x4 matrix containing the affine transform
+        pnts: numpy.ndarray
+                points to transform, should be 3 x num_points
+
     Returns:
-        newpnts - pnts following the xform, will be 3 x num_points
-    
-    '''
+        newpnts: numpy.ndarray
+                pnts following the xform, will be 3 x num_points
+
+    """
     if len(pnts.shape) == 1:
         pnts = np.reshape(pnts, [-1, 1])
 
@@ -283,14 +343,21 @@ def xform_points(xform, pnts):
 
 #############################################################################
 def best_fit_transform(A, B):
-    '''
+    """
     Calculates the least-squares best-fit transform that maps corresponding points A to B in m spatial dimensions
-    Input:
-      A: Nxm numpy array of corresponding points
-      B: Nxm numpy array of corresponding points
-    Returns:
-      T: (m+1)x(m+1) homogeneous transformation matrix that maps A on to B
-    '''
+
+    Inputs
+    ------
+      A: numpy.ndarray
+            Nxm numpy array of corresponding points
+      B: numpy.ndarray
+            Nxm numpy array of corresponding points
+
+    Outputs
+    -------
+      T: numpy.ndarray
+            (m+1)x(m+1) homogeneous transformation matrix that maps A on to B
+    """
 
     assert A.shape == B.shape
 
@@ -326,17 +393,22 @@ def best_fit_transform(A, B):
 
 #############################################################################
 def nearest_neighbor(src, dst):
-    '''
+    """
     Find the nearest (Euclidean) neighbor in dst for each point in src
-    Input:
-        src: Nxm array of points
-        dst: Nxm array of points
-    Output:
-        distances: Euclidean distances of the nearest neighbor
-        indices: dst indices of the nearest neighbor
-    '''
 
-    # assert src.shape == dst.shape
+    Inputs
+    ------
+        src: numpy.ndarray
+                Nxm array of points
+        dst: numpy.ndarray
+                Nxm array of points
+    Outputs
+    -------
+        distances: numpy.ndarray
+                Euclidean distances of the nearest neighbor
+        indices: numpy.ndarray
+                dst indices of the nearest neighbor
+    """
 
     neigh = NearestNeighbors(n_neighbors=1)
     neigh.fit(dst)
@@ -346,21 +418,31 @@ def nearest_neighbor(src, dst):
 
 #############################################################################
 def icp(A, B, init_pose=None, max_iterations=50, tolerance=0.0001):
-    '''
+    """
     The Iterative Closest Point method: finds best-fit transform that maps points A on to points B
-    Input:
-        A: Nxm numpy array of source mD points
-        B: Nxm numpy array of destination mD point
-        init_pose: (m+1)x(m+1) homogeneous transformation
-        max_iterations: exit algorithm after max_iterations
-        tolerance: convergence criteria
-    Output:
-        T: final homogeneous transformation that maps A on to B
-        distances: Euclidean distances (errors) of the nearest neighbor
-        i: number of iterations to converge
-    
+    Inputs
+    ------
+        A: numpy.ndarray
+            Nxm numpy array of source mD points
+        B: numpy.ndarray
+            Nxm numpy array of destination mD point
+        init_pose: numpy.ndarray
+            (m+1)x(m+1) homogeneous transformation
+        max_iterations: int
+            Exit algorithm after max_iterations
+        tolerance: float
+            Convergence criteria
+    Outputs
+    -------
+        T: numpy.ndarray
+                (4 x 4) Final homogeneous transformation that maps A on to B
+        distances: numpy.ndarray
+                Euclidean distances (errors) of the nearest neighbor
+        i: float
+                Number of iterations to converge
+
     From: https://github.com/ClayFlannigan/icp/blob/master/icp.py
-    '''
+    """
 
     # assert A.shape == B.shape
 
@@ -414,29 +496,31 @@ def icp(A, B, init_pose=None, max_iterations=50, tolerance=0.0001):
 def rhino_icp(smri_headshape_polhemus,
               polhemus_headshape_polhemus,
               Ninits=10):
-    '''
+    """
     Runs Iterative Closest Point with multiple initialisations
-    
-    REQUIRED INPUTS:
-    
-    smri_headshape_polhemus - [3 x N] locations of the 
-                                Headshape points in polehumus space
-                                (i.e. MRI scalp surface)
-                
-    polhemus_headshape_polhemus - [3 x N] locations of the 
-                                    Polhemus headshape points in polhemus space
-                                    
-    
-    OPTIONAL INPUTS:
-    
-    Ninits     - Number of random initialisations to perform (default 10)
-    
-    OUTPUTS:
-    
-    xform      - [4 x 4] rigid transformation matrix mapping data2 to data
-    
+
+    Inputs
+    ------
+    smri_headshape_polhemus: numpy.ndarray
+                    [3 x N] locations of the
+                    Headshape points in polehumus space
+                    (i.e. MRI scalp surface)
+
+    polhemus_headshape_polhemus: numpy.ndarray
+                    [3 x N] locations of the
+                    Polhemus headshape points in polhemus space
+
+    Ninits: int
+            Number of random initialisations to perform
+
+    Outputs
+    -------
+
+    xform: numpy.ndarray
+            [4 x 4] rigid transformation matrix mapping data2 to data
+
     Based on Matlab version from Adam Baker 2014
-    '''
+    """
 
     # These are the "destination" points that are held static
     data1 = smri_headshape_polhemus
@@ -529,107 +613,94 @@ def rhino_icp(smri_headshape_polhemus,
 def create_freesurfer_mesh(infile,
                            surf_outfile,
                            xform_mri_voxel2mri,
-                           nii_mesh_file=None,
-                           overwrite=True):
-    '''
-    Creates surface mesh in .surf format and in native mri space in mm 
+                           nii_mesh_file=None):
+    """
+    Creates surface mesh in .surf format and in native mri space in mm
     from infile
-     
+
     Inputs
     ------
-     infile -  string
+     infile: string
          Either:
             1) .nii.gz file containing zero's for background and one's for surface
             2) .vtk file generated by bet_surf (in which case the path to the
             strutural MRI, smri_file, must be included as an input)
-    
-     surf_outfile - string
-             Path to the .surf file generated, containing the surface
-             mesh in mm
-    
-     xform_mri_voxel2mri -  4x4 numpy array
-             Transform from voxel indices to native/mri mm
-                
-     nii_mesh_file - string
-             Path to the niftii mesh file that is the niftii equivalent
-             of vtk file passed in as infile (only needed if infile 
-             is a vtk file)
-    '''
 
-    overwrite = True
-    if os.path.isfile(surf_outfile) is False or overwrite is True:
+     surf_outfile: string
+            Path to the .surf file generated, containing the surface
+            mesh in mm
 
-        pth, name = op.split(infile)
+     xform_mri_voxel2mri: numpy.ndarray
+            4x4 array
+            Transform from voxel indices to native/mri mm
+
+     nii_mesh_file: string
+            Path to the niftii mesh file that is the niftii equivalent
+            of vtk file passed in as infile (only needed if infile
+            is a vtk file)
+    """
+
+    pth, name = op.split(infile)
+    name, ext = op.splitext(name)
+
+    if ext == '.gz':
+
+        print('Creating surface mesh for {} .....'.format(infile))
+
         name, ext = op.splitext(name)
-
-        if ext == '.gz':
-
-            print('Creating surface mesh for {} .....'.format(infile))
-
-            name, ext = op.splitext(name)
-            if ext != '.nii':
-                raise ValueError('Invalid infile. Needs to be a .nii.gz or .vtk file')
-
-            # convert to point cloud in voxel indices
-            nii_nativeindex = niimask2indexpointcloud(infile)
-
-            # print('Num of vertices to create mesh from = {}'.format(nii_nativeindex.shape[1]))
-
-            step = 1
-            nii_native = xform_points(xform_mri_voxel2mri, nii_nativeindex[:, 0:-1:step])
-
-            pcd = o3d.geometry.PointCloud()
-            pcd.points = o3d.utility.Vector3dVector(nii_native.T)
-            pcd.estimate_normals()
-            # to obtain a consistent normal orientation
-            pcd.orient_normals_towards_camera_location(pcd.get_center())
-
-            # or you might want to flip the normals to make them point outward, not mandatory
-            pcd.normals = o3d.utility.Vector3dVector(- np.asarray(pcd.normals))
-
-            mesh = o3d.geometry.TriangleMesh.create_from_point_cloud_poisson(pcd, depth=8)[0]
-
-            #mesh = mesh.simplify_quadric_decimation(nii_nativeindex.shape[1])
-
-            verts = np.asarray(mesh.vertices)
-            tris = np.asarray(mesh.triangles).astype(int)
-
-            # output in freesurfer file format
-            write_surface(surf_outfile, verts, tris, file_format='freesurfer', overwrite=overwrite)
-
-            if False:
-                from mayavi import mlab
-
-                # Visualize the points
-                pts = mlab.points3d(nii_native[0, :], nii_native[1, :], nii_native[2, :], scale_mode='none',
-                                    scale_factor=0.2)
-
-                # Create and visualize the mesh
-                mesh = mlab.pipeline.delaunay2d(pts)
-                surf = mlab.pipeline.surface(mesh)
-
-        elif ext == '.vtk':
-
-            if nii_mesh_file == None:
-                raise ValueError('You must specify a nii_mesh_file (niftii format), if \
-infile format is vtk')
-
-            rrs_native, tris_native = _get_vtk_mesh_native(infile, nii_mesh_file)
-
-            write_surface(surf_outfile, rrs_native, tris_native, file_format='freesurfer', overwrite=overwrite)
-        else:
+        if ext != '.nii':
             raise ValueError('Invalid infile. Needs to be a .nii.gz or .vtk file')
 
-        # print('Written new surface mesh: {}'.format(surf_outfile))
+        # convert to point cloud in voxel indices
+        nii_nativeindex = niimask2indexpointcloud(infile)
+
+        # print('Num of vertices to create mesh from = {}'.format(nii_nativeindex.shape[1]))
+
+        step = 1
+        nii_native = xform_points(xform_mri_voxel2mri, nii_nativeindex[:, 0:-1:step])
+
+        pcd = o3d.geometry.PointCloud()
+        pcd.points = o3d.utility.Vector3dVector(nii_native.T)
+        pcd.estimate_normals()
+        # to obtain a consistent normal orientation
+        pcd.orient_normals_towards_camera_location(pcd.get_center())
+
+        # or you might want to flip the normals to make them point outward, not mandatory
+        pcd.normals = o3d.utility.Vector3dVector(- np.asarray(pcd.normals))
+
+        mesh = o3d.geometry.TriangleMesh.create_from_point_cloud_poisson(pcd, depth=8)[0]
+
+        # mesh = mesh.simplify_quadric_decimation(nii_nativeindex.shape[1])
+
+        verts = np.asarray(mesh.vertices)
+        tris = np.asarray(mesh.triangles).astype(int)
+
+        # output in freesurfer file format
+        write_surface(surf_outfile, verts, tris, file_format='freesurfer', overwrite=True)
+    elif ext == '.vtk':
+
+        if nii_mesh_file is None:
+            raise ValueError('You must specify a nii_mesh_file (niftii format), if \
+infile format is vtk')
+
+        rrs_native, tris_native = _get_vtk_mesh_native(infile, nii_mesh_file)
+
+        write_surface(surf_outfile, rrs_native, tris_native, file_format='freesurfer', overwrite=True)
+    else:
+        raise ValueError('Invalid infile. Needs to be a .nii.gz or .vtk file')
+
+    # print('Written new surface mesh: {}'.format(surf_outfile))
 
 
 #############################################################################
 def _get_vtk_mesh_native(vtk_mesh_file, nii_mesh_file):
-    # Returns mesh rrs in native space in mm and the meash tris for the passed
-    # in vtk_mesh_file
-    #
-    # nii_mesh_file needs to be the corresponding niftii file from bet
-    # that corresponds to the same mesh as in vtk_mesh_file
+    """
+    Returns mesh rrs in native space in mm and the meash tris for the passed
+    in vtk_mesh_file
+
+    nii_mesh_file needs to be the corresponding niftii file from bet
+    that corresponds to the same mesh as in vtk_mesh_file
+    """
 
     data = pd.read_csv(vtk_mesh_file, delim_whitespace=True)
 
@@ -809,7 +880,5 @@ def plot_polhemus_points(txt_fnames, colors=None, scales=None,
 
         pnts = np.loadtxt(txt_fnames[ss])
 
-        ax.scatter(pnts[0,],
-                   pnts[1,],
-                   pnts[2,],
+        ax.scatter(pnts[0, ], pnts[1, ], pnts[2, ],
                    color=color, s=scale, alpha=alpha, marker=marker)

@@ -286,9 +286,16 @@ for stimcat in list(par['event_dict'].keys()):
         SNR = snr[tp]
 
     # Compute filter and output
-    filters = mne.beamformer.make_lcmv(epochs_stimcat.info, fwd, data_cov, reg=0.05,
-                                       noise_cov=noise_cov, pick_ori='max-power', rank=cov_rank,
-                                       weight_norm='nai', reduce_rank=True, verbose=True)
+    filters = mne.beamformer.make_lcmv(epochs_stimcat.info,
+                                       fwd,
+                                       data_cov,
+                                       reg=0.05,
+                                       noise_cov=noise_cov,
+                                       pick_ori='max-power',
+                                       rank=cov_rank,
+                                       weight_norm='nai',
+                                       reduce_rank=True,
+                                       verbose=True)
 
     stc = mne.beamformer.apply_lcmv(evoked, filters, max_ori_out='signed', verbose=True)
     stc = np.abs(stc)
@@ -322,9 +329,8 @@ for stimcat in list(par['event_dict'].keys()):
 
 if do_rhino:
     out_nii_fname = op.join(subjects_dir, subject, 'rhino', 'power_{}mm.nii.gz'.format(gridstep))
-    out_nii_fname, stdbrain_mask_fname = rhino.recon_ts2nii \
-        (subjects_dir, subject,
-         recon_volume=stc_pow_series.data,
+    out_nii_fname, stdbrain_mask_fname = rhino.recon_timeseries2niftii(subjects_dir, subject,
+         recon_timeseries=stc_pow_series.data,
          out_nii_fname=out_nii_fname,
          reference_brain='mri',
          times=epochs.times)

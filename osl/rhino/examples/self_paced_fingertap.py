@@ -3,6 +3,8 @@
 """
 Created on Tue Nov  9 15:39:24 2021
 
+Note to self: See ~/CloudDocs/scripts/notts_ctf_fingertap.m for matlab equivalent
+
 @author: woolrich
 """
 
@@ -20,20 +22,15 @@ import osl
 subjects_dir = '/Users/woolrich/homedir/vols_data/mne/self_paced_fingertap'
 subject = 'subject1'
 
-# os.mkdir(op.join(subjects_dir, subject))
-
 # input files
 ds_file = op.join(subjects_dir, subject, 'JRH_MotorCon_20100429_01_FORMARK.ds')
 fif_file = op.join(subjects_dir, subject, 'JRH_MotorCon_20100429_01_FORMARK_raw.fif')
 pos_file = op.join(subjects_dir, subject, 'JH_Motorcon.pos')
-# smri_file = op.join(subjects_dir, subject, 'anat', 'subject1_struct.nii.gz')
 smri_file = '/Users/woolrich/homedir/vols_data/ukmp/sub-not002/anat/sub-not002_T1w.nii.gz'
-# smri_file='/Users/woolrich/sub-not002_T1w_oldqform.nii.gz'
-# smri_file='/Users/woolrich/sub-not002_T1w_play.nii.gz'
 
-run_preproc = False
-run_sensorspace = False
-run_compute_surfaces = False
+run_preproc = True
+run_sensorspace = True
+run_compute_surfaces = True
 run_coreg = True
 run_forward_model = True
 
@@ -56,7 +53,7 @@ if run_preproc:
     config = yaml.load(config_text, Loader=yaml.FullLoader)
 
     # Process a single file, this outputs fif_file
-    dataset = osl.preprocessing.run_proc_chain(ds_file, config, outdir=op.join(subjects_dir, subject),overwrite=True)
+    dataset = osl.preprocessing.run_proc_chain(ds_file, config, outdir=op.join(subjects_dir, subject), overwrite=True)
 
 # -------------------------------------------------------------
 # %% Get the data
@@ -118,27 +115,23 @@ block_order = np.array([5, 5, 5, 5, 5, 5, 5, 5, 5, 5,
 # Create the design matrix:
 design_matrix = np.zeros([ntotal_tpts, 5])
 
-tim = 0;
+tim = 0
 for tt in range(len(block_order)):
     design_matrix[tim:int(tim + block_length / tres), block_order[tt] - 1] = 1
     tim += int(block_length / tres)
 
-plt.figure
-plt.plot(timepnts, design_matrix)
-plt.show()
-
 tim_crop = timepnts[time_inds]
 design_matrix_crop = design_matrix[time_inds, :]
 
-plt.figure
+plt.figure()
 plt.plot(tim_crop, design_matrix_crop)
 plt.show()
 
-## Setup the GLM in glmtools
+# Setup the GLM in glmtools
 
 contrasts = np.array([(0, 1, -1, 0, 0),
                       (1, 0, -1, 0, 0)])
-contrast_names = ['right_vs_rest', \
+contrast_names = ['right_vs_rest',
                   'left_vs_rest']
 
 glmdes = glmtools.design.GLMDesign.initialise_from_matrices(
@@ -146,7 +139,8 @@ glmdes = glmtools.design.GLMDesign.initialise_from_matrices(
     contrasts,
     regressor_names=['left', 'right', 'rest', 'both', 'start_rest'],
     contrast_names=contrast_names)
-glmdes.plot_summary()
+
+# glmdes.plot_summary()
 
 
 def glm_fast(data, design_matrix, contrasts):
@@ -271,7 +265,8 @@ if run_coreg:
 if run_forward_model:
     rhino.forward_model(subjects_dir, subject,
                         model='Single Layer',
-                        gridstep=gridstep, mindist=4.0)
+                        gridstep=gridstep,
+                        mindist=4.0)
 
     rhino.bem_display(subjects_dir, subject,
                       plot_type='surf',
@@ -282,8 +277,7 @@ if run_forward_model:
 # %% Do source recon
 
 # load forward solution
-fwd_fname = rhino.get_coreg_filenames(subjects_dir, subject) \
-    ['forward_model_file']
+fwd_fname = rhino.get_coreg_filenames(subjects_dir, subject)['forward_model_file']
 fwd = mne.read_forward_solution(fwd_fname)
 
 # We can explore the content of fwd to access the numpy array that contains 
@@ -300,15 +294,16 @@ data_cov.plot(original_raw.info)
 filters = mne.beamformer.make_lcmv(original_raw.info, fwd,
                                    data_cov, reg=0,
                                    pick_ori='max-power',
-                                   weight_norm='unit-noise-gain',
-                                   rank={'mag': 125})
+                                   weight_norm='nai',
+                                   rank={'mag': 125},
+                                   reduce_rank=True)
 
 stc = mne.beamformer.apply_lcmv_raw(raw, filters, max_ori_out='signed')
 
 # -------------------------------------------------------------
 # %% Fit GLM to hilbert envelope in source space contained in stc
-# hilbert transform gave us complex data, we want the amplitude:
 
+# hilbert transform gave us complex data, we want the amplitude
 data = np.abs(stc.data)
 
 if False:
@@ -320,7 +315,7 @@ else:
     for cc in range(len(contrasts)):
         tstats.append(np.reshape(model.tstats[cc, :], [1, -1]))
 
-################
+######
 # Write out stats as niftii vols
 
 stats_dir = op.join(subjects_dir, subject, 'rhino', 'stats')
@@ -334,15 +329,14 @@ for cc in range(len(contrasts)):
     volumes.append(tstats[cc][0, :].T)
     nii_file_names.append(op.join(stats_dir, 'tstat{}.nii.gz'.format(cc + 1)))
 
-# ------------------------------------------------------
-# %% Write cope as niftii file on a standard brain grid in MNI space
+# Write stats as niftii file on a standard brain grid in MNI space
 
-con = 1
-out_nii_fname, stdbrain_mask_fname = rhino.recon_ts2nii \
-    (subjects_dir, subject,
-     recon_volume=volumes[con],
-     out_nii_fname=nii_file_names[con],
-     reference_brain='mni',
-     times=raw.times)
+con = 0
+out_nii_fname, stdbrain_mask_fname = rhino.recon_timeseries2niftii(
+    subjects_dir, subject,
+    recon_timeseries=volumes[con],
+    out_nii_fname=nii_file_names[con],
+    reference_brain='mni',
+    times=raw.times)
 
 rhino.fsleyes_overlay(stdbrain_mask_fname, out_nii_fname)
