@@ -29,9 +29,9 @@ fif_file_preproc = op.join(outbase, 'preproc_data/sub001_run_02_sss_raw.fif')
 
 baseline_correct = True
 
-run_compute_surfaces = True
-run_coreg = True
-run_forward_model = True
+run_compute_surfaces = False
+run_coreg = False
+run_forward_model = False
 
 outname = os.path.join(outbase, fif_file_preproc.split('/')[-1])
 
@@ -96,7 +96,7 @@ des.plot_summary(show=True, savepath=outname.replace('.fif', '_design.png'))
 con = 15
 
 epochs.load_data()
-epochs.pick(['grad'])
+epochs.pick(['meg'])
 data = glm.io.load_mne_epochs(epochs)
 
 # ------------------------------------------------------
@@ -211,9 +211,9 @@ filters = make_lcmv(epochs.info,
                     data_cov,
                     noise_cov=noise_cov,
                     reg=0.05,
-                    rank={'grad': 55, 'mag': 55},
+                    rank={'meg': 60},
                     pick_ori='max-power',
-                    reduce_rank=True,
+                    #reduce_rank=True,
                     weight_norm='nai')
 
 # ------------------------------------------------------
