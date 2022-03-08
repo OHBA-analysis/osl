@@ -516,8 +516,11 @@ def run_proc_batch(config, files, outdir, overwrite=False, extra_funcs=None,
         args.append((infif, config, outname))
 
     # Actually run the processes
-    with utils.initialise_pool(nprocesses=nprocesses) as P:
-        proc_flags = P.starmap(pool_func, args)
+    if nprocesses == 1:
+        proc_flags = [pool_func(aa) for aa in args]
+    else:
+        with utils.initialise_pool(nprocesses=nprocesses) as P:
+            proc_flags = P.starmap(pool_func, args)
 
     osl_logger.info('Processed {0}/{1} files successfully'.format(np.sum(proc_flags), len(proc_flags)))
 
