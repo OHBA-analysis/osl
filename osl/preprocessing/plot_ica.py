@@ -1,19 +1,13 @@
-# Used as alternative to MNE-python's ica.plot_sources(inst), presenting an interactive figure
-# with ICA time courses and topographies (of both sensor types if applicable). By clicking on
-# a time course, it is marked as artifact.
-# Use as:
-# from osl_plot_ica import *
-# plot_ica(ica,raw)
-# 2021 - Mats van Es
+# OSL plotting function for ICA, adapting MNE functions
+# MWJ van Es, 2022
 
-#%% MVE: THIS COMES FROM MNE/VIZ/ICA/PLOT_ICA_SOURCES
 def plot_ica(ica, inst, picks=None, start=None,
                      stop=None, title=None, show=True, block=False,
-                     show_first_samp=False, show_scrollbars=True, n_channels=10,# MVE: EXTRA INPUT 'N_CHANNELS'
-                     bad_labels_list=['eog', 'ecg', 'emg', 'hardware', 'other']): # label bad components
-    """Plot estimated latent sources given the unmixing matriX & Project mixing matrix on interpolated sensor topography.
+                     show_first_samp=False, show_scrollbars=True,
+                     time_format='float', n_channels=10,
+                     bad_labels_list=['eog', 'ecg', 'emg', 'hardware', 'other']):
+    """Plot estimated latent sources given the unmixing matrix.
 
-    INFO FROM PLOT_ICA_SOURCES
     Typical usecases:
 
     1. plot evolution of latent sources over time based on (Raw input)
@@ -27,11 +21,14 @@ def plot_ica(ica, inst, picks=None, start=None,
     inst : instance of mne.io.Raw, mne.Epochs, mne.Evoked
         The object to plot the sources from.
     %(picks_base)s all sources in the order as fitted.
-    start : int
-        X-axis start index. If None, from the beginning.
-    stop : int
-        X-axis stop index. If None, next 10 are shown, in case of evoked to the
-        end.
+    start, stop : float | int | None
+       If ``inst`` is a `~mne.io.Raw` or an `~mne.Evoked` object, the first and
+       last time point (in seconds) of the data to plot. If ``inst`` is a
+       `~mne.io.Raw` object, ``start=None`` and ``stop=None`` will be
+       translated into ``start=0.`` and ``stop=3.``, respectively. For
+       `~mne.Evoked`, ``None`` refers to the beginning and end of the evoked
+       signal. If ``inst`` is an `~mne.Epochs` object, specifies the index of
+       the first and last epoch to show.
     title : str | None
         The window title. If None a default is provided.
     show : bool
@@ -42,9 +39,12 @@ def plot_ica(ica, inst, picks=None, start=None,
         plotter. For evoked, this parameter has no effect. Defaults to False.
     show_first_samp : bool
         If True, show time axis relative to the ``raw.first_samp``.
+    n_channels : int
+        OSL ADDITION - Number of channels to show at the same time
+    bad_labels_list : list of str
+        OSL ADDITION -
     %(show_scrollbars)s
-    n_channels: int
-        Number of channels to plot (default=10 or number of picks)
+    %(time_format)s
 
     Returns
     -------
@@ -59,41 +59,48 @@ def plot_ica(ica, inst, picks=None, start=None,
 
     .. versionadded:: 0.10.0
     """
-
     from mne.io.base import BaseRaw
+    from mne.io.pick import _picks_to_idx # OSL ADDITION
+    from mne.evoked import Evoked
     from mne.epochs import BaseEpochs
-    from mne.io.pick import _picks_to_idx
 
     exclude = ica.exclude
     picks = _picks_to_idx(ica.n_components_, picks, 'all')
 
-    #"""Plot the ICA components as a RawArray or EpochsArray."""
     if isinstance(inst, (BaseRaw, BaseEpochs)):
-        fig = _plot_sources(ica, inst, picks, exclude, start=start, stop=stop,
+        fig = _plot_sources(ica, inst, picks, exclude, start=start, stop=stop, # OSL VERSION
                             show=show, title=title, block=block,
                             show_first_samp=show_first_samp,
-                            show_scrollbars=show_scrollbars, n_channels=n_channels, # MVE: give extra input n_channels
-                            bad_labels_list=bad_labels_list) # label bad components
-    # MVE: Evoked not yet working.
-    # TODO: work on Evoked
-    # elif isinstance(inst, Evoked):
-    #     if start is not None or stop is not None:
-    #         inst = inst.copy().crop(start, stop)
-    #     sources = ica.get_sources(inst)
-    #     fig = _plot_ica_sources_evoked(
-    #         evoked=sources, picks=picks, exclude=exclude, title=title,
-    #         labels=getattr(ica, 'labels_', None), show=show, ica=ica)
+                            show_scrollbars=show_scrollbars,
+                            time_format=time_format, n_channels=n_channels,
+                            bad_labels_list=bad_labels_list)
+    elif isinstance(inst, Evoked):
+        if start is not None or stop is not None:
+            inst = inst.copy().crop(start, stop)
+        sources = ica.get_sources(inst)
+        fig = _plot_ica_sources_evoked(
+            evoked=sources, picks=picks, exclude=exclude, title=title,
+            labels=getattr(ica, 'labels_', None), show=show, ica=ica,
+            n_channels=n_channels, bad_labels_list=bad_labels_list)
     else:
         raise ValueError('Data input must be of Raw or Epochs type')
+
     return fig
 
-#%% MVE: THIS COMES FROM MNE/VIZ/ICA._PLOT_SOURCES
+
+
 def _plot_sources(ica, inst, picks, exclude, start, stop, show, title, block,
-                  show_scrollbars, show_first_samp, n_channels=10, bad_labels_list=['eog', 'ecg', 'emg', 'hardware', 'other']): # MVE: EXTRA INPUT N_CHANNELS
+                  show_scrollbars, show_first_samp, time_format, n_channels,
+                  bad_labels_list):
+    """Plot the ICA components as a RawArray or EpochsArray."""
+    #from mne.viz._figure import _get_browser
+    from mne.viz.utils import _compute_scalings, _make_event_color_dict, plt_show
     from mne import EpochsArray, BaseEpochs
     from mne.io import RawArray, BaseRaw
-    from mne.viz.utils import _compute_scalings, _make_event_color_dict
     from mne.io.meas_info import create_info
+    from mne.io.pick import pick_types
+    from mne.defaults import _handle_default
+    import numpy as np
 
     # handle defaults / check arg validity
     is_raw = isinstance(inst, BaseRaw)
@@ -144,11 +151,13 @@ def _plot_sources(ica, inst, picks, exclude, start, stop, show, title, block,
         (picks, ica.n_components_ + np.arange(len(extra_picks))))
     ch_order = np.arange(len(picks))
     n_channels = min([n_channels, len(picks)])
+    ch_names_picked = [ch_names[x] for x in picks]
 
     # create info
-    info = create_info([ch_names[x] for x in picks], sfreq, ch_types=ch_types)
-    info['meas_date'] = inst.info['meas_date']
-    info['bads'] = [ch_names[x] for x in exclude]
+    info = create_info(ch_names_picked, sfreq, ch_types=ch_types)
+    with info._unlock():
+        info['meas_date'] = inst.info['meas_date']
+    info['bads'] = [ch_names[x] for x in exclude if x in picks]
     if is_raw:
         inst_array = RawArray(data, info, inst.first_samp)
         inst_array.set_annotations(inst.annotations)
@@ -159,7 +168,7 @@ def _plot_sources(ica, inst, picks, exclude, start, stop, show, title, block,
     # handle time dimension
     start = 0 if start is None else start
     _last = inst.times[-1] if is_raw else len(inst.events)
-    stop = min(start + 10, _last) if stop is None else stop
+    stop = min(start + 20, _last) if stop is None else stop
     first_time = inst._first_time if show_first_samp else 0
     if is_raw:
         duration = stop - start
@@ -179,7 +188,7 @@ def _plot_sources(ica, inst, picks, exclude, start, stop, show, title, block,
         raise RuntimeError('Stop must be larger than start.')
 
     # misc
-    bad_color = (0.8, 0.8, 0.8)
+    bad_color = 'lightgray'
     title = 'ICA components' if title is None else title
 
     params = dict(inst=inst_array,
@@ -187,18 +196,19 @@ def _plot_sources(ica, inst, picks, exclude, start, stop, show, title, block,
                   ica_inst=inst,
                   info=info,
                   # channels and channel order
-                  ch_names=np.array(ch_names),
+                  ch_names=np.array(ch_names_picked),
                   ch_types=np.array(ch_types),
                   ch_order=ch_order,
                   picks=picks,
                   n_channels=n_channels,
                   picks_data=list(),
-                  bad_labels_list=bad_labels_list,
+                  bad_labels_list=bad_labels_list, # OSL ADDITION
                   # time
                   t_start=start if is_raw else boundary_times[start],
                   duration=duration,
                   n_times=inst.n_times if is_raw else n_times,
                   first_time=first_time,
+                  time_format=time_format,
                   decim=1,
                   # events
                   event_times=None if is_raw else event_times,
@@ -233,10 +243,10 @@ def _plot_sources(ica, inst, picks, exclude, start, stop, show, title, block,
                       epoch_colors=None,
                       xlabel='Epoch number')
 
+    fig = _get_browser(**params)
 
-    fig = _browse_figure(**params) # NOTE: Adapted this to include topos
-
-    # MVE: define some colors for bad component labels
+    # OSL ADDITION
+    # define some colors for bad component labels
     import matplotlib.colors as mcolors
     c = list(mcolors.TABLEAU_COLORS.keys())
     idx = [c.index(i) for i in c if 'red' in i]
@@ -250,64 +260,62 @@ def _plot_sources(ica, inst, picks, exclude, start, stop, show, title, block,
     # update data, and plot
     fig._update_trace_offsets()
     fig._update_data()
-    fig._draw_traces() # NOTE: This one I updated to include topos
+    fig._draw_traces() # OSL VERSION
 
     # plot annotations (if any)
     if is_raw:
         fig._setup_annotation_colors()
         fig._update_annotation_segments()
         fig._draw_annotations()
-        fig._alt_title() # MVE addition
-
-    # for blitting
-    fig.canvas.flush_events()
-    fig.mne.bg = fig.canvas.copy_from_bbox(fig.bbox)
+        fig._alt_title()  # OSL ADDITION
 
     plt_show(show, block=block)
     return fig
 
-#%% ------------------------------------------------------------
+from mne.viz._mpl_figure import MNEBrowseFigure
 
-
-from mne.viz._figure import MNEFigure, MNEBrowseFigure, _figure, _patched_canvas
-
-import numpy as np
-from mne.viz.utils import (plt_show, plot_sensors)
-from mne.defaults import _handle_default
-from mne.io.pick import pick_types
-
-# CONSTANTS (inches)
-ANNOTATION_FIG_PAD = 0.1
-ANNOTATION_FIG_MIN_H = 2.9  # fixed part, not including radio buttons/labels
-ANNOTATION_FIG_W = 5.0
-ANNOTATION_FIG_CHECKBOX_COLUMN_W = 0.5
-
-def _browse_figure(inst, **kwargs):
+backend=None
+def _get_browser(**kwargs):
     """Instantiate a new MNE browse-style figure."""
     from mne.viz.utils import _get_figsize_from_config
-    figsize = kwargs.pop('figsize', _get_figsize_from_config())
-    fig = _figure(inst=inst, toolbar=False, FigureClass=osl_MNEBrowseFigure, # MVE: ONLY DIFFERENCE IS IT NOW POINTS TO MY VERSION OF THE FIGURE CLASS
-             figsize=figsize, **kwargs)
-    # initialize zen mode (can't do in __init__ due to get_position() calls)
+    from mne.viz._figure import _init_browser_backend
+    import numpy as np
+
+    figsize = kwargs.setdefault('figsize', _get_figsize_from_config())
+    if figsize is None or np.any(np.array(figsize) < 8):
+        kwargs['figsize'] = (8, 8)
+    # Initialize browser backend
+    _init_browser_backend()
+
+    # Initialize Browser
+    browser = _init_browser(backend, **kwargs) # OSL ADDITION IN ORDER TO USE OSL'S FIGURE CLASS FROM _INIT_BROWSER
+
+    return browser
+
+def _init_browser(backend, **kwargs): # OSL ADDITION IN ORDER TO USE OSL'S FIGURE CLASS
+    from mne.viz._mpl_figure import _figure
+    """Instantiate a new MNE browse-style figure."""
+    fig = _figure(toolbar=False, FigureClass=osl_MNEBrowseFigure, **kwargs)
+
+    # initialize zen mode
+    # (can't do in __init__ due to get_position() calls)
     fig.canvas.draw()
-    fig.mne.fig_size_px = fig._get_size_px()
-    fig.mne.zen_w = (fig.mne.ax_vscroll.get_position().xmax -
-                     fig.mne.ax_main.get_position().xmax)
-    fig.mne.zen_h = (fig.mne.ax_main.get_position().ymin -
-                     fig.mne.ax_hscroll.get_position().ymin)
-    # if scrollbars are supposed to start hidden, set to True and then toggle
+    fig._update_zen_mode_offsets()
+    fig._resize(None)  # needed for MPL >=3.4
+
+    # if scrollbars are supposed to start hidden,
+    # set to True and then toggle
     if not fig.mne.scrollbars_visible:
         fig.mne.scrollbars_visible = True
         fig._toggle_scrollbars()
-    # add event callbacks
-    fig._add_default_callbacks()
+
     return fig
 
-# MVE: MY VERSION OF THE MNEBROWSEFIGURE CLASS
 class osl_MNEBrowseFigure(MNEBrowseFigure):
     """Interactive figure with scrollbars, for data browsing."""
 
-    def __init__(self, inst, figsize, ica=None, xlabel='Time (s)', **kwargs):
+    def __init__(self, inst, figsize, ica=None,
+                 xlabel='Time (s)', **kwargs):
         from matplotlib.colors import to_rgba_array
         from matplotlib.ticker import (FixedLocator, FixedFormatter,
                                        FuncFormatter, NullFormatter)
@@ -316,69 +324,26 @@ class osl_MNEBrowseFigure(MNEBrowseFigure):
         from matplotlib.transforms import blended_transform_factory
         from mpl_toolkits.axes_grid1.axes_size import Fixed
         from mpl_toolkits.axes_grid1.axes_divider import make_axes_locatable
+
+        # # OSL IMPORTS
         from mne import BaseEpochs
         from mne.io import BaseRaw
         from mne.preprocessing import ICA
-        import mne # MVE: ADDED FULL IMPORT OF MNE
+        from mne.viz._figure import BrowserBase
+        from mne.viz._mpl_figure import MNEFigure, _patched_canvas
+        import numpy as np
+        import mne
+        from functools import partial
 
-        super().__init__(figsize=figsize, inst=inst, ica=ica, **kwargs)
+        self.backend_name = 'matplotlib'
 
-        # what kind of data are we dealing with?
-        if isinstance(ica, ICA):
-            self.mne.instance_type = 'ica'
-        elif isinstance(inst, BaseRaw):
-            self.mne.instance_type = 'raw'
-        elif isinstance(inst, BaseEpochs):
-            self.mne.instance_type = 'epochs'
-        else:
-            raise TypeError('Expected an instance of Raw, Epochs, or ICA, '
-                            f'got {type(inst)}.')
-        self.mne.ica_type = None
-        if self.mne.instance_type == 'ica':
-            if isinstance(self.mne.ica_inst, BaseRaw):
-                self.mne.ica_type = 'raw'
-            elif isinstance(self.mne.ica_inst, BaseEpochs):
-                self.mne.ica_type = 'epochs'
-        self.mne.is_epochs = 'epochs' in (self.mne.instance_type,
-                                          self.mne.ica_type)
+        kwargs.update({'inst': inst,
+                       'figsize': figsize,
+                       'ica': ica,
+                       'xlabel': xlabel})
 
-        # things that always start the same
-        self.mne.ch_start = 0
-        self.mne.projector = None
-        self.mne.projs_active = np.array([p['active'] for p in self.mne.projs])
-        self.mne.whitened_ch_names = list()
-        self.mne.use_noise_cov = self.mne.noise_cov is not None
-        self.mne.zorder = dict(patch=0, grid=1, ann=2, events=3, bads=4,
-                               data=5, mag=6, grad=7, scalebar=8, vline=9)
-        # additional params for epochs (won't affect raw / ICA)
-        self.mne.epoch_traces = list()
-        self.mne.bad_epochs = list()
-        # annotations
-        self.mne.annotations = list()
-        self.mne.hscroll_annotations = list()
-        self.mne.annotation_segments = list()
-        self.mne.annotation_texts = list()
-        self.mne.new_annotation_labels = list()
-        self.mne.annotation_segment_colors = dict()
-        self.mne.annotation_hover_line = None
-        self.mne.draggable_annotations = False
-        # lines
-        self.mne.event_lines = None
-        self.mne.event_texts = list()
-        self.mne.vline_visible = False
-        # scalings
-        self.mne.scale_factor = 0.5 if self.mne.butterfly else 1.
-        self.mne.scalebars = dict()
-        self.mne.scalebar_texts = dict()
-        # ancillary child figures
-        self.mne.child_figs = list()
-        self.mne.fig_help = None
-        self.mne.fig_proj = None
-        self.mne.fig_histogram = None
-        self.mne.fig_selection = None
-        self.mne.fig_annotation = None
-        # MVE: bad component labels
-        self.mne.bad_labels_list = kwargs['bad_labels_list']
+        BrowserBase.__init__(self, **kwargs)
+        MNEFigure.__init__(self, **kwargs)
 
         # MAIN AXES: default sizes (inches)
         # XXX simpler with constrained_layout? (when it's no longer "beta")
@@ -391,36 +356,34 @@ class osl_MNEBrowseFigure(MNEBrowseFigure):
         vscroll_dist = 0.1
         help_width = scroll_width * 2
         # MVE: ADD SIZES FOR TOPOS
-        n_topos = len(np.unique([mne.io.pick.channel_type(ica.info,ch) for ch in mne.pick_types(ica.info,meg=True)]))
+        n_topos = len(np.unique([mne.io.pick.channel_type(ica.info, ch) for ch in mne.pick_types(ica.info, meg=True)]))
         topo_width_ratio = 8+n_topos #1
         topo_dist = self._inch_to_rel(0.05) #0.25
 
         # MAIN AXES: default margins (figure-relative coordinates)
-        self.canvas.figure.clear() # clear axes (inherited from MNE)
+        #self.canvas.figure.clear() # clear axes (inherited from MNE) # TODO: Do we need this?
         left = self._inch_to_rel(l_margin - vscroll_dist - help_width)
         right = 1 - self._inch_to_rel(r_margin)
         bottom = self._inch_to_rel(b_margin, horiz=False)
         top = 1 - self._inch_to_rel(t_margin, horiz=False)
         height = top - bottom
 
-        # MVE: ADAPT SIZES OF TIME COURSE SUBPLOT AND ADD TOPO PLOT SIZE
-        fullwidth = right-left
+        # OSL ADDITION: ADAPT SIZES OF TIME COURSE SUBPLOT AND ADD TOPO PLOT SIZE
+        fullwidth = right - left
         width = (topo_width_ratio - n_topos) * (fullwidth - n_topos*topo_dist) / topo_width_ratio - (self._inch_to_rel(hscroll_dist)+self._inch_to_rel(scroll_width))  # width = right - left
         topo_width = (fullwidth-topo_dist)/topo_width_ratio
         topo_height = (height-self._inch_to_rel(hscroll_dist+b_margin))/self.mne.n_channels-topo_dist
-
         position = [left + n_topos*(topo_width + topo_dist), bottom, width, height] #position = [left, bottom, width, height]
         # Main axes must be a subplot for subplots_adjust to work (so user can
         # adjust margins). That's why we don't use the Divider class directly.
-        ax_main = self.add_axes(position) #ax_main = self.add_subplot(1, 1, 1, position=position) # MVE: USE ADD_AXES INSTEAD OF ADD_SUBPLOT
-        # MVE: CREATE TOPO AXES
-        ax_topo=np.empty((n_topos,self.mne.n_channels),dtype=object)
+        ax_main = self.add_axes(position) # OSL ADDITION USE ADD_AXES INSTEAD OF ADD_SUBPLOT
+        # OSL ADDITION: CREATE TOPO AXES
+        ax_topo=np.empty((n_topos, self.mne.n_channels), dtype=object)
         for i in np.arange(n_topos):
             for j in np.arange(self.mne.n_channels):
                 topo_position = [left + i * (topo_width + topo_dist), bottom + self._inch_to_rel(hscroll_dist+b_margin) + ((self.mne.n_channels-1)-j)*(topo_height+topo_dist)+topo_dist, topo_width, topo_height]
                 ax_topo[i,j] = self.add_axes(topo_position)
                 ax_topo[i,j].set_axis_off()
-
         self.subplotpars.update(left=left, bottom=bottom, top=top, right=right)
         div = make_axes_locatable(ax_main)
         # this only gets shown in zen mode
@@ -431,21 +394,12 @@ class osl_MNEBrowseFigure(MNEBrowseFigure):
         ax_hscroll = div.append_axes(position='bottom',
                                      size=Fixed(scroll_width),
                                      pad=Fixed(hscroll_dist))
-        # TODO: MVE: MAKE MANUAL SIZED SCROLLBAR. BELOW ADD ^ AND V BUTTONS TO JUMP 10 COMPONENTS AT THE TIME.
-        #vscroll_bottom = 0.7
-        #ax_vscroll = self.add_axes([right-self._inch_to_rel(vscroll_dist), bottom+self._inch_to_rel(vscroll_bottom), scroll_width, height-self._inch_to_rel(vscroll_bottom)])
         ax_vscroll = div.append_axes(position='right',
                                      size=Fixed(scroll_width),
                                      pad=Fixed(vscroll_dist))
         ax_hscroll.get_yaxis().set_visible(False)
         ax_hscroll.set_xlabel(xlabel)
         ax_vscroll.set_axis_off()
-        # TODO: MVE: ^ AND V BUTTONS
-        # ax_vscroll_up = self.add_axes([right-self._inch_to_rel(vscroll_dist), bottom+self._inch_to_rel(vscroll_bottom/2), scroll_width, height-self._inch_to_rel(vscroll_bottom/2-0.05)])
-        # ax_vscroll_down = self.add_axes([right-self._inch_to_rel(vscroll_dist), bottom, scroll_width, height-self._inch_to_rel(vscroll_bottom/2-0.05)])
-        # with _patched_canvas(ax_vscroll_up.figure):
-        #     self.mne.button_help = Button(ax_vscroll_up, '^')
-
         # HORIZONTAL SCROLLBAR PATCHES (FOR MARKING BAD EPOCHS)
         if self.mne.is_epochs:
             epoch_nums = self.mne.inst.selection
@@ -455,9 +409,6 @@ class osl_MNEBrowseFigure(MNEBrowseFigure):
                 ax_hscroll.add_patch(
                     Rectangle((start, 0), width, 1, color='none',
                               zorder=self.mne.zorder['patch']))
-            # add epoch boundaries & center epoch numbers between boundaries
-            midpoints = np.convolve(self.mne.boundary_times, np.ones(2),
-                                    mode='valid') / 2
             # both axes, major ticks: gridlines
             for _ax in (ax_main, ax_hscroll):
                 _ax.xaxis.set_major_locator(
@@ -469,16 +420,27 @@ class osl_MNEBrowseFigure(MNEBrowseFigure):
             ax_hscroll.grid(alpha=0.5, linewidth=0.5, linestyle='solid',
                             **grid_kwargs)
             # main axes, minor ticks: ticklabel (epoch number) for every epoch
-            ax_main.xaxis.set_minor_locator(FixedLocator(midpoints))
+            ax_main.xaxis.set_minor_locator(FixedLocator(self.mne.midpoints))
             ax_main.xaxis.set_minor_formatter(FixedFormatter(epoch_nums))
             # hscroll axes, minor ticks: up to 20 ticklabels (epoch numbers)
             ax_hscroll.xaxis.set_minor_locator(
-                FixedLocator(midpoints, nbins=20))
+                FixedLocator(self.mne.midpoints, nbins=20))
             ax_hscroll.xaxis.set_minor_formatter(
                 FuncFormatter(lambda x, pos: self._get_epoch_num_from_time(x)))
             # hide some ticks
             ax_main.tick_params(axis='x', which='major', bottom=False)
             ax_hscroll.tick_params(axis='x', which='both', bottom=False)
+        else:
+            # RAW / ICA X-AXIS TICK & LABEL FORMATTING # TODO: OSL NOT SURE IF THIS BREAKS WITH PLOTTING FUNCTING
+            ax_main.xaxis.set_major_formatter(
+                FuncFormatter(partial(self._xtick_formatter,
+                                      ax_type='main')))
+            ax_hscroll.xaxis.set_major_formatter(
+                FuncFormatter(partial(self._xtick_formatter,
+                                      ax_type='hscroll')))
+            if self.mne.time_format != 'float':
+                for _ax in (ax_main, ax_hscroll):
+                    _ax.set_xlabel('Time (HH:MM:SS)')
 
         # VERTICAL SCROLLBAR PATCHES (COLORED BY CHANNEL TYPE)
         ch_order = self.mne.ch_order
@@ -572,11 +534,14 @@ class osl_MNEBrowseFigure(MNEBrowseFigure):
             vline_hscroll=vline_hscroll, vline_text=vline_text)
 
     def _draw_traces(self):
-        from mne import pick_types
-        from mne.io.pick import channel_type
         """Draw (or redraw) the channel data."""
         from matplotlib.colors import to_rgba_array
         from matplotlib.patches import Rectangle
+        # OSL ADDITION
+        from mne import pick_types
+        from mne.io.pick import channel_type
+        import numpy as np
+
         # clear scalebars
         if self.mne.scalebars_visible:
             self._hide_scalebars()
@@ -585,7 +550,7 @@ class osl_MNEBrowseFigure(MNEBrowseFigure):
         ch_names = self.mne.ch_names[picks]
         ch_types = self.mne.ch_types[picks]
         bad_bool = np.in1d(ch_names, self.mne.info['bads'])
-        # MVE addition
+        # OSL ADDITION
         bad_int=[]
         for i in range(len(ch_names)):
             if ch_names[i] in self.mne.info['bads']:
@@ -598,9 +563,9 @@ class osl_MNEBrowseFigure(MNEBrowseFigure):
                     del self.mne.ica.labels_[ch_names[i]]
                 bad_int.append(np.nan)
 
+        # colors
         good_ch_colors = [self.mne.ch_color_dict[_type] for _type in ch_types]
-        # Now match colors to specific artifact labels
-        c = [self.mne.ch_color_bad] + self.mne.bad_label_colors
+        c = [self.mne.ch_color_bad] + self.mne.bad_label_colors # OSL ADDITION: match colors to specific artifact labels
         ch_colors = to_rgba_array(
             [c[_bad] if _bad is not np.nan else _color
              for _bad, _color in zip(bad_int, good_ch_colors)])
@@ -730,18 +695,19 @@ class osl_MNEBrowseFigure(MNEBrowseFigure):
         if self.mne.event_times is not None:
             self._draw_event_lines()
 
-        # MVE: ADDITION FOR TOPOS:
+        # OSL ADDITION: ADD TOPOS:
         n_topos = len(picks)
         n_chtype=len(np.unique([channel_type(self.mne.ica.info, ch) for ch in pick_types(self.mne.ica.info, meg=True)]))
         ax_topo = np.reshape(self.get_axes()[1:n_topos * n_chtype + 1], (n_chtype, n_topos))
         self.plot_topos(self.mne.ica, ax_topo, self.mne.picks)
 
-        # MVE: TITLE STUFF
+        # OSL ADDITION: ADD CUSTOM TITLE
         self._alt_title()
 
-    def plot_topos(self, ica, ax_topo, picks): # MVE: ADDITION FOR TOPOS
+    def plot_topos(self, ica, ax_topo, picks): # OSL ADDITION FOR TOPOS
         import numpy as np
         import mne
+        from mne.viz.topomap import _plot_ica_topomap
         n_topos = len(picks)
         ica_tmp = ica.copy()
         ica_tmp._ica_names = ['' for i in ica_tmp._ica_names]
@@ -751,7 +717,7 @@ class osl_MNEBrowseFigure(MNEBrowseFigure):
         for i in range(n_chtype):
             for j in range(n_topos):
                 if picks[j] < ncomps:
-                    mne.viz.ica._plot_ica_topomap(ica_tmp, idx=picks[j], ch_type=chtype[i], axes=ax_topo[i, j],
+                    _plot_ica_topomap(ica_tmp, idx=picks[j], ch_type=chtype[i], axes=ax_topo[i, j],
                                               vmin=None, vmax=None, cmap='RdBu_r', colorbar=False,
                                               title=None, show=True, outlines='head', contours=0,
                                               image_interp='bilinear', res=64,
@@ -765,10 +731,11 @@ class osl_MNEBrowseFigure(MNEBrowseFigure):
                     ax_topo[i, j].set_yticks([])
             ax_topo[i, 0].set_title(f'{chtype[i]}')
 
-    def _close(self, event):
+    def _close(self, event): # OSL VERSION - SIMILAR TO OLD MNE VERSION TODO: Check if we need to adopt this
         """Handle close events (via keypress or window [x])."""
         from matplotlib.pyplot import close
         from mne.utils import logger, set_config
+        import numpy as np
         # write out bad epochs (after converting epoch numbers to indices)
         if self.mne.instance_type == 'epochs':
             bad_ixs = np.in1d(self.mne.inst.selection,
@@ -780,11 +747,12 @@ class osl_MNEBrowseFigure(MNEBrowseFigure):
             self.mne.inst.info['bads'] = self.mne.info['bads']
             logger.info(
                 f"Channels marked as bad: {self.mne.info['bads'] or 'none'}")
+        # OSL ADDITION
         # ICA excludes
         elif self.mne.instance_type == 'ica':
             self.mne.ica.exclude = [self.mne.ica._ica_names.index(ch)
                                     for ch in self.mne.info['bads']]
-            # MVE: remove bad component labels that were reversed to good component
+            # OSL ADDITION: remove bad component labels that were reversed to good component
             tmp=list(self.mne.ica.labels_.keys())[:]
             for ch in tmp:
                 if ch not in self.mne.info['bads']:
@@ -803,6 +771,7 @@ class osl_MNEBrowseFigure(MNEBrowseFigure):
 
     def _keypress(self, event):
         from mne.viz.utils import _events_off
+        import numpy as np
         """Handle keypress events."""
         key = event.key
         n_channels = self.mne.n_channels
@@ -879,24 +848,27 @@ class osl_MNEBrowseFigure(MNEBrowseFigure):
                 self._redraw(annotations=True)
         # change duration
         elif key in ('home', 'end'):
+            old_dur = self.mne.duration
             dur_delta = 1 if key == 'end' else -1
             if self.mne.is_epochs:
+                # prevent from showing zero epochs, or more epochs than we have
                 self.mne.n_epochs = np.clip(self.mne.n_epochs + dur_delta,
                                             1, len(self.mne.inst))
+                # use the length of one epoch as duration change
                 min_dur = len(self.mne.inst.times) / self.mne.info['sfreq']
-                dur_delta *= min_dur
+                new_dur = self.mne.duration + dur_delta * min_dur
             else:
+                # never show fewer than 3 samples
                 min_dur = 3 * np.diff(self.mne.inst.times[:2])[0]
-            old_dur = self.mne.duration
-            new_dur = self.mne.duration + dur_delta
+                # use multiplicative dur_delta
+                dur_delta = 5 / 4 if dur_delta > 0 else 4 / 5
+                new_dur = self.mne.duration * dur_delta
             self.mne.duration = np.clip(new_dur, min_dur, last_time)
             if self.mne.duration != old_dur:
                 if self.mne.t_start + self.mne.duration > last_time:
                     self.mne.t_start = last_time - self.mne.duration
                 self._update_hscroll()
-                if key == 'end' and self.mne.vline_visible:  # prevent flicker
-                    self._show_vline(None)
-                self._redraw()
+                self._redraw(annotations=True)
         elif key == '?':  # help window
             self._toggle_help_fig(event)
         elif key == 'a':  # annotation mode
@@ -919,25 +891,25 @@ class osl_MNEBrowseFigure(MNEBrowseFigure):
         elif key == 's':  # scalebars
             self._toggle_scalebars(event)
         elif key == 'w':  # toggle noise cov whitening
-            if self.mne.noise_cov is not None:
-                self.mne.use_noise_cov = not self.mne.use_noise_cov
-                self._update_projector()
-                self._update_yaxis_labels()  # add/remove italics
-                self._redraw()
+            self._toggle_whitening()
         elif key == 'z':  # zen mode: hide scrollbars and buttons
             self._toggle_scrollbars()
             self._redraw(update_data=False)
-        elif str(key).isnumeric() and (int(key) in range(len(self.mne.bad_labels_list)+1)): # MVE addition for labeling artifact type of bad components
+        elif key == 't':
+            self._toggle_time_format()
+        # OSL ADDITION: labeling artifact type of bad components
+        elif str(key).isnumeric() and (int(key) in range(len(self.mne.bad_labels_list)+1)):
             if len(self.mne.info['bads'])>0:
                 last_bad_component = self.mne.info['bads'][-1]
                 # save bad component label in dict.
-                self.mne.ica.labels_[last_bad_component]=self.mne.bad_labels_list[int(key)-1]
+                self.mne.ica.labels_[last_bad_component]=self.mne.bad_labels_list[int(key)-1] # TODO: use the labels_ convention used by MNE
                 print(f'Component {last_bad_component} labeled as "{self.mne.bad_labels_list[int(key) - 1]}"')
-                self._draw_traces() # MVE: This makes sure the traces are given the corresponding color right away
+                self._draw_traces() # This makes sure the traces are given the corresponding color right away
         else:  # check for close key / fullscreen toggle
             super()._keypress(event)
 
     def _alt_title(self):
+        import numpy as np
         self.mne.ax_main.texts.clear()
         x = np.arange(self.mne.ax_main.get_xlim()[0], self.mne.ax_main.get_xlim()[1], (self.mne.ax_main.get_xlim()[1]-self.mne.ax_main.get_xlim()[0])/(len(self.mne.bad_labels_list)+2))
         for i in range(len(self.mne.bad_labels_list)+2):
@@ -956,3 +928,129 @@ class osl_MNEBrowseFigure(MNEBrowseFigure):
                             va='baseline', color=self.mne.bad_label_colors[i])
 
             self.mne.annotation_texts.append(text)
+
+
+# TODO: OSL IMPLEMENT PLOT_ICA FOR EVOKED DATA
+def _plot_ica_sources_evoked(evoked, picks, exclude, title, show, ica,
+                             labels=None, n_channels=10, bad_labels_list=None):
+    """Plot average over epochs in ICA space.
+
+    Parameters
+    ----------
+    evoked : instance of mne.Evoked
+        The Evoked to be used.
+    %(picks_base)s all sources in the order as fitted.
+    exclude : array-like of int
+        The components marked for exclusion. If None (default), ICA.exclude
+        will be used.
+    title : str
+        The figure title.
+    show : bool
+        Show figure if True.
+    labels : None | dict
+        The ICA labels attribute.
+    """
+    raise ValueError('plot_ica is not yet supported for Evoked data')
+
+    import matplotlib.pyplot as plt
+    from matplotlib import patheffects
+
+    if title is None:
+        title = 'Reconstructed latent sources, time-locked'
+
+    fig, axes = plt.subplots(1)
+    ax = axes
+    axes = [axes]
+    times = evoked.times * 1e3
+
+    # plot unclassified sources and label excluded ones
+    lines = list()
+    texts = list()
+    picks = np.sort(picks)
+    idxs = [picks]
+
+    if labels is not None:
+        labels_used = [k for k in labels if '/' not in k]
+
+    exclude_labels = list()
+    for ii in picks:
+        if ii in exclude:
+            line_label = ica._ica_names[ii]
+            if labels is not None:
+                annot = list()
+                for this_label in labels_used:
+                    indices = labels[this_label]
+                    if ii in indices:
+                        annot.append(this_label)
+
+                if annot:
+                    line_label += (' – ' + ', '.join(annot))  # Unicode en-dash
+            exclude_labels.append(line_label)
+        else:
+            exclude_labels.append(None)
+    label_props = [('k', '-') if lb is None else ('r', '-') for lb in
+                   exclude_labels]
+    styles = ['-', '--', ':', '-.']
+    if labels is not None:
+        # differentiate categories by linestyle and components by color
+        col_lbs = [it for it in exclude_labels if it is not None]
+        cmap = plt.get_cmap('tab10', len(col_lbs))
+
+        unique_labels = set()
+        for label in exclude_labels:
+            if label is None:
+                continue
+            elif ' – ' in label:
+                unique_labels.add(label.split(' – ')[1])
+            else:
+                unique_labels.add('')
+
+        # Determine up to 4 different styles for n categories
+        cat_styles = dict(zip(unique_labels,
+                              map(lambda ux: styles[int(ux % len(styles))],
+                                  range(len(unique_labels)))))
+        for label_idx, label in enumerate(exclude_labels):
+            if label is not None:
+                color = cmap(col_lbs.index(label))
+                if ' – ' in label:
+                    label_name = label.split(' – ')[1]
+                else:
+                    label_name = ''
+                style = cat_styles[label_name]
+                label_props[label_idx] = (color, style)
+
+    for exc_label, ii in zip(exclude_labels, picks):
+        color, style = label_props[ii]
+        # ensure traces of excluded components are plotted on top
+        zorder = 2 if exc_label is None else 10
+        lines.extend(ax.plot(times, evoked.data[ii].T, picker=True,
+                             zorder=zorder, color=color, linestyle=style,
+                             label=exc_label))
+        lines[-1].set_pickradius(3.)
+
+    ax.set(title=title, xlim=times[[0, -1]], xlabel='Time (ms)', ylabel='(NA)')
+    if len(exclude) > 0:
+        plt.legend(loc='best')
+    tight_layout(fig=fig)
+
+    texts.append(ax.text(0, 0, '', zorder=3,
+                         verticalalignment='baseline',
+                         horizontalalignment='left',
+                         fontweight='bold', alpha=0))
+    # this is done to give the structure of a list of lists of a group of lines
+    # in each subplot
+    lines = [lines]
+    ch_names = evoked.ch_names
+
+    path_effects = [patheffects.withStroke(linewidth=2, foreground="w",
+                                           alpha=0.75)]
+    params = dict(axes=axes, texts=texts, lines=lines, idxs=idxs,
+                  ch_names=ch_names, need_draw=False,
+                  path_effects=path_effects)
+    fig.canvas.mpl_connect('pick_event',
+                           partial(_butterfly_onpick, params=params))
+    fig.canvas.mpl_connect('button_press_event',
+                           partial(_butterfly_on_button_press,
+                                   params=params))
+    plt_show(show)
+    return fig
