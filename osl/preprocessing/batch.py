@@ -27,7 +27,7 @@ import sys
 import pathlib
 import traceback
 from copy import deepcopy
-from functools import partial
+from functools import partial, wraps
 from time import localtime, strftime
 from datetime import datetime
 import re
@@ -45,6 +45,21 @@ from . import _mne_wrappers
 # Housekeeping for logging
 import logging
 logger = logging.getLogger(__name__)
+
+
+# --------------------------------------------------------------
+# Decorators
+
+
+def print_func_info(func):
+    """Prints info for user-specified functions."""
+    @wraps(func)
+    def wrapper(dataset, userargs):
+        fname = pathlib.Path(dataset["raw"].filenames[0]).stem
+        print("{} : CUSTOM Stage - {}".format(fname, func.__name__))
+        print("{} : userargs: {}".format(fname, str(userargs)))
+        return func(dataset, userargs)
+    return wrapper
 
 # --------------------------------------------------------------
 # Data importers
