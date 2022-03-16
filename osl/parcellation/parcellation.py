@@ -637,5 +637,5 @@ def save_parcel_timeseries(ts, fname):
 
 def load_parcel_timeseries(fname):
     # load passed in hd5 file
-    ts = dd.io.save(fname)
+    ts = dd.io.load(fname)
     return ts
