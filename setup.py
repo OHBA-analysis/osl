@@ -3,7 +3,7 @@ from setuptools import setup
 # Requirement categories
 reqs = ['numpy', 'scipy', 'matplotlib', 'mne<0.24', 'sklearn', 'fslpy',
         'sails', 'tabulate', 'pyyaml>=5.1', 'neurokit2', 'jinja2', 'joblib',
-        'file-tree', 'opencv-python', 'open3d', 'glmtools']
+        'file-tree', 'opencv-python', 'open3d', 'glmtools', 'deepdish']
 doc_reqs = ['sphinx==4.0.2', 'numpydoc', 'sphinx_gallery', 'pydata-sphinx-theme']
 dev_reqs = ['setuptools>=41.0.1', 'pytest', 'pytest-cov', 'coverage', 'flake8']
 
