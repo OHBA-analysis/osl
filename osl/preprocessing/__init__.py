@@ -5,4 +5,4 @@
 from . import _mne_wrappers  # noqa: F401, F403
 
 from .batch import *  # noqa: F401, F403
-from .osl_plot_ica import plot_ica  # noqa: F401 F403
+from .plot_ica import plot_ica  # noqa: F401 F403
