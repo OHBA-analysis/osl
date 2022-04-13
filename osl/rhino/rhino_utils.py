@@ -13,6 +13,25 @@ import os
 import os.path as op
 from mne import write_surface, Transform
 from mne.transforms import read_trans
+from mne.io.meas_info import _simplify_info
+from mne.io.pick import pick_channels_cov, pick_info
+from mne.source_estimate import _make_stc, _get_src_type
+from mne.cov import Covariance, make_ad_hoc_cov
+from mne.forward import _subject_from_forward
+from mne.forward.forward import is_fixed_orient, _restrict_forward_to_src_sel
+from mne.io.proj import make_projector, Projection
+from mne.minimum_norm.inverse import _get_vertno, _prepare_forward
+from mne.source_space import label_src_vertno_sel
+from mne.utils import (verbose, _check_one_ch_type, _check_info_inv, check_fname,
+                       _reg_pinv, _check_option, logger,
+                       _pl, _check_src_normal, check_version, _sym_mat_pow, warn)
+
+from mne.rank import compute_rank
+from mne.minimum_norm.inverse import _check_depth
+from mne.beamformer._compute_beamformer import (
+    _prepare_beamformer_input, _compute_power, _reduce_leadfield_rank,
+    _compute_beamformer, _check_src_type, Beamformer, _proj_whiten_data,
+    _sym_inv_sm)
 
 from scipy.ndimage import generic_filter
 from scipy.spatial import KDTree
@@ -882,3 +901,463 @@ def plot_polhemus_points(txt_fnames, colors=None, scales=None,
 
         ax.scatter(pnts[0, ], pnts[1, ], pnts[2, ],
                    color=color, s=scale, alpha=alpha, marker=marker)
+
+#############################################################################
+
+@ verbose
+def _make_lcmv(info, forward, data_cov,
+                reg=0.05, noise_cov=None, label=None,
+                pick_ori=None, rank='info',
+                noise_rank='info',
+                weight_norm='unit-noise-gain-invariant',
+                reduce_rank=False, depth=None, inversion='matrix', verbose=None):
+    """Compute LCMV spatial filter.
+
+    Parameters
+    ----------
+    info : instance of Info
+        The measurement info to specify the channels to include.
+        Bad channels in info['bads'] are not used.
+    forward : instance of Forward
+        Forward operator.
+    data_cov : instance of Covariance
+        The data covariance.
+    reg : float
+        The regularization for the whitened data covariance.
+    noise_cov : instance of Covariance
+        The noise covariance. If provided, whitening will be done. Providing a
+        noise covariance is mandatory if you mix sensor types, e.g.
+        gradiometers with magnetometers or EEG with MEG.
+    label : instance of Label
+        Restricts the LCMV solution to a given label.
+    %(bf_pick_ori)s
+
+        - ``'vector'``
+            Keeps the currents for each direction separate
+    %(rank_info)s
+    %(weight_norm)s
+
+        Defaults to ``'unit-noise-gain-invariant'``.
+    %(reduce_rank)s
+    %(depth)s
+
+        .. versionadded:: 0.18
+    %(bf_inversion)s
+
+        .. versionadded:: 0.21
+    %(verbose)s
+
+    Returns
+    -------
+    filters : instance of Beamformer
+        Dictionary containing filter weights from LCMV beamformer.
+        Contains the following keys:
+
+            'kind' : str
+                The type of beamformer, in this case 'LCMV'.
+            'weights' : array
+                The filter weights of the beamformer.
+            'data_cov' : instance of Covariance
+                The data covariance matrix used to compute the beamformer.
+            'noise_cov' : instance of Covariance | None
+                The noise covariance matrix used to compute the beamformer.
+            'whitener' : None | ndarray, shape (n_channels, n_channels)
+                Whitening matrix, provided if whitening was applied to the
+                covariance matrix and leadfield during computation of the
+                beamformer weights.
+            'weight_norm' : str | None
+                Type of weight normalization used to compute the filter
+                weights.
+            'pick-ori' : None | 'max-power' | 'normal' | 'vector'
+                The orientation in which the beamformer filters were computed.
+            'ch_names' : list of str
+                Channels used to compute the beamformer.
+            'proj' : array
+                Projections used to compute the beamformer.
+            'is_ssp' : bool
+                If True, projections were applied prior to filter computation.
+            'vertices' : list
+                Vertices for which the filter weights were computed.
+            'is_free_ori' : bool
+                If True, the filter was computed with free source orientation.
+            'n_sources' : int
+                Number of source location for which the filter weight were
+                computed.
+            'src_type' : str
+                Type of source space.
+            'source_nn' : ndarray, shape (n_sources, 3)
+                For each source location, the surface normal.
+            'proj' : ndarray, shape (n_channels, n_channels)
+                Projections used to compute the beamformer.
+            'subject' : str
+                The subject ID.
+            'rank' : int
+                The rank of the data covariance matrix used to compute the
+                beamformer weights.
+            'max-power-ori' : ndarray, shape (n_sources, 3) | None
+                When pick_ori='max-power', this fields contains the estimated
+                direction of maximum power at each source location.
+            'inversion' : 'single' | 'matrix'
+                Whether the spatial filters were computed for each dipole
+                separately or jointly for all dipoles at each vertex using a
+                matrix inversion.
+
+    Notes
+    -----
+    Rhino version of mne.beamformer.make_lcmv
+
+    Note that code that is different to mne.beamformer.make_lcmv is labelled
+    with MWW
+
+    The original reference is :footcite:`VanVeenEtAl1997`.
+
+    To obtain the Sekihara unit-noise-gain vector beamformer, you should use
+    ``weight_norm='unit-noise-gain', pick_ori='vector'`` followed by
+    :meth:`vec_stc.project('pca', src) <mne.VectorSourceEstimate.project>`.
+
+    .. versionchanged:: 0.21
+       The computations were extensively reworked, and the default for
+       ``weight_norm`` was set to ``'unit-noise-gain-invariant'``.
+
+    References
+    ----------
+    .. footbibliography::
+    """
+    # check number of sensor types present in the data and ensure a noise cov
+    info = _simplify_info(info)
+    noise_cov, _, allow_mismatch = _check_one_ch_type(
+        'lcmv', info, forward, data_cov, noise_cov)
+    # XXX we need this extra picking step (can't just rely on minimum norm's
+    # because there can be a mismatch. Should probably add an extra arg to
+    # _prepare_beamformer_input at some point (later)
+    picks = _check_info_inv(info, forward, data_cov, noise_cov)
+    info = pick_info(info, picks)
+
+    data_rank = compute_rank(data_cov, rank=rank, info=info)
+    noise_rank = compute_rank(noise_cov, rank=noise_rank, info=info)
+
+    if False:  # MWW
+        for key in data_rank:
+            if (key not in noise_rank or data_rank[key] != noise_rank[key]) and \
+                    not allow_mismatch:
+                raise ValueError('%s data rank (%s) did not match the noise '
+                                 'rank (%s)'
+                                 % (key, data_rank[key],
+                                    noise_rank.get(key, None)))
+    # MWW
+    # del noise_rank
+    rank = data_rank
+    logger.info('Making LCMV beamformer with data cov rank %s' % (rank,))
+    # MWW added:
+    logger.info('Making LCMV beamformer with noise cov rank %s' % (noise_rank,))
+
+    del data_rank
+    depth = _check_depth(depth, 'depth_sparse')
+    if inversion == 'single':
+        depth['combine_xyz'] = False
+
+    # MWW
+    is_free_ori, info, proj, vertno, G, whitener, nn, orient_std = \
+        _prepare_beamformer_input(
+            info, forward, label, pick_ori, noise_cov=noise_cov, rank=noise_rank,
+            pca=False, **depth)
+
+    ch_names = list(info['ch_names'])
+
+    data_cov = pick_channels_cov(data_cov, include=ch_names)
+    Cm = data_cov._get_square()
+    if 'estimator' in data_cov:
+        del data_cov['estimator']
+    rank_int = sum(rank.values())
+    del rank
+
+    # compute spatial filter
+    n_orient = 3 if is_free_ori else 1
+    W, max_power_ori = _compute_beamformer(
+        G, Cm, reg, n_orient, weight_norm, pick_ori, reduce_rank, rank_int,
+        inversion=inversion, nn=nn, orient_std=orient_std,
+        whitener=whitener)
+
+    # get src type to store with filters for _make_stc
+    src_type = _get_src_type(forward['src'], vertno)
+
+    # get subject to store with filters
+    subject_from = _subject_from_forward(forward)
+
+    # Is the computed beamformer a scalar or vector beamformer?
+    is_free_ori = is_free_ori if pick_ori in [None, 'vector'] else False
+    is_ssp = bool(info['projs'])
+
+    filters = Beamformer(
+        kind='LCMV', weights=W, data_cov=data_cov, noise_cov=noise_cov,
+        whitener=whitener, weight_norm=weight_norm, pick_ori=pick_ori,
+        ch_names=ch_names, proj=proj, is_ssp=is_ssp, vertices=vertno,
+        is_free_ori=is_free_ori, n_sources=forward['nsource'],
+        src_type=src_type, source_nn=forward['source_nn'].copy(),
+        subject=subject_from, rank=rank_int, max_power_ori=max_power_ori,
+        inversion=inversion)
+
+    return filters
+
+#############################################################################
+
+def _compute_beamformer(G, Cm, reg, n_orient, weight_norm, pick_ori,
+                        reduce_rank, rank, inversion, nn, orient_std,
+                        whitener):
+    """Compute a spatial beamformer filter (LCMV or DICS).
+
+    For more detailed information on the parameters, see the docstrings of
+    `make_lcmv` and `make_dics`.
+
+    Parameters
+    ----------
+    G : ndarray, shape (n_dipoles, n_channels)
+        The leadfield.
+    Cm : ndarray, shape (n_channels, n_channels)
+        The data covariance matrix.
+    reg : float
+        Regularization parameter.
+    n_orient : int
+        Number of dipole orientations defined at each source point
+    weight_norm : None | 'unit-noise-gain' | 'nai'
+        The weight normalization scheme to use.
+    pick_ori : None | 'normal' | 'max-power' | max-power-pre-weight-norm
+        The source orientation to compute the beamformer in.
+    reduce_rank : bool
+        Whether to reduce the rank by one during computation of the filter.
+    rank : dict | None | 'full' | 'info'
+        See compute_rank.
+    inversion : 'matrix' | 'single'
+        The inversion scheme to compute the weights.
+    nn : ndarray, shape (n_dipoles, 3)
+        The source normals.
+    orient_std : ndarray, shape (n_dipoles,)
+        The std of the orientation prior used in weighting the lead fields.
+    whitener : ndarray, shape (n_channels, n_channels)
+        The whitener.
+
+    Returns
+    -------
+    W : ndarray, shape (n_dipoles, n_channels)
+        The beamformer filter weights.
+    """
+    _check_option('weight_norm', weight_norm,
+                  ['unit-noise-gain-invariant', 'unit-noise-gain',
+                   'nai', None])
+
+    # Whiten the data covariance
+    Cm = whitener @ Cm @ whitener.T.conj()
+    # Restore to properly Hermitian as large whitening coefs can have bad
+    # rounding error
+
+    Cm[:] = (Cm + Cm.T.conj()) / 2.
+
+    assert Cm.shape == (G.shape[0],) * 2
+    s, _ = np.linalg.eigh(Cm)
+    if not (s >= -s.max() * 1e-7).all():
+        # This shouldn't ever happen, but just in case
+        warn('data covariance does not appear to be positive semidefinite, '
+             'results will likely be incorrect')
+    # Tikhonov regularization using reg parameter to control for
+    # trade-off between spatial resolution and noise sensitivity
+    # eq. 25 in Gross and Ioannides, 1999 Phys. Med. Biol. 44 2081
+    Cm_inv, loading_factor, rank = _reg_pinv(Cm, reg, rank)
+
+    assert orient_std.shape == (G.shape[1],)
+    n_sources = G.shape[1] // n_orient
+    assert nn.shape == (n_sources, 3)
+
+    logger.info('Computing beamformer filters for %d source%s'
+                % (n_sources, _pl(n_sources)))
+    n_channels = G.shape[0]
+    assert n_orient in (3, 1)
+    Gk = np.reshape(G.T, (n_sources, n_orient, n_channels)).transpose(0, 2, 1)
+    assert Gk.shape == (n_sources, n_channels, n_orient)
+    sk = np.reshape(orient_std, (n_sources, n_orient))
+    del G, orient_std
+    pinv_kwargs = dict()
+    if check_version('numpy', '1.17'):
+        pinv_kwargs['hermitian'] = True
+
+    _check_option('reduce_rank', reduce_rank, (True, False))
+
+    # inversion of the denominator
+    _check_option('inversion', inversion, ('matrix', 'single'))
+    if inversion == 'single' and n_orient > 1 and pick_ori == 'vector' and \
+            weight_norm == 'unit-noise-gain-invariant':
+        raise ValueError(
+            'Cannot use pick_ori="vector" with inversion="single" and '
+            'weight_norm="unit-noise-gain-invariant"')
+    if reduce_rank and inversion == 'single':
+        raise ValueError('reduce_rank cannot be used with inversion="single"; '
+                         'consider using inversion="matrix" if you have a '
+                         'rank-deficient forward model (i.e., from a sphere '
+                         'model with MEG channels), otherwise consider using '
+                         'reduce_rank=False')
+    if n_orient > 1:
+        _, Gk_s, _ = np.linalg.svd(Gk, full_matrices=False)
+        assert Gk_s.shape == (n_sources, n_orient)
+        if not reduce_rank and (Gk_s[:, 0] > 1e6 * Gk_s[:, 2]).any():
+            raise ValueError(
+                'Singular matrix detected when estimating spatial filters. '
+                'Consider reducing the rank of the forward operator by using '
+                'reduce_rank=True.')
+        del Gk_s
+
+    #
+    # 1. Reduce rank of the lead field
+    #
+    if reduce_rank:
+        Gk = _reduce_leadfield_rank(Gk)
+
+    def _compute_bf_terms(Gk, Cm_inv):
+        bf_numer = np.matmul(Gk.swapaxes(-2, -1).conj(), Cm_inv)
+        bf_denom = np.matmul(bf_numer, Gk)
+        return bf_numer, bf_denom
+
+    #
+    # 2. Reorient lead field in direction of max power or normal
+    #
+    if pick_ori == 'max-power' or pick_ori == 'max-power-pre-weight-norm':
+        assert n_orient == 3
+        _, bf_denom = _compute_bf_terms(Gk, Cm_inv)
+
+        if pick_ori == 'max-power':
+            if weight_norm is None:
+                ori_numer = np.eye(n_orient)[np.newaxis]
+                ori_denom = bf_denom
+            else:
+                # compute power, cf Sekihara & Nagarajan 2008, eq. 4.47
+                ori_numer = bf_denom
+                # Cm_inv should be Hermitian so no need for .T.conj()
+                ori_denom = np.matmul(
+                    np.matmul(Gk.swapaxes(-2, -1).conj(), Cm_inv @ Cm_inv), Gk)
+
+            ori_denom_inv = _sym_inv_sm(ori_denom, reduce_rank, inversion, sk)
+            ori_pick = np.matmul(ori_denom_inv, ori_numer)
+
+        # MWW
+        else:  # pick_ori == 'max-power-pre-weight-norm':
+
+            # Compute power, see eq 5 in Brookes et al, Optimising experimental design for MEG beamformer imaging, Neuroimage 2008
+            # This optimises the orientation by maximising the power
+            # BEFORE any weight normalisation is performed
+            ori_pick = _sym_inv_sm(bf_denom, reduce_rank, inversion, sk)
+
+        assert ori_pick.shape == (n_sources, n_orient, n_orient)
+
+        # pick eigenvector that corresponds to maximum eigenvalue:
+        eig_vals, eig_vecs = np.linalg.eig(ori_pick.real)  # not Hermitian!
+        # sort eigenvectors by eigenvalues for picking:
+        order = np.argsort(np.abs(eig_vals), axis=-1)
+        # eig_vals = np.take_along_axis(eig_vals, order, axis=-1)
+        max_power_ori = eig_vecs[np.arange(len(eig_vecs)), :, order[:, -1]]
+        assert max_power_ori.shape == (n_sources, n_orient)
+
+        # set the (otherwise arbitrary) sign to match the normal
+        signs = np.sign(np.sum(max_power_ori * nn, axis=1, keepdims=True))
+        signs[signs == 0] = 1.
+        max_power_ori *= signs
+
+        # Compute the lead field for the optimal orientation,
+        # and adjust numer/denom
+
+        Gk = np.matmul(Gk, max_power_ori[..., np.newaxis])
+
+        n_orient = 1
+    else:
+        max_power_ori = None
+        if pick_ori == 'normal':
+            Gk = Gk[..., 2:3]
+            n_orient = 1
+
+    #
+    # 3. Compute numerator and denominator of beamformer formula (unit-gain)
+    #
+
+    bf_numer, bf_denom = _compute_bf_terms(Gk, Cm_inv)
+    assert bf_denom.shape == (n_sources,) + (n_orient,) * 2
+    assert bf_numer.shape == (n_sources, n_orient, n_channels)
+    del Gk  # lead field has been adjusted and should not be used anymore
+
+    #
+    # 4. Invert the denominator
+    #
+
+    # Here W is W_ug, i.e.:
+    # G.T @ Cm_inv / (G.T @ Cm_inv @ G)
+    bf_denom_inv = _sym_inv_sm(bf_denom, reduce_rank, inversion, sk)
+    assert bf_denom_inv.shape == (n_sources, n_orient, n_orient)
+    W = np.matmul(bf_denom_inv, bf_numer)
+    assert W.shape == (n_sources, n_orient, n_channels)
+    del bf_denom_inv, sk
+
+    #
+    # 5. Re-scale filter weights according to the selected weight_norm
+    #
+
+    # Weight normalization is done by computing, for each source::
+    #
+    #     W_ung = W_ug / sqrt(W_ug @ W_ug.T)
+    #
+    # with W_ung referring to the unit-noise-gain (weight normalized) filter
+    # and W_ug referring to the above-calculated unit-gain filter stored in W.
+
+    if weight_norm is not None:
+        # Three different ways to calculate the normalization factors here.
+        # Only matters when in vector mode, as otherwise n_orient == 1 and
+        # they are all equivalent. Sekihara 2008 says to use
+        #
+        # In MNE < 0.21, we just used the Frobenius matrix norm:
+        #
+        #    noise_norm = np.linalg.norm(W, axis=(1, 2), keepdims=True)
+        #    assert noise_norm.shape == (n_sources, 1, 1)
+        #    W /= noise_norm
+        #
+        # Sekihara 2008 says to use sqrt(diag(W_ug @ W_ug.T)), which is not
+        # rotation invariant:
+        if weight_norm in ('unit-noise-gain', 'nai'):
+            noise_norm = np.matmul(W, W.swapaxes(-2, -1).conj()).real
+            noise_norm = np.reshape(  # np.diag operation over last two axes
+                noise_norm, (n_sources, -1, 1))[:, ::n_orient + 1]
+            np.sqrt(noise_norm, out=noise_norm)
+            noise_norm[noise_norm == 0] = np.inf
+            assert noise_norm.shape == (n_sources, n_orient, 1)
+            W /= noise_norm
+        else:
+            assert weight_norm == 'unit-noise-gain-invariant'
+            # Here we use sqrtm. The shortcut:
+            #
+            #    use = W
+            #
+            # ... does not match the direct route (it is rotated!), so we'll
+            # use the direct one to match FieldTrip:
+            use = bf_numer
+            inner = np.matmul(use, use.swapaxes(-2, -1).conj())
+            W = np.matmul(_sym_mat_pow(inner, -0.5), use)
+            noise_norm = 1.
+
+        if weight_norm == 'nai':
+            # Estimate noise level based on covariance matrix, taking the
+            # first eigenvalue that falls outside the signal subspace or the
+            # loading factor used during regularization, whichever is largest.
+            if rank > len(Cm):
+                # Covariance matrix is full rank, no noise subspace!
+                # Use the loading factor as noise ceiling.
+                if loading_factor == 0:
+                    raise RuntimeError(
+                        'Cannot compute noise subspace with a full-rank '
+                        'covariance matrix and no regularization. Try '
+                        'manually specifying the rank of the covariance '
+                        'matrix or using regularization.')
+                noise = loading_factor
+            else:
+                noise, _ = np.linalg.eigh(Cm)
+                noise = noise[-rank]
+                noise = max(noise, loading_factor)
+            W /= np.sqrt(noise)
+
+    W = W.reshape(n_sources * n_orient, n_channels)
+    logger.info('Filter computation complete')
+    return W, max_power_ori
+

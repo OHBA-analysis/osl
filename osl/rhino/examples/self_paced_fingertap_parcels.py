@@ -40,6 +40,9 @@ parcellation_background_fname = op.join(os.environ['FSLDIR'], 'data/standard/MNI
 run_recon = True
 orthogonalise_parcel_timeseries = False
 
+rank = {'mag': 125}
+chantypes = ['mag']
+
 # -------------------------------------------------------------
 # Do source recon
 
@@ -53,7 +56,7 @@ if not os.path.isdir(recon_dir):
 raw = mne.io.read_raw_fif(fif_file)
 
 # Use MEG sensors
-raw.pick(['mag'])
+raw.pick(chantypes)
 
 raw.load_data()
 
@@ -70,23 +73,26 @@ original_raw = raw.copy()
 raw.apply_hilbert()
 
 if run_recon:
-    # calculate and plot data covariance matrix
-    data_cov = mne.compute_raw_covariance(original_raw, method='empirical')
+    # make LCMV filter
+    filters = rhino.make_lcmv(subjects_dir, subject,
+                                original_raw,
+                                chantypes,
+                                reg=0,
+                                pick_ori='max-power-pre-weight-norm',
+                                weight_norm='nai',
+                                rank=rank,
+                                reduce_rank=True,
+                                verbose=True)
 
-    filters = mne.beamformer.make_lcmv(original_raw.info, fwd,
-                                       data_cov,
-                                       reg=0,
-                                       pick_ori='max-power',
-                                       weight_norm='nai',
-                                       reduce_rank=True,
-                                       rank={'mag': 125})
 
+    # stc is source space time series (in head/polhemus space)
     stc = mne.beamformer.apply_lcmv_raw(raw, filters, max_ori_out='signed')
+
     # hilbert transform gave us complex data, we want the amplitude:
     data = np.abs(stc.data)
 
-    # Convert to standard brain grid in MNI space
-    recon_timeseries_mni, reference_brain_fname, recon_coords_mni = rhino.transform_recon_timeseries(
+    # Convert from head/polhemus space to standard brain grid in MNI space
+    recon_timeseries_mni, reference_brain_fname, recon_coords_mni, _ = rhino.transform_recon_timeseries(
         subjects_dir, subject,
         recon_timeseries=data,
         reference_brain='mni')
@@ -107,7 +113,7 @@ p.plot()
 rhino.fsleyes_overlay(parcellation_background_fname, p.file)
 
 # Apply parcellation to voxelwise data (voxels x tpts) contained in recon_timeseries_mni
-# Resulting parcel_timeseries will be (parcels x tpts)
+# Resulting parcel_timeseries will be (parcels x tpts) in MNI space
 parcel_timeseries = p.parcellate(recon_timeseries_mni, recon_coords_mni, method='spatial_basis')
 
 # -------------------------------------------------------------
@@ -223,5 +229,10 @@ for cc in range(len(contrasts)):
 # Write out parcellated stats as niftii vols and view them
 
 con = 0
-tstat_nii_fname = p.nii(tstats[con][0, :], method='assignments')
+stats_dir = op.join(subjects_dir, subject, 'rhino', 'stats')
+if not os.path.isdir(stats_dir):
+    os.mkdir(stats_dir)
+tstat_nii_fname = op.join(stats_dir, 'tstat{}_parcel.nii.gz'.format(cc + 1))
+
+tstat_nii_fname = p.nii(tstats[con][0, :], method='assignments', out_nii_fname=tstat_nii_fname)
 rhino.fsleyes_overlay(parcellation_background_fname, tstat_nii_fname)

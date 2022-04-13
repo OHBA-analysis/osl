@@ -38,8 +38,34 @@ parcellation_fname = op.join('/Users/woolrich/Dropbox/vols_scripts/hmm_misc_func
 # nii volume to overlay parcellation results on
 parcellation_background_fname = op.join(os.environ['FSLDIR'], 'data/standard/MNI152_T1_2mm_brain.nii.gz')
 
+run_forward_model = True
 run_recon = True
 baseline_correct = True
+
+gridstep = 8  # mm
+
+################
+
+use_eeg = False
+use_meg = True
+
+chantypes = []
+chantypes_reject_thresh = {'eog': 250e-6}
+rank= {}
+
+if use_eeg:
+    chantypes.append('eeg')
+    rank.update({'eeg':30})
+    chantypes_reject_thresh.update({'eeg': 250e-6})
+
+if use_meg:
+    chantypes.append('mag'),
+    chantypes.append('grad'),
+    rank.update({'meg': 60})
+    chantypes_reject_thresh.update({'mag': 4e-12, 'grad': 4000e-13})
+
+print('Channel types to use: {}'.format(chantypes))
+print('Channel types and ranks for source recon: {}'.format(rank))
 
 # -------------------------------------------------------------
 # %% Preproc
@@ -60,7 +86,29 @@ epochs = mne.Epochs(dataset['raw'],
                     tmin=-0.5, tmax=1.5,
                     baseline=(None, 0))
 
-epochs.drop_bad(reject={'eog': 250e-6, 'mag': 4e-12, 'grad': 4000e-13})
+epochs.drop_bad(reject=chantypes_reject_thresh, verbose=True)
+
+epochs.load_data()
+
+if use_eeg:
+    epochs.set_eeg_reference(ref_channels='average', projection=True)
+
+epochs.pick(chantypes)
+
+#############################################################################
+
+if run_forward_model:
+    if use_eeg:
+        model = 'Triple Layer'
+    else:
+        model = 'Single Layer'
+
+    rhino.forward_model(subjects_dir, subject,
+                        model=model,
+                        eeg=use_eeg,
+                        meg=use_meg,
+                        gridstep=gridstep,
+                        mindist=4.0)
 
 # -------------------------------------------------------------
 # %% Source Recon
@@ -70,41 +118,25 @@ if not os.path.isdir(recon_dir):
     os.mkdir(recon_dir)
 
 if run_recon:
-    epochs.load_data()
+    # make LCMV filter
+    filters = rhino.make_lcmv(subjects_dir, subject,
+                              epochs,
+                              chantypes,
+                              reg=0,
+                              pick_ori='max-power-pre-weight-norm',
+                              weight_norm='nai',
+                              rank=rank,
+                              reduce_rank=True,
+                              verbose=True)
 
-    # Use MEG sensors
-    # epochs.pick(['meg'])
-    epochs.pick(['grad'])
-
-    tmin = -0.5
-    data_cov = mne.compute_covariance(epochs, tmin=0,
-                                      method='empirical')
-
-    # Source reconstruction with several sensor types requires a noise covariance
-    # matrix to be able to apply whitening
-    noise_cov = mne.compute_covariance(epochs, tmin=tmin, tmax=0,
-                                       method='empirical')
-    data_cov.plot(epochs.info)
-
-    fwd_fname = rhino.get_coreg_filenames(subjects_dir, subject)['forward_model_file']
-    forward = mne.read_forward_solution(fwd_fname)
-
-    filters = make_lcmv(epochs.info,
-                        forward,
-                        data_cov,
-                        noise_cov=noise_cov,
-                        reg=0.05,
-                        pick_ori='max-power',
-                        rank={'grad': 50},
-                        # rank={'meg':50},
-                        reduce_rank=True,
-                        weight_norm='nai')
+    # plot data covariance matrix
+    filters['data_cov'].plot(epochs.info)
 
     # Apply filters to epoched data
+    # stc is list of source space trial time series (in head/polhemus space)
     stc = apply_lcmv_epochs(epochs, filters, max_ori_out='signed')
 
-    # stc is a list of source reconstructed trials
-    # turns this into a  nsources x ntpts x ntrials array
+    # Turn stc into a  nsources x ntpts x ntrials array
     sourcespace_epoched_data = []
     for trial in stc:
         sourcespace_epoched_data.append(trial.data)
@@ -113,7 +145,7 @@ if run_recon:
 
     # Convert to standard brain grid in MNI space (to pass to parcellation)
     # (sourcespace_epoched_data is in head/polhemus space)
-    recon_timeseries_mni, reference_brain_fname, recon_coords_mni = rhino.transform_recon_timeseries(
+    recon_timeseries_mni, reference_brain_fname, recon_coords_mni, _ = rhino.transform_recon_timeseries(
         subjects_dir, subject,
         recon_timeseries=sourcespace_epoched_data,
         reference_brain='mni')
@@ -203,7 +235,7 @@ stats_dir = op.join(subjects_dir, subject, 'rhino', 'stats')
 if not os.path.isdir(stats_dir):
     os.mkdir(stats_dir)
 
-# output nii nearest to this time point in msecs: 
+# output nii nearest to this time point in msecs:
 tpt = 0.110 + 0.034
 volume_num = epochs.time_as_index(tpt)[0]
 
@@ -225,7 +257,10 @@ plt.ylabel('abs(cope)')
 # %% Write cope as 4D niftii file on a standard brain grid in MNI space
 # 4th dimension is timepoint within a trial
 
-acope_nii_fname = p.nii(acope, method='assignments', times=epochs.times)
+out_nii_fname = op.join(stats_dir, 'acope{}_mni_parcel.nii.gz'.format(contrast_of_interest, gridstep))
+acope_nii_fname = p.nii(acope, method='assignments',
+                        times=epochs.times,
+                        out_nii_fname=out_nii_fname)
 rhino.fsleyes_overlay(parcellation_background_fname, acope_nii_fname)
 
 # From fsleyes drop down menus Select "View/Time series"

@@ -80,11 +80,11 @@ class Parcellation:
             voxel_timeseries: numpy.ndarray
                 nvoxels x ntpts, or nvoxels x ntpts x ntrials
                 Data to be parcellated. Data is assumed to be in same space as the parcellation
-                (e.g. corresponds to the output from rhino.resample_recon_ts)
+                (e.g. typically corresponds to the output from rhino.resample_recon_ts)
 
             voxel_coords: numpy.ndarray
                 (nvoxels x 3) coordinates of voxel_timeseries in mm in same space as parcellation
-                (e.g. corresponds to the output from rhino.resample_recon_ts)
+                (e.g. typically corresponds to the output from rhino.resample_recon_ts)
 
             method: string
                 'pca' - take 1st PC in each parcel
@@ -126,7 +126,7 @@ class Parcellation:
 
         return self.parcel_timeseries
 
-    def nii(self, parcel_timeseries_data, method='assignments', working_dir=None, times=None, ):
+    def nii(self, parcel_timeseries_data, method='assignments', out_nii_fname=None, working_dir=None, times=None, ):
 
         """
         Outputs parcel_timeseries_data as a niftii file using the parcellation
@@ -143,6 +143,10 @@ class Parcellation:
             working_dir: string
                 Dir name to put files in
 
+            out_nii_fname: string
+                Output nii file name, will be output at spatial resolution of parcel_timeseries['voxel_coords']
+                If None then will generate a name
+
             times: (ntpts, ) numpy.ndarray
                 Times points in seconds.
                 Will assume that time points are regularly spaced.
@@ -158,7 +162,7 @@ class Parcellation:
             raise ValueError("You need to have run parcellation.parcellate() prior to calling parcellation.nii()")
 
         result = _parcel_timeseries2nii(self, parcel_timeseries_data, self.parcel_timeseries,
-                                        method=method, working_dir=working_dir, times=times)
+                                        method=method, out_nii_fname=out_nii_fname, working_dir=working_dir, times=times)
 
         return result
 
@@ -435,7 +439,7 @@ Check this does not cause further problems with the analysis. \n".format(pp))
 #############################################################################
 
 def _parcel_timeseries2nii(parcellation, parcel_timeseries_data, parcel_timeseries,
-                           working_dir=None, times=None, method='assignments'):
+                           out_nii_fname=None, working_dir=None, times=None, method='assignments'):
     """
     Outputs parcel_timeseries_data as a niftii file using passed in parcellation
 
@@ -447,6 +451,9 @@ def _parcel_timeseries2nii(parcellation, parcel_timeseries_data, parcel_timeseri
 
         working_dir: string
             Dir name to put files in
+
+        out_nii_fname: string
+            Output name to put files in
 
         times: (ntpts, ) numpy.ndarray
             Times points in seconds.
@@ -467,7 +474,8 @@ def _parcel_timeseries2nii(parcellation, parcel_timeseries_data, parcel_timeseri
     if working_dir is None:
         working_dir = pth
 
-    out_nii_fname = op.join(working_dir, parcellation_name + "_timeseries.nii.gz")
+    if out_nii_fname is None:
+        out_nii_fname = op.join(working_dir, parcellation_name + "_timeseries.nii.gz")
 
     # compute parcellation_mask_file to be mean over all parcels
     parcellation_mask_file = op.join(working_dir, parcellation_name + "_mask.nii.gz")
