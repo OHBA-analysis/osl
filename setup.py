@@ -1,9 +1,9 @@
 from setuptools import setup
 
 # Requirement categories
-reqs = ['numpy', 'scipy', 'matplotlib', 'mne<0.24', 'sklearn', 'fslpy',
+reqs = ['numpy', 'scipy', 'matplotlib', 'mne==1.0.0', 'sklearn', 'fslpy',
         'sails', 'tabulate', 'pyyaml>=5.1', 'neurokit2', 'jinja2', 'joblib',
-        'file-tree', 'opencv-python', 'open3d', 'glmtools', 'deepdish', 'numba']
+        'file-tree', 'opencv-python', 'open3d==0.9.0.0', 'glmtools', 'deepdish', 'numba', 'nilearn']
 doc_reqs = ['sphinx==4.0.2', 'numpydoc', 'sphinx_gallery', 'pydata-sphinx-theme']
 dev_reqs = ['setuptools>=41.0.1', 'pytest', 'pytest-cov', 'coverage', 'flake8']
 

@@ -319,7 +319,7 @@ def write_dataset(dataset, outbase, run_id, overwrite=False):
 
     if dataset['ica'] is not None:
         outname = outbase.format(run_id=run_id, ftype='ica', fext='fif')
-        dataset['ica'].save(outname)
+        dataset['ica'].save(outname, overwrite=overwrite)
 
 
 def plot_preproc_flowchart(config, outname=None, show=True, stagecol='wheat', startcol='red', fig=None, ax=None, title=None):
