@@ -55,7 +55,11 @@ def gen_html_data(raw, ica, outdir, level):
 
     # Channels/coils
     data['nchans'] = raw.info['nchan']
-    data['nhpi'] = len(raw.info['hpi_meas'][0]['hpi_coils'])
+
+    try:
+        data['nhpi'] = len(raw.info['hpi_meas'][0]['hpi_coils'])
+    except:
+        print("No HPI info in fif file")
 
     chtype = [channel_type(raw.info, c) for c in range(data['nchans'])]
     chs, chcounts = np.unique(chtype, return_counts=True)
@@ -112,7 +116,7 @@ def gen_html_data(raw, ica, outdir, level):
     if level > 0:
         data['plt_artefacts_eog'] = plot_eog_summary(raw, savebase)
         data['plt_artefacts_ecg'] = plot_ecg_summary(raw, savebase)
-        data['plt_artefacts_ica'] = plot_bad_ica(raw, ica, savebase)
+        data['plt_artefacts_ica'] = plot_bad_ica(raw, ica, savebase) if ica is not None else None
     if level > 1:
         filenames = plot_artefact_scan(raw, savebase)
         data.update(filenames)
@@ -756,8 +760,11 @@ def print_scan_summary(raw):
                                                       raw.n_times/raw.info['sfreq']))
 
     # Number of Head Position Indicator coils
-    nhpi = len(raw.info['hpi_meas'][0]['hpi_coils'])
-    print('{0} HPI coils acquired'.format(nhpi))
+    try:
+        nhpi = len(raw.info['hpi_meas'][0]['hpi_coils'])
+        print('{0} HPI coils acquired'.format(nhpi))
+    except:
+        print("No HPI info in fif file")
 
     # Number of channels acquired
     nchans = raw.info['nchan']

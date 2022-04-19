@@ -31,6 +31,8 @@ from . import utils  # noqa: F401, F403
 from . import preprocessing  # noqa: F401, F403
 from . import maxfilter  # noqa: F401, F403
 from . import report  # noqa: F401, F403
+from . import rhino  # noqa: F401, F403
+from . import parcellation  # noqa: F401, F403
 
 # --------------------------------------------------------
 osl_logger = logging.getLogger(__name__)
