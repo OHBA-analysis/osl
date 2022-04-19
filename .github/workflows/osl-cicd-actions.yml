@@ -1,7 +1,7 @@
 name: osl-cicd-actions
 on: [push]
 jobs:
-  check-bats-version:
+  osl-cicd:
     runs-on: ubuntu-latest
     steps:
       - name: Check out repository code
