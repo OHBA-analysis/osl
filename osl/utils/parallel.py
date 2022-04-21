@@ -36,6 +36,27 @@ def dask_parallel(client, func, iter_args,
                   func_args=None, func_kwargs=None,
                   block_console=True,
                   ret_results=False):
+    """Run a function across many sets of inputs in parallel using Dask.
+
+    Parameters
+    ----------
+    client : dask.distributed.Client instance
+        Initalised dask client to handle job running
+    func : function
+        Function to be executed
+    iter_args : list, tuple
+        Input arguments to be run one at a time. eg func will be called once
+        for each item in iter_args. These are assumed to be positional
+        arguments of func.
+    func_args : list, tuple
+        Optional positional arguments that are fixed across all jobs
+    func_kwargs : dict
+        Optional keyword arguments that are fixed across all jobs
+
+    Returns
+    -------
+    Dask futures or list of results of func depending on value of ret_results.
+    """
 
     func_args = [] if func_args is None else func_args
     func_kwargs = {} if func_kwargs is None else func_kwargs
@@ -53,7 +74,12 @@ def dask_parallel(client, func, iter_args,
     # Cue up jobs
     lazy_results = []
     for idx, aa in enumerate(iter_args):
-        lazy_results.append(dask.delayed(run_func)(aa, *func_args))
+        if isinstance(aa, (list, tuple)):
+            # Assume user has provided ALL positional args
+            lazy_results.append(dask.delayed(run_func)(*aa))
+        else:
+            # Assume user has provided ONLY FIRST positional arg - rest are static
+            lazy_results.append(dask.delayed(run_func)(aa, *func_args))
     osl_logger.info('Prepared {0} jobs for processing'.format(len(lazy_results)))
 
     #persist or compute? probably persist
@@ -70,6 +96,7 @@ def dask_parallel(client, func, iter_args,
     if ret_results:
         osl_logger.info('Gathering results')
         results = client.gather(futures)
+        results = dask.compute(results)[0]
         return results
 
     return futures

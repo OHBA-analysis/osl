@@ -322,10 +322,39 @@ def write_dataset(dataset, outbase, run_id, overwrite=False):
         dataset['ica'].save(outname, overwrite=overwrite)
 
 
+def load_dataset(fpath):
+    """Read in an osl-batch dataset dict from disk.
+
+    Input is path to continuous fif file - other file types assumed to be next
+    to this fif.
+
+    """
+    dataset = {}
+    dataset['raw'] = mne.io.read_raw_fif(fpath)
+
+    icapath = fpath.replace('preproc_raw.fif', 'ica.fif')
+    if os.path.exists(icapath):
+        dataset['ica'] = mne.preprocessing.read_ica(icapath)
+
+    epochspath = fpath.replace('preproc_raw.fif', 'epo.fif')
+    if os.path.exists(epochspath):
+        dataset['epochs'] = mne.read_epochs(epochspath)
+
+    eventspath = fpath.replace('preproc_raw.fif', 'events.npy')
+    if os.path.exists(eventspath):
+        dataset['events'] = np.load(eventspath)
+
+    logpath = fpath.replace('preproc_raw.fif', 'preproc_raw.log')
+    if os.path.exists(logpath):
+        dataset['log'] = logpath
+
+    return dataset
+
+
 def plot_preproc_flowchart(config, outname=None, show=True, stagecol='wheat', startcol='red', fig=None, ax=None, title=None):
     """Make a summary flowchart of a preprocessing chain."""
     config = load_config(config)
-    
+
     if np.logical_or(ax==None, fig==None):
         fig = plt.figure(figsize=(8, 12))
         plt.subplots_adjust(top=0.95, bottom=0.05)
@@ -418,6 +447,7 @@ def run_proc_chain(infile, config, outname=None, outdir=None, ret_dataset=True,
                    'ica': None,
                    'epochs': None,
                    'events': None,
+                   'logfile': logfile,
                    'event_id': config['meta']['event_codes']}
 
         # Run through processing stages
@@ -463,7 +493,8 @@ def run_proc_chain(infile, config, outname=None, outdir=None, ret_dataset=True,
 
 
 def run_proc_batch(config, files, outdir, overwrite=False, extra_funcs=None,
-                   nprocesses=1, verbose='INFO', mneverbose='WARNING', strictrun=False):
+                   nprocesses=1, verbose='INFO', mneverbose='WARNING', strictrun=False,
+                   dask_client=None):
     """
     files can be a list of Raw objects or a list of filenames or a path to a
     textfile list of filenames
@@ -478,7 +509,7 @@ def run_proc_batch(config, files, outdir, overwrite=False, extra_funcs=None,
     if outdir is None:
         # Use the current working directory
         outdir = os.getcwd()
-    outdir = validate_outdir(outdir)
+    outdir = utils.validate_outdir(outdir)
 
     # Initialise Loggers
     mne.set_log_level(mneverbose)
@@ -496,14 +527,16 @@ def run_proc_batch(config, files, outdir, overwrite=False, extra_funcs=None,
         osl_logger.critical('Stopping : User indicated incorrect number of input files')
         sys.exit(1)
     else:
-        osl_logger.info('User confirms input files')
+        if strictrun:
+            osl_logger.info('User confirms input files')
 
     osl_logger.info('Outputs saving to: {0}'.format(outdir))
     if strictrun and click.confirm('Is this correct output directory?') is False:
         osl_logger.critical('Stopping : User indicated incorrect output directory')
         sys.exit(1)
     else:
-        osl_logger.info('User confirms output directory')
+        if strictrun:
+            osl_logger.info('User confirms output directory')
 
     config = load_config(config)
     config_str = pprint.PrettyPrinter().pformat(config)
@@ -512,7 +545,8 @@ def run_proc_batch(config, files, outdir, overwrite=False, extra_funcs=None,
         osl_logger.critical('Stopping : User indicated incorrect preproc config')
         sys.exit(1)
     else:
-        osl_logger.info('User confirms input config')
+        if strictrun:
+            osl_logger.info('User confirms input config')
 
     outdir = utils.validate_outdir(outdir)
 
@@ -527,7 +561,7 @@ def run_proc_batch(config, files, outdir, overwrite=False, extra_funcs=None,
                         overwrite=overwrite,
                         extra_funcs=extra_funcs)
 
-    # For each file...
+    # Create positional args for each file...
     args = []
     for idx, infif in enumerate(infiles):
         if outnames is None:
@@ -538,11 +572,11 @@ def run_proc_batch(config, files, outdir, overwrite=False, extra_funcs=None,
         args.append((infif, config, outname))
 
     # Actually run the processes
-    if nprocesses == 1:
-        proc_flags = [pool_func(aa) for aa in args]
+    if dask_client is None:
+        proc_flags = [pool_func(*aa) for aa in args]
     else:
-        with utils.initialise_pool(nprocesses=nprocesses) as P:
-            proc_flags = P.starmap(pool_func, args)
+        # Return results as we've fixed ret_dataset to false for batch processing
+        proc_flags = utils.parallel.dask_parallel(dask_client, pool_func, args, ret_results=True)
 
     osl_logger.info('Processed {0}/{1} files successfully'.format(np.sum(proc_flags), len(proc_flags)))
 
