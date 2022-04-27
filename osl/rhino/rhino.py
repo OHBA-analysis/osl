@@ -685,7 +685,7 @@ please check output of:\n fslorient -orient {}'.format(filenames['smri_file']))
         filenames['smri_file'])
 
     mni_mri_t = Transform('mni_tal', 'mri', xform_mni2mri)
-    write_trans(filenames['mni_mri_t_file'], mni_mri_t)
+    write_trans(filenames['mni_mri_t_file'], mni_mri_t, overwrite=True)
 
     # Transform betsurf mask/mesh output from MNI to sMRI space
     for mesh_name in {'outskin_mesh', 'inskull_mesh', 'outskull_mesh'}:
@@ -1017,12 +1017,12 @@ To turn this off, set use_dev_ctf_t=False')
 
     head_mri_t = Transform('head', 'mri',
                            np.linalg.inv(xform_native2polhemus_refined_copy))
-    write_trans(filenames['head_mri_t_file'], head_mri_t)
+    write_trans(filenames['head_mri_t_file'], head_mri_t, overwrite=True)
 
     nativeindex_native_t = np.copy(xform_nativeindex2native)
     mrivoxel_mri_t = Transform(
         'mri_voxel', 'mri', nativeindex_native_t)
-    write_trans(filenames['mrivoxel_mri_t_file'], mrivoxel_mri_t)
+    write_trans(filenames['mrivoxel_mri_t_file'], mrivoxel_mri_t, overwrite=True)
 
     # save sMRI derived fids in mm in polhemus space
     np.savetxt(filenames['smri_nasion_file'], smri_nasion_polhemus)

@@ -162,7 +162,8 @@ class Parcellation:
             raise ValueError("You need to have run parcellation.parcellate() prior to calling parcellation.nii()")
 
         result = _parcel_timeseries2nii(self, parcel_timeseries_data, self.parcel_timeseries,
-                                        method=method, out_nii_fname=out_nii_fname, working_dir=working_dir, times=times)
+                                        method=method, out_nii_fname=out_nii_fname,
+                                        working_dir=working_dir, times=times)
 
         return result
 
@@ -297,8 +298,8 @@ def _get_parcel_timeseries(voxel_timeseries, parcellation_asmatrix, method='spat
 
     # combine the trials and time dimensions together,
     # we will re-separate them after the parcel timeseries are computed
-    voxel_timeseries_reshaped = np.reshape(voxel_timeseries, (voxel_timeseries.shape[0], ntpts*ntrials))
-    parcel_timeseries_reshaped = np.zeros((nparcels, ntpts*ntrials))
+    voxel_timeseries_reshaped = np.reshape(voxel_timeseries, (voxel_timeseries.shape[0], ntpts * ntrials))
+    parcel_timeseries_reshaped = np.zeros((nparcels, ntpts * ntrials))
 
     voxel_weightings = np.zeros(parcellation_asmatrix.shape)
 
@@ -346,15 +347,16 @@ def _get_parcel_timeseries(voxel_timeseries, parcellation_asmatrix, method='spat
                 node_ts = ts_sign * (ts_scale / np.maximum(np.std(pca_scores), np.finfo(float).eps)) * pca_scores
 
                 inds = np.where(scaled_parcellation > 0)[0]
-                voxel_weightings[inds, pp] = ts_sign * ts_scale / np.maximum(np.std(pca_scores), np.finfo(float).eps) \
-                    * (np.reshape(U, [-1]) * scaled_parcellation[scaled_parcellation > 0].T)
+                voxel_weightings[inds, pp] = ts_sign * ts_scale / \
+                                                np.maximum(np.std(pca_scores), np.finfo(float).eps) \
+                                                * (np.reshape(U, [-1]) * scaled_parcellation[scaled_parcellation > 0].T)
 
             else:
                 print("WARNING: An empty parcel mask was found for parcel {} when calculating its time-courses\n \
 The parcel will have a flat zero time-course. \n \
 Check this does not cause further problems with the analysis. \n".format(pp))
 
-                node_ts = np.zeros(ntpts*ntrials)
+                node_ts = np.zeros(ntpts * ntrials)
                 inds = np.where(scaled_parcellation > 0)[0]
                 voxel_weightings[inds, pp] = 0
 
@@ -406,14 +408,14 @@ Check this does not cause further problems with the analysis. \n".format(pp))
 
                 inds = np.where(parcellation_asmatrix[:, pp] > 0)[0]
                 voxel_weightings[inds, pp] = ts_sign * ts_scale / np.maximum(np.std(pca_scores), np.finfo(float).eps) \
-                    * np.reshape(U, [-1])
+                                             * np.reshape(U, [-1])
 
             else:
                 print("WARNING: An empty parcel mask was found for parcel {} when calculating its time-courses\n \
 The parcel will have a flat zero time-course. \n \
 Check this does not cause further problems with the analysis. \n".format(pp))
 
-                node_ts = np.zeros(ntpts*ntrials)
+                node_ts = np.zeros(ntpts * ntrials)
                 inds = np.where(parcellation_asmatrix[:, pp] > 0)[0]
                 voxel_weightings[inds, pp] = 0
 
@@ -538,8 +540,8 @@ parcel_timeseries_data.shape[0] = {} \n'.format(
         # Exclude from parcel any voxel_coords that are further than gridstep away
         if distance < gridstep:
             vol[parcellation_mask_inds[0, index],
-                parcellation_mask_inds[1, index],
-                parcellation_mask_inds[2, index], :] \
+            parcellation_mask_inds[1, index],
+            parcellation_mask_inds[2, index], :] \
                 = voxel_data[ind, :]
 
     # SAVE AS NIFTI
@@ -555,10 +557,10 @@ parcel_timeseries_data.shape[0] = {} \n'.format(
 
     return out_nii_fname
 
+
 ##########################################
 
 def symmetric_orthogonalise(timeseries, maintain_magnitudes=False, compute_weights=False):
-
     """
     Returns orthonormal matrix L which is closest to A, as measured by the Frobenius norm of (L-A).
     The orthogonal matrix is constructed from a singular value decomposition of A.
@@ -593,7 +595,6 @@ def symmetric_orthogonalise(timeseries, maintain_magnitudes=False, compute_weigh
     nparcels = timeseries.shape[0]
     ntpts = timeseries.shape[1]
     ntrials = timeseries.shape[2]
-    compute_weights = False
 
     # combine the trials and time dimensions together,
     # we will re-separate them after the parcel timeseries are computed
@@ -606,7 +607,7 @@ def symmetric_orthogonalise(timeseries, maintain_magnitudes=False, compute_weigh
     [U, S, V] = np.linalg.svd(timeseries, full_matrices=False)
 
     # we need to check that we have sufficient rank
-    tol = max(timeseries.shape) * S[0] * np.finfo(type(timeseries[0,0])).eps
+    tol = max(timeseries.shape) * S[0] * np.finfo(type(timeseries[0, 0])).eps
     r = sum(S > tol)
     full_rank = (r >= timeseries.shape[1])
 
@@ -639,9 +640,11 @@ def symmetric_orthogonalise(timeseries, maintain_magnitudes=False, compute_weigh
     else:
         return ortho_timeseries
 
+
 def save_parcel_timeseries(ts, fname):
     # saves passed in dictionary, ts, as a hd5 file
     dd.io.save(ts, fname)
+
 
 def load_parcel_timeseries(fname):
     # load passed in hd5 file
