@@ -34,7 +34,6 @@ from scipy.spatial import KDTree
 from scipy import LowLevelCallable
 
 import pandas as pd
-import open3d as o3d
 import matplotlib.pyplot as plt
 
 from numba import cfunc, carray
@@ -659,8 +658,9 @@ def create_freesurfer_mesh(infile,
     name, ext = op.splitext(name)
 
     if ext == '.gz':
-
         print('Creating surface mesh for {} .....'.format(infile))
+
+        import open3d as o3d
 
         name, ext = op.splitext(name)
         if ext != '.nii':
