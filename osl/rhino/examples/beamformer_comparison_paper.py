@@ -297,7 +297,7 @@ for stimcat in list(par['event_dict'].keys()):
                                        reduce_rank=True,
                                        verbose=True)
 
-    stc = mne.beamformer.apply_lcmv(evoked, filters, max_ori_out='signed', verbose=True)
+    stc = mne.beamformer.apply_lcmv(evoked, filters)
     stc = np.abs(stc)
     src_peak, t_peak = stc.get_peak()
     timepoint = int(t_peak // stc.tstep - stc.times[0] // stc.tstep)

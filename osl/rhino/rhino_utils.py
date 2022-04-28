@@ -15,30 +15,25 @@ from mne import write_surface, Transform
 from mne.transforms import read_trans
 from mne.io.meas_info import _simplify_info
 from mne.io.pick import pick_channels_cov, pick_info
-from mne.source_estimate import _make_stc, _get_src_type
-from mne.cov import Covariance, make_ad_hoc_cov
-from mne.forward import _subject_from_forward
-from mne.forward.forward import is_fixed_orient, _restrict_forward_to_src_sel
 from mne.io.proj import make_projector, Projection
-from mne.minimum_norm.inverse import _get_vertno, _prepare_forward
-from mne.source_space import label_src_vertno_sel
-from mne.utils import (verbose, _check_one_ch_type, _check_info_inv, check_fname,
-                       _reg_pinv, _check_option, logger,
-                       _pl, _check_src_normal, check_version, _sym_mat_pow, warn)
+from mne.source_estimate import _get_src_type
+from mne.forward import _subject_from_forward
+from mne.forward.forward import is_fixed_orient
 
+from mne.utils import (verbose, _check_one_ch_type, _check_info_inv,
+                       _reg_pinv, _check_option, logger, _check_src_normal,
+                       _pl, check_version, _sym_mat_pow, warn)
 from mne.rank import compute_rank
-from mne.minimum_norm.inverse import _check_depth
+from mne.minimum_norm.inverse import _check_depth, _prepare_forward, _get_vertno
+
 from mne.beamformer._compute_beamformer import (
-    _prepare_beamformer_input, _compute_power, _reduce_leadfield_rank,
-    _compute_beamformer, _check_src_type, Beamformer, _proj_whiten_data,
-    _sym_inv_sm)
+    _reduce_leadfield_rank, Beamformer, _sym_inv_sm)
 
 from scipy.ndimage import generic_filter
 from scipy.spatial import KDTree
 from scipy import LowLevelCallable
 
 import pandas as pd
-import open3d as o3d
 import matplotlib.pyplot as plt
 
 from numba import cfunc, carray
@@ -663,8 +658,9 @@ def create_freesurfer_mesh(infile,
     name, ext = op.splitext(name)
 
     if ext == '.gz':
-
         print('Creating surface mesh for {} .....'.format(infile))
+
+        import open3d as o3d
 
         name, ext = op.splitext(name)
         if ext != '.nii':
@@ -989,7 +985,6 @@ def _make_lcmv(info, forward, data_cov,
     Notes
     -----
     Rhino version of mne.beamformer.make_lcmv
-
     Note that code that is different to mne.beamformer.make_lcmv is labelled
     with MWW
 
@@ -1092,6 +1087,9 @@ def _compute_beamformer(G, Cm, reg, n_orient, weight_norm, pick_ori,
 
     For more detailed information on the parameters, see the docstrings of
     `make_lcmv` and `make_dics`.
+
+    Rhino version of mne.beamformer._compute_beamformer
+    See lines marked MWW for where code has been changed
 
     Parameters
     ----------
@@ -1345,3 +1343,69 @@ def _compute_beamformer(G, Cm, reg, n_orient, weight_norm, pick_ori,
     logger.info('Filter computation complete')
     return W, max_power_ori
 
+
+#############################################################################
+
+def _prepare_beamformer_input(info, forward, label=None, pick_ori=None,
+                              noise_cov=None, rank=None, pca=False, loose=None,
+                              combine_xyz='fro', exp=None, limit=None,
+                              allow_fixed_depth=True, limit_depth_chs=False):
+    """Input preparation common for LCMV, DICS, and RAP-MUSIC.
+        Rhino version of mne.beamformer._prepare_beamformer_input
+        See lines marked MWW for where code has been changed
+    """
+
+    # MWW
+    #_check_option('pick_ori', pick_ori,
+    #              ('normal', 'max-power', 'vector', None))
+    _check_option('pick_ori', pick_ori,
+                  ('normal', 'max-power', 'vector', 'max-power-pre-weight-norm', None))
+
+
+    # Restrict forward solution to selected vertices
+    if label is not None:
+        _, src_sel = label_src_vertno_sel(label, forward['src'])
+        forward = _restrict_forward_to_src_sel(forward, src_sel)
+
+    if loose is None:
+        loose = 0. if is_fixed_orient(forward) else 1.
+    if noise_cov is None:
+        noise_cov = make_ad_hoc_cov(info, std=1.)
+    forward, info_picked, gain, _, orient_prior, _, trace_GRGT, noise_cov, \
+        whitener = _prepare_forward(
+            forward, info, noise_cov, 'auto', loose, rank=rank, pca=pca,
+            use_cps=True, exp=exp, limit_depth_chs=limit_depth_chs,
+            combine_xyz=combine_xyz, limit=limit,
+            allow_fixed_depth=allow_fixed_depth)
+    is_free_ori = not is_fixed_orient(forward)  # could have been changed
+    nn = forward['source_nn']
+    if is_free_ori:  # take Z coordinate
+        nn = nn[2::3]
+    nn = nn.copy()
+    vertno = _get_vertno(forward['src'])
+    if forward['surf_ori']:
+        nn[...] = [0, 0, 1]  # align to local +Z coordinate
+    if pick_ori is not None and not is_free_ori:
+        raise ValueError(
+            'Normal or max-power orientation (got %r) can only be picked when '
+            'a forward operator with free orientation is used.' % (pick_ori,))
+    if pick_ori == 'normal' and not forward['surf_ori']:
+        raise ValueError('Normal orientation can only be picked when a '
+                         'forward operator oriented in surface coordinates is '
+                         'used.')
+    _check_src_normal(pick_ori, forward['src'])
+    del forward, info
+
+    # Undo the scaling that MNE prefers
+    scale = np.sqrt((noise_cov['eig'] > 0).sum() / trace_GRGT)
+    gain /= scale
+    if orient_prior is not None:
+        orient_std = np.sqrt(orient_prior)
+    else:
+        orient_std = np.ones(gain.shape[1])
+
+    # Get the projector
+    proj, _, _ = make_projector(
+        info_picked['projs'], info_picked['ch_names'])
+    return (is_free_ori, info_picked, proj, vertno, gain, whitener, nn,
+            orient_std)
