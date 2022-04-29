@@ -2557,20 +2557,22 @@ def make_lcmv(subjects_dir, subject,
         # osl_normalise_sensor_data.m function in Matlab OSL does,
         # by computing a diagonal noise cov with the variances set to the mean
         # variance of each sensor type (e.g. mag, grad, eeg.)
-        noise_cov_diag = np.zeros([data_cov.data.shape[0]])
         for type in chantypes:
-            dat_type = dat.copy().pick(type)
+            dat_type = dat.copy().pick(type, exclude="bads")
+            noise_cov_diag = np.zeros([data_cov.data.shape[0]])
 
             inds = []
+            ch_names = []
             for ch_name in dat_type.info['ch_names']:
                 inds.append(data_cov.ch_names.index(ch_name))
+
             tmp = np.mean(np.diag(data_cov.data)[inds])
             noise_cov_diag[inds] = tmp
 
             print('Variance for chan type {} is {}'.format(type, tmp))
 
-        bads = [b for b in dat.info['bads'] if b in dat.ch_names]
-        noise_cov = Covariance(noise_cov_diag, dat.ch_names, bads, dat.info['projs'], nfree=1e6)
+        bads = [b for b in dat.info['bads'] if b in data_cov.ch_names]
+        noise_cov = Covariance(noise_cov_diag, data_cov.ch_names, bads, dat.info['projs'], nfree=1e10)
 
     filters = rhino_utils._make_lcmv(dat.info, fwd,
                                     data_cov,
