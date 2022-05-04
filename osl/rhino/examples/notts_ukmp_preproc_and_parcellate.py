@@ -39,8 +39,8 @@ subjects_dir = '/Users/woolrich/homedir/vols_data/ukmp'
 
 subjects_to_do = np.arange(1, 75)
 
-# subjects_to_do = np.setdiff1d(subjects_to_do, subjects_to_exclude, assume_unique=True)
-subjects_to_do = {1, 2, 3, 4, 5}
+#subjects_to_do = np.setdiff1d(subjects_to_do, subjects_to_exclude, assume_unique=True)
+#subjects_to_do = {1, 2, 3, 4, 5}
 
 task = 'resteyesopen'
 freq_range = (1, 45)
@@ -57,7 +57,7 @@ recon_dirs = []
 
 # input files
 for sub in subjects_to_do:
-    subject = 'sub-not00{}'.format(sub)
+    subject = 'sub-not' + ('{}'.format(sub)).zfill(3)
     ds_file = op.join(subjects_dir, subject, 'meg', subject + '_task-' + task + '_meg.ds')
     smri_file = op.join(subjects_dir, subject, 'anat', subject + '_T1w.nii.gz')
 
@@ -308,7 +308,7 @@ if run_extract_parcel_timeseries:
 
     makedirs(op.join(subjects_dir, 'parcel_timeseries'), exist_ok=True)
 
-    for recon_dir in recon_dirs:
+    for subject, recon_dir in zip(subjects, recon_dirs):
         parc.load_parcel_timeseries(op.join(recon_dir, 'parcel_timeseries_orth.hd5'))
 
         if use_amplitude_timeseries:
