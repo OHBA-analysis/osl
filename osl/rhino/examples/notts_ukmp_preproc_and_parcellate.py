@@ -7,6 +7,17 @@ Full pipeline (including preproc, source recon and parcellation) for getting par
 
 @author: woolrich
 
+
+ON laptop
+scp ~/oslpy/osl/rhino/examples/notts_ukmp_preproc_and_parcellate.py hbamac13.ohba.ox.ac.uk:/Users/woolrich/oslpy/osl/rhino/examples/
+ssh -Y woolrich@hbamac13.ohba.ox.ac.uk
+---
+conda activate mne1
+vi /Users/woolrich/oslpy/osl/rhino/examples/notts_ukmp_preproc_and_parcellate.py
+nohup python /Users/woolrich/oslpy/osl/rhino/examples/notts_ukmp_preproc_and_parcellate.py > /Users/woolrich/homedir/vols_data/ukmp/preproc_and_parcellate.log 2>&1 &
+tail -f /Users/woolrich/homedir/vols_data/ukmp/preproc_and_parcellate.log
+ls /Users/woolrich/homedir/vols_data/ukmp/parcel_timeseries/
+
 """
 
 import os
@@ -28,9 +39,8 @@ subjects_dir = '/Users/woolrich/homedir/vols_data/ukmp'
 
 subjects_to_do = np.arange(1, 75)
 
-# subjects_to_do = np.setdiff1d(subjects_to_do, subjects_to_exclude, assume_unique=True)
-# subjects_to_do = {1, 2, 4, 5, 6, 7}
-subjects_to_do = {1}
+#subjects_to_do = np.setdiff1d(subjects_to_do, subjects_to_exclude, assume_unique=True)
+#subjects_to_do = {1, 2, 3, 4, 5}
 
 task = 'resteyesopen'
 freq_range = (1, 45)
@@ -47,13 +57,18 @@ recon_dirs = []
 
 # input files
 for sub in subjects_to_do:
-    subject = 'sub-not00{}'.format(sub)
-    subjects.append(subject)
-    ds_files.append(op.join(subjects_dir, subject, 'meg', subject + '_task-' + task + '_meg.ds'))
-    preproc_fif_files.append(op.join(subjects_dir, subject, 'meg', subject + '_task-' + task + '_meg_preproc_raw.fif'))
-    pos_files.append(op.join(subjects_dir, subject, 'meg', subject + '_headshape.pos'))
-    smri_files.append(op.join(subjects_dir, subject, 'anat', subject + '_T1w.nii.gz'))
-    recon_dirs.append(op.join(subjects_dir, subject, 'meg'))
+    subject = 'sub-not' + ('{}'.format(sub)).zfill(3)
+    ds_file = op.join(subjects_dir, subject, 'meg', subject + '_task-' + task + '_meg.ds')
+    smri_file = op.join(subjects_dir, subject, 'anat', subject + '_T1w.nii.gz')
+
+    # check ds file and structural file exists for this subject
+    if op.exists(ds_file) and op.exists(smri_file):
+        ds_files.append(ds_file)
+        subjects.append(subject)
+        preproc_fif_files.append(op.join(subjects_dir, subject, 'meg', subject + '_task-' + task + '_meg_preproc_raw.fif'))
+        pos_files.append(op.join(subjects_dir, subject, 'meg', subject + '_headshape.pos'))
+        smri_files.append(smri_file)
+        recon_dirs.append(op.join(subjects_dir, subject, 'meg'))
 
 run_preproc = True
 run_preproc_report = True
@@ -101,7 +116,9 @@ if run_preproc:
         ))
 
 if run_preproc_report:
-    report.gen_report(preproc_fif_files, outdir=subjects_dir)
+    preproc_dir = op.join(subjects_dir, 'preproc_report')
+    makedirs(preproc_dir, exist_ok=True)
+    report.gen_report(preproc_fif_files, outdir=preproc_dir)
 
 ##########################
 
@@ -289,7 +306,9 @@ if run_extract_parcel_timeseries:
 
     parc = parcellation.Parcellation(parcellation_fname)
 
-    for recon_dir in recon_dirs:
+    makedirs(op.join(subjects_dir, 'parcel_timeseries'), exist_ok=True)
+
+    for subject, recon_dir in zip(subjects, recon_dirs):
         parc.load_parcel_timeseries(op.join(recon_dir, 'parcel_timeseries_orth.hd5'))
 
         if use_amplitude_timeseries:
@@ -298,17 +317,8 @@ if run_extract_parcel_timeseries:
             for idx in range(nparcels):
                 hilb[idx, :] = mne.filter._my_hilbert(parc.parcel_timeseries['data'][idx, :], None, True)
 
-            np.save(op.join(recon_dir, 'parcel_timeseries_hilb.npy'), hilb.T.astype(np.float32))
+            np.save(op.join(subjects_dir, 'parcel_timeseries', subject + '_ts_hilb_task-' + task + '.npy'), hilb.T.astype(np.float32))
         else:
-            np.save(op.join(recon_dir, 'parcel_timeseries.npy'), parc.parcel_timeseries['data'].T.astype(np.float32))
-
-if False:
-    # copy to bmrc
-    for subject, recon_dir in zip(subjects, recon_dirs):
-        print('rsync -Phr {} vxw496@cluster1.bmrc.ox.ac.uk:{}'
-              .format(op.join(recon_dir, 'parcel_timeseries_hilb.npy'),
-                      op.join('/users/woolrich/vxw496/projects/notts_ukmp', subject, 'meg/')
-                      )
-              )
+            np.save(op.join(subjects_dir, 'parcel_timeseries', subject + '_ts_task-' + task + '.npy'), parc.parcel_timeseries['data'].T.astype(np.float32))
 
 
