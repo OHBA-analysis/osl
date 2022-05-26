@@ -41,10 +41,10 @@ subjects_to_do = np.arange(1, 75)
 
 #subjects_to_do = np.setdiff1d(subjects_to_do, subjects_to_exclude, assume_unique=True)
 #subjects_to_do = {1, 2, 3, 4, 5}
+subjects_to_do = {1, 2}
 
 task = 'resteyesopen'
 freq_range = (1, 45)
-use_amplitude_timeseries = True
 rank = {'mag': 125}
 chantypes = ['mag']
 
@@ -70,11 +70,11 @@ for sub in subjects_to_do:
         smri_files.append(smri_file)
         recon_dirs.append(op.join(subjects_dir, subject, 'meg'))
 
-run_preproc = True
-run_preproc_report = True
-run_compute_surfaces = True
-run_coreg = True
-run_forward_model = True
+run_preproc = False
+run_preproc_report = False
+run_compute_surfaces = False
+run_coreg = False
+run_forward_model = False
 run_source_recon_parcellate = True
 run_orth = True
 run_extract_parcel_timeseries = True
@@ -87,6 +87,13 @@ std_brain = '/Users/woolrich/homedir/vols_data/mne/self_paced_fingertap/subject1
 
 # resolution of dipole grid for source recon
 gridstep = 7  # mm
+
+
+#smri_file = '/Users/woolrich/smri.nii.gz'
+rhino.compute_surfaces(smri_file,
+                       subjects_dir, subject,
+                       include_nose=True,
+                       cleanup_files=True)
 
 ##########################
 
@@ -311,14 +318,13 @@ if run_extract_parcel_timeseries:
     for subject, recon_dir in zip(subjects, recon_dirs):
         parc.load_parcel_timeseries(op.join(recon_dir, 'parcel_timeseries_orth.hd5'))
 
-        if use_amplitude_timeseries:
-            nparcels = parc.parcel_timeseries['data'].shape[0]
-            hilb = np.zeros(parc.parcel_timeseries['data'].shape)
-            for idx in range(nparcels):
-                hilb[idx, :] = mne.filter._my_hilbert(parc.parcel_timeseries['data'][idx, :], None, True)
+        nparcels = parc.parcel_timeseries['data'].shape[0]
+        hilb = np.zeros(parc.parcel_timeseries['data'].shape)
+        for idx in range(nparcels):
+            hilb[idx, :] = mne.filter._my_hilbert(parc.parcel_timeseries['data'][idx, :], None, True)
 
-            np.save(op.join(subjects_dir, 'parcel_timeseries', subject + '_ts_hilb_task-' + task + '.npy'), hilb.T.astype(np.float32))
-        else:
-            np.save(op.join(subjects_dir, 'parcel_timeseries', subject + '_ts_task-' + task + '.npy'), parc.parcel_timeseries['data'].T.astype(np.float32))
+        np.save(op.join(subjects_dir, 'parcel_timeseries', subject + '_ts_hilb_task-' + task + '.npy'), hilb.T.astype(np.float32))
+
+        np.save(op.join(subjects_dir, 'parcel_timeseries', subject + '_ts_task-' + task + '.npy'), parc.parcel_timeseries['data'].T.astype(np.float32))
 
 
