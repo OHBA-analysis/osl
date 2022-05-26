@@ -42,6 +42,13 @@ from numba.types import CPointer
 
 
 #############################################################################
+def system_call(cmd, verbose=False):
+    if verbose:
+        print(cmd)
+    os.system(cmd)
+
+
+#############################################################################
 def get_gridstep(fwd):
     """
     Get gridstep (i.e. spatial resolution of dipole grid) in mm from forward model
@@ -895,18 +902,19 @@ def plot_polhemus_points(txt_fnames, colors=None, scales=None,
 
         pnts = np.loadtxt(txt_fnames[ss])
 
-        ax.scatter(pnts[0, ], pnts[1, ], pnts[2, ],
+        ax.scatter(pnts[0,], pnts[1,], pnts[2,],
                    color=color, s=scale, alpha=alpha, marker=marker)
+
 
 #############################################################################
 
-@ verbose
+@verbose
 def _make_lcmv(info, forward, data_cov,
-                reg=0.05, noise_cov=None, label=None,
-                pick_ori=None, rank='info',
-                noise_rank='info',
-                weight_norm='unit-noise-gain-invariant',
-                reduce_rank=False, depth=None, inversion='matrix', verbose=None):
+               reg=0.05, noise_cov=None, label=None,
+               pick_ori=None, rank='info',
+               noise_rank='info',
+               weight_norm='unit-noise-gain-invariant',
+               reduce_rank=False, depth=None, inversion='matrix', verbose=None):
     """Compute LCMV spatial filter.
 
     Parameters
@@ -1077,6 +1085,7 @@ def _make_lcmv(info, forward, data_cov,
         inversion=inversion)
 
     return filters
+
 
 #############################################################################
 
@@ -1356,11 +1365,10 @@ def _prepare_beamformer_input(info, forward, label=None, pick_ori=None,
     """
 
     # MWW
-    #_check_option('pick_ori', pick_ori,
+    # _check_option('pick_ori', pick_ori,
     #              ('normal', 'max-power', 'vector', None))
     _check_option('pick_ori', pick_ori,
                   ('normal', 'max-power', 'vector', 'max-power-pre-weight-norm', None))
-
 
     # Restrict forward solution to selected vertices
     if label is not None:
@@ -1372,11 +1380,11 @@ def _prepare_beamformer_input(info, forward, label=None, pick_ori=None,
     if noise_cov is None:
         noise_cov = make_ad_hoc_cov(info, std=1.)
     forward, info_picked, gain, _, orient_prior, _, trace_GRGT, noise_cov, \
-        whitener = _prepare_forward(
-            forward, info, noise_cov, 'auto', loose, rank=rank, pca=pca,
-            use_cps=True, exp=exp, limit_depth_chs=limit_depth_chs,
-            combine_xyz=combine_xyz, limit=limit,
-            allow_fixed_depth=allow_fixed_depth)
+    whitener = _prepare_forward(
+        forward, info, noise_cov, 'auto', loose, rank=rank, pca=pca,
+        use_cps=True, exp=exp, limit_depth_chs=limit_depth_chs,
+        combine_xyz=combine_xyz, limit=limit,
+        allow_fixed_depth=allow_fixed_depth)
     is_free_ori = not is_fixed_orient(forward)  # could have been changed
     nn = forward['source_nn']
     if is_free_ori:  # take Z coordinate
