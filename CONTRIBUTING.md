@@ -63,6 +63,13 @@ For urgent and obvious fixes, a core developer can do the following:
 * create a pull request with quick description of the issue
 * merge it to main themselves.
 
+### Documentation
+
+To build the sphinx documentation:
+```
+python setup.py build_sphinx
+```
+
 # git school
 
 Practical overview of workflows in git - I'm assuming you're roughly familiar with adding and committing before starting this.

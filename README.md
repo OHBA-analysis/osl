@@ -8,3 +8,9 @@ cd oslpy
 conda env create -f envs/osl.yml
 conda activate osl
 ```
+
+Build Documentation
+===================
+```
+python setup.py build_sphinx
+```
