@@ -32,6 +32,38 @@ def initialise_pool(nprocesses=1):
     return P
 
 
+def dask_parallel_bag(func, iter_args,
+                      func_args=None, func_kwargs=None):
+    """A maybe more consistent alternative to dask_parallel."""
+
+    func_args = [] if func_args is None else func_args
+    func_kwargs = {} if func_kwargs is None else func_kwargs
+
+    client = dask.distributed.default_client()
+
+    osl_logger.info('Dask Client : {0}'.format(client.__repr__()))
+    osl_logger.info('Dask Client dashboard link: {0}'.format(client.dashboard_link))
+
+    osl_logger.debug('Running function : {0}'.format(func.__repr__()))
+    osl_logger.debug('User args : {0}'.format(func_args))
+    osl_logger.debug('User kwargs : {0}'.format(func_kwargs))
+
+    # Set kwargs - need to handle args on function call to preserve order.
+    run_func = partial(func, **func_kwargs)
+    osl_logger.info('Function defined : {0}'.format(run_func))
+
+    import dask.bag as db
+    b = db.from_sequence(iter_args)
+
+    #bm = db.map(run_func, b, *func_args)
+    bm = b.starmap(run_func, *func_args)
+    flags = bm.compute()
+
+    osl_logger.info('Computation complete')
+
+    return flags
+
+
 def dask_parallel(client, func, iter_args,
                   func_args=None, func_kwargs=None,
                   block_console=True,

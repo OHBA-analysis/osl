@@ -568,7 +568,6 @@ def run_proc_batch(config, files, outdir, overwrite=False, extra_funcs=None,
             outname = None
         else:
             outname = outnames[idx]
-
         args.append((infif, config, outname))
 
     # Actually run the processes
@@ -576,7 +575,8 @@ def run_proc_batch(config, files, outdir, overwrite=False, extra_funcs=None,
         proc_flags = [pool_func(*aa) for aa in args]
     else:
         # Return results as we've fixed ret_dataset to false for batch processing
-        proc_flags = utils.parallel.dask_parallel(dask_client, pool_func, args, ret_results=True)
+        #proc_flags = utils.parallel.dask_parallel(dask_client, pool_func, args, ret_results=True)
+        proc_flags = utils.parallel.dask_parallel_bag(pool_func, args)
 
     osl_logger.info('Processed {0}/{1} files successfully'.format(np.sum(proc_flags), len(proc_flags)))
 
