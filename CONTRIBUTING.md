@@ -34,6 +34,16 @@ If you are an OSL developer, or working with the OSL team, you can make contribu
 
 The core developer team is @woolrich, @ajquinn, @cgohil8 and @matsvanes. A few example workflows are listed below.
 
+### Installation
+
+To install an editable version with pip:
+```
+conda create --name osl python=3
+git clone git@github.com:OHBA-analysis/oslpy.git
+cd oslpy
+pip install -e .
+```
+
 ### Bug Fixes & New features
 
 To fix an isolated problem, any contributor can.
