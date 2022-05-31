@@ -306,7 +306,7 @@ def write_dataset(dataset, outbase, run_id, overwrite=False):
     # Save output
     outname = outbase.format(run_id=run_id.replace('_raw', ''), ftype='preproc_raw', fext='fif')
     if pathlib.Path(outname).exists() and not overwrite:
-        raise ValueError('{} already exists. Please delete or do not use overwrite=False.'.format(outname))
+        raise ValueError('{} already exists. Please delete or do use overwrite=True.'.format(outname))
     dataset['raw'].save(outname, overwrite=overwrite)
 
     if dataset['events'] is not None:
@@ -456,7 +456,7 @@ def run_proc_chain(infile, config, outname=None, outdir=None, ret_dataset=True,
         return 1
 
 
-def run_proc_batch(config, files, outdir=None, overwrite=True, extra_funcs=None,
+def run_proc_batch(config, files, outdir=None, overwrite=False, extra_funcs=None,
                    nprocesses=1, verbose='INFO', mneverbose='WARNING'):
     """
     files can be a list of Raw objects or a list of filenames or a path to a
