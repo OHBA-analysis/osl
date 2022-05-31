@@ -46,12 +46,22 @@ class SPMMEEG:
             self.events = [ev for t in self.trials for ev in t.events]
         self.ntrials = len(self.trials)
 
-
         # Build some metadata lists - copying spm naming conventions
-        self.conditions = [t.label for t in self.trials]
-        self.condition_values = [int(_get_trial_trigger_value(t)) for t in self.trials]
-        self.condlist = np.unique(self.conditions)
-
+        if self.type == 'single':
+            self.conditions = [t.label for t in self.trials]
+            self.condition_values = []
+            try:
+                for t in self.trials:
+                    self.condition_values.append(int(_get_trial_trigger_value(t)))
+            except ValueError:
+                print('Could not find an integer trigger value in trial')
+                print(t)
+                raise
+            self.condlist = np.unique(self.conditions)
+        else:
+            self.conditions = None
+            self.condition_values = None
+            self.condlist = None
 
         ## Setup montage structures
         self.montage = {}
