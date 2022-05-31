@@ -110,9 +110,10 @@ def import_data(infile, preload=True, logfile=None):
 # similar to _mne_wrappers (with ICA functions?).
 
 
-def detect_badsegments(raw, segment_len=1000, picks='grad', mode=None):
+def detect_badsegments(raw, segment_len=1000, picks='grad', mode='raw'):
     """Set bad segments in MNE object."""
-    if mode is None:
+    if (mode is None) or (mode == 'raw'):
+        mode = 'raw'
         XX = raw.get_data(picks=picks)
     elif mode == 'diff':
         XX = np.diff(raw.get_data(picks=picks), axis=1)
@@ -131,7 +132,7 @@ def detect_badsegments(raw, segment_len=1000, picks='grad', mode=None):
         offsets = np.r_[offsets, len(bdinds)-1]
     assert(len(onsets) == len(offsets))
     durations = offsets - onsets
-    descriptions = np.repeat('bad_segment_{0}'.format(picks), len(onsets))
+    descriptions = np.repeat('bad_segment_{0}_{1}'.format(picks, mode), len(onsets))
     osl_logger.info('Found {0} bad segments'.format(len(onsets)))
 
     onsets = (onsets + raw.first_samp) / raw.info['sfreq']
