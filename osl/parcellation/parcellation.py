@@ -16,11 +16,11 @@ from nilearn.plotting import plot_markers
 import scipy.sparse.linalg
 from scipy.spatial import KDTree
 from osl.rhino import rhino_utils
-import deepdish as dd
 
 import os
 import os.path as op
 
+from ..utils import soft_import
 
 ####################################################################################
 
@@ -655,9 +655,11 @@ def symmetric_orthogonalise(timeseries, maintain_magnitudes=False, compute_weigh
 
 def _save_parcel_timeseries(ts, fname):
     # saves passed in dictionary, ts, as a hd5 file
+    dd = soft_import('deepdish')
     dd.io.save(fname, ts)
 
 def _load_parcel_timeseries(fname):
     # load passed in hd5 file
+    dd = soft_import('deepdish')
     ts = dd.io.load(fname)
     return ts

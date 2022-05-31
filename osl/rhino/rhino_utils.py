@@ -40,6 +40,8 @@ from numba import cfunc, carray
 from numba.types import intc, intp, float64, voidptr
 from numba.types import CPointer
 
+from ..utils import soft_import
+
 
 #############################################################################
 def system_call(cmd, verbose=False):
@@ -667,7 +669,8 @@ def create_freesurfer_mesh(infile,
     if ext == '.gz':
         print('Creating surface mesh for {} .....'.format(infile))
 
-        import open3d as o3d
+        # Soft import raising an informative warning if not installed
+        o3s = soft_import('open3d')
 
         name, ext = op.splitext(name)
         if ext != '.nii':
