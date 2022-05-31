@@ -6,7 +6,7 @@ reqs = ['numpy', 'scipy', 'matplotlib', 'mne>=1.0.0', 'sklearn', 'fslpy',
         'file-tree', 'glmtools', 'numba', 'nilearn']
 doc_reqs = ['sphinx==4.0.2', 'numpydoc', 'sphinx_gallery', 'pydata-sphinx-theme']
 dev_reqs = ['setuptools>=41.0.1', 'pytest', 'pytest-cov', 'coverage', 'flake8']
-source_reqs = ['open3d==0.9.0.0', 'deepdish']
+source_reqs = ['opencv-python', 'open3d==0.9.0.0', 'deepdish']
 
 name = 'osl'
 

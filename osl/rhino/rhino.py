@@ -17,7 +17,6 @@ from osl.rhino import rhino_utils
 from scipy.ndimage import morphology
 from scipy.spatial import KDTree
 from sklearn.mixture import GaussianMixture
-from cv2 import getStructuringElement, morphologyEx, MORPH_GRADIENT, MORPH_RECT
 
 from mne.viz.backends.renderer import _get_renderer
 from mne.transforms import write_trans, read_trans, apply_trans, _get_trans, \
@@ -32,6 +31,8 @@ from mne import read_epochs, read_forward_solution, make_bem_model, \
 from mne.io.constants import FIFF
 from mne.bem import ConductorModel, read_bem_solution
 
+from ..utils import soft_import
+cv2 = soft_import('cv2')
 
 #############################################################################
 
@@ -630,21 +631,21 @@ please check output of:\n fslorient -orient {}'.format(filenames['smri_file']))
 
     # EXTRACT OUTLINE
     outline = np.zeros(mask.shape)
-    kernel = getStructuringElement(MORPH_RECT, (3, 3))
+    kernel = cv2.getStructuringElement(cv2.MORPH_RECT, (3, 3))
     mask = mask.astype(np.uint8)
 
     # import pdb; pdb.pdb.set_trace()
 
     # Use morph gradient to find the outline of the solid mask
     for i in range(outline.shape[0]):
-        outline[i, :, :] += morphologyEx(mask[i, :, :],
-                                         MORPH_GRADIENT, kernel)
+        outline[i, :, :] += cv2.morphologyEx(mask[i, :, :],
+                                             cv2.MORPH_GRADIENT, kernel)
     for i in range(outline.shape[1]):
-        outline[:, i, :] += morphologyEx(mask[:, i, :],
-                                         MORPH_GRADIENT, kernel)
+        outline[:, i, :] += cv2.morphologyEx(mask[:, i, :],
+                                             cv2.MORPH_GRADIENT, kernel)
     for i in range(50, 300, 1):
-        outline[:, :, i] += morphologyEx(mask[:, :, i],
-                                         MORPH_GRADIENT, kernel)
+        outline[:, :, i] += cv2.morphologyEx(mask[:, :, i],
+                                             cv2.MORPH_GRADIENT, kernel)
     outline /= 3
 
     outline[np.where(outline > 0.6)] = 1
