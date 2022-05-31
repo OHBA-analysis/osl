@@ -29,11 +29,11 @@ fif_file = op.join(subjects_dir, subject, 'JRH_MotorCon_20100429_01_FORMARK_raw.
 pos_file = op.join(subjects_dir, subject, 'JH_Motorcon.pos')
 smri_file = '/Users/woolrich/homedir/vols_data/ukmp/sub-not002/anat/sub-not002_T1w.nii.gz'
 
-run_sensorspace = False
+run_sensorspace = False # if false then do source space
 
 run_preproc = False
-run_compute_surfaces = False
-run_coreg = False
+run_compute_surfaces = True
+run_coreg = True
 run_forward_model = True
 
 rank = {'mag': 125}
@@ -72,11 +72,6 @@ raw.load_data()
 
 # focus on beta band
 raw.filter(l_freq=13, h_freq=30, method='iir', iir_params={'order': 5, 'btype': 'bandpass', 'ftype': 'butter'})
-
-if True:
-    raw.info['ch_names'][97]
-    plt.figure()
-    plt.plot(raw.get_data()[97, 999:1200])
 
 # -------------------------------------------------------------
 # %% Establish design matrix
@@ -178,8 +173,10 @@ if run_sensorspace:
     data = np.abs(raw.get_data())
 
     if False:
+        # Use glm_fast to do GLM
         tstats, copes = glm_fast(data, design_matrix_crop, contrasts)
     else:
+        # Use glmtools to do GLM
         glmdata = glmtools.data.ContinuousGLMData(data=data.T, sample_rate=1 / tres)
         model = glmtools.fit.OLSModel(glmdes, glmdata)
         tstats = []
@@ -326,7 +323,7 @@ else:
     hilb_raw.apply_hilbert()
 
     # stc is source space time series (in head/polhemus space)
-    stc = mne.beamformer.apply_lcmv_raw(hilb_raw, filters, max_ori_out='signed')
+    stc = mne.beamformer.apply_lcmv_raw(hilb_raw, filters)
 
     #######################################################
     if False:

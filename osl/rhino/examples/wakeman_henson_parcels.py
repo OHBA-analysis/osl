@@ -134,7 +134,7 @@ if run_recon:
 
     # Apply filters to epoched data
     # stc is list of source space trial time series (in head/polhemus space)
-    stc = apply_lcmv_epochs(epochs, filters, max_ori_out='signed')
+    stc = apply_lcmv_epochs(epochs, filters)
 
     # Turn stc into a  nsources x ntpts x ntrials array
     sourcespace_epoched_data = []

@@ -16,11 +16,11 @@ from nilearn.plotting import plot_markers
 import scipy.sparse.linalg
 from scipy.spatial import KDTree
 from osl.rhino import rhino_utils
-import deepdish as dd
 
 import os
 import os.path as op
 
+from ..utils import soft_import
 
 ####################################################################################
 
@@ -124,9 +124,10 @@ class Parcellation:
                                   'voxel_weightings': voxel_weightings,
                                   'voxel_assignments': voxel_assignments}
 
-        return self.parcel_timeseries
+    def symmetric_orthogonalise(self, maintain_magnitudes=False, compute_weights=False):
+        self.parcel_timeseries['data'] = symmetric_orthogonalise(self.parcel_timeseries['data'], maintain_magnitudes=maintain_magnitudes, compute_weights=compute_weights)
 
-    def nii(self, parcel_timeseries_data, method='assignments', out_nii_fname=None, working_dir=None, times=None, ):
+    def nii(self, parcel_timeseries_data, method='assignments', out_nii_fname=None, working_dir=None, times=None):
 
         """
         Outputs parcel_timeseries_data as a niftii file using the parcellation
@@ -159,13 +160,23 @@ class Parcellation:
         """
 
         if self.parcel_timeseries is None:
-            raise ValueError("You need to have run parcellation.parcellate() prior to calling parcellation.nii()")
+            raise ValueError("You need to have run Parcellation.parcellate() or Parcellation.load_parcel_timeseries() prior to calling Parcellation.nii().")
 
-        result = _parcel_timeseries2nii(self, parcel_timeseries_data, self.parcel_timeseries,
-                                        method=method, out_nii_fname=out_nii_fname, working_dir=working_dir, times=times)
+        result = _parcel_timeseries2nii(self,
+                                        parcel_timeseries_data,
+                                        method=method,
+                                        out_nii_fname=out_nii_fname,
+                                        working_dir=working_dir,
+                                        times=times)
 
         return result
 
+    def load_parcel_timeseries(self, fname):
+        self.parcel_timeseries = _load_parcel_timeseries(fname)
+        return self.parcel_timeseries
+
+    def save_parcel_timeseries(self, fname):
+        _save_parcel_timeseries(self.parcel_timeseries, fname)
 
 #############################################################################
 
@@ -438,7 +449,7 @@ Check this does not cause further problems with the analysis. \n".format(pp))
 
 #############################################################################
 
-def _parcel_timeseries2nii(parcellation, parcel_timeseries_data, parcel_timeseries,
+def _parcel_timeseries2nii(parcellation, parcel_timeseries_data,
                            out_nii_fname=None, working_dir=None, times=None, method='assignments'):
     """
     Outputs parcel_timeseries_data as a niftii file using passed in parcellation
@@ -498,18 +509,18 @@ parcel_timeseries_data.shape[0] = {} \n'.format(
     # Compute nmaskvoxels x ntpts voxel_data
 
     if method == "assignments":
-        weightings = parcel_timeseries['voxel_assignments']
+        weightings = parcellation.parcel_timeseries['voxel_assignments']
     elif method == "weights":
         # parcel_timeseries_data = voxel_weightings.T *  voxel_data
         # voxel_weightings were computed by parcellation.parcellate()
-        weightings = np.linalg.pinv(parcel_timeseries['voxel_weightings'].T)
+        weightings = np.linalg.pinv(parcellation.parcel_timeseries['voxel_weightings'].T)
     else:
         raise ValueError("Invalid method. Must be assignments or weights.")
 
     voxel_data = weightings @ parcel_timeseries_data
 
     # voxel_coords is nmaskvoxels x 3 in mm
-    voxel_coords = parcel_timeseries['voxel_coords']
+    voxel_coords = parcellation.parcel_timeseries['voxel_coords']
 
     gridstep = int(rhino_utils._get_gridstep(voxel_coords.T) / 1000)
 
@@ -581,6 +592,9 @@ def symmetric_orthogonalise(timeseries, maintain_magnitudes=False, compute_weigh
             (optional output depending on compute_weights flag)
             weighting matrix such that, ortho_timeseries = timeseries * weights
 
+    Reference:
+        Colclough, G. L., Brookes, M., Smith, S. M. and Woolrich, M. W., "A symmetric multivariate leakage correction
+        for MEG connectomes," NeuroImage 117, pp. 439-448 (2015)
     """
 
     if len(timeseries.shape) == 2:
@@ -639,11 +653,13 @@ def symmetric_orthogonalise(timeseries, maintain_magnitudes=False, compute_weigh
     else:
         return ortho_timeseries
 
-def save_parcel_timeseries(ts, fname):
+def _save_parcel_timeseries(ts, fname):
     # saves passed in dictionary, ts, as a hd5 file
-    dd.io.save(ts, fname)
+    dd = soft_import('deepdish')
+    dd.io.save(fname, ts)
 
-def load_parcel_timeseries(fname):
+def _load_parcel_timeseries(fname):
     # load passed in hd5 file
+    dd = soft_import('deepdish')
     ts = dd.io.load(fname)
     return ts

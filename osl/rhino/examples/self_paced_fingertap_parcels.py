@@ -5,6 +5,8 @@ Created on Tue Nov  9 15:39:24 2021
 
 Runs parcellation based GLM analysis on Notts self-paced finger tap data
 
+Need to have run rhino/examples/self_paced_fingertap.py first
+
 @author: woolrich
 """
 
@@ -38,7 +40,7 @@ parcellation_fname = op.join('/Users/woolrich/Dropbox/vols_scripts/hmm_misc_func
 parcellation_background_fname = op.join(os.environ['FSLDIR'], 'data/standard/MNI152_T1_2mm_brain.nii.gz')
 
 run_recon = True
-orthogonalise_parcel_timeseries = False
+orthogonalise_parcel_timeseries = True
 
 rank = {'mag': 125}
 chantypes = ['mag']
@@ -86,7 +88,7 @@ if run_recon:
 
 
     # stc is source space time series (in head/polhemus space)
-    stc = mne.beamformer.apply_lcmv_raw(raw, filters, max_ori_out='signed')
+    stc = mne.beamformer.apply_lcmv_raw(raw, filters)
 
     # hilbert transform gave us complex data, we want the amplitude:
     data = np.abs(stc.data)

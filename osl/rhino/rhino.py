@@ -17,7 +17,6 @@ from osl.rhino import rhino_utils
 from scipy.ndimage import morphology
 from scipy.spatial import KDTree
 from sklearn.mixture import GaussianMixture
-from cv2 import getStructuringElement, morphologyEx, MORPH_GRADIENT, MORPH_RECT
 
 from mne.viz.backends.renderer import _get_renderer
 from mne.transforms import write_trans, read_trans, apply_trans, _get_trans, \
@@ -32,6 +31,7 @@ from mne import read_epochs, read_forward_solution, make_bem_model, \
 from mne.io.constants import FIFF
 from mne.bem import ConductorModel, read_bem_solution
 
+from ..utils import soft_import
 
 #############################################################################
 
@@ -337,7 +337,7 @@ Please ensure that the structural MRI has a FOV that includes the nose')
     # as sform for sMRI, to stop the original qform from being used by mistake
     # (e.g. by flirt)
     cmd = 'fslorient -copysform2qform {}'.format(filenames['smri_file'])
-    os.system(cmd)
+    rhino_utils.system_call(cmd)
 
     # We will assume orientation of standard brain is RADIOLOGICAL
     # But let's check that is the case:
@@ -357,12 +357,15 @@ please check output of:\n fslorient -orient {}'.format(filenames['smri_file']))
     # if orientation is not RADIOLOGICAL then force it to be RADIOLOGICAL
     if smri_orient != 'RADIOLOGICAL':
         print('reorienting subject brain to be RADIOLOGICAL')
-        os.system('fslorient -forceradiological {}'.format(
+        rhino_utils.rhino_utils.system_call('fslorient -forceradiological {}'.format(
             filenames['smri_file']))
 
     ###########################################################################
     # 1) Transform sMRI to be aligned with the MNI axes so that BET works well
     ###########################################################################        
+
+    img = nib.load(filenames['smri_file'])
+    img_density = np.sum(img.get_data())/np.prod(img.get_data().shape)
 
     # We will start by transforming sMRI
     # so that its voxel indices axes are aligned to MNI's
@@ -380,11 +383,28 @@ please check output of:\n fslorient -orient {}'.format(filenames['smri_file']))
     # voxel indices axes are aligned to be the same as MNI's 
     flirt_smri_mniaxes_file = op.join(filenames['basefilename'],
                                       'flirt_smri_mniaxes.nii.gz')
-    os.system('flirt -in {} -ref {} -applyxfm -init {} -out {}'.format(
+    rhino_utils.system_call('flirt -in {} -ref {} -applyxfm -init {} -out {}'.format(
         filenames['smri_file'],
         filenames['std_brain'],
         flirt_mri2mniaxes_xform_file,
         flirt_smri_mniaxes_file))
+
+    img = nib.load(flirt_smri_mniaxes_file)
+    img_latest_density = np.sum(img.get_data())/np.prod(img.get_data().shape)
+
+    if 5*img_latest_density < img_density:
+        raise Exception\
+            ('Something is wrong with the passed in structural MRI:\n   {}\n' \
+'Either it is empty or the sformcode is incorrectly set.\n' \
+'Try running the following from a cmd line: \n'\
+'   fsleyes {} {} \n' \
+'And see if the standard space brain is shown in the same postcode as the structural.\n' \
+'If it is not, then the sformcode in the structural image needs setting correctly.\n'.format(
+            filenames['smri_file'],
+            filenames['std_brain'],
+            filenames['smri_file']
+            )
+            )
 
     ###########################################################################
     # 2) Use BET to skull strip sMRI so that flirt works well
@@ -394,7 +414,7 @@ please check output of:\n fslorient -orient {}'.format(filenames['smri_file']))
 
     flirt_smri_mniaxes_bet_file = op.join(filenames['basefilename'],
                                           'flirt_smri_mniaxes_bet')
-    os.system('bet2 {} {}'.format(
+    rhino_utils.system_call('bet2 {} {}'.format(
         flirt_smri_mniaxes_file,
         flirt_smri_mniaxes_bet_file))
 
@@ -411,7 +431,7 @@ please check output of:\n fslorient -orient {}'.format(filenames['smri_file']))
                                      'flirt_mniaxes2mni.txt')
     flirt_smri_mni_bet_file = op.join(filenames['basefilename'],
                                       'flirt_smri_mni_bet.nii.gz')
-    os.system('flirt -in {} -ref {} -omat {} -o {}'.format(
+    rhino_utils.system_call('flirt -in {} -ref {} -omat {} -o {}'.format(
         flirt_smri_mniaxes_bet_file,
         filenames['std_brain'],
         flirt_mniaxes2mni_file,
@@ -420,7 +440,7 @@ please check output of:\n fslorient -orient {}'.format(filenames['smri_file']))
     # Calculate overall transform, flirt_mri2mni_xform_file, from smri to MNI
     flirt_mri2mni_xform_file = op.join(filenames['basefilename'],
                                        'flirt_mri2mni_xform.txt')
-    os.system('convert_xfm -omat {} -concat {} {}'.format(
+    rhino_utils.system_call('convert_xfm -omat {} -concat {} {}'.format(
         flirt_mri2mni_xform_file,
         flirt_mniaxes2mni_file,
         flirt_mri2mniaxes_xform_file))
@@ -428,14 +448,14 @@ please check output of:\n fslorient -orient {}'.format(filenames['smri_file']))
     # and calculate its inverse, flirt_mni2mri_xform_file, from MNI to smri
     flirt_mni2mri_xform_file = op.join(filenames['basefilename'],
                                        'flirt_mni2mri_xform_file.txt')
-    os.system('convert_xfm -omat {}  -inverse {}'.format(
+    rhino_utils.system_call('convert_xfm -omat {}  -inverse {}'.format(
         flirt_mni2mri_xform_file,
         flirt_mri2mni_xform_file))
 
     # move full smri into MNI space to do full bet and betsurf
     flirt_smri_mni_file = op.join(filenames['basefilename'],
                                   'flirt_smri_mni.nii.gz')
-    os.system('flirt -in {} -ref {} -applyxfm -init {} -out {}'.format(
+    rhino_utils.system_call('flirt -in {} -ref {} -applyxfm -init {} -out {}'.format(
         filenames['smri_file'],
         filenames['std_brain'],
         flirt_mri2mni_xform_file,
@@ -461,7 +481,7 @@ please check output of:\n fslorient -orient {}'.format(filenames['smri_file']))
 
     flirt_smri_mni_bet_file = op.join(filenames['basefilename'],
                                       'flirt_smri_mni_bet')
-    os.system('bet2 {} {} --mesh'.format(
+    rhino_utils.system_call('bet2 {} {} --mesh'.format(
         flirt_smri_mni_file,
         flirt_smri_mni_bet_file))
 
@@ -478,7 +498,7 @@ please check output of:\n fslorient -orient {}'.format(filenames['smri_file']))
     np.savetxt(flirt_identity_xform_file, np.eye(4))
 
     bet_mesh_file = op.join(flirt_smri_mni_bet_file + '_mesh.vtk')
-    os.system('betsurf --t1only -o {} {} {} {}'.format(
+    rhino_utils.system_call('betsurf --t1only -o {} {} {} {}'.format(
         flirt_smri_mni_file,
         bet_mesh_file,
         flirt_identity_xform_file,
@@ -504,7 +524,7 @@ please check output of:\n fslorient -orient {}'.format(filenames['smri_file']))
     # Calculate overall transform, from smri to MNI big fov        
     flirt_mri2mnibigfov_xform_file = op.join(filenames['basefilename'],
                                              'flirt_mri2mnibigfov_xform.txt')
-    os.system('convert_xfm -omat {} -concat {} {}'.format(
+    rhino_utils.system_call('convert_xfm -omat {} -concat {} {}'.format(
         flirt_mri2mnibigfov_xform_file,
         flirt_mni2mnibigfov_xform_file,
         flirt_mri2mni_xform_file))
@@ -512,7 +532,7 @@ please check output of:\n fslorient -orient {}'.format(filenames['smri_file']))
     # move MRI to MNI big FOV space and load in
     flirt_smri_mni_bigfov_file = op.join(filenames['basefilename'],
                                          'flirt_smri_mni_bigfov')
-    os.system('flirt -in {} -ref {} -applyxfm -init {} -out {}'.format(
+    rhino_utils.system_call('flirt -in {} -ref {} -applyxfm -init {} -out {}'.format(
         filenames['smri_file'],
         filenames['std_brain_bigfov'],
         flirt_mri2mnibigfov_xform_file,
@@ -523,7 +543,7 @@ please check output of:\n fslorient -orient {}'.format(filenames['smri_file']))
     flirt_outskin_file = op.join(filenames['basefilename'], 'flirt_outskin_mesh')
     flirt_outskin_bigfov_file = op.join(filenames['basefilename'],
                                         'flirt_outskin_mesh_bigfov')
-    os.system('flirt -in {} -ref {} -applyxfm -init {} -out {}'.format(
+    rhino_utils.system_call('flirt -in {} -ref {} -applyxfm -init {} -out {}'.format(
         flirt_outskin_file,
         filenames['std_brain_bigfov'],
         flirt_mni2mnibigfov_xform_file,
@@ -608,23 +628,26 @@ please check output of:\n fslorient -orient {}'.format(filenames['smri_file']))
 
     # end if include_nose
 
+    # Soft import opencv-python with nice error message if not installed.
+    cv2 = soft_import('cv2')
+
     # EXTRACT OUTLINE
     outline = np.zeros(mask.shape)
-    kernel = getStructuringElement(MORPH_RECT, (3, 3))
+    kernel = cv2.getStructuringElement(cv2.MORPH_RECT, (3, 3))
     mask = mask.astype(np.uint8)
 
     # import pdb; pdb.pdb.set_trace()
 
     # Use morph gradient to find the outline of the solid mask
     for i in range(outline.shape[0]):
-        outline[i, :, :] += morphologyEx(mask[i, :, :],
-                                         MORPH_GRADIENT, kernel)
+        outline[i, :, :] += cv2.morphologyEx(mask[i, :, :],
+                                             cv2.MORPH_GRADIENT, kernel)
     for i in range(outline.shape[1]):
-        outline[:, i, :] += morphologyEx(mask[:, i, :],
-                                         MORPH_GRADIENT, kernel)
+        outline[:, i, :] += cv2.morphologyEx(mask[:, i, :],
+                                             cv2.MORPH_GRADIENT, kernel)
     for i in range(50, 300, 1):
-        outline[:, :, i] += morphologyEx(mask[:, :, i],
-                                         MORPH_GRADIENT, kernel)
+        outline[:, :, i] += cv2.morphologyEx(mask[:, :, i],
+                                             cv2.MORPH_GRADIENT, kernel)
     outline /= 3
 
     outline[np.where(outline > 0.6)] = 1
@@ -651,7 +674,7 @@ please check output of:\n fslorient -orient {}'.format(filenames['smri_file']))
     nib.save(outline_nii,
              op.join(flirt_outskin_bigfov_file + '_plus_nose.nii.gz'))
 
-    os.system('fslcpgeom {} {}'.format(
+    rhino_utils.system_call('fslcpgeom {} {}'.format(
         op.join(flirt_outskin_bigfov_file + '.nii.gz'),
         op.join(flirt_outskin_bigfov_file + '_plus_nose.nii.gz')))
 
@@ -660,11 +683,11 @@ please check output of:\n fslorient -orient {}'.format(filenames['smri_file']))
     # first we need to invert the flirt_mri2mnibigfov_xform_file xform:
     flirt_mnibigfov2mri_xform_file = op.join(filenames['basefilename'],
                                              'flirt_mnibigfov2mri_xform.txt')
-    os.system('convert_xfm -omat {} -inverse {}'.format(
+    rhino_utils.system_call('convert_xfm -omat {} -inverse {}'.format(
         flirt_mnibigfov2mri_xform_file,
         flirt_mri2mnibigfov_xform_file))
 
-    os.system('flirt -in {} -ref {} -applyxfm -init {} -out {}'.format(
+    rhino_utils.system_call('flirt -in {} -ref {} -applyxfm -init {} -out {}'.format(
         op.join(flirt_outskin_bigfov_file + '_plus_nose.nii.gz'),
         filenames['smri_file'],
         flirt_mnibigfov2mri_xform_file,
@@ -685,12 +708,12 @@ please check output of:\n fslorient -orient {}'.format(filenames['smri_file']))
         filenames['smri_file'])
 
     mni_mri_t = Transform('mni_tal', 'mri', xform_mni2mri)
-    write_trans(filenames['mni_mri_t_file'], mni_mri_t)
+    write_trans(filenames['mni_mri_t_file'], mni_mri_t, overwrite=True)
 
     # Transform betsurf mask/mesh output from MNI to sMRI space
     for mesh_name in {'outskin_mesh', 'inskull_mesh', 'outskull_mesh'}:
         # xform mask
-        os.system('flirt -interp nearestneighbour -in {} -ref {} -applyxfm -init {} -out {}'.format(
+        rhino_utils.system_call('flirt -interp nearestneighbour -in {} -ref {} -applyxfm -init {} -out {}'.format(
             op.join(filenames['basefilename'], 'flirt_' + mesh_name + '.nii.gz'),
             filenames['smri_file'],
             flirt_mni2mri_xform_file,
@@ -708,13 +731,13 @@ please check output of:\n fslorient -orient {}'.format(filenames['smri_file']))
     # Clean up
     ###########################################################################
 
-    os.system('cp -f {} {}'.format(
+    rhino_utils.system_call('cp -f {} {}'.format(
         flirt_mni2mri_xform_file,
         filenames['mni2mri_flirt_file']))
 
     if cleanup_files:
         # CLEAN UP FILES ON DISK
-        os.system('rm -f {}'.format(op.join(filenames['basefilename'], 'flirt*')))
+        rhino_utils.system_call('rm -f {}'.format(op.join(filenames['basefilename'], 'flirt*')))
 
     print('*** OSL RHINO COMPUTE SURFACES COMPLETE ***')
 
@@ -744,7 +767,7 @@ def surfaces_display(subjects_dir, subject):
 
     filenames = get_surfaces_filenames(subjects_dir, subject)
 
-    os.system('fsleyes {} {} {} {} {} &'
+    rhino_utils.system_call('fsleyes {} {} {} {} {} &'
               .format(filenames['smri_file'],
                       filenames['bet_inskull_mesh_file'],
                       filenames['bet_outskin_mesh_file'],
@@ -1017,12 +1040,12 @@ To turn this off, set use_dev_ctf_t=False')
 
     head_mri_t = Transform('head', 'mri',
                            np.linalg.inv(xform_native2polhemus_refined_copy))
-    write_trans(filenames['head_mri_t_file'], head_mri_t)
+    write_trans(filenames['head_mri_t_file'], head_mri_t, overwrite=True)
 
     nativeindex_native_t = np.copy(xform_nativeindex2native)
     mrivoxel_mri_t = Transform(
         'mri_voxel', 'mri', nativeindex_native_t)
-    write_trans(filenames['mrivoxel_mri_t_file'], mrivoxel_mri_t)
+    write_trans(filenames['mrivoxel_mri_t_file'], mrivoxel_mri_t, overwrite=True)
 
     # save sMRI derived fids in mm in polhemus space
     np.savetxt(filenames['smri_nasion_file'], smri_nasion_polhemus)
@@ -2141,7 +2164,7 @@ def transform_recon_timeseries(subjects_dir, subject,
     # get coordinates from reference brain at resolution spatial_resolution
 
     # create std brain of the required resolution
-    os.system('flirt -in {} -ref {} -out {} -applyisoxfm {}'.format(
+    rhino_utils.system_call('flirt -in {} -ref {} -out {} -applyisoxfm {}'.format(
         reference_brain,
         reference_brain,
         reference_brain_resampled,
@@ -2239,7 +2262,7 @@ def _timeseries2nii(timeseries, timeseries_coords, reference_mask_fname, out_nii
 
     nib.save(vol_nii, out_nii_fname)
 
-    # os.system('fslcpgeom {} {}'.format(reference_brain_fname, out_nii_fname))
+    # rhino_utils.system_call('fslcpgeom {} {}'.format(reference_brain_fname, out_nii_fname))
 
     return out_nii_fname
 
@@ -2352,7 +2375,7 @@ def fsleyes(image_list):
 
     cmd += '&'
     print(cmd)
-    os.system(cmd)
+    rhino_utils.system_call(cmd)
 
 
 #############################################################################
@@ -2384,8 +2407,7 @@ def fsleyes_overlay(background_img, overlay_img):
         background_img,
         overlay_img)
 
-    print(cmd)
-    os.system(cmd)
+    rhino_utils.system_call(cmd)
 
 #############################################################################
 
@@ -2557,20 +2579,22 @@ def make_lcmv(subjects_dir, subject,
         # osl_normalise_sensor_data.m function in Matlab OSL does,
         # by computing a diagonal noise cov with the variances set to the mean
         # variance of each sensor type (e.g. mag, grad, eeg.)
-        noise_cov_diag = np.zeros([data_cov.data.shape[0]])
         for type in chantypes:
-            dat_type = dat.copy().pick(type)
+            dat_type = dat.copy().pick(type, exclude="bads")
+            noise_cov_diag = np.zeros([data_cov.data.shape[0]])
 
             inds = []
+            ch_names = []
             for ch_name in dat_type.info['ch_names']:
                 inds.append(data_cov.ch_names.index(ch_name))
+
             tmp = np.mean(np.diag(data_cov.data)[inds])
             noise_cov_diag[inds] = tmp
 
             print('Variance for chan type {} is {}'.format(type, tmp))
 
-        bads = [b for b in dat.info['bads'] if b in dat.ch_names]
-        noise_cov = Covariance(noise_cov_diag, dat.ch_names, bads, dat.info['projs'], nfree=1e6)
+        bads = [b for b in dat.info['bads'] if b in data_cov.ch_names]
+        noise_cov = Covariance(noise_cov_diag, data_cov.ch_names, bads, dat.info['projs'], nfree=1e10)
 
     filters = rhino_utils._make_lcmv(dat.info, fwd,
                                     data_cov,

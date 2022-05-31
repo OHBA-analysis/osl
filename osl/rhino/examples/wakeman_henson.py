@@ -30,9 +30,9 @@ outbase = op.join(base_dir, 'wakehen_glm')
 fif_file_preproc = op.join(outbase, 'preproc_data/sub001_run_02_sss_raw.fif')
 
 baseline_correct = True
-run_compute_surfaces = False
-run_coreg = False
-run_forward_model = False
+run_compute_surfaces = True
+run_coreg = True
+run_forward_model = True
 run_sensor_space = False
 
 contrast_of_interest = 15
@@ -259,7 +259,7 @@ filters = rhino.make_lcmv(subjects_dir, subject,
 filters['data_cov'].plot(epochs.info)
 
 # stc is list of source space trial time series (in head/polhemus space)
-stc = apply_lcmv_epochs(epochs, filters, max_ori_out='signed')
+stc = apply_lcmv_epochs(epochs, filters)
 
 # -------------------------------------------------------------
 # %% Fit GLM to source recon data
