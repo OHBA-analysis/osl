@@ -31,6 +31,8 @@ def simulate_raw_from_template(sim_samples, bad_segments=None, bad_channels=None
     basedir = os.path.dirname(os.path.realpath(__file__))
     basedir = os.path.join(basedir, 'simulation_config')
     info = mne.io.read_info(os.path.join(basedir, 'megin_template_info.fif'))
+    with info._unlock():
+        info['sfreq'] = 150
 
     Y = np.zeros((306, sim_samples))
     for mod in ['mag', 'grad']:
@@ -61,7 +63,6 @@ def simulate_raw_from_template(sim_samples, bad_segments=None, bad_channels=None
             Y[:, seg[0]:seg[1]] += np.random.randn(Y.shape[0], seg[1]-seg[0]) * std*5
 
     sim = mne.io.RawArray(Y, info)
-    sim.info['sfreq'] = 150
 
     return sim
 
