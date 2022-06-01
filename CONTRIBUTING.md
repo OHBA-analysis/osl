@@ -44,6 +44,27 @@ cd oslpy
 pip install -e .
 ```
 
+### Tests
+
+To run all tests:
+```
+cd osl
+pytest tests
+```
+or to run a specific test, e.g. file handling:
+```
+cd osl/tests
+pytest test_file_handling.py
+```
+
+### Build Documentation
+
+To build the documentation:
+```
+python setup.py build_sphinx
+```
+Compiled docs can be found in `doc/build/html/index.html`.
+
 ### Bug Fixes & New features
 
 To fix an isolated problem, any contributor can.
@@ -62,13 +83,6 @@ For urgent and obvious fixes, a core developer can do the following:
 * create a fix on a branch of oslpy:main
 * create a pull request with quick description of the issue
 * merge it to main themselves.
-
-### Documentation
-
-To build the sphinx documentation:
-```
-python setup.py build_sphinx
-```
 
 # git school
 
