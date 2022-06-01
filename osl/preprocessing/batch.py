@@ -51,13 +51,12 @@ logger = logging.getLogger(__name__)
 # Decorators
 
 
-def print_func_info(func):
+def print_custom_func_info(func):
     """Prints info for user-specified functions."""
     @wraps(func)
     def wrapper(dataset, userargs):
-        fname = pathlib.Path(dataset["raw"].filenames[0]).stem
-        print("{} : CUSTOM Stage - {}".format(fname, func.__name__))
-        print("{} : userargs: {}".format(fname, str(userargs)))
+        logger.info("CUSTOM Stage - {}".format(func.__name__))
+        logger.info("userargs: {}".format(str(userargs)))
         return func(dataset, userargs)
     return wrapper
 
@@ -424,6 +423,9 @@ def run_proc_chain(infile, config, outname=None, outdir=None, ret_dataset=True,
         target = userargs.get('target', 'raw')  # Raw is default
         func = find_func(method, target=target, extra_funcs=extra_funcs)
         try:
+            if func in extra_funcs:
+                # This is a custom function, let's print its info
+                func = print_custom_func_info(func)
             dataset = func(dataset, userargs)
         except Exception as e:
             logger.critical('PROCESSING FAILED!!!!')
