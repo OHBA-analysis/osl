@@ -14,6 +14,15 @@ conda activate osl
 
 For Developers
 --------------
+Install in editable mode:
+```
+conda create --name osl python=3
+conda activate osl
+git clone git@github.com:OHBA-analysis/oslpy.git
+cd oslpy
+pip install -e .
+```
+
 Run tests:
 ```
 cd osl

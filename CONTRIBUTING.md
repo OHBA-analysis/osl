@@ -39,6 +39,7 @@ The core developer team is @woolrich, @ajquinn, @cgohil8 and @matsvanes. A few e
 To install an editable version with pip:
 ```
 conda create --name osl python=3
+conda activate osl
 git clone git@github.com:OHBA-analysis/oslpy.git
 cd oslpy
 pip install -e .
