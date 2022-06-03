@@ -1,7 +1,7 @@
 from setuptools import setup
 
 # Requirement categories
-reqs = ['numpy', 'scipy', 'matplotlib', 'mne==1.0.0', 'sklearn', 'fslpy',
+reqs = ['numpy', 'scipy', 'matplotlib', 'mne>=1.0.0', 'sklearn', 'fslpy',
         'sails', 'tabulate', 'pyyaml>=5.1', 'neurokit2', 'jinja2',
         'file-tree', 'glmtools', 'numba', 'nilearn', 'dask', 'distributed']
 doc_reqs = ['sphinx==4.0.2', 'numpydoc', 'sphinx_gallery', 'pydata-sphinx-theme']
