@@ -469,6 +469,11 @@ def run_proc_chain(infile, config, outname=None, outdir=None, ret_dataset=True,
             # Actual function call
             dataset = func(dataset, userargs)
 
+        dataset = append_preprocinfo(dataset, config)
+
+        if outdir is not None:
+            write_dataset(dataset, outbase, run_id, overwrite=overwrite)
+
     except Exception as e:
         if 'method' not in locals():
             method = 'import_data'
@@ -488,11 +493,6 @@ def run_proc_chain(infile, config, outname=None, outdir=None, ret_dataset=True,
                 f.write('\n')
                 traceback.print_tb(ex_traceback, file=f)
         return 0
-
-    dataset = append_preprocinfo(dataset, config)
-
-    if outdir is not None:
-        write_dataset(dataset, outbase, run_id, overwrite=overwrite)
 
     now = strftime("%Y-%m-%d %H:%M:%S", localtime())
     osl_logger.info('{0} : Processing Complete'.format(now))
