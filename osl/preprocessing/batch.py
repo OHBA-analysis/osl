@@ -430,6 +430,8 @@ def run_proc_chain(infile, config, outname=None, outdir=None, ret_dataset=True,
         mne.utils._logging.set_log_file(logfile)
     else:
         logfile = None
+
+    # Finish setting up loggers
     utils.logger.set_up(prefix=run_id, log_file=logfile, level=verbose, startup=False)
     mne.set_log_level(mneverbose)
     osl_logger = logging.getLogger(__name__)
@@ -437,6 +439,14 @@ def run_proc_chain(infile, config, outname=None, outdir=None, ret_dataset=True,
     osl_logger.info('{0} : Starting OSL Processing'.format(now))
     osl_logger.info('input : {0}'.format(infile))
 
+    if outdir is not None:
+        # Check for existing outputs - should be a .fif at least
+        fifout = outbase.format(run_id=run_id.replace('_raw', ''), ftype='preproc_raw', fext='fif')
+        if os.path.exists(fifout) and (overwrite is False):
+            osl_logger.critical('Skipping preprocessing - existing output detected')
+            return 2
+
+    # MAIN BLOCK - Run the preproc chain and catch any exceptions
     try:
         if isinstance(infile, str):
             raw = import_data(infile)
