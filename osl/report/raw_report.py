@@ -166,8 +166,8 @@ def gen_report(infiles, outdir, preproc_config=None, level=1):
 
         # Load ICA file if it exists
         # TODO: could potentially be incorporated in 'import_data'
-        if os.path.exists(infile.replace('raw.fif', 'ica.fif')):
-            ica = mne.preprocessing.read_ica(infile.replace('raw.fif', 'ica.fif'))
+        if os.path.exists(infile.replace('preproc_raw.fif', 'ica.fif')):
+            ica = mne.preprocessing.read_ica(infile.replace('preproc_raw.fif', 'ica.fif'))
         else:
             ica = None
 
