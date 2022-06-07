@@ -522,7 +522,7 @@ def run_proc_chain(
         logfile = outbase.format(
             run_id=run_id.replace("_raw", ""), ftype="preproc_raw", fext="log"
         )
-        mne.utils._logging.set_log_file(logfile)
+        mne.utils._logging.set_log_file(logfile, overwrite=overwrite)
     else:
         logfile = None
 
