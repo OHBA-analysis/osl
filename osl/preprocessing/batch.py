@@ -9,6 +9,7 @@ import matplotlib.pyplot as plt
 import os
 import sys
 import pathlib
+import pprint
 import traceback
 import re
 import logging
@@ -24,6 +25,7 @@ import yaml
 from . import mne_wrappers, osl_wrappers
 from ..utils import find_run_id, validate_outdir, process_file_inputs
 from ..utils import logger as osl_logger
+from ..utils.parallel import dask_parallel_bag
 
 logger = logging.getLogger(__name__)
 
@@ -506,7 +508,7 @@ def run_proc_chain(
 
     # Generate a run ID
     if outname is None:
-        run_id = utils.find_run_id(infile)
+        run_id = find_run_id(infile)
     else:
         run_id = os.path.splitext(outname)[0]
 
@@ -526,9 +528,9 @@ def run_proc_chain(
         logfile = None
 
     # Finish setting up loggers
-    utils.logger.set_up(prefix=run_id, log_file=logfile, level=verbose, startup=False)
+    osl_logger.set_up(prefix=run_id, log_file=logfile, level=verbose, startup=False)
     mne.set_log_level(mneverbose)
-    osl_logger = logging.getLogger(__name__)
+    logger = logging.getLogger(__name__)
     now = strftime("%Y-%m-%d %H:%M:%S", localtime())
     logger.info("{0} : Starting OSL Processing".format(now))
     logger.info("input : {0}".format(infile))
@@ -574,6 +576,9 @@ def run_proc_chain(
             write_dataset(dataset, outbase, run_id, overwrite=overwrite)
 
     except Exception as e:
+        if 'method' not in locals():
+            method = 'import_data'
+            func = import_data
         logger.critical("**********************")
         logger.critical("* PROCESSING FAILED! *")
         logger.critical("**********************")
@@ -613,6 +618,8 @@ def run_proc_batch(
     nprocesses=1,
     verbose="INFO",
     mneverbose="WARNING",
+    strictrun=False,
+    dask_client=None
 ):
     """Run batched preprocessing.
 
@@ -639,6 +646,10 @@ def run_proc_batch(
     mneverbose : str
         Level of info from MNE to print.
         Can be: CRITICAL, ERROR, WARNING, INFO, DEBUG or NOTSET.
+    strictrun : bool
+        Should we ask for confirmation of user inputs before starting?
+    dask_client : None or True
+        Indicate whether to use a previously initialised dask.distributed.Client instance.
 
     Returns
     -------
@@ -649,7 +660,7 @@ def run_proc_batch(
     if outdir is None:
         # Use the current working directory
         outdir = os.getcwd()
-    outdir = utils.validate_outdir(outdir)
+    outdir = validate_outdir(outdir)
 
     # Initialise Loggers
     mne.set_log_level(mneverbose)
@@ -657,38 +668,38 @@ def run_proc_batch(
         # override logger level if strictrun requested but user won't see any info...
         verobse = 'INFO'
     logfile = os.path.join(outdir, 'osl_batch.log')
-    utils.logger.set_up(log_file=logfile, level=verbose, startup=False)
+    osl_logger.set_up(log_file=logfile, level=verbose, startup=False)
 
-    osl_logger.info('Starting OSL Batch Processing')
+    logger.info('Starting OSL Batch Processing')
 
     # Check through inputs and parameters
-    infiles, outnames, good_files = utils.process_file_inputs(files)
+    infiles, outnames, good_files = process_file_inputs(files)
     if strictrun and click.confirm('Is this correct set of inputs?') is False:
-        osl_logger.critical('Stopping : User indicated incorrect number of input files')
+        logger.critical('Stopping : User indicated incorrect number of input files')
         sys.exit(1)
     else:
         if strictrun:
-            osl_logger.info('User confirms input files')
+            logger.info('User confirms input files')
 
-    osl_logger.info('Outputs saving to: {0}'.format(outdir))
+    logger.info('Outputs saving to: {0}'.format(outdir))
     if strictrun and click.confirm('Is this correct output directory?') is False:
-        osl_logger.critical('Stopping : User indicated incorrect output directory')
+        logger.critical('Stopping : User indicated incorrect output directory')
         sys.exit(1)
     else:
         if strictrun:
-            osl_logger.info('User confirms output directory')
+            logger.info('User confirms output directory')
 
     config = load_config(config)
     config_str = pprint.PrettyPrinter().pformat(config)
-    osl_logger.info('Running config\n {0}'.format(config_str))
+    logger.info('Running config\n {0}'.format(config_str))
     if strictrun and click.confirm('Is this the correct config?') is False:
-        osl_logger.critical('Stopping : User indicated incorrect preproc config')
+        logger.critical('Stopping : User indicated incorrect preproc config')
         sys.exit(1)
     else:
         if strictrun:
-            osl_logger.info('User confirms input config')
+            logger.info('User confirms input config')
 
-    outdir = utils.validate_outdir(outdir)
+    outdir = validate_outdir(outdir)
 
     name_base = '{run_id}_{ftype}.{fext}'
     outbase = outdir / name_base
@@ -717,7 +728,7 @@ def run_proc_batch(
     else:
         # Return results as we've fixed ret_dataset to false for batch processing
         #proc_flags = utils.parallel.dask_parallel(dask_client, pool_func, args, ret_results=True)
-        proc_flags = utils.parallel.dask_parallel_bag(pool_func, args)
+        proc_flags = dask_parallel_bag(pool_func, args)
 
     logger.info(
         "Processed {0}/{1} files successfully".format(
