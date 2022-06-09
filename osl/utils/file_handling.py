@@ -5,6 +5,9 @@ import glob
 import pathlib
 import numpy as np
 
+# Housekeeping for logging
+import logging
+osl_logger = logging.getLogger(__name__)
 
 def process_file_inputs(inputs):
     """Process inputs for several cases
@@ -34,12 +37,12 @@ def process_file_inputs(inputs):
     elif isinstance(inputs, (list, tuple)):
         if isinstance(inputs[0], str):
             # We have a list of paths
-            infiles = inputs
+            infiles = [sanitise_filepath(f) for f in inputs]
             outnames = [find_run_id(f) for f in infiles]
         elif isinstance(inputs[0], (list, tuple)):
             # We have a list containing files and output names
             for row in inputs:
-                infiles.append(row[0])
+                infiles.append(sanitise_filepath(row[0]))
                 outnames.append(row[1])
         elif isinstance(inputs[0], mne.io.fiff.raw.Raw):
             # We have a list of MNE objects
@@ -50,28 +53,40 @@ def process_file_inputs(inputs):
     # than objects
     good_files = [1 for ii in range(len(infiles))]
     if check_paths:
+        #infiles = [sanitise_filepath(f) for f in infiles]
         for idx, fif in enumerate(infiles):
             if fif.endswith('.ds'):
                 good_files[idx] = int(os.path.isdir(fif))
             else:
                 good_files[idx] = int(os.path.isfile(fif))
             if good_files[idx] == 0:
-                print('File not found: {0}'.format(fif))
+                osl_logger.warning('Input file not found: {0}'.format(fif))
 
-    print('{0} files to be processed. {1} good'.format(len(infiles), np.sum(good_files)))
+    if np.all(good_files):
+        osl_logger.info('{0} files to be processed.'.format(len(infiles)))
+    else:
+        osl_logger.warning('{0} of {1} input files not found'.format(np.sum(np.array(good_files)==0), len(infiles)))
 
     return infiles, outnames, good_files
+
+
+def sanitise_filepath(fname):
+    """Remove leading/trailing whitespace, tab, newline and carriage return
+    characters."""
+    return fname.strip(' \t\n\r')
 
 
 def _load_unicode_inputs(fname):
     checked_files = []
     outnames = []
-    for row in csv.reader(open(fname, 'r'), delimiter=" "):
-        checked_files.append(row[0])
+    osl_logger.info("loading inputs from : {0}",format(fname))
+    for row in csv.reader(open(fname, 'r'), delimiter=","):
+        infile = sanitise_filepath(row[0])
+        checked_files.append(infile)
         if len(row) > 1:
             outnames.append(row[1])
         else:
-            outnames.append(find_run_id(row[0]))
+            outnames.append(find_run_id(infile))
     return checked_files, outnames
 
 
