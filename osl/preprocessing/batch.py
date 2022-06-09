@@ -20,7 +20,6 @@ from datetime import datetime
 import mne
 import numpy as np
 import yaml
-from joblib import Parallel, delayed
 
 from . import mne_wrappers, osl_wrappers
 from ..utils import find_run_id, validate_outdir, process_file_inputs
@@ -507,7 +506,7 @@ def run_proc_chain(
 
     # Generate a run ID
     if outname is None:
-        run_id = find_run_id(infile)
+        run_id = utils.find_run_id(infile)
     else:
         run_id = os.path.splitext(outname)[0]
 
@@ -526,66 +525,74 @@ def run_proc_chain(
     else:
         logfile = None
 
-    # Setup logger
-    osl_logger.set_up(prefix=run_id, log_file=logfile, level=verbose, startup=False)
+    # Finish setting up loggers
+    utils.logger.set_up(prefix=run_id, log_file=logfile, level=verbose, startup=False)
     mne.set_log_level(mneverbose)
-    logger = logging.getLogger(__name__)
+    osl_logger = logging.getLogger(__name__)
     now = strftime("%Y-%m-%d %H:%M:%S", localtime())
     logger.info("{0} : Starting OSL Processing".format(now))
     logger.info("input : {0}".format(infile))
 
-    # Import data
-    if isinstance(infile, str):
-        raw = import_data(infile)
-    elif isinstance(infile, mne.io.fiff.raw.Raw):
-        raw = infile
-        infile = raw.filenames[0]  # assuming only one file here
-
-    # Create a dataset dict to hold the preprocessed dataset
-    dataset = {
-        "raw": raw,
-        "ica": None,
-        "epochs": None,
-        "events": None,
-        "event_id": config["meta"]["event_codes"],
-    }
-
-    # Do the preprocessing
-    for stage in deepcopy(config["preproc"]):
-        method, userargs = next(iter(stage.items()))
-        target = userargs.get("target", "raw")  # Raw is default
-        func = find_func(method, target=target, extra_funcs=extra_funcs)
-
-        try:
-            dataset = func(dataset, userargs)
-
-        except Exception as e:
-            logger.critical("**********************")
-            logger.critical("* PROCESSING FAILED! *")
-            logger.critical("**********************")
-            ex_type, ex_value, ex_traceback = sys.exc_info()
-            logger.error("{0} : {1}".format(method, func))
-            logger.error(ex_type)
-            logger.error(ex_value)
-            logger.error(traceback.print_tb(ex_traceback))
-            if outdir is not None:
-                with open(logfile.replace(".log", ".error.log"), "w") as f:
-                    f.write('Processing filed during stage : "{0}"'.format(method))
-                    f.write(str(ex_type))
-                    f.write("\n")
-                    f.write(str(ex_value))
-                    f.write("\n")
-                    traceback.print_tb(ex_traceback, file=f)
-
-            # Return flag to indicate preprocessing failed
-            return False
-
-    # Add preprocessing info to dataset dict
-    dataset = append_preproc_info(dataset, config)
-
     # Write preprocessed data to output directory
     if outdir is not None:
-        write_dataset(dataset, outbase, run_id, overwrite=overwrite)
+        # Check for existing outputs - should be a .fif at least
+        fifout = outbase.format(run_id=run_id.replace('_raw', ''), ftype='preproc_raw', fext='fif')
+        if os.path.exists(fifout) and (overwrite is False):
+            osl_logger.critical('Skipping preprocessing - existing output detected')
+            return 2
+
+    # MAIN BLOCK - Run the preproc chain and catch any exceptions
+    try:
+        if isinstance(infile, str):
+            raw = import_data(infile)
+        elif isinstance(infile, mne.io.fiff.raw.Raw):
+            raw = infile
+            infile = raw.filenames[0]  # assuming only one file here
+
+
+        # Create a dataset dict to hold the preprocessed dataset
+        dataset = {
+            "raw": raw,
+            "ica": None,
+            "epochs": None,
+            "events": None,
+            "event_id": config["meta"]["event_codes"],
+        }
+
+        # Do the preprocessing
+        for stage in deepcopy(config["preproc"]):
+            method, userargs = next(iter(stage.items()))
+            target = userargs.get("target", "raw")  # Raw is default
+            func = find_func(method, target=target, extra_funcs=extra_funcs)
+            # Actual function call
+            dataset = func(dataset, userargs)
+
+        # Add preprocessing info to dataset dict
+        dataset = append_preproc_info(dataset, config)
+
+        if outdir is not None:
+            write_dataset(dataset, outbase, run_id, overwrite=overwrite)
+
+    except Exception as e:
+        logger.critical("**********************")
+        logger.critical("* PROCESSING FAILED! *")
+        logger.critical("**********************")
+        ex_type, ex_value, ex_traceback = sys.exc_info()
+        logger.error("{0} : {1}".format(method, func))
+        logger.error(ex_type)
+        logger.error(ex_value)
+        logger.error(traceback.print_tb(ex_traceback))
+        if outdir is not None:
+            with open(logfile.replace(".log", ".error.log"), "w") as f:
+                f.write('Processing filed during stage : "{0}"'.format(method))
+                f.write(str(ex_type))
+                f.write("\n")
+                f.write(str(ex_value))
+                f.write("\n")
+                traceback.print_tb(ex_traceback, file=f)
+
+        # Return flag to indicate preprocessing failed
+        return False
 
     now = strftime("%Y-%m-%d %H:%M:%S", localtime())
     logger.info("{0} : Processing Complete".format(now))
@@ -639,25 +646,52 @@ def run_proc_batch(
         Flags indicating whether preprocessing was successful for each input file.
     """
 
-    # Output directory
     if outdir is None:
         # Use the current working directory
         outdir = os.getcwd()
-    outdir = validate_outdir(outdir)
+    outdir = utils.validate_outdir(outdir)
 
-    # Setup loggers
+    # Initialise Loggers
     mne.set_log_level(mneverbose)
-    logfile = os.path.join(outdir, "osl_batch.log")
-    osl_logger.set_up(log_file=logfile, level=verbose, startup=False)
+    if strictrun and verbose not in ['INFO', 'DEBUG']:
+        # override logger level if strictrun requested but user won't see any info...
+        verobse = 'INFO'
+    logfile = os.path.join(outdir, 'osl_batch.log')
+    utils.logger.set_up(log_file=logfile, level=verbose, startup=False)
 
-    logger.info("Starting OSL Batch Processing")
+    osl_logger.info('Starting OSL Batch Processing')
 
-    # Check input files
-    infiles, outnames, good_files = process_file_inputs(files)
-    logger.info("Processing {0} files".format(sum(good_files)))
+    # Check through inputs and parameters
+    infiles, outnames, good_files = utils.process_file_inputs(files)
+    if strictrun and click.confirm('Is this correct set of inputs?') is False:
+        osl_logger.critical('Stopping : User indicated incorrect number of input files')
+        sys.exit(1)
+    else:
+        if strictrun:
+            osl_logger.info('User confirms input files')
 
-    logger.info("Outputs saving to: {0}\n\n".format(outdir))
+    osl_logger.info('Outputs saving to: {0}'.format(outdir))
+    if strictrun and click.confirm('Is this correct output directory?') is False:
+        osl_logger.critical('Stopping : User indicated incorrect output directory')
+        sys.exit(1)
+    else:
+        if strictrun:
+            osl_logger.info('User confirms output directory')
+
     config = load_config(config)
+    config_str = pprint.PrettyPrinter().pformat(config)
+    osl_logger.info('Running config\n {0}'.format(config_str))
+    if strictrun and click.confirm('Is this the correct config?') is False:
+        osl_logger.critical('Stopping : User indicated incorrect preproc config')
+        sys.exit(1)
+    else:
+        if strictrun:
+            osl_logger.info('User confirms input config')
+
+    outdir = utils.validate_outdir(outdir)
+
+    name_base = '{run_id}_{ftype}.{fext}'
+    outbase = outdir / name_base
 
     # Create partial function with fixed options
     pool_func = partial(
@@ -675,12 +709,15 @@ def run_proc_batch(
             outname = None
         else:
             outname = outnames[idx]
-
         args.append((infif, config, outname))
 
     # Actually run the processes
-    with Parallel(n_jobs=nprocesses, verbose=50) as parallel:
-        proc_flags = parallel(delayed(pool_func)(*aa) for aa in args)
+    if dask_client is None:
+        proc_flags = [pool_func(*aa) for aa in args]
+    else:
+        # Return results as we've fixed ret_dataset to false for batch processing
+        #proc_flags = utils.parallel.dask_parallel(dask_client, pool_func, args, ret_results=True)
+        proc_flags = utils.parallel.dask_parallel_bag(pool_func, args)
 
     logger.info(
         "Processed {0}/{1} files successfully".format(

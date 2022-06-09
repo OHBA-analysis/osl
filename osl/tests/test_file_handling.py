@@ -95,7 +95,6 @@ class TestFileInputs(unittest.TestCase):
         # Four files are missing
         assert(np.sum(goods) == len(self.fnames_test)-4)
 
-
     def test_process_file_inputs_with_regular_expression(self):
         from  .. import utils
 
@@ -114,7 +113,6 @@ class TestFileInputs(unittest.TestCase):
         infiles, outnames, goods = utils.process_file_inputs(reg)
         assert(len(infiles) == 2)
 
-
     def test_process_file_inputs_with_single_path(self):
         from  .. import utils
 
@@ -131,3 +129,68 @@ class TestFileInputs(unittest.TestCase):
         #assert(np.sum(goods) == 0)
 
 
+class TestStudyClass(unittest.TestCase):
+
+    @classmethod
+    def setUpClass(cls):
+        # Temp dir for some dummy input files
+        cls.test_dir = tempfile.mkdtemp()
+
+        # Define some dummy files - including some missing data and mistakes
+        cls.fnames = ['sub-001_task-rest_meg-raw.fif',
+                      'sub-001_task-read_meg-raw.fif',
+                      'sub-002_task-rest_meg-raw.fif',
+                      'sub-002_task-read_meg-raw.fif',
+                      'sub-003_task-rest_meg-raw.fif',
+                      'sub-004_task-read_meg-raw.fif',
+                      'sub-006_task-RSET_meg-raw.fif',
+                      'sub-006_task-rest_meg-raw.fif']
+
+        # Make some files
+        cls.file_inputs = []
+        for fname in cls.fnames:
+            name = os.path.join(cls.test_dir, fname)
+            Path(name).touch()  # Create empty file
+            cls.file_inputs.append(name)
+
+        # Now list files with no mistakes
+        cls.fnames_test = ['sub-001_task-rest_meg-raw.fif',
+                           'sub-001_task-read_meg-raw.fif',
+                           'sub-002_task-rest_meg-raw.fif',
+                           'sub-002_task-read_meg-raw.fif',
+                           'sub-003_task-rest_meg-raw.fif',
+                           'sub-003_task-read_meg-raw.fif',
+                           'sub-004_task-rest_meg-raw.fif',
+                           'sub-004_task-read_meg-raw.fif',
+                           'sub-005_task-rest_meg-raw.fif',
+                           'sub-005_task-read_meg-raw.fif',
+                           'sub-006_task-rest_meg-raw.fif',
+                           'sub-006_task-rest_meg-raw.fif']
+
+        # Make some files
+        cls.file_inputs_test = []
+        for fname in cls.fnames_test:
+            name = os.path.join(cls.test_dir, fname)
+            cls.file_inputs_test.append(name)
+        return cls
+
+    @classmethod
+    def tearDownClass(cls):
+        # Auto-run at the end - remove dir
+        shutil.rmtree(cls.test_dir)
+
+    def test_simple_study(self):
+        from ..utils import Study
+
+        fbase = os.path.join(self.test_dir, '{subj}_task-{task}_meg-{preproc}.fif')
+
+        st = Study(fbase)
+        assert(len(st.match_files) == len(self.fnames))
+
+        assert(len(st.get(task='rest')) == 4)
+        assert(len(st.get(task='read')) == 3)
+        assert(len(st.get(task='RSET')) == 1)
+        assert(len(st.get(task='counting')) == 0)
+
+        assert(len(st.get(preproc='raw')) == len(self.fnames))
+        assert(len(st.get(preproc='sss')) == 0)
