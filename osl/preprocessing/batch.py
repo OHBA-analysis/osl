@@ -184,7 +184,7 @@ def find_func(method, target="raw", extra_funcs=None):
                 func = partial(mne_wrappers.run_mne_anonymous, method=method)
 
     if func is None:
-        logger.critical("Func not found! {}".format(method))
+        logger.critical("Function not found! {}".format(method))
 
     return func
 
