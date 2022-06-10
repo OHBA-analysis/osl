@@ -266,7 +266,7 @@ def run_mne_maxwell_filter(dataset, userargs):
 def run_mne_compute_current_source_density(dataset, userargs):
     logger.info(
         "MNE Stage - {0}.{1}".format(
-            "mne.preprocessing.", "compute_current_source_density"
+            "mne.preprocessing", "compute_current_source_density"
         )
     )
     logger.info("userargs: {0}".format(str(userargs)))
