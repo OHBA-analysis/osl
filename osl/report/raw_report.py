@@ -510,7 +510,8 @@ def plot_ecg_summary(raw, savebase=None):
 
     # Process first ECG channel
     signals, info = nk.ecg_process(x[0, :], sampling_rate=raw.info['sfreq'])
-    fig = nk.ecg_plot(signals, sampling_rate=raw.info['sfreq'])
+    nk.ecg_plot(signals, sampling_rate=raw.info['sfreq'])
+    fig = plt.gcf()
     fig.set_size_inches(16, 7)
 
     # Save
