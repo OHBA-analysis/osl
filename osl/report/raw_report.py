@@ -573,7 +573,7 @@ def plot_bad_ica(raw, ica, savebase):
 
     # Return the filename
     filebase = os.path.split(savebase)[1]
-    return filebase.format('ICA')
+    return filebase.format('ica')
 
 
 def plot_artefact_scan(raw, savebase=None):
