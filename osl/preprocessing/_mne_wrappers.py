@@ -315,7 +315,7 @@ def run_mne_ica_raw(dataset, userargs):
     hpfilter = userargs.pop('hpfilter', True) # https://mne.tools/stable/auto_tutorials/preprocessing/40_artifact_correction_ica.html#filtering-to-remove-slow-drifts
     osl_logger.info('MNE Stage - {0}'.format('mne.preprocessing.ICA'))
     osl_logger.info('userargs: {0}'.format(str(userargs)))
-    
+
     # NOTE: **userargs doesn't work because 'picks' is in there
     ica = mne.preprocessing.ICA(n_components=userargs['n_components'])
     if hpfilter:
@@ -362,7 +362,7 @@ def run_osl_ica_manualreject(dataset, userargs):
     target = userargs.pop('target', 'raw')
     osl_logger.info('OSL Stage - {0}'.format('ICA Manual Reject'))
     osl_logger.info('userargs: {0}'.format(str(userargs)))
-    
+
     from .osl_plot_ica import plot_ica
     plot_ica(dataset['ica'], dataset['raw'], block=True)
     osl_logger.info('Removing {0} IC'.format(len(dataset['ica'].exclude)))

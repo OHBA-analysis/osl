@@ -14,12 +14,11 @@ import logging.config
 
 
 # Housekeeping for logging
-# Add a single null handler until set-up is called, this is activated on import
-# to __init__
-logging.getLogger('osl').addHandler(logging.NullHandler())
+# Set logger level to WARNING as default
+logging.getLogger("osl").setLevel(logging.WARNING)
 
 # Initialise logging for this sub-module
-logger = logging.getLogger(__name__)
+osl_logger = logging.getLogger(__name__)
 
 #%% ------------------------------------------------------------
 
@@ -61,14 +60,14 @@ disable_existing_loggers: true
 
 
 def set_up(prefix='', log_file=None, level=None, console_format=None, startup=True):
-    """Initialise the OSL module logger.
+    """Initialise the OSL module osl_logger.
 
     Parameters
     ----------
     prefix : str
-        Optional prefix to attach to logger output
+        Optional prefix to attach to osl_logger output
     log_file : str
-        Optional path to a log file to record logger output
+        Optional path to a log file to record osl_logger output
     level : {'CRITICAL', 'WARNING', 'INFO', 'DEBUG'}
         String indicating initial logging level
     console_format : str
@@ -87,8 +86,9 @@ def set_up(prefix='', log_file=None, level=None, console_format=None, startup=Tr
         new_config['loggers']['osl']['handlers'] = ['console']
         del new_config['handlers']['file']
 
-    # Configure logger with dict
+    # Configure osl_logger with dict
     logging.config.dictConfig(new_config)
+    #osl_logger.config.dictConfig(new_config)
 
     # Customise options
     if level is not None:
@@ -98,27 +98,26 @@ def set_up(prefix='', log_file=None, level=None, console_format=None, startup=Tr
 
     if startup:
         # Say hello
-        logger.info('OSL Logger Started')
+        osl_logger.info('OSL Logger Started')
 
     # Print some info
     if log_file is not None:
-        logger.info('logging to file: {0}'.format(log_file))
+        osl_logger.info('logging to file: {0}'.format(log_file))
 
 
 def set_level(level, handler='console'):
     """Set new logging level for OSL module."""
-    logger = logging.getLogger('osl')
-    for handler in logger.handlers:
+    osl_logger = logging.getLogger('osl')
+    for handler in osl_logger.handlers:
         if handler.get_name() == 'console':
             if level in ['INFO', 'DEBUG']:
-                logger.info("OSL logger: handler '{0}' level set to '{1}'".format(handler.get_name(), level))
+                osl_logger.info("OSL osl_logger: handler '{0}' level set to '{1}'".format(handler.get_name(), level))
             handler.setLevel(getattr(logging, level))
 
 
 def get_level(handler='console'):
     """Return current logging level for OSL module."""
-    logger = logging.getLogger('osl')
-    for handler in logger.handlers:
+    osl_logger = logging.getLogger('osl')
+    for handler in osl_logger.handlers:
         if handler.get_name() == 'console':
             return handler.level
-
