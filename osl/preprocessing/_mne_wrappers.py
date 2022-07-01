@@ -7,7 +7,7 @@ import numpy as np
 
 # Housekeeping for logging
 import logging
-logger = logging.getLogger(__name__)
+osl_logger = logging.getLogger(__name__)
 
 # --------------------------------------------------------------
 # MNE Raw/Epochs Object Methods
@@ -25,8 +25,8 @@ logger = logging.getLogger(__name__)
 
 def run_mne_anonymous(dataset, userargs, method):
     target = userargs.pop('target', 'raw')
-    logger.info('MNE Stage - {0}.{1}'.format(target, method))
-    logger.info('userargs: {0}'.format(str(userargs)))
+    osl_logger.info('MNE Stage - {0}.{1}'.format(target, method))
+    osl_logger.info('userargs: {0}'.format(str(userargs)))
     if hasattr(dataset[target], method) and callable(getattr(dataset[target], method)):
         getattr(dataset[target], method)(**userargs)
     else:
@@ -41,8 +41,8 @@ def run_mne_anonymous(dataset, userargs, method):
 
 def run_mne_notch_filter(dataset, userargs):
     target = userargs.pop('target', 'raw')
-    logger.info('MNE Stage - {0}.{1}'.format(target, 'notch_filter'))
-    logger.info('userargs: {0}'.format(str(userargs)))
+    osl_logger.info('MNE Stage - {0}.{1}'.format(target, 'notch_filter'))
+    osl_logger.info('userargs: {0}'.format(str(userargs)))
     freqs = userargs.pop('freqs')
     freqs = [float(freqs) if np.logical_or(type(freqs)==int, type(freqs)==float) else np.array(freqs.split(' ')).astype(float)]
     dataset[target].notch_filter(freqs, **userargs)
@@ -51,32 +51,32 @@ def run_mne_notch_filter(dataset, userargs):
 
 def run_mne_pick(dataset, userargs):
     target = userargs.pop('target', 'raw')
-    logger.info('MNE Stage - {0}.{1}'.format(target, 'pick'))
-    logger.info('userargs: {0}'.format(str(userargs)))
+    osl_logger.info('MNE Stage - {0}.{1}'.format(target, 'pick'))
+    osl_logger.info('userargs: {0}'.format(str(userargs)))
     dataset[target].pick(**userargs)
     return dataset
 
 
 def run_mne_pick_channels(dataset, userargs):
     target = userargs.pop('target', 'raw')
-    logger.info('MNE Stage - {0}.{1}'.format(target, 'pick_channels'))
-    logger.info('userargs: {0}'.format(str(userargs)))
+    osl_logger.info('MNE Stage - {0}.{1}'.format(target, 'pick_channels'))
+    osl_logger.info('userargs: {0}'.format(str(userargs)))
     dataset[target].pick_channels(**userargs)
     return dataset
 
 
 def run_mne_pick_types(dataset, userargs):
     target = userargs.pop('target', 'raw')
-    logger.info('MNE Stage - {0}.{1}'.format(target, 'pick_types'))
-    logger.info('userargs: {0}'.format(str(userargs)))
+    osl_logger.info('MNE Stage - {0}.{1}'.format(target, 'pick_types'))
+    osl_logger.info('userargs: {0}'.format(str(userargs)))
     dataset[target].pick_types(**userargs)
     return dataset
 
 
 def run_mne_resample(dataset, userargs):
     target = userargs.pop('target', 'raw')
-    logger.info('MNE Stage - {0}.{1}'.format(target, 'resample'))
-    logger.info('userargs: {0}'.format(str(userargs)))
+    osl_logger.info('MNE Stage - {0}.{1}'.format(target, 'resample'))
+    osl_logger.info('userargs: {0}'.format(str(userargs)))
     if ('events' in dataset) and (dataset['events'] is not None):
         dataset[target], dataset['events'] = dataset[target].resample(events=dataset['events'], **userargs)
     else:
@@ -86,8 +86,8 @@ def run_mne_resample(dataset, userargs):
 
 def run_mne_set_channel_types(dataset, userargs):
     target = userargs.pop('target', 'raw')
-    logger.info('MNE Stage - {0}.{1}'.format(target, 'set_channel_types'))
-    logger.info('userargs: {0}'.format(str(userargs)))
+    osl_logger.info('MNE Stage - {0}.{1}'.format(target, 'set_channel_types'))
+    osl_logger.info('userargs: {0}'.format(str(userargs)))
     # Separate function as we don't explode userargs
     dataset[target].set_channel_types(userargs)
     return dataset
@@ -97,8 +97,8 @@ def run_mne_set_channel_types(dataset, userargs):
 
 def run_mne_drop_bad(dataset, userargs):
     target = userargs.pop('target', 'epochs')  # should only be epochs
-    logger.info('MNE Stage - {0}.{1}'.format(target, 'drop_bad'))
-    logger.info('userargs: {0}'.format(str(userargs)))
+    osl_logger.info('MNE Stage - {0}.{1}'.format(target, 'drop_bad'))
+    osl_logger.info('userargs: {0}'.format(str(userargs)))
 
     # Need to sanitise values in 'reject' dictionary - these are strings after
     # being read in from yaml.
@@ -115,8 +115,8 @@ def run_mne_drop_bad(dataset, userargs):
 
 def run_mne_apply_baseline(dataset, userargs):
     target = userargs.pop('target', 'epochs')  # should only be epochs
-    logger.info('MNE Stage - {0}.{1}'.format(target, 'apply_baseline'))
-    logger.info('userargs: {0}'.format(str(userargs)))
+    osl_logger.info('MNE Stage - {0}.{1}'.format(target, 'apply_baseline'))
+    osl_logger.info('userargs: {0}'.format(str(userargs)))
 
     freqs = np.array(userargs.pop('baseline').split(' ')).astype(float)
     dataset[target].apply_baseline(freqs, **userargs)
@@ -131,16 +131,16 @@ def run_mne_apply_baseline(dataset, userargs):
 # and typically create a new data object in the dataset dictionary.
 
 def run_mne_find_events(dataset, userargs):
-    logger.info('MNE Stage - {0}.{1}'.format('mne', 'find_events'))
-    logger.info('userargs: {0}'.format(str(userargs)))
+    osl_logger.info('MNE Stage - {0}.{1}'.format('mne', 'find_events'))
+    osl_logger.info('userargs: {0}'.format(str(userargs)))
 
     dataset['events'] = mne.find_events(dataset['raw'], **userargs)
     return dataset
 
 
 def run_mne_epochs(dataset, userargs):
-    logger.info('MNE Stage - {0}.{1}'.format('mne', 'epochs'))
-    logger.info('userargs: {0}'.format(str(userargs)))
+    osl_logger.info('MNE Stage - {0}.{1}'.format('mne', 'epochs'))
+    osl_logger.info('userargs: {0}'.format(str(userargs)))
     tmin = userargs.pop('tmin', -0.2)
     tmax = userargs.pop('tmax', 0.5)
     dataset['epochs'] = mne.Epochs(dataset['raw'],
@@ -155,8 +155,8 @@ def run_mne_epochs(dataset, userargs):
 
 
 def run_mne_annotate_flat(dataset, userargs):
-    logger.info('MNE Stage - {0}.{1}'.format('mne.preprocessing', 'annotate_flat'))
-    logger.info('userargs: {0}'.format(str(userargs)))
+    osl_logger.info('MNE Stage - {0}.{1}'.format('mne.preprocessing', 'annotate_flat'))
+    osl_logger.info('userargs: {0}'.format(str(userargs)))
     target = userargs.pop('target', 'raw')
 
     # Import func - otherwise line is too long even for me
@@ -185,8 +185,8 @@ def run_mne_annotate_flat(dataset, userargs):
 
 
 def run_mne_annotate_muscle_zscore(dataset, userargs):
-    logger.info('MNE Stage - {0}.{1}'.format('mne.preprocessing', 'annotate_muscle_zscore'))
-    logger.info('userargs: {0}'.format(str(userargs)))
+    osl_logger.info('MNE Stage - {0}.{1}'.format('mne.preprocessing', 'annotate_muscle_zscore'))
+    osl_logger.info('userargs: {0}'.format(str(userargs)))
     target = userargs.pop('target', 'raw')
 
     # Import func - otherwise line is too long even for me
@@ -213,8 +213,8 @@ def run_mne_annotate_muscle_zscore(dataset, userargs):
 
 
 def run_mne_find_bad_channels_maxwell(dataset, userargs):
-    logger.info('MNE Stage - {0}.{1}'.format('mne.preprocessing', 'find_bad_channels_maxwell'))
-    logger.info('userargs: {0}'.format(str(userargs)))
+    osl_logger.info('MNE Stage - {0}.{1}'.format('mne.preprocessing', 'find_bad_channels_maxwell'))
+    osl_logger.info('userargs: {0}'.format(str(userargs)))
     target = userargs.pop('target', 'raw')
 
     # Import func - otherwise line is too long even for me
@@ -228,8 +228,8 @@ def run_mne_find_bad_channels_maxwell(dataset, userargs):
 
 
 def run_mne_maxwell_filter(dataset, userargs):
-    logger.info('MNE Stage - {0}.{1}'.format('mne.preprocessing', 'maxwell_filter'))
-    logger.info('userargs: {0}'.format(str(userargs)))
+    osl_logger.info('MNE Stage - {0}.{1}'.format('mne.preprocessing', 'maxwell_filter'))
+    osl_logger.info('userargs: {0}'.format(str(userargs)))
     target = userargs.pop('target', 'raw')
 
     # Import func - otherwise line is too long even for me
@@ -241,8 +241,8 @@ def run_mne_maxwell_filter(dataset, userargs):
 
 
 def run_mne_compute_current_source_density(dataset, userargs):
-    logger.info('MNE Stage - {0}.{1}'.format('mne.preprocessing.', 'compute_current_source_density'))
-    logger.info('userargs: {0}'.format(str(userargs)))
+    osl_logger.info('MNE Stage - {0}.{1}'.format('mne.preprocessing.', 'compute_current_source_density'))
+    osl_logger.info('userargs: {0}'.format(str(userargs)))
     target = userargs.pop('target', 'raw')
 
     # Import func - otherwise line is too long even for me
@@ -258,8 +258,8 @@ def run_mne_compute_current_source_density(dataset, userargs):
 
 def run_mne_tfr_multitaper(dataset, userargs):
     target = userargs.pop('target', 'epochs')
-    logger.info('MNE Stage - {0} on {1}'.format('tfr_multitaper', target))
-    logger.info('userargs: {0}'.format(str(userargs)))
+    osl_logger.info('MNE Stage - {0} on {1}'.format('tfr_multitaper', target))
+    osl_logger.info('userargs: {0}'.format(str(userargs)))
     from mne.time_frequency import tfr_multitaper
 
     freqs = np.array(userargs.pop('freqs').split(' ')).astype('float')
@@ -277,8 +277,8 @@ def run_mne_tfr_multitaper(dataset, userargs):
 
 def run_mne_tfr_morlet(dataset, userargs):
     target = userargs.pop('target', 'epochs')
-    logger.info('MNE Stage - {0} on {1}'.format('tfr_morlet', target))
-    logger.info('userargs: {0}'.format(str(userargs)))
+    osl_logger.info('MNE Stage - {0} on {1}'.format('tfr_morlet', target))
+    osl_logger.info('userargs: {0}'.format(str(userargs)))
     from mne.time_frequency import tfr_morlet
 
     freqs = np.array(userargs.pop('freqs').split(' ')).astype('float')
@@ -292,8 +292,8 @@ def run_mne_tfr_morlet(dataset, userargs):
 
 def run_mne_tfr_stockwell(dataset, userargs):
     target = userargs.pop('target', 'epochs')
-    logger.info('MNE Stage - {0} on {1}'.format('tfr_stockwell', target))
-    logger.info('userargs: {0}'.format(str(userargs)))
+    osl_logger.info('MNE Stage - {0} on {1}'.format('tfr_stockwell', target))
+    osl_logger.info('userargs: {0}'.format(str(userargs)))
     from mne.time_frequency import tfr_stockwell
 
     out = tfr_stockwell(dataset[target], **userargs)
@@ -313,8 +313,8 @@ def run_mne_tfr_stockwell(dataset, userargs):
 def run_mne_ica_raw(dataset, userargs):
     target = userargs.pop('target', 'raw')
     hpfilter = userargs.pop('hpfilter', True) # https://mne.tools/stable/auto_tutorials/preprocessing/40_artifact_correction_ica.html#filtering-to-remove-slow-drifts
-    logger.info('MNE Stage - {0}'.format('mne.preprocessing.ICA'))
-    logger.info('userargs: {0}'.format(str(userargs)))
+    osl_logger.info('MNE Stage - {0}'.format('mne.preprocessing.ICA'))
+    osl_logger.info('userargs: {0}'.format(str(userargs)))
     
     # NOTE: **userargs doesn't work because 'picks' is in there
     ica = mne.preprocessing.ICA(n_components=userargs['n_components'])
@@ -328,9 +328,9 @@ def run_mne_ica_raw(dataset, userargs):
 
 def run_mne_ica_autoreject(dataset, userargs):
     target = userargs.pop('target', 'raw')
-    logger.info('OSL Stage - {0}'.format('ICA Autoreject'))
-    logger.info('userargs: {0}'.format(str(userargs)))
-    
+    osl_logger.info('OSL Stage - {0}'.format('ICA Autoreject'))
+    osl_logger.info('userargs: {0}'.format(str(userargs)))
+
     if ('ecgmethod' not in userargs) or (userargs['ecgmethod'] == 'ctps'):
         ecgmethod = 'ctps'
     elif userargs['ecgmethod'] == 'correlation':
@@ -344,39 +344,39 @@ def run_mne_ica_autoreject(dataset, userargs):
                                                            measure='correlation')
 
     dataset['ica'].exclude.extend(eog_indices)
-    logger.info('Marking {0} as EOG ICs'.format(len(dataset['ica'].exclude)))
+    osl_logger.info('Marking {0} as EOG ICs'.format(len(dataset['ica'].exclude)))
     ecg_indices, ecg_scores = dataset['ica'].find_bads_ecg(dataset['raw'],
                                                            threshold=ecgthreshold,
                                                            method=ecgmethod)
     dataset['ica'].exclude.extend(ecg_indices)
-    logger.info('Marking {0} as ECG ICs'.format(len(dataset['ica'].exclude)))
+    osl_logger.info('Marking {0} as ECG ICs'.format(len(dataset['ica'].exclude)))
     if ('apply' not in userargs) or (userargs['apply'] is True):
-        logger.info('Removing selected components from raw data')
+        osl_logger.info('Removing selected components from raw data')
         dataset['ica'].apply(dataset['raw'])
     else:
-        logger.info('Components were not removed from raw data')
+        osl_logger.info('Components were not removed from raw data')
     return dataset
 
 
 def run_osl_ica_manualreject(dataset, userargs):
     target = userargs.pop('target', 'raw')
-    logger.info('OSL Stage - {0}'.format('ICA Manual Reject'))
-    logger.info('userargs: {0}'.format(str(userargs)))
+    osl_logger.info('OSL Stage - {0}'.format('ICA Manual Reject'))
+    osl_logger.info('userargs: {0}'.format(str(userargs)))
     
     from .osl_plot_ica import plot_ica
     plot_ica(dataset['ica'], dataset['raw'], block=True)
-    logger.info('Removing {0} IC'.format(len(dataset['ica'].exclude)))
+    osl_logger.info('Removing {0} IC'.format(len(dataset['ica'].exclude)))
     if np.logical_or('apply' not in userargs, userargs['apply'] is True):
-        logger.info('Removing selected components from raw data')
+        osl_logger.info('Removing selected components from raw data')
         dataset['ica'].apply(dataset['raw'])
     else:
-        logger.info('Components were not removed from raw data')
+        osl_logger.info('Components were not removed from raw data')
     return dataset
 
 
 def run_mne_apply_ica(dataset, userargs):
     target = userargs.pop('target', 'raw')
-    logger.info('MNE Stage - {0}'.format('ica.apply'))
-    logger.info('userargs: {0}'.format(str(userargs)))
+    osl_logger.info('MNE Stage - {0}'.format('ica.apply'))
+    osl_logger.info('userargs: {0}'.format(str(userargs)))
     dataset['raw'] = dataset['ica'].apply(dataset['raw'])
     return dataset
