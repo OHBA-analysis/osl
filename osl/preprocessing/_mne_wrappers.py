@@ -312,12 +312,16 @@ def run_mne_tfr_stockwell(dataset, userargs):
 
 def run_mne_ica_raw(dataset, userargs):
     target = userargs.pop('target', 'raw')
+    hpfilter = userargs.pop('hpfilter', True) # https://mne.tools/stable/auto_tutorials/preprocessing/40_artifact_correction_ica.html#filtering-to-remove-slow-drifts
     osl_logger.info('MNE Stage - {0}'.format('mne.preprocessing.ICA'))
     osl_logger.info('userargs: {0}'.format(str(userargs)))
 
     # NOTE: **userargs doesn't work because 'picks' is in there
     ica = mne.preprocessing.ICA(n_components=userargs['n_components'])
-    ica.fit(dataset['raw'], picks=userargs['picks'])
+    if hpfilter:
+        ica.fit(dataset['raw'].copy().filter(l_freq=1., h_freq=None), picks=userargs['picks'])
+    else:
+        ica.fit(dataset['raw'], picks=userargs['picks'])
     dataset['ica'] = ica
     return dataset
 
