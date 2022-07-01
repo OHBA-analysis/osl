@@ -328,14 +328,9 @@ def run_mne_ica_raw(dataset, userargs):
 
 def run_mne_ica_autoreject(dataset, userargs):
     target = userargs.pop('target', 'raw')
-    hpfilter = userargs.pop('hpfilter', True) # https://mne.tools/stable/auto_tutorials/preprocessing/40_artifact_correction_ica.html#filtering-to-remove-slow-drifts
     logger.info('OSL Stage - {0}'.format('ICA Autoreject'))
     logger.info('userargs: {0}'.format(str(userargs)))
     
-    if hpfilter:
-        raw = dataset['raw'].copy().filter(l_freq=1., h_freq=None)
-    else:
-        raw = dataset['raw'].copy()
     if ('ecgmethod' not in userargs) or (userargs['ecgmethod'] == 'ctps'):
         ecgmethod = 'ctps'
     elif userargs['ecgmethod'] == 'correlation':
@@ -344,13 +339,13 @@ def run_mne_ica_autoreject(dataset, userargs):
         ecgthreshold = 'auto'
     elif ecgmethod == 'correlation':
         ecgthreshold = 3
-    eog_indices, eog_scores = dataset['ica'].find_bads_eog(raw,
+    eog_indices, eog_scores = dataset['ica'].find_bads_eog(dataset['raw'],
                                                            threshold=0.35,
                                                            measure='correlation')
 
     dataset['ica'].exclude.extend(eog_indices)
     logger.info('Marking {0} as EOG ICs'.format(len(dataset['ica'].exclude)))
-    ecg_indices, ecg_scores = dataset['ica'].find_bads_ecg(raw,
+    ecg_indices, ecg_scores = dataset['ica'].find_bads_ecg(dataset['raw'],
                                                            threshold=ecgthreshold,
                                                            method=ecgmethod)
     dataset['ica'].exclude.extend(ecg_indices)
@@ -365,16 +360,11 @@ def run_mne_ica_autoreject(dataset, userargs):
 
 def run_osl_ica_manualreject(dataset, userargs):
     target = userargs.pop('target', 'raw')
-    hpfilter = userargs.pop('hpfilter', True) # https://mne.tools/stable/auto_tutorials/preprocessing/40_artifact_correction_ica.html#filtering-to-remove-slow-drifts
     logger.info('OSL Stage - {0}'.format('ICA Manual Reject'))
     logger.info('userargs: {0}'.format(str(userargs)))
     
-    if hpfilter:
-        raw = dataset['raw'].copy().filter(l_freq=1., h_freq=None)
-    else:
-        raw = dataset['raw'].copy() 
     from .osl_plot_ica import plot_ica
-    plot_ica(dataset['ica'], raw, block=True)
+    plot_ica(dataset['ica'], dataset['raw'], block=True)
     logger.info('Removing {0} IC'.format(len(dataset['ica'].exclude)))
     if np.logical_or('apply' not in userargs, userargs['apply'] is True):
         logger.info('Removing selected components from raw data')
