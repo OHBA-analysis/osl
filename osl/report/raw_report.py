@@ -164,8 +164,8 @@ def gen_report(infiles, outdir, preproc_config=None, level=1):
 
         # Load ICA file if it exists
         # TODO: could potentially be incorporated in 'import_data'
-        if os.path.exists(infile.replace('raw.fif', 'ica.fif')):
-            ica = mne.preprocessing.read_ica(infile.replace('raw.fif', 'ica.fif'))
+        if os.path.exists(infile.replace('preproc_raw.fif', 'ica.fif')):
+            ica = mne.preprocessing.read_ica(infile.replace('preproc_raw.fif', 'ica.fif'))
         else:
             ica = None
 
@@ -508,7 +508,8 @@ def plot_ecg_summary(raw, savebase=None):
 
     # Process first ECG channel
     signals, info = nk.ecg_process(x[0, :], sampling_rate=raw.info['sfreq'])
-    fig = nk.ecg_plot(signals, sampling_rate=raw.info['sfreq'])
+    nk.ecg_plot(signals, sampling_rate=raw.info['sfreq'])
+    fig = plt.gcf()
     fig.set_size_inches(16, 7)
 
     # Save
@@ -570,7 +571,7 @@ def plot_bad_ica(raw, ica, savebase):
 
     # Return the filename
     filebase = os.path.split(savebase)[1]
-    return filebase.format('ICA')
+    return filebase.format('ica')
 
 
 def plot_artefact_scan(raw, savebase=None):
