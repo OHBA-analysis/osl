@@ -1,11 +1,8 @@
 #!/usr/bin/python
 
-# vim: set expandtab ts=4 sw=4:
-
 """Logging module for OSL
 
 Heavily inspired by logging in OSL.
-
 """
 
 import yaml

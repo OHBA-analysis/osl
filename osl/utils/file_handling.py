@@ -12,15 +12,13 @@ osl_logger = logging.getLogger(__name__)
 def process_file_inputs(inputs):
     """Process inputs for several cases
 
-    input can be...
+    The argument, inputs, can be...
     1) string path to unicode file
     2) string path to file or regular-expression matching files
     3) list of string paths to files
     4) list of tuples with path to file and output name pairs
     5) list of MNE objects
-
     """
-
     infiles = []
     outnames = []
     check_paths = True
@@ -30,7 +28,7 @@ def process_file_inputs(inputs):
             # Check if path to unicode file...
             open(inputs, 'r')
             infiles, outnames = _load_unicode_inputs(inputs)
-        except (UnicodeDecodeError, FileNotFoundError):
+        except (UnicodeDecodeError, FileNotFoundError, IndexError):
             # ...else we have a single path or glob expression
             infiles = glob.glob(inputs)
             outnames = [find_run_id(f) for f in infiles]

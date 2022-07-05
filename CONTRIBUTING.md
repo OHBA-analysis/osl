@@ -34,6 +34,38 @@ If you are an OSL developer, or working with the OSL team, you can make contribu
 
 The core developer team is @woolrich, @ajquinn, @cgohil8 and @matsvanes. A few example workflows are listed below.
 
+### Installation
+
+To install an editable version with pip:
+```
+conda create --name osl python=3
+conda activate osl
+git clone git@github.com:OHBA-analysis/oslpy.git
+cd oslpy
+pip install -e .
+```
+
+### Tests
+
+To run all tests:
+```
+cd osl
+pytest tests
+```
+or to run a specific test, e.g. file handling:
+```
+cd osl/tests
+pytest test_file_handling.py
+```
+
+### Build Documentation
+
+To build the documentation:
+```
+python setup.py build_sphinx
+```
+Compiled docs can be found in `doc/build/html/index.html`.
+
 ### Bug Fixes & New features
 
 To fix an isolated problem, any contributor can.

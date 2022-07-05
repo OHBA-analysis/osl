@@ -1,44 +1,34 @@
-Installing OSL
-=================================
+Installing oslpy
+================
 
+Currently, oslpy can only be installed from source. We recommend installing in a conda environment (described below).
 
-Install in Conda Environment
-****************************
+Conda Installation (Recommended)
+********************************
 
-OSL can be installed in a conda environment using the following configuration. First save this into a textfile called ``osl-dev.yml``.
-
-::
-
-    name: osl
-    channels:
-    dependencies:
-       - pip
-       - pip:
-         - git+https://github.com/OHBA-analysis/oslpy.git
-
-
-Then run this command in your terminal
+First, make sure you have conda (or miniconda) installed: https://docs.conda.io/en/latest. Then oslpy can be installed from source using the following:
 
 ::
-
-    conda env create -f osl-dev.yml
-
-and finally:
-
-::
-
+    
+    git clone https://github.com/OHBA-analysis/oslpy.git
+    cd oslpy
+    conda env create -f envs/osl.yml
     conda activate osl
 
 
-Install from source code
-************************
+PIP Installation
+****************
 
-OSL can also be installed from source using git. This is the preferred developer option. First, change directory to the location you would like to install OSL in.
-
-Next, run the following code in your terminal
+Alternatively, oslpy can be installed in your existing virtual environment with:
 
 ::
 
     git clone https://github.com/OHBA-analysis/oslpy.git
     cd oslpy
     pip install .
+
+Developers will want to install in editable mode:
+
+::
+
+    pip install -e .
