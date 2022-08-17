@@ -50,6 +50,6 @@ raw.plot(n_channels=30)
 
 #%%
 
-raw = osl.preprocessing.batch.detect_badsegments(raw, segment_len=150)
+raw = osl.preprocessing.osl_wrappers.detect_badsegments(raw, segment_len=150)
 
 raw.plot(n_channels=30)
