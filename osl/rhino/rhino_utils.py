@@ -6,11 +6,19 @@ Created on Fri Oct 29 10:24:11 2021
 @author: woolrich
 """
 
+import os
+import os.path as op
+
 import numpy as np
 from sklearn.neighbors import NearestNeighbors
 import nibabel as nib
-import os
-import os.path as op
+import pandas as pd
+import matplotlib.pyplot as plt
+
+from scipy import LowLevelCallable
+from scipy.ndimage import generic_filter
+from scipy.spatial import KDTree
+
 from mne import write_surface, Transform
 from mne.transforms import read_trans
 from mne.io.meas_info import _simplify_info
@@ -19,26 +27,20 @@ from mne.io.proj import make_projector, Projection
 from mne.source_estimate import _get_src_type
 from mne.forward import _subject_from_forward
 from mne.forward.forward import is_fixed_orient
-
 from mne.utils import (verbose, _check_one_ch_type, _check_info_inv,
                        _reg_pinv, _check_option, logger, _check_src_normal,
                        _pl, check_version, _sym_mat_pow, warn)
 from mne.rank import compute_rank
 from mne.minimum_norm.inverse import _check_depth, _prepare_forward, _get_vertno
-
 from mne.beamformer._compute_beamformer import (
     _reduce_leadfield_rank, Beamformer, _sym_inv_sm)
-
-from scipy.ndimage import generic_filter
-from scipy.spatial import KDTree
-from scipy import LowLevelCallable
-
-import pandas as pd
-import matplotlib.pyplot as plt
 
 from numba import cfunc, carray
 from numba.types import intc, intp, float64, voidptr
 from numba.types import CPointer
+
+import logging
+logging.getLogger('numba').setLevel(logging.WARNING)
 
 from ..utils import soft_import
 
