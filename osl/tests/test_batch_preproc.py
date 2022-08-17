@@ -34,15 +34,14 @@ class TestPreprocessingChain(unittest.TestCase):
         from ..preprocessing import run_proc_chain
 
         cfg = """
-meta:
-  event_codes:
-preproc:
-  - filter:         {l_freq: 1, h_freq: 30}
-  - notch_filter:   {freqs: 50}
-  - annotate_flat:  {}
-  - bad_channels:   {picks: 'grad'}
-  - bad_segments:   {segment_len: 800, picks: 'grad'}
-"""
+        meta:
+          event_codes:
+        preproc:
+          - filter:         {l_freq: 1, h_freq: 30}
+          - notch_filter:   {freqs: 50}
+          - bad_channels:   {picks: 'grad'}
+          - bad_segments:   {segment_len: 800, picks: 'grad'}
+        """
 
         dataset = run_proc_chain(self.fpath, cfg)
 
@@ -84,13 +83,12 @@ class TestPreprocessingBatch(unittest.TestCase):
         from ..preprocessing import run_proc_batch
 
         cfg = """
-meta:
-  event_codes:
-preproc:
-  - annotate_flat:  {}
-  - bad_channels:   {picks: 'grad'}
-  - bad_segments:   {segment_len: 800, picks: 'grad'}
-"""
+        meta:
+          event_codes:
+        preproc:
+          - bad_channels:   {picks: 'grad'}
+          - bad_segments:   {segment_len: 800, picks: 'grad'}
+        """
 
         # Normal run
         td = tempfile.TemporaryDirectory()
@@ -104,13 +102,12 @@ preproc:
         from dask.distributed import Client
 
         cfg = """
-meta:
-  event_codes:
-preproc:
-  - annotate_flat:  {}
-  - bad_channels:   {picks: 'grad'}
-  - bad_segments:   {segment_len: 800, picks: 'grad'}
-"""
+        meta:
+          event_codes:
+        preproc:
+          - bad_channels:   {picks: 'grad'}
+          - bad_segments:   {segment_len: 800, picks: 'grad'}
+        """
 
         client = Client(n_workers=2, threads_per_worker=1)
         td = tempfile.TemporaryDirectory()
