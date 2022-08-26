@@ -6,35 +6,28 @@ Created on Fri Feb 11 17:25:20 2022
 @author: mark woolrich
 """
 
-from pathlib import Path
-from typing import Union
-
-import nibabel as nib
-
-import numpy as np
-from nilearn.plotting import plot_markers
-import scipy.sparse.linalg
-from scipy.spatial import KDTree
-from osl.rhino import rhino_utils
-
 import os
 import os.path as op
+from pathlib import Path
+
+import numpy as np
+import nibabel as nib
+import scipy.sparse.linalg
+from scipy.spatial import KDTree
+from nilearn.plotting import plot_markers
+
+from osl.rhino import rhino_utils
 
 from ..utils import soft_import
 
 ####################################################################################
 
 class Parcellation:
-    def __init__(self, file: Union[str, Path]):
+    def __init__(self, file):
         if isinstance(file, Parcellation):
             self.__dict__.update(file.__dict__)
             return
-
-        if os.path.exists(file):
-            self.file = file
-        else:
-            raise FileNotFoundError(file)
-
+        self.file = self.find_file(file)
         self.parcellation = nib.load(self.file)
         self.dims = self.parcellation.shape[:3]
         self.n_parcels = self.parcellation.shape[3]
@@ -42,6 +35,15 @@ class Parcellation:
 
     def __repr__(self):
         return f"{self.__class__.__name__}({repr(self.file)})"
+
+    def find_file(self, filename):
+        if not op.exists(filename):
+            files_dir = str(Path(__file__).parent) + "/files/"
+            if op.exists(files_dir + filename):
+                filename = files_dir + filename
+            else:
+                raise FileNotFoundError(filename)
+        return filename
 
     def data(self):
         return self.parcellation.get_fdata()
@@ -72,7 +74,6 @@ class Parcellation:
         return plot_parcellation(self, **kwargs)
 
     def parcellate(self, voxel_timeseries, voxel_coords, method='spatial_basis', working_dir=None):
-
         """
         Parcellate voxel_timeseries
 
@@ -180,7 +181,7 @@ class Parcellation:
 
 #############################################################################
 
-def plot_parcellation(parcellation: Union[Parcellation, str], **kwargs):
+def plot_parcellation(parcellation, **kwargs):
     parcellation = Parcellation(parcellation)
     return plot_markers(
         np.zeros(parcellation.n_parcels),
@@ -661,5 +662,4 @@ def _save_parcel_timeseries(ts, fname):
 def _load_parcel_timeseries(fname):
     # load passed in hd5 file
     dd = soft_import('deepdish')
-    ts = dd.io.load(fname)
-    return ts
+    return dd.io.load(fname)
