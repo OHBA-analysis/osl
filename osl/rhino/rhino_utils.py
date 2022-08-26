@@ -52,6 +52,20 @@ def system_call(cmd, verbose=False):
     os.system(cmd)
 
 
+def setup_fsl(directory):
+    """Setup FSL.
+
+    Parameters
+    ----------
+    directory : str
+        Path to FSL installation.
+    """
+    if "FSLDIR" not in os.environ:
+        os.environ["FSLDIR"] = directory
+        os.environ["PATH"] = "{:s}/bin:{:s}".format(directory, os.getenv("PATH"))
+        os.environ["FSLOUTPUTTYPE"] = "NIFTI_GZ"
+
+
 #############################################################################
 def get_gridstep(fwd):
     """

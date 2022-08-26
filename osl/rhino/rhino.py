@@ -357,7 +357,7 @@ please check output of:\n fslorient -orient {}'.format(filenames['smri_file']))
     # if orientation is not RADIOLOGICAL then force it to be RADIOLOGICAL
     if smri_orient != 'RADIOLOGICAL':
         print('reorienting subject brain to be RADIOLOGICAL')
-        rhino_utils.rhino_utils.system_call('fslorient -forceradiological {}'.format(
+        rhino_utils.system_call('fslorient -forceradiological {}'.format(
             filenames['smri_file']))
 
     ###########################################################################
