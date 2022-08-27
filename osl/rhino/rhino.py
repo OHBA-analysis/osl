@@ -10,8 +10,8 @@ import os.path as op
 import numpy as np
 import nibabel as nib
 import matplotlib.pyplot as plt
+from pathlib import Path
 from shutil import copyfile
-from osl.rhino import rhino_utils
 from scipy.ndimage import morphology
 from scipy.spatial import KDTree
 from sklearn.mixture import GaussianMixture
@@ -29,6 +29,7 @@ from mne import read_epochs, read_forward_solution, make_bem_model, \
 from mne.io.constants import FIFF
 from mne.bem import ConductorModel, read_bem_solution
 
+from osl.rhino import rhino_utils
 from ..utils import soft_import
 
 #############################################################################
@@ -317,16 +318,11 @@ Please ensure that the structural MRI has a FOV that includes the nose')
         print('The nose is not going to be added to the outer skin (scalp) surface')
 
     # Check smri_file
-    smri_path, smri_name = op.split(smri_file)
-    smri_name, smri_ext2 = op.splitext(smri_name)  # split .gz
-    if smri_ext2 != '.gz':
+    smri_ext = "".join(Path(smri_file).suffixes)
+    if smri_ext not in [".nii", ".nii.gz"]:
         raise ValueError(
-            'smri_file needs to be a niftii file with a .nii.gz extension')
-
-    smri_name, smri_ext1 = op.splitext(smri_name)  # split .nii
-    if smri_ext1 != '.nii':
-        raise ValueError(
-            'smri_file needs to be a niftii file with a .nii.gz extension')
+            'smri_file needs to be a niftii file with a .nii or .nii.gz extension'
+        )
 
     # Copy smri_name to new file for modification
     copyfile(smri_file, filenames['smri_file'])
