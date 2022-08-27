@@ -1,5 +1,3 @@
-#!/usr/bin/python
-
 """Wrappers for MNE functions to perform preprocessing.
 
 """

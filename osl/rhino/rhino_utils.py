@@ -1,9 +1,7 @@
-#!/usr/bin/env python3
-# -*- coding: utf-8 -*-
-"""
-Created on Fri Oct 29 10:24:11 2021
+#!/usr/bin/env python
 
-@author: woolrich
+"""RHINO utilities.
+
 """
 
 import os

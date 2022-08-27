@@ -1,9 +1,7 @@
-#!/usr/bin/env python3
-# -*- coding: utf-8 -*-
-"""
-Created on Wed Oct 20 17:35:48 2021
+#!/usr/bin/env python
 
-@author: woolrich
+"""RHINO.
+
 """
 
 import warnings
