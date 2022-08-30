@@ -230,7 +230,7 @@ def _resample_parcellation(parcellation, voxel_coords, working_dir=None):
         (nvoxels x nparcels) resampled parcellation
     """
 
-    gridstep = int(rhino_utils._get_gridstep(voxel_coords.T) / 1000)
+    gridstep = int(rhino_utils.get_gridstep(voxel_coords.T) / 1000)
     print("Using gridstep = {}mm".format(gridstep))
 
     pth, parcellation_name = op.split(op.splitext(op.splitext(parcellation.file)[0])[0])
