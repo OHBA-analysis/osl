@@ -346,7 +346,7 @@ else:
             subjects_dir, subject,
             recon_timeseries=stc.data,
             reference_brain='mni')
-        vox = rhino.rhino_utils._closest_node((-40, -25, 56), recon_coords_mni.T)[0]
+        vox = rhino.utils._closest_node((-40, -25, 56), recon_coords_mni.T)[0]
 
         plt.figure()
         print(recon_coords_mni[:, vox]) # 2541

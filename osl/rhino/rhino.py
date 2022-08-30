@@ -29,7 +29,7 @@ from mne import read_epochs, read_forward_solution, make_bem_model, \
 from mne.io.constants import FIFF
 from mne.bem import ConductorModel, read_bem_solution
 
-from osl.rhino import rhino_utils
+import osl.rhino.utils as rhino_utils
 from ..utils import soft_import
 
 #############################################################################

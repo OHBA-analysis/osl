@@ -14,7 +14,7 @@ import scipy.sparse.linalg
 from scipy.spatial import KDTree
 from nilearn.plotting import plot_markers
 
-from osl.rhino import rhino_utils
+import osl.rhino.utils as rhino_utils
 from ..utils import soft_import
 
 
