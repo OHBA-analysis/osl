@@ -2835,3 +2835,79 @@ def make_lcmv(
     print("*** OSL RHINO MAKE LCMV COMPLETE ***")
 
     return filters
+
+
+def coregister(
+    coreg_dir,
+    subject,
+    raw_file,
+    preproc_file,
+    smri_file,
+    model,
+    use_headshape=True,
+    include_nose=False,
+    use_nose=False,
+    cleanup_files=True,
+):
+    """Wrapper function for:
+    - Setting up the Polhemus files.
+    - Computing the surface.
+    - Running coregistration.
+    - Computing the forward model.
+
+    Parameters
+    ----------
+    coreg_dir : string
+        Coregistration directory.
+    subject : string
+        Subject name.
+    raw_file : string
+        Raw fif file.
+    preproc_file : string
+        Preprocessed fif file.
+    smri_file : string
+        Structural MRI file.
+    include_nose : bool
+        Should we include the nose?
+    use_headshape : bool
+        Should we use the headshape points?
+    use_nose : bool
+        Should we use the nose?
+    model : string
+        Forward model to use.
+    cleanup_files : bool
+    """
+    os.makedirs(coreg_dir + "/" + subject, exist_ok=True)
+
+    # Setup polhemus files
+    (
+        polhemus_headshape_file,
+        polhemus_nasion_file,
+        polhemus_rpa_file,
+        polhemus_lpa_file,
+    ) = extract_polhemus_from_info(fif_file=raw_file, outdir=coreg_dir + "/" + subject)
+
+    # Compute surface
+    compute_surfaces(
+        smri_file=smri_file,
+        subjects_dir=coreg_dir,
+        subject=subject,
+        include_nose=include_nose,
+        cleanup_files=cleanup_files,
+    )
+
+    # Run coregistration
+    coreg(
+        fif_file=preproc_file,
+        subjects_dir=coreg_dir,
+        subject=subject,
+        polhemus_headshape_file=polhemus_headshape_file,
+        polhemus_nasion_file=polhemus_nasion_file,
+        polhemus_rpa_file=polhemus_rpa_file,
+        polhemus_lpa_file=polhemus_lpa_file,
+        use_headshape=use_headshape,
+        use_nose=use_nose,
+    )
+
+    # Compute forward model
+    forward_model(subjects_dir=coreg_dir, subject=subject, model=model)
