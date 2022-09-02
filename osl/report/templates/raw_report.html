@@ -24,111 +24,103 @@
         .button1:active {
              color: #f6f6f6;
         }
-        .button2 {
-              background-color: #4CAF50; /* Green */
-              border: none;
-              color: white;
-              padding: 15px 32px;
-              text-align: center;
-              text-decoration: none;
-              display: inline-block;
-              font-size: 16px;
-            }
     </style>
 </head>
 
 <body>
 
-<div style='width:80%; margin: auto; text-align: center; margin-bottom: 50px' >
-    <h2>OSL Quality Check</h2>
-    {{ toplinks }}
-</div>
-
-<div style="width: 80%; margin:0 auto; text-align: center; padding-bottom: 2%">
-    <h3>Switch All Panels</h3>
-    <button class="button1" style="border-top-style: solid; border-left-style: solid; border-right-style: solid" onclick="openAllTabs(event, 'info')">Info</button>
-    <button class="button1" style="border-top-style: solid; border-left-style: solid; border-right-style: solid" onclick="openAllTabs(event, 'flowchart')">Preprocessing</button>
-    <button class="button1" style="border-top-style: solid; border-left-style: solid; border-right-style: solid" onclick="openAllTabs(event, 'timeseries')">Time-Series</button>
-    <button class="button1" style="border-top-style: solid; border-left-style: solid; border-right-style: solid" onclick="openAllTabs(event, 'channels')">Channels</button>
-    <button class="button1" style="border-top-style: solid; border-left-style: solid; border-right-style: solid" onclick="openAllTabs(event, 'spectra')">Power Spectra</button>
-    <button class="button1" style="border-top-style: solid; border-left-style: solid; border-right-style: solid" onclick="openAllTabs(event, 'digitisation')">Digitisation</button>
-    {% if level > 0 %}
-        <button class="button1" style="border-top-style: solid; border-left-style: solid; border-right-style: solid" onclick="openAllTabs(event, 'eog')">EOG</button>
-        <button class="button1" style="border-top-style: solid; border-left-style: solid; border-right-style: solid" onclick="openAllTabs(event, 'ecg')">ECG</button>
-        <button class="button1" style="border-top-style: solid; border-left-style: solid; border-right-style: solid" onclick="openAllTabs(event, 'ica')">ICA</button>
-    {% endif %}
+<div style='width:80%; margin: auto; text-align: center' >
+    <h2>OSL Report</h2>
 </div>
 
 <div style='width:80%; margin: auto; text-align: center' >
-{% for panel in panels %}
-    {{ panel }}
-{% endfor %}
+    <div style='max-width: 70%; margin: auto; padding: 0px 25px 20px 25px;'>
+        The panels below summarise each fif file. Use arrow keys to navigate tabs.
+    </div>
+    {% for panel in panels[::-1] %}
+        {{ panel }}
+    {% endfor %}
 </div>
 
 <script>
 
-function jump(h){
-    h = h.replace('_figs', '')
-    document.getElementById(h).scrollIntoView({behavior: 'smooth'});
+// Blocks scrolling with arrow keys
+window.addEventListener("keydown", function(e) {
+    if(["Space","ArrowUp","ArrowDown","ArrowLeft","ArrowRight"].indexOf(e.code) > -1) {
+        e.preventDefault();
+    }
+}, false);
+
+// All fif panels
+fifs = document.getElementsByClassName("fif");
+
+// Hide all panels apart from the first
+hideFifs(1);
+
+function hideFifs(start) {
+    for (i = start; i < fifs.length; i++) {
+        fifs[i].style.display = "none";
+    }
 }
 
-function filterSelection(c) {
-  var x = document.getElementById(c);
-  if (x.style.display === "none") {
-    x.style.display = "block";
-  } else {
-    x.style.display = "none";
-    jump(c);
-  }
+// Variables to track which panel we're showing
+var numButtons = 5;
+var currentButton = 0;
+var currentFif = 0;
+
+// Actions when we press an arrow key
+document.onkeydown = checkKey;
+function checkKey(e) {
+    e = e || window.event;
+    if (e.keyCode == '38') {
+        // up arrow
+        if (currentButton > 0) {
+            currentButton--;
+        }
+    }
+    else if (e.keyCode == '40') {
+        // down arrow
+        if (currentButton < numButtons - 1) {
+            currentButton++;
+        }
+    }
+    else if (e.keyCode == '37') {
+        // left arrow
+        if (currentFif > 0) {
+            currentFif--;
+            switchFif(currentFif);
+        }
+    }
+    else if (e.keyCode == '39') {
+        // right arrow
+        if (currentFif < fifs.length - 1) {
+            currentFif++;
+            switchFif(currentFif);
+        }
+    }
+    clickButton(currentButton + currentFif * numButtons);
 }
 
-function openTab(evt, runID, figTag) {
-  // Declare all variables
-  var i, tabpage, tablinks;
-
-  // Get all elements with class="tabpage" and hide them
-  tabpage = document.getElementsByClassName("tabpage");
-  for (i = 0; i < tabpage.length; i++) {
-    if (tabpage[i].id.indexOf(runID) > -1) {
+function openTab(evt, figTag, button) {
+    // Get all elements with class="tabpage" and hide them
+    tabpage = document.getElementsByClassName("tabpage");
+    for (i = 0; i < tabpage.length; i++) {
         tabpage[i].style.display = "none";
     }
-  }
-
-  // Get all elements with class="tablinks" and remove the class "active"
-  tablinks = document.getElementsByClassName("tablinks");
-  for (i = 0; i < tablinks.length; i++) {
-    tablinks[i].className = tablinks[i].className.replace(" active", "");
-  }
-
-  // Show the current tab, and add an "active" class to the button that opened the tab
-  document.getElementById(runID.concat('_', figTag)).style.display = "block";
-  evt.currentTarget.className += " active";
+    // Show the current tab
+    document.getElementById(figTag).style.display = "block";
 }
 
-function openAllTabs(evt, figTab) {
-  // Declare all variables
-  var i, tabpage, tablinks;
+function clickButton(ind) {
+    document.getElementsByClassName('button1')[ind].focus();
+    document.getElementsByClassName('button1')[ind].click();
+}
 
-  // Get all elements with class="tabpage" and hide them
-  tabpage = document.getElementsByClassName("tabpage");
-  for (i = 0; i < tabpage.length; i++) {
-    tabpage[i].style.display = "none";
-  }
-
-  // Get all elements with class="tablinks" and remove the class "active"
-  tablinks = document.getElementsByClassName("tablinks");
-  for (i = 0; i < tablinks.length; i++) {
-    tablinks[i].className = tablinks[i].className.replace(" active", "");
-  }
-
-  // Show the request tab for all panels
-  tabs = document.querySelectorAll('[id*='.concat(figTab).concat(']'));
-  for (i = 0; i < tabs.length; i++) {
-    tabs[i].style.display = "block";
-  }
+function switchFif(ind) {
+    hideFifs(0);
+    fifs[ind].style.display = "block";
 }
 
 </script>
 
 </body>
-

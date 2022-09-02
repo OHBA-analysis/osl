@@ -1,28 +1,26 @@
-<div style='max-width: 90%; margin: auto; margin-bottom: 40px; background: #f6f6f6; box-shadow: 10px 10px 5px grey; padding: 25px 25px 25px 0px;' id="{{ data.fif_id }}" >
+<div class="fif" style='max-width: 90%; margin: auto; margin-bottom: 40px; background: #f6f6f6; box-shadow: 10px 10px 5px grey; padding: 25px 25px 25px 0px;' id="{{ data.fif_id }}">
 
-   <div class="flex-container" style="display: flex">
+  <div>
+    <h3>{{ data.fif_id }}</h3>
+  </div>
+
+  <div class="flex-container" style="display: flex">
 
   <div class="flex-child" style="flex: 1">
     <div class="tab" style="display: grid">
-        <button class="button1" onclick="openTab(event, '{{data.fif_id}}', 'info')" style="border-top-style: solid">Info</button>
-        <button class="button1" onclick="openTab(event, '{{data.fif_id}}', 'flowchart')">Preprocessing</button>
-        <button class="button1" onclick="openTab(event, '{{data.fif_id}}', 'timeseries')">Time-Series</button>
-        <button class="button1" onclick="openTab(event, '{{data.fif_id}}', 'channels')">Channels</button>
-        <button class="button1" onclick="openTab(event, '{{data.fif_id}}', 'spectra')">Power Spectra</button>
-        <button class="button1" onclick="openTab(event, '{{data.fif_id}}', 'digitisation')">Digitisation</button>
-        {% if data.level > 0 %}
-            <button class="button1" onclick="openTab(event, '{{data.fif_id}}', 'eog')">EOG</button>
-            <button class="button1" onclick="openTab(event, '{{data.fif_id}}', 'ecg')">ECG</button>
-            <button class="button1" onclick="openTab(event, '{{data.fif_id}}', 'ica')">ICA</button>
-        {% endif %}
+        <button class="button1" onclick="openTab(event, '{{ data.fif_id }}_info', this.id)" style="border-top-style: solid">Info</button>
+        <button class="button1" onclick="openTab(event, '{{ data.fif_id }}_timeseries', this.id)">Time Series</button>
+        <button class="button1" onclick="openTab(event, '{{ data.fif_id }}_channels', this.id)">Channels</button>
+        <button class="button1" onclick="openTab(event, '{{ data.fif_id }}_spectra', this.id)">Power Spectra</button>
+        <button class="button1" onclick="openTab(event, '{{ data.fif_id }}_digitisation', this.id)">Digitisation</button>
     </div>
   </div>
+
   <div class="flex-child" style="flex: 5; padding-left: 25px">
-    <h3>{{ data.filename }}</h3>
 
     <div class="tabpage" style='width: 100%' id={{ data.fif_id }}_info>
         <div>
-            <b>Datafile:</b> {{ data.filename }}</br>
+            <b>Original file:</b> {{ data.filename }}</br>
             <b>Project name:</b> {{ data.projname }}</br>
             <b>Experimenter:</b> {{ data.experimenter }}</br>
             <b>Data acquired:</b> {{ data.meas_date }}</br>
@@ -33,47 +31,46 @@
             <div style="display: table-row; height: 100px;">
                 <div class='tablebox'>
                     {{ data.chantable }}
-            </div>
+                </div>
                 <div class='tablebox'>
                     {{ data.digitable }}
-            </div>
+                </div>
                 <div class='tablebox'>
                     {{ data.eventtable }}
                 </div>
             </div>
         </div>
     </div>
-
-    <div class="tabpage" style="width: 100%; display: none" id={{ data.fif_id }}_flowchart>
-        <div style="width: 100%; padding-top: 50px">
-            {% if data.plt_flowchart %}
-                <img src="{{ data.plt_flowchart }}" alt="" style='max-width: 100%'/>
-            {% else %}
-                <span>No preprocessing applied.</span>
-            {% endif %}
-        </div>
-    </div>
     
     <div class="tabpage" style="width: 100%; display: none" id={{ data.fif_id }}_timeseries>
-        <div style="width: 100%; padding-top: 50px">
-            <h3>Time course of variance across sensors for recording</h3>
+        {% if data.bad_seg != [] %}
+            <div style="width: 100%">
+                <h4>Bad segments</h4>
+                <span>{{ '<br/>'.join(data.bad_seg[::-1]) }}</span>
+            </div>
+        {% endif %}
+        <div style="width: 100%">
+            <h4>Variance Across Sensors</h4>
             <img src="{{ data.plt_temporalsumsq }}" alt="" style='max-width: 100%'/>
         </div>
-        <div style="width: 100%; padding-top: 50px">
-            <h3>Bad segments</h3>
-            <span>{{ '<br/>'.join(data.bad_seg[::-1]) }}</span>
-            <span><br/><br/>Use MNE's raw.plot() to examine the raw time series.</span>
+        <div style="width: 100%">
+            <h4>EOG Recording</h4>
+            <img src="{{ data.plt_artefacts_eog }}" alt="" style='max-width: 100%'/>
+        </div>
+        <div style="width: 100%">
+            <h4>ECG Recording</h4>
+            <img src="{{ data.plt_artefacts_ecg }}" alt="" style='max-width: 100%'/>
         </div>
     </div>
         
     <div class="tabpage" style="width: 100%; display: none" id={{ data.fif_id }}_channels>
-        <div style="width: 100%; padding-top: 50px">
-            <h3>Distribution of per-sensor variance across recording</h3>
+        <div style="width: 75%; margin:0 auto">
+            <h4>Distribution of Per-Sensor Variance Across Recording</h4>
             <img src="{{ data.plt_channeldev }}" alt="" style='max-width: 100%'/>
         </div>
-        <div style="width: 100%; padding-top: 50px">
-            <h3>Bad channels</h3>
-            <div style="width: 50%; margin:0 auto">
+        <div style="width: 100%">
+            <h4>Bad channels</h4>
+            <div style="width: 35%; margin:0 auto">
                 <img src="{{ data.plt_badchans }}" alt="" style='max-width: 100%'/>
             </div>
             <span>{{ data.bad_chans }}</span>
@@ -81,14 +78,14 @@
     </div>
         
     <div class="tabpage" style="width: 100%; display: none" id={{ data.fif_id }}_spectra>
-        <div style="width: 100%; display: table; padding-top: 50px">
+        <div style="width: 100%; display: table">
             <div style="display: table-row; height: 100px;">
                 <div class='figbox'>
-                    <h3>Full Power Spectra</h3>
+                    <h4>Full Power Spectra</h4>
                     <img src="{{ data.plt_spectra }}" alt="" style='max-width: 100%'/>
                 </div>
                 <div class='figbox'>
-                    <h3>1-48Hz Power Spectra</h3>
+                    <h4>1-48Hz Power Spectra</h4>
                     <img src="{{ data.plt_zoomspectra }}" alt="", style='max-width: 100%'/>
                 </div>
             </div>
@@ -96,122 +93,11 @@
     </div>
 
     <div class="tabpage" style="width: 100%; display: none" id={{ data.fif_id }}_digitisation>
-        <div style="width: 100%; padding-top: 50px">
-            <h3>Digitisation and Headshape</h3>
+        <div style="width: 100%">
+            <h4>Digitisation and Headshape</h4>
             <img src="{{ data.plt_digitisation }}" alt="" style='max-width: 100%'/>
         </div>
     </div>
-        
-    {% if data.level > 0 %}
-        <div class="tabpage" style="width: 100%; display: none" id={{ data.fif_id }}_eog>
-            <div style="width: 100%; padding-top: 50px">
-                <h3>EOG Recording</h3>
-                <img src="{{ data.plt_artefacts_eog }}" alt="" style='max-width: 100%'/>
-            </div>
-        </div>
-            
-        <div class="tabpage" style="width: 100%; display: none" id={{ data.fif_id }}_ecg>
-            <div style="width: 100%; padding-top: 50px">
-                <h3>ECG Recording</h3>
-                <img src="{{ data.plt_artefacts_ecg }}" alt="" style='max-width: 100%'/>
-            </div>
-        </div>
-
-        <div class="tabpage" style="width: 100%; display: none" id={{ data.fif_id }}_ica>
-            <div style="width: 100%; padding-top: 50px">
-                <h3>Bad ICA Components</h3>
-                <img src="{{ data.plt_artefacts_ica }}" alt="" style='max-width: 100%'/>
-            </div>
-        </div>
-    {% endif %}
-
-    {% if data.level > 1 %}
-        <h3>Blinks</h3>
-        <img src="{{ data.plt_blink_eog}}" alt="" style='max-width: 100%'/>
-        <div style="width: 100%; display: table">
-            <div style="display: table-row; height: 100px;">
-                <div class='figbox'>
-                    <img src="{{ data.plt_blink_mag }}" alt="" style='max-width: 100%'/>
-                </div>
-                <div class='figbox'>
-                    <img src="{{ data.plt_blink_grad }}" alt="" style='max-width: 100%'/>
-                </div>
-            </div>
-        </div>
-
-        <h3>Eye-Movements</h3>
-        <img src="{{ data.plt_eyemove_eog }}" alt="" style='max-width: 100%'/>
-        <div style="width: 100%; display: table">
-            <div style="display: table-row; height: 100px;">
-                <div class='figbox'>
-                    <img src="{{ data.plt_eyemove_mag }}" alt="" style='max-width: 100%'/>
-                </div>
-                <div class='figbox'>
-                    <img src="{{ data.plt_eyemove_grad }}" alt="" style='max-width: 100%'/>
-                </div>
-            </div>
-        </div>
-
-        <h3>Swallow</h3>
-        <div style="width: 100%; display: table">
-            <div style="display: table-row; height: 100px;">
-                <div class='figbox'>
-                    <img src="{{ data.plt_swallow_mag }}" alt="" style='max-width: 100%'/>
-                </div>
-                <div class='figbox'>
-                    <img src="{{ data.plt_swallow_grad }}" alt="" style='max-width: 100%'/>
-                </div>
-            </div>
-        </div>
-
-        <h3>Deep Breath</h3>
-        <div style="width: 100%; display: table">
-            <div style="display: table-row; height: 100px;">
-                <div class='figbox'>
-                    <img src="{{ data.plt_breathe_mag }}" alt="" style='max-width: 100%'/>
-                </div>
-                <div class='figbox'>
-                    <img src="{{ data.plt_breathe_grad }}" alt="" style='max-width: 100%'/>
-                </div>
-            </div>
-        </div>
-
-        <h3>Shrug</h3>
-        <div style="width: 100%; display: table">
-            <div style="display: table-row; height: 100px;">
-                <div class='figbox'>
-                    <img src="{{ data.plt_shrug_mag }}" alt="" style='max-width: 100%'/>
-                </div>
-                <div class='figbox'>
-                    <img src="{{ data.plt_shrug_grad }}" alt="" style='max-width: 100%'/>
-                </div>
-            </div>
-        </div>
-
-        <h3>Jaw Clench</h3>
-        <div style="width: 100%; display: table">
-            <div style="display: table-row; height: 100px;">
-                <div class='figbox'>
-                    <img src="{{ data.plt_clench_mag }}" alt="" style='max-width: 100%'/>
-                </div>
-                <div class='figbox'>
-                    <img src="{{ data.plt_clench_grad }}" alt="" style='max-width: 100%'/>
-                </div>
-            </div>
-        </div>
-
-        <h3>Button Press</h3>
-        <div style="width: 100%; display: table">
-            <div style="display: table-row; height: 100px;">
-                <div class='figbox'>
-                    <img src="{{ data.plt_buttonpress_mag }}" alt="" style='max-width: 100%'/>
-                </div>
-                <div class='figbox'>
-                    <img src="{{ data.plt_buttonpress_grad }}" alt="" style='max-width: 100%'/>
-                </div>
-            </div>
-        </div>
-    {% endif %}
 
     </div>
   </div>
