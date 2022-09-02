@@ -466,6 +466,7 @@ def run_proc_chain(
     config,
     outname=None,
     outdir=None,
+    logsdir=None,
     ret_dataset=True,
     overwrite=False,
     extra_funcs=None,
@@ -484,6 +485,8 @@ def run_proc_chain(
         Output filename.
     outdir : str
         Output directory.
+    logsdir : str
+        Directory to save log files to.
     ret_dataset : bool
         Should we return a dataset dict?
     overwrite : bool
@@ -512,15 +515,17 @@ def run_proc_chain(
     else:
         run_id = os.path.splitext(outname)[0]
 
+    name_base = "{run_id}_{ftype}.{fext}"
+    outbase = os.path.join(outdir, name_base)
+
     # Load config
     if not isinstance(config, dict):
         config = load_config(config)
 
     # Generate log filename
     if outdir is not None:
-        name_base = "{run_id}_{ftype}.{fext}"
-        outbase = os.path.join(outdir, name_base)
-        logfile = outbase.format(
+        logbase = os.path.join(logsdir, name_base)
+        logfile = logbase.format(
             run_id=run_id.replace("_raw", ""), ftype="preproc_raw", fext="log"
         )
         mne.utils._logging.set_log_file(logfile, overwrite=overwrite)
@@ -613,6 +618,7 @@ def run_proc_batch(
     config,
     files,
     outdir=None,
+    logsdir=None,
     overwrite=False,
     extra_funcs=None,
     nprocesses=1,
@@ -634,6 +640,8 @@ def run_proc_batch(
         textfile list of filenames.
     outdir : str
         Output directory.
+    logsdir : str
+        Directory to save log files to.
     overwrite : bool
         Should we overwrite the output file if it exists?
     extra_funcs : list
@@ -661,13 +669,14 @@ def run_proc_batch(
         # Use the current working directory
         outdir = os.getcwd()
     outdir = validate_outdir(outdir)
+    logsdir = validate_outdir(logsdir or outdir)
 
     # Initialise Loggers
     mne.set_log_level(mneverbose)
     if strictrun and verbose not in ['INFO', 'DEBUG']:
         # override logger level if strictrun requested but user won't see any info...
         verobse = 'INFO'
-    logfile = os.path.join(outdir, 'osl_batch.log')
+    logfile = os.path.join(logsdir, 'osl_batch.log')
     osl_logger.set_up(log_file=logfile, level=verbose, startup=False)
 
     logger.info('Starting OSL Batch Processing')
@@ -699,8 +708,6 @@ def run_proc_batch(
         if strictrun:
             logger.info('User confirms input config')
 
-    outdir = validate_outdir(outdir)
-
     name_base = '{run_id}_{ftype}.{fext}'
     outbase = outdir / name_base
 
@@ -708,6 +715,7 @@ def run_proc_batch(
     pool_func = partial(
         run_proc_chain,
         outdir=outdir,
+        logsdir=logsdir,
         ret_dataset=False,
         overwrite=overwrite,
         extra_funcs=extra_funcs,
