@@ -621,7 +621,6 @@ def run_proc_batch(
     logsdir=None,
     overwrite=False,
     extra_funcs=None,
-    nprocesses=1,
     verbose="INFO",
     mneverbose="WARNING",
     strictrun=False,
@@ -646,8 +645,6 @@ def run_proc_batch(
         Should we overwrite the output file if it exists?
     extra_funcs : list
         User-defined functions.
-    nprocesses : int
-        Number of processes to run in parallel.
     verbose : str
         Level of info to print.
         Can be: CRITICAL, ERROR, WARNING, INFO, DEBUG or NOTSET.
@@ -770,12 +767,6 @@ def main(argv=None):
         "--overwrite",
         action="store_true",
         help="Overwrite previous output files if they're in the way",
-    )
-    parser.add_argument(
-        "--nprocesses",
-        type=int,
-        default=1,
-        help="Number of jobs to process in parallel",
     )
     parser.add_argument(
         "--verbose",
