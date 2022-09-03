@@ -242,9 +242,9 @@ def plot_channel_time_series(raw, savebase=None):
 
     # Raw data
     channel_types = {
-        'Magnetometers': mne.pick_types(raw.info, meg='mag'),
-        'Gradiometers': mne.pick_types(raw.info, meg='grad'),
-        'EEG': mne.pick_types(raw.info, meg=False, eeg=True),
+        'mag': mne.pick_types(raw.info, meg='mag'),
+        'grad': mne.pick_types(raw.info, meg='grad'),
+        'eeg': mne.pick_types(raw.info, meg=False, eeg=True),
     }
     t = raw.times
     x = raw.get_data()
@@ -267,8 +267,17 @@ def plot_channel_time_series(raw, savebase=None):
         ss = np.sum(x[chan_inds] ** 2, axis=0)
         ss = uniform_filter1d(ss, int(raw.info['sfreq']))
         ax[row].plot(t, ss)
-        ax[row].legend([name], frameon=False)
+        ax[row].legend([name], frameon=False, fontsize=16)
         ax[row].set_xlim(t[0], t[-1])
+        ylim = ax[row].get_ylim()
+        for a in raw.annotations:
+            if name in a["description"]:
+                ax[row].axvspan(
+                    a["onset"] - raw.first_time,
+                    a["onset"] + a["duration"] - raw.first_time,
+                    color="red",
+                    alpha=0.8,
+                )
         row += 1
     ax[0].set_title('Sum-Square Across Channels')
     ax[-1].set_xlabel('Time (seconds)')
