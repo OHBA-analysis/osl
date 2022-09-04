@@ -13,6 +13,9 @@
         <button class="button1" onclick="openTab(event, '{{ data.fif_id }}_channels', this.id)">Channels</button>
         <button class="button1" onclick="openTab(event, '{{ data.fif_id }}_spectra', this.id)">Power Spectra</button>
         <button class="button1" onclick="openTab(event, '{{ data.fif_id }}_digitisation', this.id)">Digitisation</button>
+        {% if data.plt_coreg is defined %}
+            <button class="button1" onclick="openTab(event, '{{ data.fif_id }}_coregistration', this.id)">Coregistration</button>
+        {% endif %}
     </div>
   </div>
 
@@ -98,6 +101,15 @@
             <img src="{{ data.plt_digitisation }}" alt="" style='max-width: 100%'/>
         </div>
     </div>
+
+    {% if data.plt_coreg is defined %}
+        <div class="tabpage" style="width: 100%; display: none" id={{ data.fif_id }}_coregistration>
+            <div style="width: 100%">
+                <h4>Coregistration</h4>
+                <iframe src="{{ data.plt_coreg }}" width="525" height="525"></iframe>
+            </div>
+        </div>
+    {% endif %}
 
     </div>
   </div>

@@ -51,8 +51,9 @@ window.addEventListener("keydown", function(e) {
     }
 }, false);
 
-// All fif panels
+// All fif panels and buttons
 fifs = document.getElementsByClassName("fif");
+buttons = document.getElementsByClassName("button1");
 
 // Hide all panels apart from the first
 hideFifs(1);
@@ -64,7 +65,7 @@ function hideFifs(start) {
 }
 
 // Variables to track which panel we're showing
-var numButtons = 5;
+var numButtons = buttons.length / fifs.length;
 var currentButton = 0;
 var currentFif = 0;
 

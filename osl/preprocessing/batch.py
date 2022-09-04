@@ -756,6 +756,10 @@ def run_proc_batch(
         from ..report import raw_report # avoids circular import
         raw_report.gen_html_page(reportdir)
 
+        print("******************************" + "*" * len(str(reportdir)))
+        print("* REMEMBER TO CHECK REPORT:", reportdir, "*")
+        print("******************************" + "*" * len(str(reportdir)))
+
     # Return flags
     return proc_flags
 

@@ -49,7 +49,9 @@ from mne.io.constants import FIFF
 from mne.bem import ConductorModel, read_bem_solution
 
 import osl.rhino.utils as rhino_utils
-from ..utils import soft_import
+from ..utils import soft_import, validate_outdir, find_run_id
+from ..report import raw_report
+from ..preprocessing import import_data
 
 
 def get_surfaces_filenames(subjects_dir, subject):
@@ -2837,15 +2839,17 @@ def make_lcmv(
 
 def coregister(
     coreg_dir,
-    subject,
-    raw_file,
-    preproc_file,
-    smri_file,
+    subjects,
+    raw_files,
+    preproc_files,
+    smri_files,
     model,
     use_headshape=True,
     include_nose=False,
     use_nose=False,
     cleanup_files=True,
+    reportdir=None,
+    gen_report=True,
 ):
     """Wrapper function for:
     - Setting up the Polhemus files.
@@ -2857,14 +2861,14 @@ def coregister(
     ----------
     coreg_dir : string
         Coregistration directory.
-    subject : string
-        Subject name.
-    raw_file : string
-        Raw fif file.
-    preproc_file : string
-        Preprocessed fif file.
-    smri_file : string
-        Structural MRI file.
+    subjects : list of strings
+        Subject names.
+    raw_file : list of strings
+        Raw fif files.
+    preproc_file : list of strings
+        Preprocessed fif files.
+    smri_file : list of strings
+        Structural MRI files.
     include_nose : bool
         Should we include the nose?
     use_headshape : bool
@@ -2875,44 +2879,77 @@ def coregister(
         Forward model to use.
     cleanup_files : bool
     """
-    os.makedirs(coreg_dir + "/" + subject, exist_ok=True)
+    os.makedirs(coreg_dir, exist_ok=True)
+    if gen_report:
+        # Create root report directory
+        rootreportdir = validate_outdir(reportdir or Path(coreg_dir) / "report")
 
-    # Setup polhemus files
-    (
-        polhemus_headshape_file,
-        polhemus_nasion_file,
-        polhemus_rpa_file,
-        polhemus_lpa_file,
-    ) = extract_polhemus_from_info(fif_file=raw_file, outdir=coreg_dir + "/" + subject)
+    for subject, raw_file, preproc_file, smri_file in zip(
+        subjects, raw_files, preproc_files, smri_files
+    ):
+        print("\nSubject", subject)
+        print("--------" + "-" * len(subject))
 
-    # Compute surface
-    compute_surfaces(
-        smri_file=smri_file,
-        subjects_dir=coreg_dir,
-        subject=subject,
-        include_nose=include_nose,
-        cleanup_files=cleanup_files,
-    )
+        # Create directory for coregistration and report
+        os.makedirs(coreg_dir + "/" + subject, exist_ok=True)
+        if gen_report:
+            run_id = find_run_id(preproc_file)
+            reportdir = validate_outdir(rootreportdir / run_id)
 
-    # Run coregistration
-    coreg(
-        fif_file=preproc_file,
-        subjects_dir=coreg_dir,
-        subject=subject,
-        polhemus_headshape_file=polhemus_headshape_file,
-        polhemus_nasion_file=polhemus_nasion_file,
-        polhemus_rpa_file=polhemus_rpa_file,
-        polhemus_lpa_file=polhemus_lpa_file,
-        use_headshape=use_headshape,
-        use_nose=use_nose,
-    )
+        # Setup polhemus files
+        (
+            polhemus_headshape_file,
+            polhemus_nasion_file,
+            polhemus_rpa_file,
+            polhemus_lpa_file,
+        ) = extract_polhemus_from_info(
+            fif_file=raw_file, outdir=coreg_dir + "/" + subject
+        )
 
-    # Save coregistration plot for the report
-    coreg_display(
-        subjects_dir=coreg_dir,
-        subject=subject,
-        filename=coreg_dir + "/" + subject + "/interactive_coreg_display.html"
-    )
+        # Compute surface
+        compute_surfaces(
+            smri_file=smri_file,
+            subjects_dir=coreg_dir,
+            subject=subject,
+            include_nose=include_nose,
+            cleanup_files=cleanup_files,
+        )
 
-    # Compute forward model
-    forward_model(subjects_dir=coreg_dir, subject=subject, model=model)
+        # Run coregistration
+        coreg(
+            fif_file=preproc_file,
+            subjects_dir=coreg_dir,
+            subject=subject,
+            polhemus_headshape_file=polhemus_headshape_file,
+            polhemus_nasion_file=polhemus_nasion_file,
+            polhemus_rpa_file=polhemus_rpa_file,
+            polhemus_lpa_file=polhemus_lpa_file,
+            use_headshape=use_headshape,
+            use_nose=use_nose,
+        )
+
+        if gen_report:
+            # Save coregistration plot
+            coreg_display(
+                subjects_dir=coreg_dir,
+                subject=subject,
+                filename=reportdir / "coreg.html"
+            )
+
+        # Compute forward model
+        forward_model(subjects_dir=coreg_dir, subject=subject, model=model)
+
+        if gen_report:
+            # Generate HTML data for the report
+            preproc_data = import_data(preproc_file)
+            raw_report.gen_html_data(
+                preproc_data, reportdir, coreg=run_id + "/coreg.html"
+            )
+
+    if gen_report:
+        # Generate HTML report
+        raw_report.gen_html_page(rootreportdir)
+
+        print("******************************" + "*" * len(str(rootreportdir)))
+        print("* REMEMBER TO CHECK REPORT:", rootreportdir, "*")
+        print("******************************" + "*" * len(str(rootreportdir)))

@@ -72,8 +72,18 @@ def get_header_id(raw):
     return raw.filenames[0].split('/')[-1].strip('.fif')
 
 
-def gen_html_data(raw, outdir):
-    """Generate HTML web-report for an MNE data object."""
+def gen_html_data(raw, outdir, coreg=None):
+    """Generate HTML web-report for an MNE data object.
+
+    Parameters
+    ----------
+    raw : mne.Raw
+        MNE Raw object.
+    outdir : string
+        Directory to write HTML data and plots to.
+    coreg : string
+        Path to coregistration plot. (Should be an interactive HTML object.)
+    """
 
     data = {}
     data['filename'] = raw.filenames[0]
@@ -151,6 +161,10 @@ def gen_html_data(raw, outdir):
     #filenames = plot_artefact_scan(raw, savebase)
     #data.update(filenames)
 
+    # Add the coregistration plot if it's passed
+    if coreg is not None:
+        data['plt_coreg'] = coreg
+
     # Save data that will be used to create html page
     with open(outdir / 'data.pkl', 'wb') as outfile:
         pickle.dump(data, outfile)
@@ -164,6 +178,7 @@ def gen_html_page(outdir):
     outdir : str
         Directory to generate HTML report with.
     """
+    outdir = pathlib.Path(outdir)
 
     # Subdirectories which contains plots for each fif file
     subdirs = [d.stem for d in pathlib.Path(outdir).iterdir() if d.is_dir()]
@@ -171,11 +186,8 @@ def gen_html_page(outdir):
     # Load data for each fif file
     data = []
     for subdir in subdirs:
-        data.append(
-            pickle.load(
-                open(pathlib.Path(outdir) / pathlib.Path(subdir) / "data.pkl", "rb")
-            )
-        )
+        subdir = pathlib.Path(subdir)
+        data.append(pickle.load(open(outdir / subdir / "data.pkl", "rb")))
 
     # Create panels
     panels = []

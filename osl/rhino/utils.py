@@ -1540,7 +1540,7 @@ def save_or_show_renderer(renderer, filename):
     if filename is None:
         renderer.show()
     else:
-        if ".html" not in filename:
+        if ".html" not in str(filename):
             raise ValueError("filename must have extension .html")
         print("Saving", filename)
         renderer.figure.plotter.export_html(filename)
