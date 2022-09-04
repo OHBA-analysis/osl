@@ -2555,7 +2555,7 @@ def recon_timeseries2niftii(
     if len(recon_timeseries.shape) == 1:
         recon_timeseries = np.reshape(recon_timeseries, [recon_timeseries.shape[0], 1])
 
-    #####
+    # ---------------------------------------------------
     # convert the recon_timeseries to the standard
     # space brain dipole grid at the specified resolution
     (
@@ -2571,7 +2571,7 @@ def recon_timeseries2niftii(
         reference_brain=reference_brain,
     )
 
-    #####
+    # ----------------------------------
     # output recon_ts_out as niftii file
     out_nii_fname = _timeseries2nii(
         recon_ts_out,

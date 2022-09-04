@@ -12,6 +12,11 @@ conda env create -f envs/osl.yml
 conda activate osl
 ```
 
+On remote servers without displays specific package versions are required (related to source reconstruction visualisation). The following environment if recommended if you are installing on the OHBA workstation.
+```
+conda env create -f envs/hbaws.yml
+```
+
 For Developers
 --------------
 Install in editable mode:

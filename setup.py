@@ -3,10 +3,10 @@ from setuptools import setup
 # Requirement categories
 reqs = ['numpy', 'scipy', 'matplotlib', 'mne>=1.0.0', 'sklearn', 'fslpy',
         'sails', 'tabulate', 'pyyaml>=5.1', 'neurokit2', 'jinja2',
-        'glmtools', 'numba', 'nilearn', 'dask', 'distributed', 'parse']
+        'glmtools', 'numba', 'nilearn', 'dask', 'distributed', 'parse',
+        'opencv-python', 'pythreejs']
 doc_reqs = ['sphinx==4.0.2', 'numpydoc', 'sphinx_gallery', 'pydata-sphinx-theme']
 dev_reqs = ['setuptools>=41.0.1', 'pytest', 'pytest-cov', 'coverage', 'flake8']
-source_reqs = ['opencv-python', 'open3d==0.9.0.0', 'deepdish']
 
 name = 'osl'
 
@@ -31,8 +31,7 @@ setup(name=name,
       extras_require={
           'dev': dev_reqs,
           'doc': doc_reqs,
-          'source': source_reqs,
-          'full': dev_reqs + doc_reqs + source_reqs,
+          'full': dev_reqs + doc_reqs,
       },
 
       package_data={'osl': ['utils/*tree',
