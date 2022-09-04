@@ -366,9 +366,8 @@ please check output of:\n fslorient -orient {}".format(
             "fslorient -forceradiological {}".format(filenames["smri_file"])
         )
 
-    ###########################################################################
+    # -------------------------------------------------------------------------
     # 1) Transform sMRI to be aligned with the MNI axes so that BET works well
-    ###########################################################################
 
     img = nib.load(filenames["smri_file"])
     img_density = np.sum(img.get_data()) / np.prod(img.get_data().shape)
@@ -416,9 +415,8 @@ please check output of:\n fslorient -orient {}".format(
             )
         )
 
-    ###########################################################################
+    # -------------------------------------------------------------------------
     # 2) Use BET to skull strip sMRI so that flirt works well
-    ###########################################################################
 
     print("Running BET pre-FLIRT...")
 
@@ -429,9 +427,8 @@ please check output of:\n fslorient -orient {}".format(
         "bet2 {} {}".format(flirt_smri_mniaxes_file, flirt_smri_mniaxes_bet_file)
     )
 
-    ###########################################################################
+    # -------------------------------------------------------------------------
     # 3) Use flirt to register skull stripped sMRI to MNI space
-    ###########################################################################
 
     print("Running FLIRT...")
 
@@ -484,7 +481,7 @@ please check output of:\n fslorient -orient {}".format(
         )
     )
 
-    ###########################################################################
+    # -------------------------------------------------------------------------
     # 4) Use BET/BETSURF to get:
     # a) The scalp surface (excluding nose), this gives the sMRI-derived
     #     headshape points in native sMRI space, which can be used in the
@@ -495,7 +492,6 @@ please check output of:\n fslorient -orient {}".format(
     #     - bet_inskull_mesh_file is actually the brain surface
     #     - bet_outskull_mesh_file is actually the inner skull surface
     #     - bet_outskin_mesh_file is the outer skin/scalp surface
-    ###########################################################################
 
     # Run BET on smri to get the surface mesh (in MNI space),
     # as BETSURF needs this.
@@ -530,9 +526,8 @@ please check output of:\n fslorient -orient {}".format(
         )
     )
 
-    ###########################################################################
+    # -------------------------------------------------------------------------
     # 5) Refine scalp outline, adding nose to scalp surface (optional)
-    ###########################################################################
 
     print("Refining scalp surface...")
 
@@ -736,10 +731,9 @@ please check output of:\n fslorient -orient {}".format(
         )
     )
 
-    ###########################################################################
+    # -------------------------------------------------------------------------
     # 6) Output surfaces in sMRI (native) space and the transform from sMRI
     #    space to MNI
-    ###########################################################################
 
     # Move BET surface to native sMRI space. They are currently in MNI space
 
@@ -773,9 +767,8 @@ please check output of:\n fslorient -orient {}".format(
             filenames["mni_mri_t_file"],
         )
 
-    ###########################################################################
+    # -------------------------------------------------------------------------
     # Clean up
-    ###########################################################################
 
     rhino_utils.system_call(
         "cp -f {} {}".format(flirt_mni2mri_xform_file, filenames["mni2mri_flirt_file"])
@@ -954,10 +947,9 @@ Please ensure that the polhemus headshape points do not include the nose"
 
     smri_headshape_nativeindex = rhino_utils.niimask2indexpointcloud(outskin_mesh_file)
 
-    ###########################################################################
+    # -------------------------------------------------------------------------
     # Copy fif_file to new file for modification, and (optionally) changes
     # dev_head_t to equal dev_ctf_t in fif file info
-    ###########################################################################
 
     if fif_file[-7:] == "raw.fif":
         raw = read_raw(fif_file)
@@ -985,11 +977,10 @@ To turn this off, set use_dev_ctf_t=False"
     raw.save(filenames["fif_file"], overwrite=True)
     fif_file = filenames["fif_file"]
 
-    ###########################################################################
+    # -------------------------------------------------------------------------
     # 1) Map location of fiducials in MNI standard space brain to native sMRI
     # space. These are then used as the location of the sMRI-derived fiducials
     # in native sMRI space.
-    ###########################################################################
 
     # Known locations of MNI derived fiducials in MNI coords in mm
     mni_nasion_mni = np.asarray([1, 85, -41])
@@ -1004,11 +995,10 @@ To turn this off, set use_dev_ctf_t=False"
     smri_lpa_native = rhino_utils.xform_points(mni_mri_t["trans"], mni_lpa_mni)
     smri_rpa_native = rhino_utils.xform_points(mni_mri_t["trans"], mni_rpa_mni)
 
-    ###########################################################################
+    # -------------------------------------------------------------------------
     # 2) We have polhemus-derived fids in polhemus space and sMRI-derived fids
     # in native sMRI space. We use these to estimate the affine xform from
     # native sMRI space to polhemus (head) space.
-    ###########################################################################
 
     # Note that smri_fid_native are the sMRI-derived fids in native space
     polhemus_fid_polhemus = np.concatenate(
@@ -1050,12 +1040,11 @@ To turn this off, set use_dev_ctf_t=False"
         xform_native2polhemus, smri_headshape_native
     )
 
-    ###########################################################################
+    # -------------------------------------------------------------------------
     # 3) We have the polhemus-derived headshape points in polhemus
     # space and the sMRI-derived headshape (scalp surface) in native sMRI space.
     # We use these to estimate the affine xform from native sMRI space using the
     # ICP algorithm initilaised using the xform estimate in step 2.
-    ###########################################################################
 
     if use_headshape:
         print("Running ICP...")
@@ -1098,9 +1087,8 @@ To turn this off, set use_dev_ctf_t=False"
         xform_native2polhemus_refined, smri_lpa_native
     )
 
-    ###########################################################################
+    # -------------------------------------------------------------------------
     # Save coreg info
-    ###########################################################################
 
     # save xforms in MNE format in mm
     xform_native2polhemus_refined_copy = np.copy(xform_native2polhemus_refined)
@@ -1141,10 +1129,9 @@ To turn this off, set use_dev_ctf_t=False"
         )
         plt.show()
 
-    ###########################################################################
+    # -------------------------------------------------------------------------
     # Create sMRI-derived surfaces in native/mri space in mm,
     # for use by forward modelling
-    ###########################################################################
 
     rhino_utils.create_freesurfer_mesh(
         infile=surfaces_filenames["bet_inskull_mesh_vtk_file"],
@@ -1249,7 +1236,7 @@ def coreg_display(
         outskin_mesh_4surf_file = bet_outskin_mesh_vtk_file
         outskin_surf_file = bet_outskin_surf_file
 
-    ###########################################################################
+    # -------------------------------------------------------------------------
     # Setup xforms
 
     info = read_info(fif_file)
@@ -1273,7 +1260,7 @@ def coreg_display(
         combine_transforms(dev_head_t, head_mri_t, "meg", "mri")
     )
 
-    ###########################################################################
+    # -------------------------------------------------------------------------
     # Setup fids and headshape points
 
     # Load, these are in mm
@@ -1308,7 +1295,7 @@ def coreg_display(
     smri_rpa_meg = rhino_utils.xform_points(head_trans["trans"], smri_rpa_polhemus)
     smri_lpa_meg = rhino_utils.xform_points(head_trans["trans"], smri_lpa_polhemus)
 
-    ###########################################################################
+    # -------------------------------------------------------------------------
     # Setup MEG sensors
 
     meg_picks = pick_types(info, meg=True, ref_meg=False, exclude=())
@@ -1333,10 +1320,9 @@ def coreg_display(
     # convert to mm
     meg_rrs = meg_rrs * 1000
 
-    ###########################################################################
+    # -------------------------------------------------------------------------
     # Do plots
 
-    ###########################################################################
     if plot_type == "surf":
         warnings.filterwarnings("ignore", category=Warning)
 
@@ -1424,10 +1410,10 @@ def coreg_display(
         )
         renderer.show()
 
-    ###########################################################################
+    # -------------------------------------------------------------------------
     elif plot_type == "scatter":
 
-        ################
+        # -------------------
         # Setup scalp surface
 
         # Load in scalp surface
@@ -1682,7 +1668,7 @@ def bem_display(
     forward = read_forward_solution(fwd_fname)
     src = forward["src"]
 
-    ###########################################################################
+    # -------------------------------------------------------------------------
     # Setup xforms
 
     info = read_info(fif_file)
@@ -1706,7 +1692,7 @@ def bem_display(
     )
     head_trans = invert_transform(dev_head_t)
 
-    ###########################################################################
+    # -------------------------------------------------------------------------
     # Setup MEG sensors
 
     if display_sensors:
@@ -1736,7 +1722,7 @@ def bem_display(
         # convert to mm
         meg_rrs = meg_rrs * 1000
 
-    ###########################################################################
+    # -------------------------------------------------------------------------
     # Setup vol source grid points
     if src is not None:
         # stored points are in metres, convert to mm
@@ -1746,10 +1732,9 @@ def bem_display(
 
         print("Number of dipoles={}".format(src_pnts.shape[0]))
 
-    ###########################################################################
+    # -------------------------------------------------------------------------
     # Do plots
 
-    ###########################################################################
     if plot_type == "surf":
         warnings.filterwarnings("ignore", category=Warning)
 
@@ -1821,10 +1806,10 @@ def bem_display(
         )
         renderer.show()
 
-    ###########################################################################
+    # -------------------------------------------------------------------------
     elif plot_type == "scatter":
 
-        ################
+        # -------------------
         # Setup scalp surface
 
         # Load in scalp surface
@@ -1841,7 +1826,7 @@ def bem_display(
             mri_trans["trans"], smri_headshape_native
         )
 
-        ################
+        # -------------------------
         # Setup inner skull surface
 
         # Load in inner skull surface
@@ -1983,7 +1968,7 @@ def setup_volume_source_space(
 
     surfaces_filenames = get_surfaces_filenames(subjects_dir, subject)
 
-    ###########################################################################
+    # -------------------------------------------------------------------------
     # Move the surfaces to where MNE expects to find them for the
     # forward modelling, see make_bem_model in mne/bem.py
 
@@ -2060,7 +2045,7 @@ def setup_volume_source_space(
         overwrite=True,
     )
 
-    ###########################################################################
+    # -------------------------------------------------------------------------
     # Setup main MNE call to _make_volume_source_space
 
     surface = op.join(subjects_dir, subject, "bem", "inner_skull.surf")
@@ -2068,7 +2053,7 @@ def setup_volume_source_space(
     pos = float(pos)
     pos /= 1000.0  # convert pos to m from mm for MNE call
 
-    ###################################################
+    # -------------------------------------------------------------------------
     def get_mri_info_from_nii(mri):
         out = dict()
         dims = nib.load(mri).get_fdata().shape
@@ -2103,7 +2088,7 @@ def setup_volume_source_space(
 
     sp[0]["type"] = "vol"
 
-    ###########################################################################
+    # -------------------------------------------------------------------------
     # Save and return result
 
     sp = _complete_vol_src(sp, subject)
@@ -2198,7 +2183,7 @@ def make_fwd_solution(
 
     info = read_info(fif_file)
 
-    ###########################################################################
+    # -------------------------------------------------------------------------
     # Main MNE call
     fwd = make_forward_solution(
         info,
@@ -2322,7 +2307,7 @@ def transform_recon_timeseries(
     surfaces_filenames = get_surfaces_filenames(subjects_dir, subject)
     coreg_filenames = get_coreg_filenames(subjects_dir, subject)
 
-    #########
+    # -------------------------------------------------------
     # Get hold of coords of points reconstructed to.
     # Note, MNE forward model is done in head space in metres.
     # Rhino does everything in mm
@@ -2330,7 +2315,7 @@ def transform_recon_timeseries(
     vs = fwd["src"][0]
     recon_coords_head = vs["rr"][vs["vertno"]] * 1000  # in mm
 
-    ##############
+    # -------------------------------------------------------
     if spatial_resolution is None:
         # estimate gridstep from forward model
         rr = fwd["src"][0]["rr"]
@@ -2347,7 +2332,6 @@ def transform_recon_timeseries(
     if reference_brain == "mni":
         # reference is mni stdbrain
 
-        #########
         # convert recon_coords_head from head to mni space
         head_mri_t = rhino_utils.read_trans(coreg_filenames["head_mri_t_file"])
         recon_coords_mri = rhino_utils.xform_points(
@@ -2372,7 +2356,6 @@ def transform_recon_timeseries(
     elif reference_brain == "mri":
         # reference is smri
 
-        #########
         # convert recon_coords_head from head to mri space
         head_mri_t = rhino_utils.read_trans(coreg_filenames["head_mri_t_file"])
         recon_coords_out = rhino_utils.xform_points(
@@ -2389,7 +2372,7 @@ def transform_recon_timeseries(
     else:
         ValueError("Invalid out_space, should be mni or mri")
 
-    #########
+    # -------------------------------------------------------------------------
     # get coordinates from reference brain at resolution spatial_resolution
 
     # create std brain of the required resolution
@@ -2404,7 +2387,7 @@ def transform_recon_timeseries(
 
     coords_out, vals = rhino_utils.niimask2mmpointcloud(reference_brain_resampled)
 
-    #########
+    # -------------------------------------------------------------------------
     # for each mni_coords_out find nearest coord in recon_coords_out
 
     recon_timeseries_out = np.zeros(

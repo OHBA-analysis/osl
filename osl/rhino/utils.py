@@ -619,7 +619,6 @@ def rhino_icp(smri_headshape_polhemus, polhemus_headshape_polhemus, Ninits=10):
                 plt.show()
                 plt.draw()
 
-        #####
         # Give the registration a kick...
         a = (np.random.uniform() - 0.5) * np.pi / 6
         b = (np.random.uniform() - 0.5) * np.pi / 6
