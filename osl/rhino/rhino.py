@@ -311,7 +311,7 @@ def compute_surfaces(
     #
     # Rhino does everthing in mm
 
-    print("*** RUNNING OSL RHINO COMPUTE SURFACES ***")
+    print("\n*** RUNNING OSL RHINO COMPUTE SURFACES ***")
 
     filenames = get_surfaces_filenames(subjects_dir, subject)
 
@@ -909,7 +909,7 @@ def coreg(
     #
     # Rhino does everthing in mm
 
-    print("*** RUNNING OSL RHINO COREGISTRATION ***")
+    print("\n*** RUNNING OSL RHINO COREGISTRATION ***")
 
     filenames = get_coreg_filenames(subjects_dir, subject)
     surfaces_filenames = get_surfaces_filenames(subjects_dir, subject)
@@ -1157,7 +1157,7 @@ To turn this off, set use_dev_ctf_t=False"
         xform_mri_voxel2mri=mrivoxel_mri_t["trans"],
     )
 
-    print("*** OSL RHINO COREGISTRATION COMPLETE ***")
+    print("*** OSL RHINO COREGISTRATION COMPLETE ***\n")
 
 
 def coreg_display(
@@ -1555,7 +1555,7 @@ def forward_model(
         Whether to compute forward model for meg sensors
     """
 
-    print("*** RUNNING OSL RHINO FORWARD MODEL ***")
+    print("\n*** RUNNING OSL RHINO FORWARD MODEL ***")
 
     # compute MNE bem solution
     if model == "Single Layer":
@@ -1607,7 +1607,7 @@ def forward_model(
 
     write_forward_solution(fwd_fname, fwd, overwrite=True)
 
-    print("*** OSL RHINO FORWARD MODEL COMPLETE ***")
+    print("*** OSL RHINO FORWARD MODEL COMPLETE ***\n")
 
 
 def bem_display(
@@ -2754,7 +2754,7 @@ def make_lcmv(
                 matrix inversion.
     """
 
-    print("*** RUNNING OSL RHINO MAKE LCMV ***")
+    print("\n*** RUNNING OSL RHINO MAKE LCMV ***")
 
     # load forward solution
     fwd_fname = get_coreg_filenames(subjects_dir, subject)["forward_model_file"]
@@ -2830,7 +2830,7 @@ def make_lcmv(
         verbose=verbose,
     )
 
-    print("*** OSL RHINO MAKE LCMV COMPLETE ***")
+    print("*** OSL RHINO MAKE LCMV COMPLETE ***\n")
 
     return filters
 
