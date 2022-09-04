@@ -1,9 +1,9 @@
-#!/usr/bin/python
-
 """Logging module for OSL
 
 Heavily inspired by logging in OSL.
 """
+
+# Authors: Andrew Quinn <a.quinn@bham.ac.uk>
 
 import yaml
 import logging

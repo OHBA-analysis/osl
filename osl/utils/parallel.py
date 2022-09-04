@@ -1,3 +1,9 @@
+"""Utility functions for parallel processing.
+
+"""
+
+# Authors: Andrew Quinn <a.quinn@bham.ac.uk>
+
 from functools import partial
 import dask.bag as db
 from dask.distributed import Client, LocalCluster, wait, default_client

@@ -1,3 +1,5 @@
+# Authors: Andrew Quinn <a.quinn@bham.ac.uk>
+
 import numpy as np
 
 

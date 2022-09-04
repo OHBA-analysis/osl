@@ -2,6 +2,10 @@
 
 """
 
+# Authors: Andrew Quinn <a.quinn@bham.ac.uk>
+#          Chetan Gohil <chetan.gohil@psych.ox.ac.uk>
+#          Mats van Es <mats.vanes@psych.ox.ac.uk>
+
 import mne
 import numpy as np
 

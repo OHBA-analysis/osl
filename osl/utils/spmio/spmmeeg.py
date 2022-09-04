@@ -1,3 +1,9 @@
+"""Classes for loading SPM files.
+
+"""
+
+# Authors: Andrew Quinn <a.quinn@bham.ac.uk>
+
 from dataclasses import dataclass
 
 import os
