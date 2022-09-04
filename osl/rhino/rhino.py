@@ -1163,6 +1163,7 @@ def coreg_display(
     plot_type="surf",
     display_outskin_with_nose=False,
     display_sensors=True,
+    filename=None,
 ):
     """Display coregistration.
 
@@ -1192,6 +1193,9 @@ def coreg_display(
         Whether to include nose with scalp surface in the display
     display_sensors : bool
         Whether to include sensors in the display
+    filename : str
+        Filename to save display to (as an interactive html).
+        Must have extension .html.
     """
 
     # Note the jargon used varies for xforms and coord spaces:
@@ -1327,7 +1331,7 @@ def coreg_display(
         warnings.filterwarnings("ignore", category=Warning)
 
         # Initialize figure
-        renderer = _get_renderer(None, bgcolor=(0.5, 0.5, 0.5), size=(800, 800))
+        renderer = _get_renderer(None, bgcolor=(0.5, 0.5, 0.5), size=(500, 500))
 
         # Polhemus-derived headshape points
         if len(polhemus_headshape_meg.T) > 0:
@@ -1408,7 +1412,9 @@ def coreg_display(
         renderer.set_camera(
             azimuth=90, elevation=90, distance=600, focalpoint=(0.0, 0.0, 0.0)
         )
-        renderer.show()
+
+        # Save or show
+        rhino_utils.save_or_show_renderer(renderer, filename)
 
     # -------------------------------------------------------------------------
     elif plot_type == "scatter":
@@ -1607,6 +1613,7 @@ def bem_display(
     plot_type="scatter",
     display_outskin_with_nose=True,
     display_sensors=False,
+    filename=None,
 ):
     """Displays the coregistered RHINO scalp surface and inner skull surface.
 
@@ -1626,6 +1633,9 @@ def bem_display(
         Whether to include nose with scalp surface in the display
     display_sensors : bool
         Whether to include sensor locations in the display
+    filename : str
+        Filename to save display to (as an interactive html).
+        Must have extension .html.
     """
 
     # Note the jargon used varies for xforms and coord spaces:
@@ -1739,7 +1749,7 @@ def bem_display(
         warnings.filterwarnings("ignore", category=Warning)
 
         # Initialize figure
-        renderer = _get_renderer(None, bgcolor=(0.5, 0.5, 0.5), size=(800, 800))
+        renderer = _get_renderer(None, bgcolor=(0.5, 0.5, 0.5), size=(500, 500))
 
         # Sensors
         if display_sensors:
@@ -1804,7 +1814,9 @@ def bem_display(
         renderer.set_camera(
             azimuth=90, elevation=90, distance=600, focalpoint=(0.0, 0.0, 0.0)
         )
-        renderer.show()
+
+        # Save or show
+        rhino_utils.save_or_show_renderer(renderer, filename)
 
     # -------------------------------------------------------------------------
     elif plot_type == "scatter":

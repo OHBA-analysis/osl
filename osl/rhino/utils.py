@@ -1521,3 +1521,23 @@ def _prepare_beamformer_input(
     # Get the projector
     proj, _, _ = make_projector(info_picked["projs"], info_picked["ch_names"])
     return (is_free_ori, info_picked, proj, vertno, gain, whitener, nn, orient_std)
+
+
+def save_or_show_renderer(renderer, filename):
+    """Save or show a renderer.
+
+    Parameters
+    ----------
+    renderer : mne.viz.backends._notebook._Renderer Object
+        MNE renderer object.
+    filename : str
+        Filename to save display to (as an interactive html).
+        Must have extension .html. If None we display the renderer.
+    """
+    if filename is None:
+        renderer.show()
+    else:
+        if ".html" not in filename:
+            raise ValueError("filename must have extension .html")
+        print("Saving", filename)
+        renderer.figure.plotter.export_html(filename)
