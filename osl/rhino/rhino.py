@@ -2904,5 +2904,12 @@ def coregister(
         use_nose=use_nose,
     )
 
+    # Save coregistration plot for the report
+    coreg_display(
+        subjects_dir=coreg_dir,
+        subject=subject,
+        filename=coreg_dir + "/" + subject + "/interactive_coreg_display.html"
+    )
+
     # Compute forward model
     forward_model(subjects_dir=coreg_dir, subject=subject, model=model)
