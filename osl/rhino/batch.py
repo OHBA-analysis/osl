@@ -33,7 +33,6 @@ def run_coreg_chain(
     smri_file,
     coreg_dir,
     model,
-    raw_file=None,
     pos_file=None,
     use_headshape=True,
     include_nose=False,
@@ -45,12 +44,6 @@ def run_coreg_chain(
     verbose="INFO",
     mneverbose="WARNING",
 ):
-    if raw_file is None and pos_file is None:
-        raise ValueError(
-            "Either the raw fif file or a pos file containing the polhemus"
-            + "head points must be specified"
-        )
-
     # Get run ID
     run_id = find_run_id(preproc_file)
 
@@ -75,6 +68,30 @@ def run_coreg_chain(
 
     # MAIN BLOCK - Run the coregistration and catch any exceptions
     try:
+        # Setup polhemus files
+        current_status = "Setting up polhemus files"
+        logger.info(current_status)
+        if pos_file is None:
+            # Use the preprocessed fif file to get positions
+            (
+                polhemus_headshape_file,
+                polhemus_nasion_file,
+                polhemus_rpa_file,
+                polhemus_lpa_file,
+            ) = rhino.extract_polhemus_from_info(
+                fif_file=preproc_file, outdir=coreg_dir / subject
+            )
+        else:
+            # Use the pos file
+            (
+                polhemus_headshape_file,
+                polhemus_nasion_file,
+                polhemus_rpa_file,
+                polhemus_lpa_file,
+            ) = rhino.extract_polhemus_from_pos_file(
+                pos_file=pos_file, outdir=coreg_dir / subject
+            )
+
         # Compute surface
         current_status = "Computing surface"
         logger.info(current_status)
@@ -85,28 +102,6 @@ def run_coreg_chain(
             include_nose=include_nose,
             cleanup_files=cleanup_files,
         )
-
-        # Setup polhemus files
-        current_status = "Setting up polhemus files"
-        logger.info(current_status)
-        if raw_file is not None:
-            (
-                polhemus_headshape_file,
-                polhemus_nasion_file,
-                polhemus_rpa_file,
-                polhemus_lpa_file,
-            ) = rhino.extract_polhemus_from_info(
-                fif_file=raw_file, outdir=coreg_dir / subject
-            )
-        else:
-            (
-                polhemus_headshape_file,
-                polhemus_nasion_file,
-                polhemus_rpa_file,
-                polhemus_lpa_file,
-            ) = rhino.extract_polhemus_from_pos_file(
-                pos_file=pos_file, outdir=coreg_dir / subject
-            )
 
         # Run coregistration
         current_state = "Coregistering"
@@ -171,7 +166,6 @@ def run_coreg_batch(
     preproc_files,
     smri_files,
     model,
-    raw_files=None,
     pos_files=None,
     use_headshape=True,
     include_nose=False,
@@ -204,8 +198,6 @@ def run_coreg_batch(
         Structural MRI files.
     model : string
         Forward model to use.
-    raw_files : list of strings
-        Raw fif files.
     pos_files : list of strings
         Pos files.
     use_headshape : bool
@@ -259,18 +251,16 @@ def run_coreg_batch(
         mneverbose=mneverbose,
     )
 
-    if raw_files is None:
-        raw_files = [None] * len(subjects)
     if pos_files is None:
         pos_files = [None] * len(subjects)
 
     # Loop through input files to generate arguments for run_coreg_chain
     args = []
-    for subject, preproc_file, smri_file, raw_file, pos_file in zip(
-        subjects, preproc_files, smri_files, raw_files, pos_files
+    for subject, preproc_file, smri_file, pos_file in zip(
+        subjects, preproc_files, smri_files, pos_files
     ):
         args.append(
-            (subject, preproc_file, smri_file, coreg_dir, model, raw_file, pos_file)
+            (subject, preproc_file, smri_file, coreg_dir, model, pos_file)
         )
 
     # Actually run the processes
@@ -306,9 +296,6 @@ def main(argv=None):
     )
     parser.add_argument(
         "subjects", type=list, help="Subject directories"
-    )
-    parser.add_argument(
-        "raw_files", type=list, help="Raw fif files"
     )
     parser.add_argument(
         "preproc_files", type=list, help="Preprocessed fif files"
