@@ -37,6 +37,7 @@ def run_coreg_chain(
     use_headshape=True,
     include_nose=False,
     use_nose=False,
+    edit_polhemus_func=None,
     cleanup_files=True,
     logsdir=None,
     reportdir=None,
@@ -90,6 +91,14 @@ def run_coreg_chain(
                 polhemus_lpa_file,
             ) = rhino.extract_polhemus_from_pos_file(
                 pos_file=pos_file, outdir=coreg_dir / subject
+            )
+
+        if edit_polhemus_func is not None:
+            edit_polhemus_func(
+                polhemus_headshape_file,
+                polhemus_nasion_file,
+                polhemus_rpa_file,
+                polhemus_lpa_file,
             )
 
         # Compute surface
@@ -170,6 +179,7 @@ def run_coreg_batch(
     use_headshape=True,
     include_nose=False,
     use_nose=False,
+    edit_polhemus_func=None,
     cleanup_files=True,
     logsdir=None,
     reportdir=None,
@@ -206,6 +216,13 @@ def run_coreg_batch(
         Should we include the nose?
     use_nose : bool
         Should we use the nose?
+    edit_polhemus_func : function
+        Function to edit the headshape/nasion/rpa/lpa points.
+        The following arguments will be passed to this function:
+        - polhemus_headshape_file,
+        - polhemus_nasion_file,
+        - polhemus_rpa_file,
+        - polhemus_lpa_file,
     cleanup_files : bool
         Should we clean up the files?
     logsdir : string
@@ -243,6 +260,7 @@ def run_coreg_batch(
         use_headshape=use_headshape,
         include_nose=include_nose,
         use_nose=use_nose,
+        edit_polhemus_func=edit_polhemus_func,
         cleanup_files=cleanup_files,
         logsdir=logsdir,
         reportdir=reportdir,
