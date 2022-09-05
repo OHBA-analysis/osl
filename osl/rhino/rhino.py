@@ -11,6 +11,7 @@ import warnings
 import os
 import os.path as op
 import numpy as np
+import pandas as pd
 import nibabel as nib
 import matplotlib.pyplot as plt
 from pathlib import Path
@@ -169,10 +170,86 @@ def get_coreg_filenames(subjects_dir, subject):
     return filenames
 
 
+def extract_polhemus_from_pos_file(pos_file, outdir):
+    """Extract polhemus from a pos file.
+
+    We assume the pos file is in cm.
+
+    Parameters
+    ----------
+    pos_file : str
+        Pos file.
+    outdir : str
+        Directory to save headshape, nasion, rpa and lpa files.
+
+    Returns
+    -------
+    polhemus_headshape_file : string
+    polhemus_nasion_file : string
+    polhemus_rpa_file : string
+    polhemus_lpa_file : string
+        Polhemus filenames for Rhino to use in call to rhino.coreg
+    """
+
+    # Setup polhemus files
+    polhemus_headshape_file = op.join(outdir, "polhemus_headshape.txt")
+    polhemus_nasion_file = op.join(outdir, "polhemus_nasion.txt")
+    polhemus_rpa_file = op.join(outdir, "polhemus_rpa.txt")
+    polhemus_lpa_file = op.join(outdir, "polhemus_lpa.txt")
+
+    # Load in txt file, these values are in cm in polhemus space:
+    num_headshape_pnts = int(pd.read_csv(pos_file, header=None).to_numpy()[0])
+    data = pd.read_csv(pos_file, header=None, skiprows=[0], delim_whitespace=True)
+
+    # RHINO is going to work with distances in mm
+    # So convert to mm from cm, note that these are in polhemus space
+    data.iloc[:, 1:4] = data.iloc[:, 1:4] * 10
+
+    # Polhemus fiducial points in polhemus space
+    polhemus_nasion_polhemus = (
+        data[data.iloc[:, 0].str.match("nasion")]
+        .iloc[0, 1:4]
+        .to_numpy()
+        .astype("float64")
+        .T
+    )
+    polhemus_rpa_polhemus = (
+        data[data.iloc[:, 0].str.match("right")]
+        .iloc[0, 1:4]
+        .to_numpy()
+        .astype("float64")
+        .T
+    )
+    polhemus_lpa_polhemus = (
+        data[data.iloc[:, 0].str.match("left")]
+        .iloc[0, 1:4]
+        .to_numpy()
+        .astype("float64")
+        .T
+    )
+
+    # Polhemus headshape points in polhemus space in mm
+    polhemus_headshape_polhemus = (
+        data[0:num_headshape_pnts].iloc[:, 1:4].to_numpy().T
+    )
+
+    np.savetxt(polhemus_nasion_file, polhemus_nasion_polhemus)
+    np.savetxt(polhemus_rpa_file, polhemus_rpa_polhemus)
+    np.savetxt(polhemus_lpa_file, polhemus_lpa_polhemus)
+    np.savetxt(polhemus_headshape_file, polhemus_headshape_polhemus)
+
+    return (
+        polhemus_headshape_file,
+        polhemus_nasion_file,
+        polhemus_rpa_file,
+        polhemus_lpa_file,
+    )
+
+
 def extract_polhemus_from_info(
     fif_file, outdir, include_eeg_as_headshape=True, include_hpi_as_headshape=True
 ):
-    """Extract polhemus from info.
+    """Extract polhemus from FIF info.
 
     Extract polhemus fids and headshape points from MNE raw.info and write them out
     in the required file format for rhino (in head/polhemus space in mm). Should only
@@ -188,10 +265,10 @@ def extract_polhemus_from_info(
 
     Returns
     -------
+    polhemus_headshape_file : string
     polhemus_nasion_file : string
     polhemus_rpa_file : string
     polhemus_lpa_file : string
-    polhemus_headshape_file : string
         Polhemus filenames for Rhino to use in call to rhino.coreg
     """
 
@@ -206,15 +283,13 @@ def extract_polhemus_from_info(
         os.mkdir(outdir)
 
     # Setup polhemus files for coreg
-
     polhemus_headshape_polhemus = []
     polhemus_rpa_polhemus = []
     polhemus_lpa_polhemus = []
     polhemus_nasion_polhemus = []
 
     for dig in info["dig"]:
-
-        # check dig is in HEAD/Polhemus space
+        # Check dig is in HEAD/Polhemus space
         if dig["coord_frame"] != FIFF.FIFFV_COORD_HEAD:
             raise ValueError("{} is not in Head/Polhemus space".format(dig["ident"]))
 

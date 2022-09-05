@@ -29,11 +29,12 @@ logger = logging.getLogger(__name__)
 
 def run_coreg_chain(
     subject,
-    raw_file,
     preproc_file,
     smri_file,
     coreg_dir,
     model,
+    raw_file=None,
+    pos_file=None,
     use_headshape=True,
     include_nose=False,
     use_nose=False,
@@ -44,6 +45,13 @@ def run_coreg_chain(
     verbose="INFO",
     mneverbose="WARNING",
 ):
+    if raw_file is None and pos_file is None:
+        raise ValueError(
+            "Either the raw fif file or a pos file containing the polhemus"
+            + "head points must be specified"
+        )
+
+    # Get run ID
     run_id = find_run_id(preproc_file)
 
     # Generate log filename
@@ -67,18 +75,6 @@ def run_coreg_chain(
 
     # MAIN BLOCK - Run the coregistration and catch any exceptions
     try:
-        # Setup polhemus files
-        current_status = "Setting up polhemus files"
-        logger.info(current_status)
-        (
-            polhemus_headshape_file,
-            polhemus_nasion_file,
-            polhemus_rpa_file,
-            polhemus_lpa_file,
-        ) = rhino.extract_polhemus_from_info(
-            fif_file=raw_file, outdir=coreg_dir / subject
-        )
-
         # Compute surface
         current_status = "Computing surface"
         logger.info(current_status)
@@ -90,8 +86,30 @@ def run_coreg_chain(
             cleanup_files=cleanup_files,
         )
 
+        # Setup polhemus files
+        current_status = "Setting up polhemus files"
+        logger.info(current_status)
+        if raw_file is not None:
+            (
+                polhemus_headshape_file,
+                polhemus_nasion_file,
+                polhemus_rpa_file,
+                polhemus_lpa_file,
+            ) = rhino.extract_polhemus_from_info(
+                fif_file=raw_file, outdir=coreg_dir / subject
+            )
+        else:
+            (
+                polhemus_headshape_file,
+                polhemus_nasion_file,
+                polhemus_rpa_file,
+                polhemus_lpa_file,
+            ) = rhino.extract_polhemus_from_pos_file(
+                pos_file=pos_file, outdir=coreg_dir / subject
+            )
+
         # Run coregistration
-        current_state = "Coregistrating"
+        current_state = "Coregistering"
         logger.info(current_status)
         rhino.coreg(
             fif_file=preproc_file,
@@ -150,10 +168,11 @@ def run_coreg_chain(
 def run_coreg_batch(
     coreg_dir,
     subjects,
-    raw_files,
     preproc_files,
     smri_files,
     model,
+    raw_files=None,
+    pos_files=None,
     use_headshape=True,
     include_nose=False,
     use_nose=False,
@@ -179,21 +198,34 @@ def run_coreg_batch(
         Coregistration directory.
     subjects : list of strings
         Subject names.
-    raw_file : list of strings
-        Raw fif files.
-    preproc_file : list of strings
+    preproc_files : list of strings
         Preprocessed fif files.
-    smri_file : list of strings
+    smri_files : list of strings
         Structural MRI files.
-    include_nose : bool
-        Should we include the nose?
-    use_headshape : bool
-        Should we use the headshape points?
-    use_nose : bool
-        Should we use the nose?
     model : string
         Forward model to use.
+    raw_files : list of strings
+        Raw fif files.
+    pos_files : list of strings
+        Pos files.
+    use_headshape : bool
+        Should we use the headshape points?
+    include_nose : bool
+        Should we include the nose?
+    use_nose : bool
+        Should we use the nose?
     cleanup_files : bool
+        Should we clean up the files?
+    logsdir : string
+        Path to logs directory.
+    reportdir : string
+        Path to report directory.
+    verbose : string
+        Level of verbose.
+    mneverbose : string
+        Level of MNE verbose.
+    dask_client : bool
+        Are we using a dask client?
 
     Returns
     -------
@@ -216,8 +248,6 @@ def run_coreg_batch(
     # Create partial function with fixed options
     pool_func = partial(
         run_coreg_chain,
-        coreg_dir=coreg_dir,
-        model=model,
         use_headshape=use_headshape,
         include_nose=include_nose,
         use_nose=use_nose,
@@ -229,12 +259,19 @@ def run_coreg_batch(
         mneverbose=mneverbose,
     )
 
+    if raw_files is None:
+        raw_files = [None] * len(subjects)
+    if pos_files is None:
+        pos_files = [None] * len(subjects)
+
     # Loop through input files to generate arguments for run_coreg_chain
     args = []
-    for subject, raw_file, preproc_file, smri_file in zip(
-        subjects, raw_files, preproc_files, smri_files
+    for subject, preproc_file, smri_file, raw_file, pos_file in zip(
+        subjects, preproc_files, smri_files, raw_files, pos_files
     ):
-        args.append((subject, raw_file, preproc_file, smri_file))
+        args.append(
+            (subject, preproc_file, smri_file, coreg_dir, model, raw_file, pos_file)
+        )
 
     # Actually run the processes
     if dask_client:
@@ -275,6 +312,9 @@ def main(argv=None):
     )
     parser.add_argument(
         "preproc_files", type=list, help="Preprocessed fif files"
+    )
+    parser.add_argument(
+        "pos_files", type=list, help="Pos files"
     )
     parser.add_argument(
         "smri_files", type=list, help="Structural MRI files"
