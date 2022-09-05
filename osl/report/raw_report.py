@@ -4,6 +4,10 @@
 
 """
 
+# Authors: Andrew Quinn <a.quinn@bham.ac.uk>
+#          Chetan Gohil <chetan.gohil@psych.ox.ac.uk>
+#          Mats van Es <mats.vanes@psych.ox.ac.uk>
+
 import os
 import mne
 import sys
@@ -11,11 +15,11 @@ import yaml
 import sails
 import argparse
 import tempfile
+import pickle
+import pathlib
 
 import numpy as np
 import matplotlib.pyplot as plt
-import neurokit2 as nk
-
 from jinja2 import Template
 from tabulate import tabulate
 from mne.channels.channels import channel_type
@@ -24,27 +28,66 @@ from matplotlib.lines import Line2D
 from matplotlib.patches import Rectangle
 
 from ..utils import process_file_inputs, validate_outdir
-from ..preprocessing import import_data, load_config, run_proc_chain, get_config_from_fif, plot_preproc_flowchart    
+from ..preprocessing import (
+    import_data,
+    load_config,
+    run_proc_chain,
+    get_config_from_fif,
+    plot_preproc_flowchart,
+)
 
 
 # ----------------------------------------------------------------------------------
 # Report generation
 
+
+def gen_report_from_fif(infiles, outdir):
+    """Generate web-report for a set of MNE data objects.
+
+    Parameters
+    ----------
+    infiles : list of str
+        List of paths to fif files.
+    outdir : str
+        Directory to save HTML report and figures to.
+    """
+
+    # Validate input files and directory to save html file and plots to
+    infiles, outnames, good_files = process_file_inputs(infiles)
+    outdir = validate_outdir(outdir)
+
+    # Generate HTML data
+    for infile in infiles:
+        raw = import_data(infile)
+        run_id = get_header_id(raw)
+        htmldatadir = validate_outdir(outdir / run_id)
+        gen_html_data(raw, htmldatadir)
+
+    # Create report
+    gen_html_page(outdir)
+
+
 def get_header_id(raw):
     """Extract scan name from MNE data object."""
     return raw.filenames[0].split('/')[-1].strip('.fif')
 
-def gen_html_data(raw, ica, outdir, level):
-    """Generate HTML web-report for an MNE data object."""
+
+def gen_html_data(raw, outdir, coreg=None):
+    """Generate HTML web-report for an MNE data object.
+
+    Parameters
+    ----------
+    raw : mne.Raw
+        MNE Raw object.
+    outdir : string
+        Directory to write HTML data and plots to.
+    coreg : string
+        Path to coregistration plot. (Should be an interactive HTML object.)
+    """
 
     data = {}
     data['filename'] = raw.filenames[0]
     data['fif_id'] = get_header_id(raw)
-
-    print('Processing : {0}'.format(data['filename']))
-
-    # Level of reporting
-    data['level'] = level
 
     # Scan info
     data['projname'] = raw.info['proj_name']
@@ -78,10 +121,12 @@ def gen_html_data(raw, ica, outdir, level):
                                  headers=['Digitisation Stage', 'Points Acquired'])
 
     # Events
-    ev = mne.find_events(raw, min_duration=5/raw.info['sfreq'], verbose=False)
-    ev, evcounts = np.unique(ev[:, 2], return_counts=True)
-    data['eventtable'] = tabulate(np.c_[ev, evcounts], tablefmt='html',
-                                  headers=['Event Code', 'Value'])
+    stim_channel = mne.pick_types(raw.info, meg=False, ref_meg=False, stim=True)
+    if len(stim_channel) > 0:
+        ev = mne.find_events(raw, min_duration=5/raw.info['sfreq'], verbose=False)
+        ev, evcounts = np.unique(ev[:, 2], return_counts=True)
+        data['eventtable'] = tabulate(np.c_[ev, evcounts], tablefmt='html',
+                                      headers=['Event Code', 'Value'])
 
     # Bad segments
     durs = np.array([r['duration'] for r in raw.annotations])
@@ -105,95 +150,61 @@ def gen_html_data(raw, ica, outdir, level):
         data['bad_chans'] = 'Bad channels: {}'.format(', '.join(bad_chans))
 
     # Path to save plots
-    savebase = '{0}/{1}'.format(outdir, data['fif_id']) + '_{0}.png'
+    savebase = str(outdir / '{0}.png')
     
     # Generate plots for the report
-    print('Generating plots:')
-    data['plt_flowchart'] = plot_flowchart(raw, savebase)
     data['plt_temporalsumsq'] = plot_channel_time_series(raw, savebase)
     data['plt_badchans'] = plot_sensors(raw, savebase)
     data['plt_channeldev'] = plot_channel_dists(raw, savebase)
     data['plt_spectra'], data['plt_zoomspectra'] = plot_spectra(raw, savebase)
     data['plt_digitisation'] = plot_digitisation_2d(raw, savebase)
-    if level > 0:
-        data['plt_artefacts_eog'] = plot_eog_summary(raw, savebase)
-        data['plt_artefacts_ecg'] = plot_ecg_summary(raw, savebase)
-        data['plt_artefacts_ica'] = plot_bad_ica(raw, ica, savebase) if ica is not None else None
-    if level > 1:
-        filenames = plot_artefact_scan(raw, savebase)
-        data.update(filenames)
+    data['plt_artefacts_eog'] = plot_eog_summary(raw, savebase)
+    data['plt_artefacts_ecg'] = plot_ecg_summary(raw, savebase)
+    #filenames = plot_artefact_scan(raw, savebase)
+    #data.update(filenames)
 
-    return data
+    # Add the coregistration plot if it's passed
+    if coreg is not None:
+        data['plt_coreg'] = coreg
+
+    # Save data that will be used to create html page
+    with open(outdir / 'data.pkl', 'wb') as outfile:
+        pickle.dump(data, outfile)
 
 
-def gen_report(infiles, outdir, preproc_config=None, level=1):
-    """Generate web-report for a set of MNE data objects.
+def gen_html_page(outdir):
+    """Generate an HTML page from a report directory.
 
     Parameters
     ----------
-    infiles : list of str
-        List of paths to fif files.
     outdir : str
-        Directory to save HTML report and figures to.
-    preproc_config : dict
-        Preprocessing to apply before generating the report.
-    level : int
-        0 - basic report.
-        1 - basic report with EOG, ECG and ICA.
-        2 - basic report with EOG, ECG, ICA and an artefact scan.
+        Directory to generate HTML report with.
     """
+    outdir = pathlib.Path(outdir)
 
-    # Validate input files and directory to save html file and plots to
-    infiles, outnames, good_files = process_file_inputs(infiles)
-    outdir = validate_outdir(outdir)
+    # Subdirectories which contains plots for each fif file
+    subdirs = [d.stem for d in pathlib.Path(outdir).iterdir() if d.is_dir()]
 
-    # Load config for preprocessing to apply
-    if preproc_config is not None:
-        config = load_config(preproc_config)
+    # Load data for each fif file
+    data = []
+    for subdir in subdirs:
+        subdir = pathlib.Path(subdir)
+        data.append(pickle.load(open(outdir / subdir / "data.pkl", "rb")))
 
-    # Hyperlink to each panel on the page
-    s = "<a href='#{0}'>{1}</a><br />"
-    toplinks = [s.format(outnames[ii], infiles[ii]) for ii in range(len(infiles))]
-    toplinks = '\n'.join(toplinks)
-
-    # Load HTML template
+    # Create panels
     panels = []
     panel_template = load_template('panel')
-
-    # Generate a panel for each file
-    for infile in infiles:
-
-        # Load preprocessed data file
-        raw = import_data(infile)
-
-        # Load ICA file if it exists
-        # TODO: could potentially be incorporated in 'import_data'
-        if os.path.exists(infile.replace('preproc_raw.fif', 'ica.fif')):
-            ica = mne.preprocessing.read_ica(infile.replace('preproc_raw.fif', 'ica.fif'))
-        else:
-            ica = None
-
-        # Apply some preprocessing if a config has been passed
-        if preproc_config is not None:
-            dataset = run_proc_chain(raw, config)
-            raw = dataset['raw']
-            ica = dataset['ica']
-
-        # Generate data and plots for the panel
-        data = gen_html_data(raw, ica, outdir, level)
-
-        # Render the panel
-        panels.append(panel_template.render(data=data))
+    for d in data:
+        panels.append(panel_template.render(data=d))
 
     # Render the full page
     page_template = load_template('raw_report')
-    page = page_template.render(panels=panels, toplinks=toplinks, level=level)
+    page = page_template.render(panels=panels)
 
     # Write the output file
-    outpath = '{0}/osl_raw_report.html'.format(outdir)
+    outpath = pathlib.Path(outdir) / 'report.html'
     with open(outpath, 'w') as f:
         f.write(page)
-    print('REPORT :', outpath)
 
 
 def load_template(tname):
@@ -236,12 +247,12 @@ def plot_flowchart(raw, savebase=None):
 
     # Save figure
     figname = savebase.format('flowchart')
-    print(figname)
     fig.savefig(figname, dpi=150, transparent=True)
     plt.close(fig)
 
     # Return the filename
-    filebase = os.path.split(savebase)[1]
+    savebase = pathlib.Path(savebase)
+    filebase = savebase.parent.name + "/" + savebase.name
     return filebase.format('flowchart')
 
 def plot_channel_time_series(raw, savebase=None):
@@ -249,9 +260,9 @@ def plot_channel_time_series(raw, savebase=None):
 
     # Raw data
     channel_types = {
-        'Magnetometers': mne.pick_types(raw.info, meg='mag'),
-        'Gradiometers': mne.pick_types(raw.info, meg='grad'),
-        'EEG': mne.pick_types(raw.info, meg=False, eeg=True),
+        'mag': mne.pick_types(raw.info, meg='mag'),
+        'grad': mne.pick_types(raw.info, meg='grad'),
+        'eeg': mne.pick_types(raw.info, meg=False, eeg=True),
     }
     t = raw.times
     x = raw.get_data()
@@ -274,8 +285,17 @@ def plot_channel_time_series(raw, savebase=None):
         ss = np.sum(x[chan_inds] ** 2, axis=0)
         ss = uniform_filter1d(ss, int(raw.info['sfreq']))
         ax[row].plot(t, ss)
-        ax[row].legend([name], frameon=False)
+        ax[row].legend([name], frameon=False, fontsize=16)
         ax[row].set_xlim(t[0], t[-1])
+        ylim = ax[row].get_ylim()
+        for a in raw.annotations:
+            if name in a["description"]:
+                ax[row].axvspan(
+                    a["onset"] - raw.first_time,
+                    a["onset"] + a["duration"] - raw.first_time,
+                    color="red",
+                    alpha=0.8,
+                )
         row += 1
     ax[0].set_title('Sum-Square Across Channels')
     ax[-1].set_xlabel('Time (seconds)')
@@ -284,12 +304,12 @@ def plot_channel_time_series(raw, savebase=None):
     if savebase is not None:
         plt.tight_layout()
         figname = savebase.format('temporal_sumsq')
-        print(figname)
         fig.savefig(figname, dpi=150, transparent=True)
         plt.close(fig)
 
     # Return the filename
-    filebase = os.path.split(savebase)[1]
+    savebase = pathlib.Path(savebase)
+    filebase = savebase.parent.name + "/" + savebase.name
     return filebase.format('temporal_sumsq')
 
 
@@ -298,12 +318,12 @@ def plot_sensors(raw, savebase=None):
 
     fig = raw.plot_sensors(show=False)
     figname = savebase.format('bad_chans')
-    print(figname)
     fig.savefig(figname, dpi=150, transparent=True)
     plt.close(fig)
 
     # Return the filename
-    filebase = os.path.split(savebase)[1]
+    savebase = pathlib.Path(savebase)
+    filebase = savebase.parent.name + "/" + savebase.name
     return filebase.format('bad_chans')
 
 
@@ -329,7 +349,7 @@ def plot_channel_dists(raw, savebase=None):
         return 'No MEG or EEG channels.'
     
     # Make plots
-    fig, ax = plt.subplots(nrows=1, ncols=ncols, figsize=(12, 4))
+    fig, ax = plt.subplots(nrows=1, ncols=ncols, figsize=(9, 3.5))
     row = 0
     for name, chan_inds in channel_types.items():
         if len(chan_inds) == 0:
@@ -345,12 +365,12 @@ def plot_channel_dists(raw, savebase=None):
     if savebase is not None:
         plt.tight_layout()
         figname = savebase.format('channel_dev')
-        print(figname)
         fig.savefig(figname, dpi=150, transparent=True)
         plt.close(fig)
 
     # Return the filename
-    filebase = os.path.split(savebase)[1]
+    savebase = pathlib.Path(savebase)
+    filebase = savebase.parent.name + "/" + savebase.name
     return filebase.format('channel_dev')
 
 
@@ -364,7 +384,6 @@ def plot_spectra(raw, savebase=None):
     # Save full spectra
     if savebase is not None:
         figname = savebase.format('spectra_full')
-        print(figname)
         fig.savefig(figname, dpi=150, transparent=True)
         plt.close(fig)
 
@@ -375,12 +394,12 @@ def plot_spectra(raw, savebase=None):
     # Save zoomed in spectra
     if savebase is not None:
         figname = savebase.format('spectra_zoom')
-        print(figname)
         fig.savefig(figname, dpi=150, transparent=True)
         plt.close(fig)
 
     # Return filenames
-    filebase = os.path.split(savebase)[1]
+    savebase = pathlib.Path(savebase)
+    filebase = savebase.parent.name + "/" + savebase.name
     return filebase.format('spectra_full'), filebase.format('spectra_zoom')
 
 
@@ -441,12 +460,12 @@ def plot_digitisation_2d(raw, savebase=None):
     if savebase is not None:
         plt.tight_layout()
         figname = savebase.format('digitisation')
-        print(figname)
         fig.savefig(figname, dpi=150, transparent=True)
         plt.close(fig)
 
     # Return the filename
-    filebase = os.path.split(savebase)[1]
+    savebase = pathlib.Path(savebase)
+    filebase = savebase.parent.name + "/" + savebase.name
     return filebase.format('digitisation')
 
 
@@ -458,7 +477,6 @@ def plot_headmovement(raw, savebase=None):
     fig = mne.viz.plot_head_positions(head_pos, mode='traces')
     if savebase is not None:
         figname = savebase.format('headpos')
-        print(figname)
         fig.savefig(figname, dpi=150, transparent=True)
         plt.close(fig)
 
@@ -474,58 +492,48 @@ def plot_eog_summary(raw, savebase=None):
     x = raw.get_data(chan_inds).T
 
     # Make the plot
-    fig, ax = plt.subplots(nrows=2, ncols=1, figsize=(16, 5))
-    ax[0].set_title('Full Time Series')
-    ax[0].plot(t, x)
-    ax[0].set_xlim([t[0], t[-1]])
-
-    # Plot the first 30 seconds on the second row
-    n = int(raw.info['sfreq'] * 30)
-    ax[1].set_title('First 30 Seconds')
-    ax[1].plot(t[:n], x[:n])
-    ax[1].set_xlabel('Time (s)')
-    ax[1].set_xlim([t[0], t[n]])
+    fig, ax = plt.subplots(figsize=(16, 2))
+    ax.plot(t, x)
+    ax.set_xlim([t[0], t[-1]])
 
     # Save
     if savebase is not None:
         plt.tight_layout()
         figname = savebase.format('EOG')
-        print(figname)
         fig.savefig(figname, dpi=150, transparent=True)
         plt.close(fig)
 
     # Return the filename
-    filebase = os.path.split(savebase)[1]
+    savebase = pathlib.Path(savebase)
+    filebase = savebase.parent.name + "/" + savebase.name
     return filebase.format('EOG')
 
 
 def plot_ecg_summary(raw, savebase=None):
     """Plot ECG summary."""
 
-    # Get ECG data
+    # Get the raw ECG data
     chan_inds = mne.pick_types(raw.info, ecg=True)
     if len(chan_inds) == 0:
         return 'ECG Channel Not Found'
-    x = raw.get_data(chan_inds)
-    if np.abs(x.min()) > x.max():
-        x = -x
+    t = raw.times
+    x = raw.get_data(chan_inds).T
 
-    # Process first ECG channel
-    signals, info = nk.ecg_process(x[0, :], sampling_rate=raw.info['sfreq'])
-    nk.ecg_plot(signals, sampling_rate=raw.info['sfreq'])
-    fig = plt.gcf()
-    fig.set_size_inches(16, 7)
+    # Make the plot
+    fig, ax = plt.subplots(figsize=(16, 2))
+    ax.plot(t, x)
+    ax.set_xlim([t[0], t[-1]])
 
     # Save
     if savebase is not None:
         plt.tight_layout()
         figname = savebase.format('ECG')
-        print(figname)
         fig.savefig(figname, dpi=150, transparent=True)
         plt.close(fig)
 
     # Return the filename
-    filebase = os.path.split(savebase)[1]
+    savebase = pathlib.Path(savebase)
+    filebase = savebase.parent.name + "/" + savebase.name
     return filebase.format('ECG')
 
 
@@ -569,12 +577,12 @@ def plot_bad_ica(raw, ica, savebase):
 
     if savebase is not None:
         figname = savebase.format('ica')
-        print(figname)
         fig.savefig(figname, dpi=150, transparent=True)
         plt.close(fig)
 
     # Return the filename
-    filebase = os.path.split(savebase)[1]
+    savebase = pathlib.Path(savebase)
+    filebase = savebase.parent.name + "/" + savebase.name
     return filebase.format('ica')
 
 
@@ -724,7 +732,8 @@ def plot_artefact_scan(raw, savebase=None):
     plt.close('all')
 
     # Return filenames
-    filebase = os.path.split(savebase)[1]
+    savebase = pathlib.Path(savebase)
+    filebase = savebase.parent.name + "/" + savebase.name
     filenames = {
         'plt_eyemove_grad': filebase.format('eyemove_grad'),
         'plt_eyemove_mag': filebase.format('eyemove_mag'),
@@ -819,11 +828,10 @@ def main(argv=None):
                         help='Path to output directory to save data in')
     parser.add_argument('--preproc_config', type=str,
                         help='yaml defining preprocessing')
-    parser.add_argument('--level', type=int, default=1, help='Level of reporting')
 
     args = parser.parse_args(argv)
 
-    gen_report(args.files, args.outdir, args.preproc_config, args.level)
+    gen_report(args.files, args.outdir, args.preproc_config)
 
 
 if __name__ == '__main__':

@@ -4,6 +4,10 @@
 
 """
 
+# Authors: Andrew Quinn <a.quinn@bham.ac.uk>
+#          Chetan Gohil <chetan.gohil@psych.ox.ac.uk>
+#          Mats van Es <mats.vanes@psych.ox.ac.uk>
+
 import argparse
 import matplotlib.pyplot as plt
 import os
@@ -466,7 +470,9 @@ def run_proc_chain(
     config,
     outname=None,
     outdir=None,
-    ret_dataset=True,
+    logsdir=None,
+    reportdir=None,
+    gen_report=True,
     overwrite=False,
     extra_funcs=None,
     verbose="INFO",
@@ -484,8 +490,12 @@ def run_proc_chain(
         Output filename.
     outdir : str
         Output directory.
-    ret_dataset : bool
-        Should we return a dataset dict?
+    logsdir : str
+        Directory to save log files to.
+    reportdir : str
+        Directory to save report files to.
+    gen_report : bool
+        Should we generate a report?
     overwrite : bool
         Should we overwrite the output file if it already exists?
     extra_funcs : list
@@ -499,12 +509,15 @@ def run_proc_chain(
 
     Returns
     -------
-    dict or bool
-        A dict containing the preprocessed dataset is returned if ret_dataset=True.
-        The dict has keys: raw, ica, epochs, events, event_id.
-        Otherwise, a flag indicating whether preprocessing was successful is
-        returned.
+    flag : bool
+        A flag indicating whether preprocessing was successful.
     """
+    if outdir is None:
+        # Use the current working directory
+        outdir = os.getcwd()
+    outdir = validate_outdir(outdir)
+    logsdir = validate_outdir(logsdir or outdir / "logs")
+    reportdir = validate_outdir(reportdir or outdir / "report")
 
     # Generate a run ID
     if outname is None:
@@ -512,20 +525,15 @@ def run_proc_chain(
     else:
         run_id = os.path.splitext(outname)[0]
 
-    # Load config
-    if not isinstance(config, dict):
-        config = load_config(config)
+    name_base = "{run_id}_{ftype}.{fext}"
+    outbase = os.path.join(outdir, name_base)
+    logbase = os.path.join(logsdir, name_base)
 
     # Generate log filename
-    if outdir is not None:
-        name_base = "{run_id}_{ftype}.{fext}"
-        outbase = os.path.join(outdir, name_base)
-        logfile = outbase.format(
-            run_id=run_id.replace("_raw", ""), ftype="preproc_raw", fext="log"
-        )
-        mne.utils._logging.set_log_file(logfile, overwrite=overwrite)
-    else:
-        logfile = None
+    logfile = logbase.format(
+        run_id=run_id.replace("_raw", ""), ftype="preproc_raw", fext="log"
+    )
+    mne.utils._logging.set_log_file(logfile, overwrite=overwrite)
 
     # Finish setting up loggers
     osl_logger.set_up(prefix=run_id, log_file=logfile, level=verbose, startup=False)
@@ -535,13 +543,17 @@ def run_proc_chain(
     logger.info("{0} : Starting OSL Processing".format(now))
     logger.info("input : {0}".format(infile))
 
-    # Write preprocessed data to output directory
-    if outdir is not None:
-        # Check for existing outputs - should be a .fif at least
-        fifout = outbase.format(run_id=run_id.replace('_raw', ''), ftype='preproc_raw', fext='fif')
-        if os.path.exists(fifout) and (overwrite is False):
-            osl_logger.critical('Skipping preprocessing - existing output detected')
-            return 2
+    # Check for existing outputs - should be a .fif at least
+    fifout = outbase.format(
+        run_id=run_id.replace('_raw', ''), ftype='preproc_raw', fext='fif'
+    )
+    if os.path.exists(fifout) and (overwrite is False):
+        osl_logger.critical('Skipping preprocessing - existing output detected')
+        return False
+
+    # Load config
+    if not isinstance(config, dict):
+        config = load_config(config)
 
     # MAIN BLOCK - Run the preproc chain and catch any exceptions
     try:
@@ -550,7 +562,6 @@ def run_proc_chain(
         elif isinstance(infile, mne.io.fiff.raw.Raw):
             raw = infile
             infile = raw.filenames[0]  # assuming only one file here
-
 
         # Create a dataset dict to hold the preprocessed dataset
         dataset = {
@@ -572,58 +583,66 @@ def run_proc_chain(
         # Add preprocessing info to dataset dict
         dataset = append_preproc_info(dataset, config)
 
-        if outdir is not None:
-            write_dataset(dataset, outbase, run_id, overwrite=overwrite)
+        write_dataset(dataset, outbase, run_id, overwrite=overwrite)
 
     except Exception as e:
+        # Preprocessing failed
+
         if 'method' not in locals():
             method = 'import_data'
             func = import_data
+
         logger.critical("**********************")
         logger.critical("* PROCESSING FAILED! *")
         logger.critical("**********************")
+
         ex_type, ex_value, ex_traceback = sys.exc_info()
         logger.error("{0} : {1}".format(method, func))
         logger.error(ex_type)
         logger.error(ex_value)
         logger.error(traceback.print_tb(ex_traceback))
-        if outdir is not None:
-            with open(logfile.replace(".log", ".error.log"), "w") as f:
-                f.write('Processing filed during stage : "{0}"'.format(method))
-                f.write(str(ex_type))
-                f.write("\n")
-                f.write(str(ex_value))
-                f.write("\n")
-                traceback.print_tb(ex_traceback, file=f)
 
-        # Return flag to indicate preprocessing failed
+        with open(logfile.replace(".log", ".error.log"), "w") as f:
+            f.write('Processing filed during stage : "{0}"'.format(method))
+            f.write(str(ex_type))
+            f.write("\n")
+            f.write(str(ex_value))
+            f.write("\n")
+            traceback.print_tb(ex_traceback, file=f)
+
         return False
 
     now = strftime("%Y-%m-%d %H:%M:%S", localtime())
     logger.info("{0} : Processing Complete".format(now))
 
-    if ret_dataset:
-        return dataset
-    else:
-        # Return flag to indicate preprocessing was successful
-        return True
+    # Generate report data
+    if gen_report:
+        from ..report import gen_html_data  # avoids circular import
+        logger.info("{0} : Generating Report".format(now))
+        reportdir = validate_outdir(reportdir / run_id)
+        gen_html_data(dataset["raw"], reportdir)
+
+    return True
 
 
 def run_proc_batch(
     config,
     files,
     outdir=None,
+    logsdir=None,
+    reportdir=None,
+    gen_report=True,
     overwrite=False,
     extra_funcs=None,
-    nprocesses=1,
     verbose="INFO",
     mneverbose="WARNING",
     strictrun=False,
-    dask_client=None
+    dask_client=False,
 ):
     """Run batched preprocessing.
 
-    This function will write output to disk (i.e. will not return the preprocessed data).
+    This function will write output to disk (i.e. will not return the preprocessed
+    data).
 
     Parameters
     ----------
@@ -634,12 +653,16 @@ def run_proc_batch(
         textfile list of filenames.
     outdir : str
         Output directory.
+    logsdir : str
+        Directory to save log files to.
+    reportdir : str
+        Directory to save report files to.
+    gen_report : bool
+        Should we generate a report?
     overwrite : bool
         Should we overwrite the output file if it exists?
     extra_funcs : list
         User-defined functions.
-    nprocesses : int
-        Number of processes to run in parallel.
     verbose : str
         Level of info to print.
         Can be: CRITICAL, ERROR, WARNING, INFO, DEBUG or NOTSET.
@@ -648,8 +671,9 @@ def run_proc_batch(
         Can be: CRITICAL, ERROR, WARNING, INFO, DEBUG or NOTSET.
     strictrun : bool
         Should we ask for confirmation of user inputs before starting?
-    dask_client : None or True
-        Indicate whether to use a previously initialised dask.distributed.Client instance.
+    dask_client : bool
+        Indicate whether to use a previously initialised dask.distributed.Client
+        instance.
 
     Returns
     -------
@@ -661,13 +685,15 @@ def run_proc_batch(
         # Use the current working directory
         outdir = os.getcwd()
     outdir = validate_outdir(outdir)
+    logsdir = validate_outdir(logsdir or outdir / "logs")
+    reportdir = validate_outdir(reportdir or outdir / "report")
 
     # Initialise Loggers
     mne.set_log_level(mneverbose)
     if strictrun and verbose not in ['INFO', 'DEBUG']:
         # override logger level if strictrun requested but user won't see any info...
         verobse = 'INFO'
-    logfile = os.path.join(outdir, 'osl_batch.log')
+    logfile = os.path.join(logsdir, 'osl_batch.log')
     osl_logger.set_up(log_file=logfile, level=verbose, startup=False)
 
     logger.info('Starting OSL Batch Processing')
@@ -699,36 +725,25 @@ def run_proc_batch(
         if strictrun:
             logger.info('User confirms input config')
 
-    outdir = validate_outdir(outdir)
-
-    name_base = '{run_id}_{ftype}.{fext}'
-    outbase = outdir / name_base
-
     # Create partial function with fixed options
     pool_func = partial(
         run_proc_chain,
         outdir=outdir,
-        ret_dataset=False,
+        logsdir=logsdir,
         overwrite=overwrite,
         extra_funcs=extra_funcs,
     )
 
     # Loop through input files to generate arguments for run_proc_chain
     args = []
-    for idx, infif in enumerate(infiles):
-        if outnames is None:
-            outname = None
-        else:
-            outname = outnames[idx]
-        args.append((infif, config, outname))
+    for infile, outname in zip(infiles, outnames):
+        args.append((infile, config, outname))
 
     # Actually run the processes
-    if dask_client is None:
-        proc_flags = [pool_func(*aa) for aa in args]
-    else:
-        # Return results as we've fixed ret_dataset to false for batch processing
-        #proc_flags = utils.parallel.dask_parallel(dask_client, pool_func, args, ret_results=True)
+    if dask_client:
         proc_flags = dask_parallel_bag(pool_func, args)
+    else:
+        proc_flags = [pool_func(*aa) for aa in args]
 
     logger.info(
         "Processed {0}/{1} files successfully".format(
@@ -736,7 +751,16 @@ def run_proc_batch(
         )
     )
 
-    # Return failed flags
+    # Generate a report
+    if gen_report:
+        from ..report import raw_report # avoids circular import
+        raw_report.gen_html_page(reportdir)
+
+        print("******************************" + "*" * len(str(reportdir)))
+        print("* REMEMBER TO CHECK REPORT:", reportdir, "*")
+        print("******************************" + "*" * len(str(reportdir)))
+
+    # Return flags
     return proc_flags
 
 
@@ -759,15 +783,18 @@ def main(argv=None):
         "outdir", type=str, help="Path to output directory to save data in"
     )
     parser.add_argument(
+        "logsdir", type=str, help="Path to logs directory"
+    )
+    parser.add_argument(
+        "reportdir", type=str, help="Path to report directory"
+    )
+    parser.add_argument(
+        "gen_report", type=bool, help="Should we generate a report?"
+    )
+    parser.add_argument(
         "--overwrite",
         action="store_true",
         help="Overwrite previous output files if they're in the way",
-    )
-    parser.add_argument(
-        "--nprocesses",
-        type=int,
-        default=1,
-        help="Number of jobs to process in parallel",
     )
     parser.add_argument(
         "--verbose",

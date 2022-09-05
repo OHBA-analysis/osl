@@ -1,3 +1,10 @@
+"""File handling utility functions.
+
+"""
+
+# Authors: Andrew Quinn <a.quinn@bham.ac.uk>
+#          Chetan Gohil <chetan.gohil@psych.ox.ac.uk>
+
 import os
 import mne
 import csv

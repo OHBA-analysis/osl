@@ -1,4 +1,5 @@
 #!/usr/bin/env python
+
 """Full pipeline for getting parcel time series from Nottingham MEG UK partnership data.
 
 Includes preprocessing, beamforming and parcellation.

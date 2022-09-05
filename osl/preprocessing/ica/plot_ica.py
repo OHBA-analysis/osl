@@ -1,5 +1,8 @@
-# OSL plotting function for ICA, adapting MNE functions
-# MWJ van Es, 2022
+"""Plotting functions for ICA.
+
+"""
+
+# Authors: Mats van Es <mats.vanes@psych.ox.ac.uk>
 
 
 def plot_ica(

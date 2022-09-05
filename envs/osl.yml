@@ -1,7 +1,7 @@
 name: osl
 channels:
 dependencies:
-   - python
-   - pip
-   - pip:
-     - git+https://github.com/OHBA-analysis/oslpy.git
+- python
+- pip
+- pip:
+ - git+https://github.com/OHBA-analysis/oslpy.git

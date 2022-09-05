@@ -4,6 +4,9 @@
 
 """
 
+# Authors: Mark Woolrich <mark.woolrich@ohba.ox.ac.uk>
+#          Chetan Gohil <chetan.gohil@psych.ox.ac.uk>
+
 import os
 import os.path as op
 
@@ -619,7 +622,6 @@ def rhino_icp(smri_headshape_polhemus, polhemus_headshape_polhemus, Ninits=10):
                 plt.show()
                 plt.draw()
 
-        #####
         # Give the registration a kick...
         a = (np.random.uniform() - 0.5) * np.pi / 6
         b = (np.random.uniform() - 0.5) * np.pi / 6
@@ -1522,3 +1524,23 @@ def _prepare_beamformer_input(
     # Get the projector
     proj, _, _ = make_projector(info_picked["projs"], info_picked["ch_names"])
     return (is_free_ori, info_picked, proj, vertno, gain, whitener, nn, orient_std)
+
+
+def save_or_show_renderer(renderer, filename):
+    """Save or show a renderer.
+
+    Parameters
+    ----------
+    renderer : mne.viz.backends._notebook._Renderer Object
+        MNE renderer object.
+    filename : str
+        Filename to save display to (as an interactive html).
+        Must have extension .html. If None we display the renderer.
+    """
+    if filename is None:
+        renderer.show()
+    else:
+        if ".html" not in str(filename):
+            raise ValueError("filename must have extension .html")
+        print("Saving", filename)
+        renderer.figure.plotter.export_html(filename)
