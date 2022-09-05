@@ -121,10 +121,12 @@ def gen_html_data(raw, outdir, coreg=None):
                                  headers=['Digitisation Stage', 'Points Acquired'])
 
     # Events
-    ev = mne.find_events(raw, min_duration=5/raw.info['sfreq'], verbose=False)
-    ev, evcounts = np.unique(ev[:, 2], return_counts=True)
-    data['eventtable'] = tabulate(np.c_[ev, evcounts], tablefmt='html',
-                                  headers=['Event Code', 'Value'])
+    stim_channel = mne.pick_types(raw.info, meg=False, ref_meg=False, stim=True)
+    if len(stim_channel) > 0:
+        ev = mne.find_events(raw, min_duration=5/raw.info['sfreq'], verbose=False)
+        ev, evcounts = np.unique(ev[:, 2], return_counts=True)
+        data['eventtable'] = tabulate(np.c_[ev, evcounts], tablefmt='html',
+                                      headers=['Event Code', 'Value'])
 
     # Bad segments
     durs = np.array([r['duration'] for r in raw.annotations])
