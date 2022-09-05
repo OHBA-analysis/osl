@@ -40,6 +40,8 @@ def process_file_inputs(inputs):
             infiles = glob.glob(inputs)
             outnames = [find_run_id(f) for f in infiles]
     elif isinstance(inputs, (list, tuple)):
+        if len(inputs) == 0:
+            raise ValueError("inputs is an empty list!")
         if isinstance(inputs[0], str):
             # We have a list of paths
             infiles = [sanitise_filepath(f) for f in inputs]
