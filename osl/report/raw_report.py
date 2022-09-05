@@ -1,4 +1,8 @@
-#!/usr/bin/env python3
+#!/usr/bin/env python
+
+"""Reporting tool.
+
+"""
 
 import os
 import mne
