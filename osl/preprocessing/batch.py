@@ -783,6 +783,15 @@ def main(argv=None):
         "outdir", type=str, help="Path to output directory to save data in"
     )
     parser.add_argument(
+        "logsdir", type=str, help="Path to logs directory"
+    )
+    parser.add_argument(
+        "reportdir", type=str, help="Path to report directory"
+    )
+    parser.add_argument(
+        "gen_report", type=bool, help="Should we generate a report?"
+    )
+    parser.add_argument(
         "--overwrite",
         action="store_true",
         help="Overwrite previous output files if they're in the way",
