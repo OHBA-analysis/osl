@@ -7,7 +7,9 @@
 # Authors: Chetan Gohil <chetan.gohil@psych.ox.ac.uk>
 
 import os
+import sys
 import pathlib
+import traceback
 from time import localtime, strftime
 from functools import partial
 
@@ -115,7 +117,7 @@ def run_coreg_chain(
         logger.error(traceback.print_tb(ex_traceback))
 
         with open(logfile.replace(".log", ".error.log"), "w") as f:
-            f.write('Processing filed during stage : "{0}"'.format(method))
+            f.write('Processing filed during stage : "{0}"'.format(current_status))
             f.write(str(ex_type))
             f.write("\n")
             f.write(str(ex_value))
