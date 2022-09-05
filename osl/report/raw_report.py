@@ -822,16 +822,14 @@ def main(argv=None):
         argv = sys.argv[1:]
 
     parser = argparse.ArgumentParser(description='Run a quality control summary on data.')
-    parser.add_argument('files', type=str, nargs='+',
+    parser.add_argument('files', type=str,
                         help='plain text file containing full paths to files to be processed')
-    parser.add_argument('--outdir', type=str, default=None,
+    parser.add_argument('outdir', type=str, 
                         help='Path to output directory to save data in')
-    parser.add_argument('--preproc_config', type=str,
-                        help='yaml defining preprocessing')
 
     args = parser.parse_args(argv)
 
-    gen_report(args.files, args.outdir, args.preproc_config)
+    gen_report_from_fif(args.files, args.outdir, args.preproc_config)
 
 
 if __name__ == '__main__':
