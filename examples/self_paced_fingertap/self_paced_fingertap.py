@@ -4,6 +4,9 @@
 Note to self: See ~/CloudDocs/scripts/notts_ctf_fingertap.m for matlab equivalent
 """
 
+# Authors: Mark Woolrich <mark.woolrich@ohba.ox.ac.uk>
+#          Chetan Gohil <chetan.gohil@psych.ox.ac.uk>
+
 import glmtools
 import os
 import os.path as op
@@ -39,10 +42,8 @@ chantypes = ["mag"]
 
 gridstep = 8  # mm
 
-# ------------- #
-# Preprocessing #
-# ------------- #
-
+# -------------
+# Preprocessing
 if run_preproc:
     config = """
         preproc:
@@ -55,9 +56,8 @@ if run_preproc:
         ds_file, config, outdir=op.join(subjects_dir, subject), overwrite=True
     )
 
-# ------------ #
-# Get the data #
-# ------------ #
+# ------------
+# Get the data
 raw = mne.io.read_raw_fif(fif_file)
 raw.pick(chantypes)
 raw.load_data()
@@ -70,9 +70,8 @@ raw.filter(
     iir_params={"order": 5, "btype": "bandpass", "ftype": "butter"},
 )
 
-# ----------------------- #
-# Establish design matrix #
-# ----------------------- #
+# -----------------------
+# Establish design matrix
 
 # As this experiment consists of a sequence of blocks of sustained
 # motor tasks, instead of epoching and doing a trial-wise GLM, we are going
@@ -136,7 +135,7 @@ glmdes = glmtools.design.GLMDesign.initialise_from_matrices(
     contrast_names=contrast_names,
 )
 
-# glmdes.plot_summary()
+#glmdes.plot_summary()
 
 
 def glm_fast(data, design_matrix, contrasts):
@@ -156,9 +155,8 @@ def glm_fast(data, design_matrix, contrasts):
     return tstat, cope
 
 
-# ---------------------- #
-# Do GLM in sensor space #
-# ---------------------- #
+# ----------------------
+# Do GLM in sensor space
 
 if run_sensorspace:
 
@@ -201,10 +199,9 @@ if run_sensorspace:
 
 else:
 
-    # -------------------------------------------------------------------------- #
-    # Get polhemus fids and headshape points into required file format for rhino #
-    # i.e. in polhemus space in mm                                               #
-    # -------------------------------------------------------------------------- #
+    # --------------------------------------------------------------------------
+    # Get polhemus fids and headshape points into required file format for rhino
+    # i.e. in polhemus space in mm
 
     # setup filenames
     polhemus_nasion_file = op.join(subjects_dir, subject, "polhemus_nasion.txt")
@@ -251,9 +248,8 @@ else:
     np.savetxt(polhemus_lpa_file, polhemus_lpa_polhemus)
     np.savetxt(polhemus_headshape_file, polhemus_headshape_polhemus)
 
-    # -------------------------------------- #
-    # Compute surfaces, coreg, forward model #
-    # -------------------------------------- #
+    # --------------------------------------
+    # Compute surfaces, coreg, forward model
     if run_compute_surfaces:
         rhino.compute_surfaces(
             smri_file, subjects_dir, subject, include_nose=True, cleanup_files=True
@@ -300,9 +296,8 @@ else:
             display_sensors=True,
         )
 
-    # ------------------------- #
-    # Take a look at leadfields #
-    # ------------------------- #
+    # -------------------------
+    # Take a look at leadfields
 
     # We can explore the content of fwd to access the numpy array that contains
     # the gain matrix
@@ -314,9 +309,8 @@ else:
     leadfield = fwd["sol"]["data"]
     print("Leadfield size : %d sensors x %d dipoles" % leadfield.shape)
 
-    # ------------ #
-    # Source recon #
-    # ------------ #
+    # ------------
+    # Source recon
 
     # make LCMV filter
     filters = rhino.make_lcmv(
@@ -394,9 +388,8 @@ else:
 
         np.save(op.join(subjects_dir, subject, "data_cov"), data_cov.data)
 
-    # ------------------------------------------------------------ #
-    # Fit GLM to hilbert envelope in source space contained in stc #
-    # ------------------------------------------------------------ #
+    # ------------------------------------------------------------
+    # Fit GLM to hilbert envelope in source space contained in stc
 
     # hilbert transform gave us complex data, we want the amplitude
     data = np.abs(stc.data)

@@ -5,6 +5,9 @@
 Includes preprocessing, beamforming and parcellation.
 """
 
+# Authors: Mark Woolrich <mark.woolrich@ohba.ox.ac.uk>
+#          Chetan Gohil <chetan.gohil@psych.ox.ac.uk>
+
 import os
 import os.path as op
 from os import makedirs

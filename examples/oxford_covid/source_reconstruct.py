@@ -2,6 +2,8 @@
 
 """
 
+# Authors: Chetan Gohil <chetan.gohil@psych.ox.ac.uk>
+
 import numpy as np
 from osl import rhino, parcellation, preprocessing
 from mne.beamformer import apply_lcmv_raw
