@@ -30,7 +30,7 @@ for subject in SUBJECTS:
     preproc_files.append(PREPROC_FILE.format(subject))
 
 # Coregistration
-rhino.coregister(
+rhino.run_coreg_batch(
     coreg_dir=COREG_DIR,
     subjects=SUBJECTS,
     raw_files=raw_files,
