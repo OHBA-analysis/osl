@@ -4,7 +4,7 @@
 
 """
 
-# Authors: Chetan Gohil <chetan.gohli@psych.ox.ac.uk>
+# Authors: Chetan Gohil <chetan.gohil@psych.ox.ac.uk>
 
 import os
 import pathlib
@@ -317,7 +317,7 @@ def main(argv=None):
     parser.usage = parser.format_help()
     args = parser.parse_args(argv)
 
-    run_proc_batch(**vars(args))
+    run_coreg_batch(**vars(args))
 
 
 if __name__ == "__main__":
