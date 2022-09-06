@@ -16,6 +16,7 @@ ANAT_DIR = "/ohba/pi/mwoolrich/datasets/CamCan_2021/cc700/mri/pipeline/release00
 PREPROC_DIR = "/ohba/pi/mwoolrich/cgohil/camcan/preproc"
 SRC_DIR = "/ohba/pi/mwoolrich/cgohil/camcan/src"
 COREG_DIR = SRC_DIR + "/coreg"
+FSL_DIR = "/home/cgohil/local/fsl"
 
 # Files
 SMRI_FILE = ANAT_DIR + "/{0}/anat/{0}_T1w.nii"
@@ -48,7 +49,7 @@ if __name__ == "__main__":
         subjects.append(pathlib.Path(subject).stem.split("_")[0])
 
     # Setup
-    source_recon.setup_fsl("/home/cgohil/local/fsl")
+    source_recon.setup_fsl(FSL_DIR)
 
     smri_files = []
     preproc_files = []

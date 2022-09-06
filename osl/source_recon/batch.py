@@ -45,6 +45,9 @@ def run_coreg_chain(
     verbose="INFO",
     mneverbose="WARNING",
 ):
+    # Make sure we have FSL installed
+    rhino_utils.check_fsl()
+
     # Get run ID
     run_id = find_run_id(preproc_file)
 
@@ -317,6 +320,9 @@ def run_bf_parc_chain(
     verbose,
     mneverbose,
 ):
+    # Make sure we have FSL installed
+    rhino_utils.check_fsl()
+
     # Get run ID
     run_id = find_run_id(preproc_file)
 

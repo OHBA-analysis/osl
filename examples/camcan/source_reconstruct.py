@@ -15,12 +15,17 @@ from osl import source_recon, utils
 PREPROC_DIR = "/ohba/pi/mwoolrich/cgohil/camcan/preproc"
 SRC_DIR = "/ohba/pi/mwoolrich/cgohil/camcan/src"
 COREG_DIR = SRC_DIR + "/coreg"
-PREPROC_FILE = PREPROC_DIR + "/{0}_ses-rest_task-rest_meg_preproc_raw.fif"
+FSL_DIR = "/home/cgohil/local/fsl"
 
+# Files
+PREPROC_FILE = PREPROC_DIR + "/{0}_ses-rest_task-rest_meg_preproc_raw.fif"
 PARCELLATION_FILE = "fmri_d100_parcellation_with_PCC_reduced_2mm_ss5mm_ds8mm.nii.gz"
 
 if __name__ == "__main__":
     utils.logger.set_up(level="INFO")
+
+    # Setup
+    source_recon.setup_fsl(FSL_DIR)
 
     # Get subjects
     subjects = []
