@@ -11,15 +11,23 @@ from dask.distributed import Client
 
 from osl import source_recon, utils
 
-# Directories
+
 PREPROC_DIR = "/ohba/pi/mwoolrich/cgohil/camcan/preproc"
 SRC_DIR = "/ohba/pi/mwoolrich/cgohil/camcan/src"
-COREG_DIR = SRC_DIR + "/coreg"
 FSL_DIR = "/home/cgohil/local/fsl"
-
-# Files
 PREPROC_FILE = PREPROC_DIR + "/{0}_ses-rest_task-rest_meg_preproc_raw.fif"
-PARCELLATION_FILE = "fmri_d100_parcellation_with_PCC_reduced_2mm_ss5mm_ds8mm.nii.gz"
+
+# Settings
+config = """
+    beamforming:
+        freq_range: [1, 45]
+        chantypes: meg
+        ranks: 60
+    parcellation:
+        file: fmri_d100_parcellation_with_PCC_reduced_2mm_ss5mm_ds8mm.nii.gz
+        method: spatial_basis
+        orthogonalisation: symmetric
+"""
 
 if __name__ == "__main__":
     utils.logger.set_up(level="INFO")
@@ -37,26 +45,14 @@ if __name__ == "__main__":
     for subject in subjects:
         preproc_files.append(PREPROC_FILE.format(subject))
 
-    # Channels to use
-    chantypes = ["meg"]
-    rank = {"meg": 60}
-
-    print("Channel types to use:", chantypes)
-    print("Channel types and ranks for source recon:", rank)
-
     # Setup parallel processing
     client = Client(n_workers=2, threads_per_worker=1)
 
     # Beamforming and parcellation
-    source_recon.run_bf_parc_batch(
-        preproc_files,
-        subjects,
-        chantypes,
-        rank,
-        PARCELLATION_FILE,
-        orthogonalise=True,
-        freq_range=[1, 45],
+    source_recon.run_src_batch(
+        config,
+        subjects=subjects,
+        preproc_files=preproc_files,
         src_dir=SRC_DIR,
-        coreg_dir=COREG_DIR,
         dask_client=True,
     )

@@ -11,17 +11,25 @@ from dask.distributed import Client
 
 from osl import source_recon, utils
 
+
 # Directories
 ANAT_DIR = "/ohba/pi/mwoolrich/datasets/CamCan_2021/cc700/mri/pipeline/release004/BIDS_20190411/anat"
 PREPROC_DIR = "/ohba/pi/mwoolrich/cgohil/camcan/preproc"
 SRC_DIR = "/ohba/pi/mwoolrich/cgohil/camcan/src"
-COREG_DIR = SRC_DIR + "/coreg"
 FSL_DIR = "/home/cgohil/local/fsl"
 
 # Files
 SMRI_FILE = ANAT_DIR + "/{0}/anat/{0}_T1w.nii"
 PREPROC_FILE = PREPROC_DIR + "/{0}_ses-rest_task-rest_meg_preproc_raw.fif"
 
+# Settings
+config = """
+    coregistration:
+        model: Single Layer
+        use_headshape: true
+        include_nose: true
+        use_nose: true
+"""
 
 def remove_points(
     polhemus_headshape_file,
@@ -38,7 +46,6 @@ def remove_points(
     keep = distances > 70  # keep headshape points more than 7cm away
     hs = hs[:, keep]
     np.savetxt(polhemus_headshape_file, hs)
-
 
 if __name__ == "__main__":
     utils.logger.set_up(level="INFO")
@@ -61,14 +68,12 @@ if __name__ == "__main__":
     client = Client(n_workers=2, threads_per_worker=1)
 
     # Coregistration
-    source_recon.run_coreg_batch(
-        coreg_dir=COREG_DIR,
+    source_recon.run_src_batch(
+        config,
         subjects=subjects,
         preproc_files=preproc_files,
         smri_files=smri_files,
-        model="Single Layer",
-        include_nose=False,
-        use_nose=False,
+        src_dir=SRC_DIR,
         edit_polhemus_func=remove_points,
         dask_client=True,
     )
