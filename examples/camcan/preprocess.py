@@ -33,7 +33,7 @@ if __name__ == "__main__":
     inputs = inputs[:2]
 
     # Setup parallel processing
-    client = Client(n_workers=4, threads_per_worker=1)
+    client = Client(n_workers=2, threads_per_worker=1)
 
     # Main preprocessing
     preprocessing.run_proc_batch(

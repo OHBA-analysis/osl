@@ -7,8 +7,9 @@
 import numpy as np
 import pathlib
 from glob import glob
+from dask.distributed import Client
 
-from osl import source_recon
+from osl import source_recon, utils
 
 # Directories
 ANAT_DIR = "/ohba/pi/mwoolrich/datasets/CamCan_2021/cc700/mri/pipeline/release004/BIDS_20190411/anat"
@@ -38,28 +39,35 @@ def remove_points(
     np.savetxt(polhemus_headshape_file, hs)
 
 
-# Get subjects
-subjects = []
-for subject in glob(PREPROC_DIR + "/sub-*"):
-    subjects.append(pathlib.Path(subject).stem.split("_")[0])
+if __name__ == "__main__":
+    utils.logger.set_up(level="INFO")
 
-# Setup
-source_recon.setup_fsl("/home/cgohil/local/fsl")
+    # Get subjects
+    subjects = []
+    for subject in glob(PREPROC_DIR + "/sub-*"):
+        subjects.append(pathlib.Path(subject).stem.split("_")[0])
 
-smri_files = []
-preproc_files = []
-for subject in subjects:
-    smri_files.append(SMRI_FILE.format(subject))
-    preproc_files.append(PREPROC_FILE.format(subject))
+    # Setup
+    source_recon.setup_fsl("/home/cgohil/local/fsl")
 
-# Coregistration
-source_recon.run_coreg_batch(
-    coreg_dir=COREG_DIR,
-    subjects=subjects,
-    preproc_files=preproc_files,
-    smri_files=smri_files,
-    model="Single Layer",
-    include_nose=False,
-    use_nose=False,
-    edit_polhemus_func=remove_points,
-)
+    smri_files = []
+    preproc_files = []
+    for subject in subjects:
+        smri_files.append(SMRI_FILE.format(subject))
+        preproc_files.append(PREPROC_FILE.format(subject))
+
+    # Setup parallel processing
+    client = Client(n_workers=2, threads_per_worker=1)
+
+    # Coregistration
+    source_recon.run_coreg_batch(
+        coreg_dir=COREG_DIR,
+        subjects=subjects,
+        preproc_files=preproc_files,
+        smri_files=smri_files,
+        model="Single Layer",
+        include_nose=False,
+        use_nose=False,
+        edit_polhemus_func=remove_points,
+        dask_client=True,
+    )

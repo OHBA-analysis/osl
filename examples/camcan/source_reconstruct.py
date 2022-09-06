@@ -7,10 +7,9 @@
 import numpy as np
 import pathlib
 from glob import glob
-from mne.beamformer import apply_lcmv_raw
+from dask.distributed import Client
 
-from osl import preprocessing
-from osl.source_recon import beamforming, parcellation
+from osl import source_recon, utils
 
 # Directories
 PREPROC_DIR = "/ohba/pi/mwoolrich/cgohil/camcan/preproc"
@@ -18,67 +17,41 @@ SRC_DIR = "/ohba/pi/mwoolrich/cgohil/camcan/src"
 COREG_DIR = SRC_DIR + "/coreg"
 PREPROC_FILE = PREPROC_DIR + "/{0}_ses-rest_task-rest_meg_preproc_raw.fif"
 
-# Get subjects
-subjects = []
-for subject in glob(PREPROC_DIR + "/sub-*"):
-    subjects.append(pathlib.Path(subject).stem.split("_")[0])
+PARCELLATION_FILE = "fmri_d100_parcellation_with_PCC_reduced_2mm_ss5mm_ds8mm.nii.gz"
 
-# Files
-preproc_files = []
-for subject in subjects:
-    preproc_files.append(PREPROC_FILE.format(subject))
+if __name__ == "__main__":
+    utils.logger.set_up(level="INFO")
 
-# Channels to use
-chantypes = ["meg"]
-rank = {"meg": 60}
+    # Get subjects
+    subjects = []
+    for subject in glob(PREPROC_DIR + "/sub-*"):
+        subjects.append(pathlib.Path(subject).stem.split("_")[0])
 
-print("Channel types to use:", chantypes)
-print("Channel types and ranks for source recon:", rank)
+    # Files
+    preproc_files = []
+    for subject in subjects:
+        preproc_files.append(PREPROC_FILE.format(subject))
 
-parcellation_file = "fmri_d100_parcellation_with_PCC_reduced_2mm_ss5mm_ds8mm.nii.gz"
+    # Channels to use
+    chantypes = ["meg"]
+    rank = {"meg": 60}
 
-for preproc_file, subject in zip(preproc_files, subjects):
-    print("\nSubject", subject)
-    print("--------" + "-" * len(subject) + "\n")
+    print("Channel types to use:", chantypes)
+    print("Channel types and ranks for source recon:", rank)
 
-    # Load preprocessed data
-    preproc_data = preprocessing.import_data(preproc_file)
-    preproc_data.pick(chantypes)
+    # Setup parallel processing
+    client = Client(n_workers=2, threads_per_worker=1)
 
-    # Bandpass filter
-    preproc_data = preproc_data.filter(
-        l_freq=1, h_freq=45, method="iir", iir_params={"order": 5, "ftype": "butter"}
+    # Beamforming and parcellation
+    source_recon.run_bf_parc_batch(
+        preproc_files,
+        subjects,
+        chantypes,
+        rank,
+        PARCELLATION_FILE,
+        orthogonalise=True,
+        freq_range=[1, 45],
+        src_dir=SRC_DIR,
+        coreg_dir=COREG_DIR,
+        dask_client=True,
     )
-
-    # Beamforming
-    filters = beamforming.make_lcmv(
-        subjects_dir=COREG_DIR,
-        subject=subject,
-        dat=preproc_data,
-        chantypes=chantypes,
-        weight_norm="nai",
-        rank=rank,
-    )
-    src_data = apply_lcmv_raw(preproc_data, filters)
-    src_ts_mni, _, src_coords_mni, _ = beamforming.transform_recon_timeseries(
-        subjects_dir=COREG_DIR,
-        subject=subject,
-        recon_timeseries=src_data.data,
-    )
-
-    # Parcellation
-    p = parcellation.Parcellation(parcellation_file)
-    p.parcellate(
-        voxel_timeseries=src_ts_mni,
-        voxel_coords=src_coords_mni,
-        method="spatial_basis",
-    )
-    parcel_ts = p.parcel_timeseries["data"]
-
-    # Orthgonalisation
-    parcel_ts = parcellation.symmetric_orthogonalise(
-        parcel_ts, maintain_magnitudes=True
-    )
-
-    # Save parcellated data
-    np.save(SRC_DIR + "/" + subject + ".npy", parcel_ts)

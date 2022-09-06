@@ -38,6 +38,7 @@ def make_lcmv(
     depth=None,
     inversion="matrix",
     verbose=None,
+    batch_mode=False,
 ):
     """Compute LCMV spatial filter.
 
@@ -69,6 +70,8 @@ def make_lcmv(
         The regularization for the whitened data covariance.
     label : instance of Label
         Restricts the LCMV solution to a given label.
+    batch_mode : bool
+        Are we running in batch mode?
 
     Returns
     -------
@@ -128,7 +131,8 @@ def make_lcmv(
                 matrix inversion.
     """
 
-    print("\n*** RUNNING OSL MAKE LCMV ***")
+    if not batch_mode:
+        print("\n*** RUNNING OSL MAKE LCMV ***")
 
     # load forward solution
     fwd_fname = rhino.get_coreg_filenames(subjects_dir, subject)["forward_model_file"]
@@ -171,6 +175,7 @@ def make_lcmv(
         # osl_normalise_sensor_data.m function in Matlab OSL does,
         # by computing a diagonal noise cov with the variances set to the mean
         # variance of each sensor type (e.g. mag, grad, eeg.)
+        variances = {}
         for type in chantypes:
             dat_type = dat.copy().pick(type, exclude="bads")
             noise_cov_diag = np.zeros([data_cov.data.shape[0]])
@@ -180,10 +185,11 @@ def make_lcmv(
             for ch_name in dat_type.info["ch_names"]:
                 inds.append(data_cov.ch_names.index(ch_name))
 
-            tmp = np.mean(np.diag(data_cov.data)[inds])
-            noise_cov_diag[inds] = tmp
+            variances[type] = np.mean(np.diag(data_cov.data)[inds])
+            noise_cov_diag[inds] = variances[type]
 
-            print("Variance for chan type {} is {}".format(type, tmp))
+            if not batch_mode:
+                print("Variance for chan type {} is {}".format(type, variances[type]))
 
         bads = [b for b in dat.info["bads"] if b in data_cov.ch_names]
         noise_cov = Covariance(
@@ -204,9 +210,13 @@ def make_lcmv(
         verbose=verbose,
     )
 
-    print("*** OSL MAKE LCMV COMPLETE ***\n")
+    if not batch_mode:
+        print("*** OSL MAKE LCMV COMPLETE ***\n")
 
-    return filters
+    if batch_mode:
+        return filters, variances
+    else:
+        return filters
 
 
 def get_recon_timeseries(subjects_dir, subject, coord_mni, recon_timeseries_head):
@@ -266,6 +276,7 @@ def transform_recon_timeseries(
     recon_timeseries,
     spatial_resolution=None,
     reference_brain="mni",
+    batch_mode=False,
 ):
     """Spatially resamples a (ndipoles x ntpts) array of reconstructed time
     courses (in head/polhemus space) to dipoles on the brain grid of the specified
@@ -293,6 +304,8 @@ def transform_recon_timeseries(
         'mni' indicates that the reference_brain is the stdbrain in MNI space
         'mri' indicates that the reference_brain is the subject's sMRI in
         native/mri space.
+    batch_mode : bool
+        Are we in batch mode?
 
     Returns
     -------
@@ -329,7 +342,8 @@ def transform_recon_timeseries(
             store.append(np.sqrt(np.sum(np.square(rr[ii, :] - rr[0, :]))))
         store = np.asarray(store)
         spatial_resolution = int(np.round(np.min(store[np.where(store > 0)]) * 1000))
-        print("Using spatial_resolution = {}mm".format(spatial_resolution))
+        if not batch_mode:
+            print("Using spatial_resolution = {}mm".format(spatial_resolution))
 
     spatial_resolution = int(spatial_resolution)
 

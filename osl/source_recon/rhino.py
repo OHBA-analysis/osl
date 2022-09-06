@@ -1194,7 +1194,7 @@ To turn this off, set use_dev_ctf_t=False"
         xform_mri_voxel2mri=mrivoxel_mri_t["trans"],
     )
 
-    print("*** OSL RHINO COREGISTRATION COMPLETE ***\n")
+    print("*** OSL RHINO COREGISTRATION COMPLETE ***")
 
 
 def coreg_display(
