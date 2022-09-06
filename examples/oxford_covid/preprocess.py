@@ -2,6 +2,8 @@
 
 """
 
+# Authors: Chetan Gohil <chetan.gohil@psych.ox.ac.uk>
+
 from osl import preprocessing
 
 RAW_FILE = "/ohba/pi/knobre/datasets/covid/rawbids/sub-{0}/meg/sub-{0}_task-restEO.fif"

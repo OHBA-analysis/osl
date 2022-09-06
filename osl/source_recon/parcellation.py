@@ -17,8 +17,8 @@ import scipy.sparse.linalg
 from scipy.spatial import KDTree
 from nilearn.plotting import plot_markers
 
-import osl.rhino.utils as rhino_utils
-from ..utils import soft_import
+from osl.source_recon import rhino_utils
+from osl.utils import soft_import
 
 
 class Parcellation:
@@ -73,7 +73,12 @@ class Parcellation:
         return plot_parcellation(self, **kwargs)
 
     def parcellate(
-        self, voxel_timeseries, voxel_coords, method="spatial_basis", working_dir=None
+        self,
+        voxel_timeseries,
+        voxel_coords,
+        method="spatial_basis",
+        working_dir=None,
+        batch_mode=False,
     ):
         """Parcellate voxel_timeseries
 
@@ -97,6 +102,8 @@ class Parcellation:
         working_dir : str
             Dir to put temp file in. If None, attempt to use same dir as passed in
             parcellation
+        batch_mode : bool
+            Are we in batch mode?
 
         Returns
         -------
@@ -115,7 +122,9 @@ class Parcellation:
                 Boolean assignments indicating for each voxel the winner takes all
                 parcel it belongs to
         """
-        parcellation_asmatrix = _resample_parcellation(self, voxel_coords, working_dir)
+        parcellation_asmatrix = _resample_parcellation(
+            self, voxel_coords, working_dir, batch_mode=batch_mode
+        )
         data, voxel_weightings, voxel_assignments = _get_parcel_timeseries(
             voxel_timeseries, parcellation_asmatrix, method=method
         )
@@ -208,7 +217,9 @@ def plot_parcellation(parcellation, **kwargs):
     )
 
 
-def _resample_parcellation(parcellation, voxel_coords, working_dir=None):
+def _resample_parcellation(
+    parcellation, voxel_coords, working_dir=None, batch_mode=False
+):
     """Resample parcellation so that its voxel coords correspond (using
     nearest neighbour) to passed in voxel_coords. Passed in voxel_coords
     and parcellation must be in the same space, e.g. MNI.
@@ -226,6 +237,8 @@ def _resample_parcellation(parcellation, voxel_coords, working_dir=None):
     working_dir : str
         Dir to put temp file in. If None, attempt to use same dir as passed
         in parcellation
+    batch_mode : bool
+        Are we in batch mode?
 
     Returns
     -------
@@ -234,7 +247,8 @@ def _resample_parcellation(parcellation, voxel_coords, working_dir=None):
     """
 
     gridstep = int(rhino_utils.get_gridstep(voxel_coords.T) / 1000)
-    print("Using gridstep = {}mm".format(gridstep))
+    if not batch_mode:
+        print("Using gridstep = {}mm".format(gridstep))
 
     pth, parcellation_name = op.split(op.splitext(op.splitext(parcellation.file)[0])[0])
 

@@ -5,6 +5,9 @@
 Need to have run rhino/examples/self_paced_fingertap.py first.
 """
 
+# Authors: Mark Woolrich <mark.woolrich@ohba.ox.ac.uk>
+#          Chetan Gohil <chetan.gohil@psych.ox.ac.uk>
+
 import os
 import os.path as op
 
@@ -44,9 +47,8 @@ orthogonalise_parcel_timeseries = True
 rank = {"mag": 125}
 chantypes = ["mag"]
 
-# --------------- #
-# Do source recon #
-# --------------- #
+# ---------------
+# Do source recon
 
 recon_dir = op.join(subjects_dir, subject, "rhino", "recon")
 if not os.path.isdir(recon_dir):
@@ -126,9 +128,8 @@ parcel_timeseries = p.parcellate(
     recon_timeseries_mni, recon_coords_mni, method="spatial_basis"
 )
 
-# ------------- #
-# Orthogonalise #
-# ------------- #
+# -------------
+# Orthogonalise
 
 if orthogonalise_parcel_timeseries:
     # this is nsources x ntpts x ntrials
@@ -157,9 +158,8 @@ if orthogonalise_parcel_timeseries:
     # so that orth time series get used in rest of the script:
     parcel_timeseries["data"] = ortho_timeseries
 
-# ----------------------------------------------------------------- #
-# Compute the power for each parcel and view as a niftii in fsleyes #
-# ----------------------------------------------------------------- #
+# -----------------------------------------------------------------
+# Compute the power for each parcel and view as a niftii in fsleyes
 
 parcel_power = np.mean(parcel_timeseries["data"], axis=1) / np.std(
     parcel_timeseries["data"], axis=1
@@ -168,7 +168,7 @@ rhino.fsleyes_overlay(
     parcellation_background_fname, p.nii(parcel_power, method="assignments")
 )
 
-# -------------------------------------------------------------
+# ------------------------------
 # Fit GLM to parcel time courses
 
 # Establish design matrix

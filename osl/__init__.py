@@ -1,7 +1,5 @@
 #!/usr/bin/python
 
-# vim: set expandtab ts=4 sw=4:
-
 # --------------------------------------------------------
 # If user hasn't configured NumExpr environment the an irritating low-level log
 # is generated. We supress it by setting a default value of 8 if not already
@@ -31,8 +29,7 @@ from . import utils  # noqa: F401, F403
 from . import preprocessing  # noqa: F401, F403
 from . import maxfilter  # noqa: F401, F403
 from . import report  # noqa: F401, F403
-from . import rhino  # noqa: F401, F403
-from . import parcellation  # noqa: F401, F403
+from . import source_recon  # noqa: F401, F403
 
 # --------------------------------------------------------
 osl_logger = logging.getLogger(__name__)

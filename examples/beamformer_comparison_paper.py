@@ -11,6 +11,8 @@ Note: The code is used in the study:
 - 'Comparison of beamformer implementations for MEG source localizations'
 """
 
+# Authors: Mark Woolrich <mark.woolrich@ohba.ox.ac.uk>
+
 from scipy.io import loadmat
 import os
 import os.path as op

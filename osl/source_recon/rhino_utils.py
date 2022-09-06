@@ -52,7 +52,7 @@ from numba import cfunc, carray
 from numba.types import intc, intp, float64, voidptr
 from numba.types import CPointer
 
-from ..utils import soft_import
+from osl.utils import soft_import
 
 import logging
 logging.getLogger("numba").setLevel(logging.WARNING)
@@ -993,7 +993,6 @@ def _make_lcmv(
     filters : instance of Beamformer
         Dictionary containing filter weights from LCMV beamformer.
         Contains the following keys:
-
             'kind' : str
                 The type of beamformer, in this case 'LCMV'.
             'weights' : array
@@ -1046,8 +1045,8 @@ def _make_lcmv(
     Notes
     -----
     Rhino version of mne.beamformer.make_lcmv
-    Note that code that is different to mne.beamformer.make_lcmv is labelled
-    with MWW
+
+    Code that is different to mne.beamformer.make_lcmv is labelled with MWW.
 
     The original reference is :footcite:`VanVeenEtAl1997`.
 

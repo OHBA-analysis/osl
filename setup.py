@@ -17,7 +17,7 @@ setup(name=name,
       license='MIT',
       packages=['osl', 'osl.report', 'osl.maxfilter',
                 'osl.preprocessing', 'osl.utils', 'osl.utils.spmio',
-                'osl.rhino', 'osl.parcellation'],
+                'osl.source_recon'],
       zip_safe=False,
       entry_points={
           'console_scripts': [
