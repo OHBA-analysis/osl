@@ -5,7 +5,7 @@
 # Authors: Chetan Gohil <chetan.gohil@psych.ox.ac.uk>
 
 import os
-from osl import rhino
+from osl import source_recon
 
 # Directories
 RAW_DIR = "/ohba/pi/knobre/datasets/covid/rawbids"
@@ -20,7 +20,7 @@ PREPROC_FILE = PREPROC_DIR + "/sub-{0}_task-restEO_preproc_raw.fif"
 SUBJECTS = ["004", "005"]
 
 # Setup
-rhino.utils.setup_fsl("/home/cgohil/local/fsl")
+source_recon.setup_fsl("/home/cgohil/local/fsl")
 
 smri_files = []
 preproc_files = []
@@ -29,7 +29,7 @@ for subject in SUBJECTS:
     preproc_files.append(PREPROC_FILE.format(subject))
 
 # Coregistration
-rhino.run_coreg_batch(
+source_recon.run_coreg_batch(
     coreg_dir=COREG_DIR,
     subjects=SUBJECTS,
     preproc_files=preproc_files,

@@ -8,7 +8,7 @@ import numpy as np
 import pathlib
 from glob import glob
 
-from osl import rhino
+from osl import source_recon
 
 # Directories
 ANAT_DIR = "/ohba/pi/mwoolrich/datasets/CamCan_2021/cc700/mri/pipeline/release004/BIDS_20190411/anat"
@@ -44,7 +44,7 @@ for subject in glob(PREPROC_DIR + "/sub-*"):
     subjects.append(pathlib.Path(subject).stem.split("_")[0])
 
 # Setup
-rhino.utils.setup_fsl("/home/cgohil/local/fsl")
+source_recon.setup_fsl("/home/cgohil/local/fsl")
 
 smri_files = []
 preproc_files = []
@@ -53,7 +53,7 @@ for subject in subjects:
     preproc_files.append(PREPROC_FILE.format(subject))
 
 # Coregistration
-rhino.run_coreg_batch(
+source_recon.run_coreg_batch(
     coreg_dir=COREG_DIR,
     subjects=subjects,
     preproc_files=preproc_files,

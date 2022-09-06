@@ -1,17 +1,15 @@
-# RHINO Source Reconstruction
+# OSL Source Reconstruction
 
-Tools for coregistration and source reconstruction.
+Tools for source reconstructing MEEG files.
 
 ## Usage
 
-These tools can be called from OSL in a script as follows.
-
 Coregistration:
 ```
-from osl import rhino
+from osl.source_recon import setup_fsl, rhino
 
 # Setup FSL
-rhino.utils.setup_fsl("/path/to/fsl")
+source_recon.setup_fsl("/path/to/fsl")
 
 # Input files: raw fifs, structural MRIs and preprocessed fifs
 raw_files = ['raw1.fif', 'raw2.fif', ...]
@@ -22,7 +20,7 @@ preproc_files = ['preproc_raw1.fif', 'preproc_raw2.fif', ...]
 subjects = ['sub-001', 'sub-002', ...]
 
 # Coregistration
-rhino.run_coreg_batch(
+recon.rhino.run_coreg_batch(
     coreg_dir="/path/to/output/dir"
     subjects=subjects,
     raw_files=raw_files,
@@ -37,7 +35,9 @@ rhino.run_coreg_batch(
 Source reconstruction:
 ```
 import numpy as np
-from osl import preprocessing, rhino, parcellation
+from mne.beamformer import apply_lcmv_raw
+from osl import preprocessing
+from osl.source_recon import beamforming, parcellation
 
 # Channels to use
 chantypes = ["meg"]
@@ -59,7 +59,7 @@ for preproc_file, subject in zip(preproc_files, subjects):
     )
 
     # Beamforming
-    filters = rhino.make_lcmv(
+    filters = beamforming.make_lcmv(
         subjects_dir='/path/to/output/dir',
         subject=subject,
         dat=preproc_data,
@@ -68,7 +68,7 @@ for preproc_file, subject in zip(preproc_files, subjects):
         rank=rank,
     )
     src_data = apply_lcmv_raw(preproc_data, filters)
-    src_ts_mni, _, src_coords_mni, _ = rhino.transform_recon_timeseries(
+    src_ts_mni, _, src_coords_mni, _ = beamforming.transform_recon_timeseries(
         subjects_dir='/path/to/output/dir',
         subject=subject,
         recon_timeseries=src_data.data,

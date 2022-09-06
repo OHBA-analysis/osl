@@ -5,8 +5,10 @@
 # Authors: Chetan Gohil <chetan.gohil@psych.ox.ac.uk>
 
 import numpy as np
-from osl import rhino, parcellation, preprocessing
 from mne.beamformer import apply_lcmv_raw
+
+from osl import preprocessing
+from osl.source_recon import beamforming, parcellation
 
 # Directories
 PREPROC_DIR = "/ohba/pi/knobre/cgohil/covid/preproc"
@@ -44,7 +46,7 @@ for preproc_file, subject in zip(preproc_files, SUBJECTS):
     )
 
     # Beamforming
-    filters = rhino.make_lcmv(
+    filters = beamforming.make_lcmv(
         subjects_dir=COREG_DIR,
         subject=subject,
         dat=preproc_data,
@@ -53,7 +55,7 @@ for preproc_file, subject in zip(preproc_files, SUBJECTS):
         rank=rank,
     )
     src_data = apply_lcmv_raw(preproc_data, filters)
-    src_ts_mni, _, src_coords_mni, _ = rhino.transform_recon_timeseries(
+    src_ts_mni, _, src_coords_mni, _ = beamforming.transform_recon_timeseries(
         subjects_dir=COREG_DIR,
         subject=subject,
         recon_timeseries=src_data.data,
@@ -67,6 +69,11 @@ for preproc_file, subject in zip(preproc_files, SUBJECTS):
         method="spatial_basis",
     )
     parcel_ts = p.parcel_timeseries["data"]
+
+    # Orthogonalisation
+    parcel_ts = parcellation.symmetric_orthogonalise(
+        parcel_ts, maintain_magnitudes=True
+    )
 
     # Save parcellated data
     np.save(SRC_DIR + "/" + subject + ".npy", parcel_ts)

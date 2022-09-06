@@ -8,15 +8,17 @@ See run_wakeman_henson.m for matlab equivalent.
 import os
 import os.path as op
 
+import numpy as np
+import matplotlib.pyplot as plt
+import h5py
 import mne
 from mne.beamformer import make_lcmv, apply_lcmv_epochs
-from osl import rhino
+
 import glmtools as glm
-import h5py
 from anamnesis import obj_from_hdf5file
-import matplotlib.pyplot as plt
-import numpy as np
+
 import osl
+from osl import rhino
 
 base_dir = "/Users/woolrich/homedir/vols_data/WakeHen/"
 fif_file_in = op.join(base_dir, "raw/sub001/MEG/run_02_sss.fif")

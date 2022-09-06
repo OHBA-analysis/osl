@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 
-"""RHINO batch processing.
+"""Batch processing for source reconstruction.
 
 """
 
@@ -16,12 +16,11 @@ from functools import partial
 import numpy as np
 import mne
 
-from ..rhino import rhino
+from . import rhino
 from ..report import raw_report
 from ..preprocessing import import_data
 from ..utils import logger as osl_logger
-from ..utils import validate_outdir, find_run_id
-from ..utils.parallel import dask_parallel_bag
+from ..utils import validate_outdir, find_run_id, parallel
 
 import logging
 logger = logging.getLogger(__name__)
@@ -287,7 +286,7 @@ def run_coreg_batch(
 
     # Actually run the processes
     if dask_client:
-        flags = dask_parallel_bag(pool_func, args)
+        flags = parallel.dask_parallel_bag(pool_func, args)
     else:
         flags = [pool_func(*aa) for aa in args]
 

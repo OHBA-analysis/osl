@@ -9,7 +9,8 @@ import pathlib
 from glob import glob
 from mne.beamformer import apply_lcmv_raw
 
-from osl import rhino, parcellation, preprocessing
+from osl import preprocessing
+from osl.source_recon import beamforming, parcellation
 
 # Directories
 PREPROC_DIR = "/ohba/pi/mwoolrich/cgohil/camcan/preproc"
@@ -50,7 +51,7 @@ for preproc_file, subject in zip(preproc_files, subjects):
     )
 
     # Beamforming
-    filters = rhino.make_lcmv(
+    filters = beamforming.make_lcmv(
         subjects_dir=COREG_DIR,
         subject=subject,
         dat=preproc_data,
@@ -59,7 +60,7 @@ for preproc_file, subject in zip(preproc_files, subjects):
         rank=rank,
     )
     src_data = apply_lcmv_raw(preproc_data, filters)
-    src_ts_mni, _, src_coords_mni, _ = rhino.transform_recon_timeseries(
+    src_ts_mni, _, src_coords_mni, _ = beamforming.transform_recon_timeseries(
         subjects_dir=COREG_DIR,
         subject=subject,
         recon_timeseries=src_data.data,
