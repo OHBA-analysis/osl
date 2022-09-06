@@ -296,9 +296,9 @@ def run_coreg_batch(
         # Generate HTML report
         raw_report.gen_html_page(reportdir)
 
-        print("******************************" + "*" * len(str(reportdir)))
-        print("* REMEMBER TO CHECK REPORT:", reportdir, "*")
-        print("******************************" + "*" * len(str(reportdir)))
+        logger.info("******************************" + "*" * len(str(reportdir)))
+        logger.info(f"* REMEMBER TO CHECK REPORT: {reportdir} *")
+        logger.info("******************************" + "*" * len(str(reportdir)))
 
     return flags
 
