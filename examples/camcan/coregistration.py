@@ -24,7 +24,7 @@ PREPROC_FILE = PREPROC_DIR + "/{0}_ses-rest_task-rest_meg_preproc_raw.fif"
 def remove_points(
     polhemus_headshape_file,
     polhemus_nasion_file,
-    *args,
+    **kwargs,
 ):
     """Removes headshape points near the nose."""
     hs = np.loadtxt(polhemus_headshape_file)

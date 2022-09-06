@@ -95,10 +95,11 @@ def run_coreg_chain(
 
         if edit_polhemus_func is not None:
             edit_polhemus_func(
-                polhemus_headshape_file,
-                polhemus_nasion_file,
-                polhemus_rpa_file,
-                polhemus_lpa_file,
+                subject=subject,
+                polhemus_headshape_file=polhemus_headshape_file,
+                polhemus_nasion_file=polhemus_nasion_file,
+                polhemus_rpa_file=polhemus_rpa_file,
+                polhemus_lpa_file=polhemus_lpa_file,
             )
 
         # Compute surface
@@ -218,11 +219,14 @@ def run_coreg_batch(
         Should we use the nose?
     edit_polhemus_func : function
         Function to edit the headshape/nasion/rpa/lpa points.
-        The following arguments will be passed to this function:
-        - polhemus_headshape_file,
-        - polhemus_nasion_file,
-        - polhemus_rpa_file,
-        - polhemus_lpa_file,
+        This function will be called with the following keyword arguments:
+        edit_polhemus_func(
+            subject,
+            polhemus_headshape_file=polhemus_headshape_file,
+            polhemus_nasion_file=polhemus_naison,
+            polhemus_rpa_file=polhemus_rpa_file,
+            polhemus_lpa_file=polhemus_lpa_file,
+        )
     cleanup_files : bool
         Should we clean up the files?
     logsdir : string
