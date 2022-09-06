@@ -25,11 +25,6 @@ class TestModuleStructure(unittest.TestCase):
             raise Exception("Unable to import 'report'")
 
         try:
-            from  .. import rhino
+            from  .. import source_recon
         except ImportError:
-            raise Exception("Unable to import 'rhino'")
-
-        try:
-            from  .. import parcellation
-        except ImportError:
-            raise Exception("Unable to import 'parcellation'")
+            raise Exception("Unable to import 'source_recon'")
