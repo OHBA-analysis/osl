@@ -26,4 +26,3 @@ dependencies:
   - ipyevents
   - ipyvtklink
   - jupyter_client!=6.1.5
-  - git+https://github.com/OHBA-analysis/oslpy.git
