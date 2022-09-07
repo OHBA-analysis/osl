@@ -49,6 +49,7 @@ from mne.bem import ConductorModel, read_bem_solution
 
 from osl.source_recon import rhino_utils
 from osl.utils import soft_import
+from osl.utils.logger import log_or_print
 
 
 def get_surfaces_filenames(subjects_dir, subject):
@@ -321,7 +322,12 @@ def extract_polhemus_from_info(
 
 
 def compute_surfaces(
-    smri_file, subjects_dir, subject, include_nose=True, cleanup_files=False
+    smri_file,
+    subjects_dir,
+    subject,
+    include_nose=True,
+    cleanup_files=False,
+    logger=None,
 ):
     """Compute surfaces.
 
@@ -374,6 +380,8 @@ def compute_surfaces(
         Requires the smri_file to have a FOV that includes the nose!
     cleanup_files : bool
         Specifies whether to cleanup intermediate files in the coreg dir.
+    logger : logging.getLogger
+        Logger.
     """
 
     # Note the jargon used varies for xforms and coord spaces, e.g.:
@@ -384,17 +392,24 @@ def compute_surfaces(
     #
     # Rhino does everthing in mm
 
-    print("\n*** RUNNING OSL RHINO COMPUTE SURFACES ***")
+    log_or_print("*** RUNNING OSL RHINO COMPUTE SURFACES ***", logger)
 
     filenames = get_surfaces_filenames(subjects_dir, subject)
 
     if include_nose:
-        print(
-            "The nose is going to be added to the outer skin (scalp) surface.\n\
-Please ensure that the structural MRI has a FOV that includes the nose"
+        log_or_print(
+            "The nose is going to be added to the outer skin (scalp) surface.",
+            logger,
+        )
+        log_or_print(
+            "Please ensure that the structural MRI has a FOV that includes the nose",
+            logger,
         )
     else:
-        print("The nose is not going to be added to the outer skin (scalp) surface")
+        log_or_print(
+            "The nose is not going to be added to the outer skin (scalp) surface",
+            logger,
+        )
 
     # Check smri_file
     smri_ext = "".join(Path(smri_file).suffixes)
@@ -437,7 +452,7 @@ please check output of:\n fslorient -orient {}".format(
 
     # if orientation is not RADIOLOGICAL then force it to be RADIOLOGICAL
     if smri_orient != "RADIOLOGICAL":
-        print("reorienting subject brain to be RADIOLOGICAL")
+        log_or_print("reorienting subject brain to be RADIOLOGICAL", logger)
         rhino_utils.system_call(
             "fslorient -forceradiological {}".format(filenames["smri_file"])
         )
@@ -494,7 +509,7 @@ please check output of:\n fslorient -orient {}".format(
     # -------------------------------------------------------------------------
     # 2) Use BET to skull strip sMRI so that flirt works well
 
-    print("Running BET pre-FLIRT...")
+    log_or_print("Running BET pre-FLIRT...", logger)
 
     flirt_smri_mniaxes_bet_file = op.join(
         filenames["basefilename"], "flirt_smri_mniaxes_bet"
@@ -506,7 +521,7 @@ please check output of:\n fslorient -orient {}".format(
     # -------------------------------------------------------------------------
     # 3) Use flirt to register skull stripped sMRI to MNI space
 
-    print("Running FLIRT...")
+    log_or_print("Running FLIRT...", logger)
 
     # Flirt is run on the skull stripped brains to register the smri_mniaxes
     # to the MNI standard brain
@@ -572,7 +587,7 @@ please check output of:\n fslorient -orient {}".format(
     # Run BET on smri to get the surface mesh (in MNI space),
     # as BETSURF needs this.
 
-    print("Running BET pre-BETSURF...")
+    log_or_print("Running BET pre-BETSURF...", logger)
 
     flirt_smri_mni_bet_file = op.join(filenames["basefilename"], "flirt_smri_mni_bet")
     rhino_utils.system_call(
@@ -581,7 +596,7 @@ please check output of:\n fslorient -orient {}".format(
 
     ## Run BETSURF - to get the head surfaces in MNI space
 
-    print("Running BETSURF...")
+    log_or_print("Running BETSURF...", logger)
 
     # Need to provide BETSURF with transform to MNI space.
     # Since flirt_smri_mni_file is already in MNI space,
@@ -605,7 +620,7 @@ please check output of:\n fslorient -orient {}".format(
     # -------------------------------------------------------------------------
     # 5) Refine scalp outline, adding nose to scalp surface (optional)
 
-    print("Refining scalp surface...")
+    log_or_print("Refining scalp surface...", logger)
 
     # We do this in MNI big FOV space, to allow the full nose to be included
 
@@ -683,7 +698,7 @@ please check output of:\n fslorient -orient {}".format(
     # plt.imshow(mask[99, :, :]); plt.show()
 
     if include_nose:
-        print("Adding nose to scalp surface...")
+        log_or_print("Adding nose to scalp surface...", logger)
 
         # RECLASSIFY BRIGHT VOXELS OUTSIDE OF MASK (TO PUT NOSE INSIDE
         # THE MASK SINCE BET WILL HAVE EXCLUDED IT)
@@ -842,7 +857,7 @@ please check output of:\n fslorient -orient {}".format(
             "rm -f {}".format(op.join(filenames["basefilename"], "flirt*"))
         )
 
-    print("*** OSL RHINO COMPUTE SURFACES COMPLETE ***")
+    log_or_print("*** OSL RHINO COMPUTE SURFACES COMPLETE ***", logger)
 
 
 def surfaces_display(subjects_dir, subject):
@@ -889,6 +904,7 @@ def coreg(
     use_headshape=True,
     use_nose=True,
     use_dev_ctf_t=True,
+    logger=None,
 ):
     """Coregistration.
 
@@ -959,6 +975,8 @@ def coreg(
         needed for fif files originating from CTF scanners. Will be
         ignored if dev_ctf_t does not exist in info (e.g. if the data
         is from a MEGIN scanner)
+    logger : logging.getLogger
+        Logger.
     """
 
     # Note the jargon used varies for xforms and coord spaces:
@@ -966,24 +984,35 @@ def coreg(
     # HEAD (polhemus)-- head_mri_t (polhemus2native) --> MRI (native)
     # MRI (native) -- mri_mrivoxel_t (native2nativeindex) --> MRI (native) voxel indices
     #
-    # Rhino does everthing in mm
+    # RHINO does everthing in mm
 
-    print("\n*** RUNNING OSL RHINO COREGISTRATION ***")
+    log_or_print("*** RUNNING OSL RHINO COREGISTRATION ***", logger)
 
     filenames = get_coreg_filenames(subjects_dir, subject)
     surfaces_filenames = get_surfaces_filenames(subjects_dir, subject)
 
     if use_headshape:
         if use_nose:
-            print(
-                "The MRI-derived nose is going to be used to aid coreg.\n\
-Please ensure that rhino.compute_surfaces was run with include_nose=True. \n\
-Please ensure that the polhemus headshape points include the nose. \n"
+            log_or_print(
+                "The MRI-derived nose is going to be used to aid coreg.",
+                logger,
+            )
+            log_or_print(
+                "Please ensure that rhino.compute_surfaces was run with include_nose=True.",
+                logger,
+            )
+            log_or_print(
+                "Please ensure that the polhemus headshape points include the nose.",
+                logger,
             )
         else:
-            print(
-                "The MRI-derived nose is not going to be used to aid coreg.\n\
-Please ensure that the polhemus headshape points do not include the nose"
+            log_or_print(
+                "The MRI-derived nose is not going to be used to aid coreg.",
+                logger,
+            )
+            log_or_print(
+                "Please ensure that the polhemus headshape points do not include the nose",
+                logger,
             )
 
     # Copy passed in polhemus pnts
@@ -1026,10 +1055,14 @@ Please ensure that the polhemus headshape points do not include the nose"
         dev_ctf_t = raw.info["dev_ctf_t"]
 
         if dev_ctf_t is not None:
-            print("CTF data")
-            print(
-                "Setting dev_head_t equal to dev_ctf_t in fif file info. \n\
-To turn this off, set use_dev_ctf_t=False"
+            log_or_print("CTF data", logger)
+            log_or_print(
+                "Setting dev_head_t equal to dev_ctf_t in fif file info.",
+                logger,
+            )
+            log_or_print(
+                "To turn this off, set use_dev_ctf_t=False",
+                logger,
             )
 
             dev_head_t, _ = _get_trans(raw.info["dev_head_t"], "meg", "head")
@@ -1109,7 +1142,7 @@ To turn this off, set use_dev_ctf_t=False"
     # ICP algorithm initilaised using the xform estimate in step 2.
 
     if use_headshape:
-        print("Running ICP...")
+        log_or_print("Running ICP...", logger)
 
         # Run ICP with multiple initialisations to refine registration of
         # sMRI-derived headshape points to polhemus derived headshape points,
@@ -1122,11 +1155,9 @@ To turn this off, set use_dev_ctf_t=False"
             (polhemus_headshape_polhemus, polhemus_fid_polhemus), axis=1
         )
 
-        # import pdb; pdb.pdb.set_trace()
         xform_icp, err, e = rhino_utils.rhino_icp(
             smri_headshape_polhemus, polhemus_headshape_polhemus_4icp, 30
         )
-        # print((xform_icp*10).astype(int)/10)
 
     else:
         # No refinement by ICP:
@@ -1194,7 +1225,7 @@ To turn this off, set use_dev_ctf_t=False"
         xform_mri_voxel2mri=mrivoxel_mri_t["trans"],
     )
 
-    print("*** OSL RHINO COREGISTRATION COMPLETE ***")
+    log_or_print("*** OSL RHINO COREGISTRATION COMPLETE ***", logger)
 
 
 def coreg_display(
@@ -1565,6 +1596,7 @@ def forward_model(
     eeg=False,
     meg=True,
     verbose=False,
+    logger=None,
 ):
     """Compute forward model.
 
@@ -1590,9 +1622,11 @@ def forward_model(
         Whether to compute forward model for eeg sensors
     meg : bool
         Whether to compute forward model for meg sensors
+    logger : logging.getLogger
+        Logger.
     """
 
-    print("\n*** RUNNING OSL RHINO FORWARD MODEL ***")
+    log_or_print("*** RUNNING OSL RHINO FORWARD MODEL ***", logger)
 
     # compute MNE bem solution
     if model == "Single Layer":
@@ -1603,7 +1637,12 @@ def forward_model(
         raise ValueError("{} is an invalid model choice".format(model))
 
     vol_src = setup_volume_source_space(
-        subjects_dir, subject, gridstep=gridstep, mindist=mindist, exclude=exclude
+        subjects_dir,
+        subject,
+        gridstep=gridstep,
+        mindist=mindist,
+        exclude=exclude,
+        logger=logger,
     )
 
     # The BEM solution requires a BEM model which describes the geometry of the
@@ -1644,7 +1683,7 @@ def forward_model(
 
     write_forward_solution(fwd_fname, fwd, overwrite=True)
 
-    print("*** OSL RHINO FORWARD MODEL COMPLETE ***\n")
+    log_or_print("*** OSL RHINO FORWARD MODEL COMPLETE ***", logger)
 
 
 def bem_display(
@@ -1962,7 +2001,7 @@ def bem_display(
 
 
 def setup_volume_source_space(
-    subjects_dir, subject, gridstep=5, mindist=5.0, exclude=0.0
+    subjects_dir, subject, gridstep=5, mindist=5.0, exclude=0.0, logger=None
 ):
     """Set up a volume source space grid inside the inner skull surface.
     This is a RHINO specific version of mne.setup_volume_source_space.
@@ -1981,6 +2020,8 @@ def setup_volume_source_space(
     exclude : float
         Exclude points closer than this distance (mm) from the center of mass
         of the bounding surface.
+    logger : logging.getLogger
+        Logger
 
     Returns
     -------
@@ -2054,28 +2095,27 @@ def setup_volume_source_space(
     #
     # To be continued... need to get in touch with mne folks perhaps?
 
-    if True:
-        verts, tris = read_surface(surfaces_filenames["bet_inskull_surf_file"])
-        tris = tris.astype(int)
-        write_surface(
-            op.join(bem_dir_name, "inner_skull.surf"),
-            verts,
-            tris,
-            file_format="freesurfer",
-            overwrite=True,
-        )
-        print("Using bet_inskull_surf_file for single shell surface")
-    else:
-        verts, tris = read_surface(surfaces_filenames["bet_outskull_surf_file"])
-        tris = tris.astype(int)
-        write_surface(
-            op.join(bem_dir_name, "inner_skull.surf"),
-            verts,
-            tris,
-            file_format="freesurfer",
-            overwrite=True,
-        )
-        print("Using bet_outskull_surf_file for single shell surface")
+    verts, tris = read_surface(surfaces_filenames["bet_inskull_surf_file"])
+    tris = tris.astype(int)
+    write_surface(
+        op.join(bem_dir_name, "inner_skull.surf"),
+        verts,
+        tris,
+        file_format="freesurfer",
+        overwrite=True,
+    )
+    log_or_print("Using bet_inskull_surf_file for single shell surface", logger)
+
+    #verts, tris = read_surface(surfaces_filenames["bet_outskull_surf_file"])
+    #tris = tris.astype(int)
+    #write_surface(
+    #    op.join(bem_dir_name, "inner_skull.surf"),
+    #    verts,
+    #    tris,
+    #    file_format="freesurfer",
+    #    overwrite=True,
+    #)
+    #print("Using bet_outskull_surf_file for single shell surface")
 
     verts, tris = read_surface(surfaces_filenames["bet_outskull_surf_file"])
     tris = tris.astype(int)
@@ -2109,14 +2149,12 @@ def setup_volume_source_space(
     def get_mri_info_from_nii(mri):
         out = dict()
         dims = nib.load(mri).get_fdata().shape
-
         out.update(
             mri_width=dims[0],
             mri_height=dims[1],
             mri_depth=dims[1],
             mri_volume_name=mri,
         )
-
         return out
 
     vol_info = get_mri_info_from_nii(surfaces_filenames["smri_file"])

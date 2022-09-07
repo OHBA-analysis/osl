@@ -68,7 +68,7 @@ def _validate_config(config):
     beamforming:
         freq_range: [1, 45]
         chantypes: meg
-        ranks: 60
+        rank: {meg: 60}
     parcellation:
         file: fmri_d100_parcellation_with_PCC_reduced_2mm_ss5mm_ds8mm.nii.gz
         method: spatial_basis
@@ -81,7 +81,7 @@ def _validate_config(config):
             raise ValueError(f"{key} invalid. {example_config}")
 
     if "coregistration" in config_keys:
-        coreg_config = """Correct example:
+        coreg_example_config = """Correct example:
         config = '''
         coregistration:
             model: Single Layer
@@ -93,30 +93,30 @@ def _validate_config(config):
         correct_keys = ["model", "include_nose", "use_nose", "use_headshape"]
         for key in coreg_keys:
             if key not in correct_keys:
-                raise ValueError(f"{key} invalid. {coreg_config}")
+                raise ValueError(f"{key} invalid. {coreg_example_config}")
         for key in correct_keys:
             if key not in coreg_keys:
-                raise ValueError(f"{key} missing. {coreg_config}")
+                raise ValueError(f"{key} missing. {coreg_example_config}")
 
     if "beamforming" in config_keys:
-        bf_config = """Correct example:
+        bf_example_config = """Correct example:
         config = '''
         beamforming:
             freq_range: [1, 45]
             chantypes: meg
-            ranks: 60
+            rank: {meg: 60}
         '''"""
         bf_keys = [str(c) for c in config["beamforming"].keys()]
-        correct_keys = ["freq_range", "chantypes", "ranks"]
+        correct_keys = ["freq_range", "chantypes", "rank"]
         for key in bf_keys:
             if key not in correct_keys:
-                raise ValueError(f"{key} invalid. {bf_config}")
+                raise ValueError(f"{key} invalid. {bf_example_config}")
         for key in correct_keys:
             if key not in bf_keys:
-                raise ValueError(f"{key} missing. {bf_config}")
+                raise ValueError(f"{key} missing. {bf_example_config}")
 
     if "parcellation" in config_keys:
-        parc_config = """Correct example:
+        parc_example_config = """Correct example:
         config = '''
         parcellation:
             file: fmri_d100_parcellation_with_PCC_reduced_2mm_ss5mm_ds8mm.nii.gz
@@ -127,18 +127,18 @@ def _validate_config(config):
         correct_keys = ["file", "method", "orthogonalisation"]
         for key in parc_keys:
             if key not in correct_keys:
-                raise ValueError(f"{key} invalid. {parc_config}")
+                raise ValueError(f"{key} invalid. {parc_example_config}")
         for key in correct_keys:
             if key not in parc_keys:
-                raise ValueError(f"{key} missing. {parc_config}")
+                raise ValueError(f"{key} missing. {parc_example_config}")
 
 
 def run_src_chain(
     config,
     subject,
     preproc_file,
-    smri_file,
     src_dir,
+    smri_file=None,
     pos_file=None,
     edit_polhemus_func=None,
     cleanup_files=True,
@@ -155,10 +155,10 @@ def run_src_chain(
         Subject name.
     preproc_file : string
         Preprocessed fif file.
-    smri_file : string
-        Structural MRI file.
     src_dir : string
         Source reconstruction directory.
+    smri_file : string
+        Structural MRI file.
     pos_file : string
         Pos files.
     edit_polhemus_func : function
@@ -217,6 +217,10 @@ def run_src_chain(
         config = load_config(config)
     _validate_config(config)
 
+    # Validation
+    if "coregistration" in config and smri_file is None:
+        raise ValueError("smri_file must be passed if we're doing coregistration.")
+
     # MAIN BLOCK - Run source reconstruction and catch any exceptions
     try:
         # ----------------------------------------------------------------
@@ -271,10 +275,11 @@ def run_src_chain(
                 subject=subject,
                 include_nose=include_nose,
                 cleanup_files=cleanup_files,
+                logger=logger,
             )
 
             # Run coregistration
-            current_state = "Coregistering"
+            current_status = "Coregistering"
             logger.info(current_status)
             rhino.coreg(
                 fif_file=preproc_file,
@@ -286,10 +291,18 @@ def run_src_chain(
                 polhemus_lpa_file=polhemus_lpa_file,
                 use_headshape=use_headshape,
                 use_nose=use_nose,
+                logger=logger,
             )
 
             # Compute forward model
-            rhino.forward_model(subjects_dir=coreg_dir, subject=subject, model=model)
+            current_status = "Computing forward model"
+            logger.info(current_status)
+            rhino.forward_model(
+                subjects_dir=coreg_dir,
+                subject=subject,
+                model=model,
+                logger=logger,
+            )
 
         # ----------------------------------------------------------------
         # Beamforming
@@ -299,12 +312,7 @@ def run_src_chain(
             chantypes = config["beamforming"]["chantypes"]
             if isinstance(chantypes, str):
                 chantypes = [chantypes]
-            ranks = config["beamforming"]["ranks"]
-            if isinstance(ranks, int):
-                ranks = [ranks]
-            rank = {}
-            for c, r in zip(chantypes, ranks):
-                rank.update({c: r})
+            rank = config["beamforming"]["rank"]
 
             # Load preprocessed data
             preproc_data = import_data(preproc_file)
@@ -324,20 +332,19 @@ def run_src_chain(
                 )
 
             # Beamforming
-            logger.info(f"channel types and rank for source reconstruction: {rank}")
             current_status = "beamforming.make_lcmv"
             logger.info(current_status)
-            filters, variances = beamforming.make_lcmv(
+            logger.info(f"chantypes: {chantypes}")
+            logger.info(f"rank: {rank}")
+            filters = beamforming.make_lcmv(
                 subjects_dir=coreg_dir,
                 subject=subject,
-                dat=preproc_data,
+                data=preproc_data,
                 chantypes=chantypes,
                 weight_norm="nai",
                 rank=rank,
-                batch_mode=True,
+                logger=logger,
             )
-            for k, v in variances.items():
-                logger.info("variance for chan type {} is {}".format(k, v))
 
             current_status = "mne.beamforming.apply_lcmv"
             logger.info(current_status)
@@ -346,7 +353,6 @@ def run_src_chain(
                 subjects_dir=coreg_dir,
                 subject=subject,
                 recon_timeseries=src_data.data,
-                batch_mode=True,
             )
 
         # ----------------------------------------------------------------
@@ -361,20 +367,17 @@ def run_src_chain(
             logger.info(current_status)
             logger.info(parcellation_file)
             p = parcellation.Parcellation(parcellation_file)
-
-            gridstep = int(rhino_utils.get_gridstep(src_coords_mni.T) / 1000)
-            logger.info("gridstep = {} mm".format(gridstep))
-
             p.parcellate(
                 voxel_timeseries=src_ts_mni,
                 voxel_coords=src_coords_mni,
                 method=method,
-                batch_mode=True,
+                logger=logger,
             )
             parcel_ts = p.parcel_timeseries["data"]
 
             # Orthogonalisation
             if orthogonalisation not in ["symmetric"]:
+                current_status = ""
                 raise NotImplementedError(orthogonalisation)
 
             current_status = f"orthogonalisation: {orthogonalisation}"
@@ -510,9 +513,12 @@ def run_src_batch(
         )
 
     if "coregistration" in config and smri_files is None:
-        raise ValueError("smri_files must be passed.")
+        raise ValueError("smri_files must be passed if we are coregistering.")
     elif smri_files is None:
-        smri_files = [None] * len(subjects)
+        smri_files = [None] * n_subjects
+
+    if pos_files is None:
+        pos_files = [None] * n_subjects
 
     # Create partial function with fixed options
     pool_func = partial(
@@ -523,16 +529,13 @@ def run_src_batch(
         mneverbose=mneverbose,
     )
 
-    if pos_files is None:
-        pos_files = [None] * len(subjects)
-
     # Loop through input files to generate arguments for run_coreg_chain
     args = []
     for subject, preproc_file, smri_file, pos_file in zip(
         subjects, preproc_files, smri_files, pos_files
     ):
         args.append((
-            config, subject, preproc_file, smri_file, src_dir, pos_file
+            config, subject, preproc_file, src_dir, smri_file, pos_file
         ))
 
     # Actually run the processes
