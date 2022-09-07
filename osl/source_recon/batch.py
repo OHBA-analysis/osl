@@ -68,7 +68,7 @@ def _validate_config(config):
     beamforming:
         freq_range: [1, 45]
         chantypes: meg
-        ranks: 60
+        rank: {meg: 60}
     parcellation:
         file: fmri_d100_parcellation_with_PCC_reduced_2mm_ss5mm_ds8mm.nii.gz
         method: spatial_basis
@@ -104,10 +104,10 @@ def _validate_config(config):
         beamforming:
             freq_range: [1, 45]
             chantypes: meg
-            ranks: 60
+            rank: {meg: 60}
         '''"""
         bf_keys = [str(c) for c in config["beamforming"].keys()]
-        correct_keys = ["freq_range", "chantypes", "ranks"]
+        correct_keys = ["freq_range", "chantypes", "rank"]
         for key in bf_keys:
             if key not in correct_keys:
                 raise ValueError(f"{key} invalid. {bf_example_config}")
@@ -303,12 +303,7 @@ def run_src_chain(
             chantypes = config["beamforming"]["chantypes"]
             if isinstance(chantypes, str):
                 chantypes = [chantypes]
-            ranks = config["beamforming"]["ranks"]
-            if isinstance(ranks, int):
-                ranks = [ranks]
-            rank = {}
-            for c, r in zip(chantypes, ranks):
-                rank.update({c: r})
+            rank = config["beamforming"]["rank"]
 
             # Load preprocessed data
             preproc_data = import_data(preproc_file)
@@ -328,20 +323,19 @@ def run_src_chain(
                 )
 
             # Beamforming
-            logger.info(f"channel types and rank for source reconstruction: {rank}")
             current_status = "beamforming.make_lcmv"
             logger.info(current_status)
-            filters, variances = beamforming.make_lcmv(
+            logger.info(f"chantypes: {chantypes}")
+            logger.info(f"rank: {rank}")
+            filters = beamforming.make_lcmv(
                 subjects_dir=coreg_dir,
                 subject=subject,
-                dat=preproc_data,
+                data=preproc_data,
                 chantypes=chantypes,
                 weight_norm="nai",
                 rank=rank,
-                batch_mode=True,
+                logger=logger,
             )
-            for k, v in variances.items():
-                logger.info("variance for chan type {} is {}".format(k, v))
 
             current_status = "mne.beamforming.apply_lcmv"
             logger.info(current_status)
@@ -350,7 +344,6 @@ def run_src_chain(
                 subjects_dir=coreg_dir,
                 subject=subject,
                 recon_timeseries=src_data.data,
-                batch_mode=True,
             )
 
         # ----------------------------------------------------------------
@@ -365,20 +358,17 @@ def run_src_chain(
             logger.info(current_status)
             logger.info(parcellation_file)
             p = parcellation.Parcellation(parcellation_file)
-
-            gridstep = int(rhino_utils.get_gridstep(src_coords_mni.T) / 1000)
-            logger.info("gridstep = {} mm".format(gridstep))
-
             p.parcellate(
                 voxel_timeseries=src_ts_mni,
                 voxel_coords=src_coords_mni,
                 method=method,
-                batch_mode=True,
+                logger=logger,
             )
             parcel_ts = p.parcel_timeseries["data"]
 
             # Orthogonalisation
             if orthogonalisation not in ["symmetric"]:
+                current_status = ""
                 raise NotImplementedError(orthogonalisation)
 
             current_status = f"orthogonalisation: {orthogonalisation}"

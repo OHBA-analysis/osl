@@ -118,3 +118,18 @@ def get_level(handler='console'):
     for handler in osl_logger.handlers:
         if handler.get_name() == 'console':
             return handler.level
+
+def log_or_print_msg(msg, logger):
+    """Execute logger.info or print.
+
+    Parameters
+    ----------
+    msg : str
+        Message to log/print.
+    logger : logger or None
+        If logger=None we use print, other we use logger.info.
+    """
+    if logger is None:
+        print(msg)
+    else:
+        logger.info(msg)

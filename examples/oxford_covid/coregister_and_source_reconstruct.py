@@ -27,7 +27,7 @@ config = """
     beamforming:
         freq_range: [1, 45]
         chantypes: meg
-        ranks: 60
+        rank: {meg: 60}
     parcellation:
         file: fmri_d100_parcellation_with_PCC_reduced_2mm_ss5mm_ds8mm.nii.gz
         method: spatial_basis

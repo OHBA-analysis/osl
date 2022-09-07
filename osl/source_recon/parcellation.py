@@ -19,6 +19,7 @@ from nilearn.plotting import plot_markers
 
 from osl.source_recon import rhino_utils
 from osl.utils import soft_import
+from osl.utils.logger import log_or_print_msg
 
 
 class Parcellation:
@@ -78,9 +79,9 @@ class Parcellation:
         voxel_coords,
         method="spatial_basis",
         working_dir=None,
-        batch_mode=False,
+        logger=None,
     ):
-        """Parcellate voxel_timeseries
+        """Parcellate voxel time series.
 
         Parameters
         ----------
@@ -88,27 +89,27 @@ class Parcellation:
             nvoxels x ntpts, or nvoxels x ntpts x ntrials
             Data to be parcellated. Data is assumed to be in same space as the
             parcellation (e.g. typically corresponds to the output from
-            rhino.resample_recon_ts)
+            rhino.resample_recon_ts).
         voxel_coords : numpy.ndarray
             (nvoxels x 3) coordinates of voxel_timeseries in mm in same space as
             parcellation (e.g. typically corresponds to the output from
-            rhino.resample_recon_ts)
+            rhino.resample_recon_ts).
         method : str
             'pca' - take 1st PC in each parcel
             'spatial_basis' - The parcel time-course for each spatial map is the
             1st PC from all voxels, weighted by the spatial map. If the parcellation
             is unweighted and non-overlapping, 'spatialBasis' will give the same
-            result as 'PCA' except with a different normalization
+            result as 'PCA' except with a different normalization.
         working_dir : str
             Dir to put temp file in. If None, attempt to use same dir as passed in
-            parcellation
-        batch_mode : bool
-            Are we in batch mode?
+            parcellation.
+        logger : logging.getLogger
+            Logger.
 
         Returns
         -------
         parcel_timeseries : dict
-            Containing -
+            Containing:
             "data": numpy.ndarray
                 nparcels x ntpts, or nparcels x ntpts x ntrials, parcellated data
             "voxel_coords": numpy.ndarray
@@ -123,7 +124,7 @@ class Parcellation:
                 parcel it belongs to
         """
         parcellation_asmatrix = _resample_parcellation(
-            self, voxel_coords, working_dir, batch_mode=batch_mode
+            self, voxel_coords, working_dir, logger=logger
         )
         data, voxel_weightings, voxel_assignments = _get_parcel_timeseries(
             voxel_timeseries, parcellation_asmatrix, method=method
@@ -218,7 +219,7 @@ def plot_parcellation(parcellation, **kwargs):
 
 
 def _resample_parcellation(
-    parcellation, voxel_coords, working_dir=None, batch_mode=False
+    parcellation, voxel_coords, working_dir=None, logger=None,
 ):
     """Resample parcellation so that its voxel coords correspond (using
     nearest neighbour) to passed in voxel_coords. Passed in voxel_coords
@@ -231,24 +232,22 @@ def _resample_parcellation(
     Parameters
     ----------
     parcellation : parcellation.Parcellation
-        In same space as voxel_coords
+        In same space as voxel_coords.
     voxel_coords :
-        (nvoxels x 3) coordinates in mm in same space as parcellation
+        (nvoxels x 3) coordinates in mm in same space as parcellation.
     working_dir : str
         Dir to put temp file in. If None, attempt to use same dir as passed
-        in parcellation
-    batch_mode : bool
-        Are we in batch mode?
+        in parcellation.
+    logger : logging.getLogger
+        Logger.
 
     Returns
     -------
     parcellation_asmatrix : numpy.ndarray
         (nvoxels x nparcels) resampled parcellation
     """
-
     gridstep = int(rhino_utils.get_gridstep(voxel_coords.T) / 1000)
-    if not batch_mode:
-        print("Using gridstep = {}mm".format(gridstep))
+    log_or_print_msg(f"gridstep = {gridstep} mm", logger)
 
     pth, parcellation_name = op.split(op.splitext(op.splitext(parcellation.file)[0])[0])
 

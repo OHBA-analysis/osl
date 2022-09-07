@@ -11,6 +11,7 @@ import os
 import os.path as op
 
 import numpy as np
+import mne
 from mne import (
     read_forward_solution,
     Covariance,
@@ -19,12 +20,13 @@ from mne import (
 )
 
 from osl.source_recon import rhino, rhino_utils
+from osl.utils.logger import log_or_print_msg
 
 
 def make_lcmv(
     subjects_dir,
     subject,
-    dat,
+    data,
     chantypes,
     data_cov=None,
     noise_cov=None,
@@ -38,19 +40,19 @@ def make_lcmv(
     depth=None,
     inversion="matrix",
     verbose=None,
-    batch_mode=False,
+    logger=None,
 ):
     """Compute LCMV spatial filter.
 
-    Wrapper for Rhino version of mne.beamformer.make_lcmv
+    Wrapper for RHINO version of mne.beamformer.make_lcmv
 
     Parameters
     ----------
     subjects_dir : string
-            Directory to find RHINO subject dirs in.
+        Directory to find RHINO subject dirs in.
     subject : string
-            Subject name dir to find RHINO fwd model file in.
-    dat : instance of raw or epochs
+        Subject name dir to find RHINO fwd model file in.
+    data : instance of raw or epochs
         The measurement data to specify the channels to include.
         Bad channels in info['bads'] are not used.
         Will also be used to calculate data_cov
@@ -62,16 +64,14 @@ def make_lcmv(
         If None will be computed from dat as a diagonal matrix
         with variances set to the average of all sensors of that type.
     chantypes : List
-        List of channel types to use. E.g.:
-            ['eeg']
-            ['mag', 'grad']
-            ['eeg', 'mag', 'grad']
+        List of channel types to use. E.g. ['eeg'], ['mag', 'grad'],
+        ['eeg', 'mag', 'grad'].
     reg : float
         The regularization for the whitened data covariance.
     label : instance of Label
         Restricts the LCMV solution to a given label.
-    batch_mode : bool
-        Are we running in batch mode?
+    logger : logging.getLogger()
+        Logger.
 
     Returns
     -------
@@ -130,18 +130,15 @@ def make_lcmv(
                 separately or jointly for all dipoles at each vertex using a
                 matrix inversion.
     """
-
-    if not batch_mode:
-        print("\n*** RUNNING OSL MAKE LCMV ***")
+    log_or_print_msg("*** RUNNING OSL MAKE LCMV ***", logger)
 
     # load forward solution
     fwd_fname = rhino.get_coreg_filenames(subjects_dir, subject)["forward_model_file"]
     fwd = read_forward_solution(fwd_fname)
 
-    is_epoched = len(dat.get_data().shape) == 3 and len(dat) > 1
+    is_epoched = len(data.get_data().shape) == 3 and len(data) > 1
 
     if data_cov is None:
-
         # Note that if chantypes are meg, eeg; and meg includes mag, grad
         # then compute_covariance will project data separately for meg and eeg
         # to reduced rank subspace (i.e. mag and grad will be combined together
@@ -158,13 +155,13 @@ def make_lcmv(
         # osl_normalise_sensor_data.m function in Matlab OSL is trying to do.
         # Note that in the output data_cov the scalings have been undone.
         if is_epoched:
-            data_cov = compute_covariance(dat, method="empirical", rank=rank)
+            data_cov = compute_covariance(data, method="empirical", rank=rank)
         else:
-            data_cov = compute_raw_covariance(dat, method="empirical", rank=rank)
+            data_cov = compute_raw_covariance(data, method="empirical", rank=rank)
 
     if noise_cov is None:
-
         # calculate noise covariance matrix
+        #
         # Later this will be inverted and used to whiten the data AND the lead fields
         # as part of the source recon. See:
         #   https://www.sciencedirect.com/science/article/pii/S1053811914010325?via%3Dihub
@@ -175,29 +172,30 @@ def make_lcmv(
         # osl_normalise_sensor_data.m function in Matlab OSL does,
         # by computing a diagonal noise cov with the variances set to the mean
         # variance of each sensor type (e.g. mag, grad, eeg.)
-        variances = {}
+        n_channels = data_cov.data.shape[0]
+        noise_cov_diag = np.zeros(n_channels)
         for type in chantypes:
-            dat_type = dat.copy().pick(type, exclude="bads")
-            noise_cov_diag = np.zeros([data_cov.data.shape[0]])
-
+            # Indices of this channel type
+            type_data = data.copy().pick(type, exclude="bads")
             inds = []
-            ch_names = []
-            for ch_name in dat_type.info["ch_names"]:
-                inds.append(data_cov.ch_names.index(ch_name))
+            for chan in type_data.info["ch_names"]:
+                inds.append(data_cov.ch_names.index(chan))
 
-            variances[type] = np.mean(np.diag(data_cov.data)[inds])
-            noise_cov_diag[inds] = variances[type]
+            # Mean variance of channels of this type
+            variance = np.mean(np.diag(data_cov.data)[inds])
+            noise_cov_diag[inds] = variance
+            log_or_print_msg(
+                "variance for chantype {} is {}".format(type, variance),
+                logger,
+            )
 
-            if not batch_mode:
-                print("Variance for chan type {} is {}".format(type, variances[type]))
-
-        bads = [b for b in dat.info["bads"] if b in data_cov.ch_names]
+        bads = [b for b in data.info["bads"] if b in data_cov.ch_names]
         noise_cov = Covariance(
-            noise_cov_diag, data_cov.ch_names, bads, dat.info["projs"], nfree=1e10
+            noise_cov_diag, data_cov.ch_names, bads, data.info["projs"], nfree=1e10
         )
 
     filters = rhino_utils._make_lcmv(
-        dat.info,
+        data.info,
         fwd,
         data_cov,
         noise_cov=noise_cov,
@@ -210,13 +208,9 @@ def make_lcmv(
         verbose=verbose,
     )
 
-    if not batch_mode:
-        print("*** OSL MAKE LCMV COMPLETE ***\n")
+    log_or_print_msg("*** OSL MAKE LCMV COMPLETE ***", logger)
 
-    if batch_mode:
-        return filters, variances
-    else:
-        return filters
+    return filters
 
 
 def get_recon_timeseries(subjects_dir, subject, coord_mni, recon_timeseries_head):
@@ -276,7 +270,6 @@ def transform_recon_timeseries(
     recon_timeseries,
     spatial_resolution=None,
     reference_brain="mni",
-    batch_mode=False,
 ):
     """Spatially resamples a (ndipoles x ntpts) array of reconstructed time
     courses (in head/polhemus space) to dipoles on the brain grid of the specified
@@ -304,8 +297,6 @@ def transform_recon_timeseries(
         'mni' indicates that the reference_brain is the stdbrain in MNI space
         'mri' indicates that the reference_brain is the subject's sMRI in
         native/mri space.
-    batch_mode : bool
-        Are we in batch mode?
 
     Returns
     -------
@@ -342,8 +333,6 @@ def transform_recon_timeseries(
             store.append(np.sqrt(np.sum(np.square(rr[ii, :] - rr[0, :]))))
         store = np.asarray(store)
         spatial_resolution = int(np.round(np.min(store[np.where(store > 0)]) * 1000))
-        if not batch_mode:
-            print("Using spatial_resolution = {}mm".format(spatial_resolution))
 
     spatial_resolution = int(spatial_resolution)
 
