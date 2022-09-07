@@ -78,6 +78,12 @@ def setup_fsl(directory):
         os.environ["FSLOUTPUTTYPE"] = "NIFTI_GZ"
 
 
+def check_fsl():
+    """Check FSL is installed."""
+    if "FSLDIR" not in os.environ:
+        raise RuntimeError("Please setup FSL, e.g. with osl.source_recon.setup_fsl().")
+
+
 def get_gridstep(coords):
     """Get gridstep (i.e. spatial resolution of dipole grid) in mm.
 
