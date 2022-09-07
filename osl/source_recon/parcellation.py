@@ -19,7 +19,7 @@ from nilearn.plotting import plot_markers
 
 from osl.source_recon import rhino_utils
 from osl.utils import soft_import
-from osl.utils.logger import log_or_print_msg
+from osl.utils.logger import log_or_print
 
 
 class Parcellation:
@@ -247,7 +247,7 @@ def _resample_parcellation(
         (nvoxels x nparcels) resampled parcellation
     """
     gridstep = int(rhino_utils.get_gridstep(voxel_coords.T) / 1000)
-    log_or_print_msg(f"gridstep = {gridstep} mm", logger)
+    log_or_print(f"gridstep = {gridstep} mm", logger)
 
     pth, parcellation_name = op.split(op.splitext(op.splitext(parcellation.file)[0])[0])
 

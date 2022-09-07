@@ -20,7 +20,7 @@ from mne import (
 )
 
 from osl.source_recon import rhino, rhino_utils
-from osl.utils.logger import log_or_print_msg
+from osl.utils.logger import log_or_print
 
 
 def make_lcmv(
@@ -130,7 +130,7 @@ def make_lcmv(
                 separately or jointly for all dipoles at each vertex using a
                 matrix inversion.
     """
-    log_or_print_msg("*** RUNNING OSL MAKE LCMV ***", logger)
+    log_or_print("*** RUNNING OSL MAKE LCMV ***", logger)
 
     # load forward solution
     fwd_fname = rhino.get_coreg_filenames(subjects_dir, subject)["forward_model_file"]
@@ -184,7 +184,7 @@ def make_lcmv(
             # Mean variance of channels of this type
             variance = np.mean(np.diag(data_cov.data)[inds])
             noise_cov_diag[inds] = variance
-            log_or_print_msg(
+            log_or_print(
                 "variance for chantype {} is {}".format(type, variance),
                 logger,
             )
@@ -208,7 +208,7 @@ def make_lcmv(
         verbose=verbose,
     )
 
-    log_or_print_msg("*** OSL MAKE LCMV COMPLETE ***", logger)
+    log_or_print("*** OSL MAKE LCMV COMPLETE ***", logger)
 
     return filters
 

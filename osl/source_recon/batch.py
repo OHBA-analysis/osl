@@ -275,10 +275,11 @@ def run_src_chain(
                 subject=subject,
                 include_nose=include_nose,
                 cleanup_files=cleanup_files,
+                logger=logger,
             )
 
             # Run coregistration
-            current_state = "Coregistering"
+            current_status = "Coregistering"
             logger.info(current_status)
             rhino.coreg(
                 fif_file=preproc_file,
@@ -290,10 +291,18 @@ def run_src_chain(
                 polhemus_lpa_file=polhemus_lpa_file,
                 use_headshape=use_headshape,
                 use_nose=use_nose,
+                logger=logger,
             )
 
             # Compute forward model
-            rhino.forward_model(subjects_dir=coreg_dir, subject=subject, model=model)
+            current_status = "Computing forward model"
+            logger.info(current_status)
+            rhino.forward_model(
+                subjects_dir=coreg_dir,
+                subject=subject,
+                model=model,
+                logger=logger,
+            )
 
         # ----------------------------------------------------------------
         # Beamforming

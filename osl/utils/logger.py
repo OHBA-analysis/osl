@@ -119,7 +119,8 @@ def get_level(handler='console'):
         if handler.get_name() == 'console':
             return handler.level
 
-def log_or_print_msg(msg, logger):
+
+def log_or_print(msg, logger):
     """Execute logger.info or print.
 
     Parameters
