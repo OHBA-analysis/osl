@@ -206,9 +206,15 @@ def gen_html_page(outdir):
     for i in range(total):
         panels.append(panel_template.render(data=data[i]))
 
+    # Hyperlink to each panel on the page
+    filenames = ""
+    for i in range(total):
+        filename = pathlib.Path(data[i]["filename"]).name
+        filenames += "{0}. {1}<br>".format(i + 1, filename)
+
     # Render the full page
     page_template = load_template('raw_report')
-    page = page_template.render(panels=panels)
+    page = page_template.render(panels=panels, filenames=filenames)
 
     # Write the output file
     outpath = pathlib.Path(outdir) / 'report.html'
