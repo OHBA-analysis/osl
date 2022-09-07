@@ -183,7 +183,9 @@ def gen_html_page(outdir):
     outdir = pathlib.Path(outdir)
 
     # Subdirectories which contains plots for each fif file
-    subdirs = [d.stem for d in pathlib.Path(outdir).iterdir() if d.is_dir()]
+    subdirs = sorted(
+        [d.stem for d in pathlib.Path(outdir).iterdir() if d.is_dir()]
+    )
 
     # Load data for each fif file
     data = []
@@ -191,11 +193,18 @@ def gen_html_page(outdir):
         subdir = pathlib.Path(subdir)
         data.append(pickle.load(open(outdir / subdir / "data.pkl", "rb")))
 
+    # Add info to data indicating the total number of files
+    # and an id for each file
+    total = len(subdirs)
+    for i in range(total):
+        data[i]["num"] = i + 1
+        data[i]["total"] = total
+
     # Create panels
     panels = []
     panel_template = load_template('panel')
-    for d in data:
-        panels.append(panel_template.render(data=d))
+    for i in range(total):
+        panels.append(panel_template.render(data=data[i]))
 
     # Render the full page
     page_template = load_template('raw_report')
