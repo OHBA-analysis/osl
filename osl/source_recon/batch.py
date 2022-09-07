@@ -81,7 +81,7 @@ def _validate_config(config):
             raise ValueError(f"{key} invalid. {example_config}")
 
     if "coregistration" in config_keys:
-        coreg_config = """Correct example:
+        coreg_example_config = """Correct example:
         config = '''
         coregistration:
             model: Single Layer
@@ -93,13 +93,13 @@ def _validate_config(config):
         correct_keys = ["model", "include_nose", "use_nose", "use_headshape"]
         for key in coreg_keys:
             if key not in correct_keys:
-                raise ValueError(f"{key} invalid. {coreg_config}")
+                raise ValueError(f"{key} invalid. {coreg_example_config}")
         for key in correct_keys:
             if key not in coreg_keys:
-                raise ValueError(f"{key} missing. {coreg_config}")
+                raise ValueError(f"{key} missing. {coreg_example_config}")
 
     if "beamforming" in config_keys:
-        bf_config = """Correct example:
+        bf_example_config = """Correct example:
         config = '''
         beamforming:
             freq_range: [1, 45]
@@ -110,13 +110,13 @@ def _validate_config(config):
         correct_keys = ["freq_range", "chantypes", "ranks"]
         for key in bf_keys:
             if key not in correct_keys:
-                raise ValueError(f"{key} invalid. {bf_config}")
+                raise ValueError(f"{key} invalid. {bf_example_config}")
         for key in correct_keys:
             if key not in bf_keys:
-                raise ValueError(f"{key} missing. {bf_config}")
+                raise ValueError(f"{key} missing. {bf_example_config}")
 
     if "parcellation" in config_keys:
-        parc_config = """Correct example:
+        parc_example_config = """Correct example:
         config = '''
         parcellation:
             file: fmri_d100_parcellation_with_PCC_reduced_2mm_ss5mm_ds8mm.nii.gz
@@ -127,18 +127,18 @@ def _validate_config(config):
         correct_keys = ["file", "method", "orthogonalisation"]
         for key in parc_keys:
             if key not in correct_keys:
-                raise ValueError(f"{key} invalid. {parc_config}")
+                raise ValueError(f"{key} invalid. {parc_example_config}")
         for key in correct_keys:
             if key not in parc_keys:
-                raise ValueError(f"{key} missing. {parc_config}")
+                raise ValueError(f"{key} missing. {parc_example_config}")
 
 
 def run_src_chain(
     config,
     subject,
     preproc_file,
-    smri_file,
     src_dir,
+    smri_file=None,
     pos_file=None,
     edit_polhemus_func=None,
     cleanup_files=True,
@@ -155,10 +155,10 @@ def run_src_chain(
         Subject name.
     preproc_file : string
         Preprocessed fif file.
-    smri_file : string
-        Structural MRI file.
     src_dir : string
         Source reconstruction directory.
+    smri_file : string
+        Structural MRI file.
     pos_file : string
         Pos files.
     edit_polhemus_func : function
@@ -216,6 +216,10 @@ def run_src_chain(
     if not isinstance(config, dict):
         config = load_config(config)
     _validate_config(config)
+
+    # Validation
+    if "coregistration" in config and smri_file is None:
+        raise ValueError("smri_file must be passed if we're doing coregistration.")
 
     # MAIN BLOCK - Run source reconstruction and catch any exceptions
     try:
@@ -510,9 +514,12 @@ def run_src_batch(
         )
 
     if "coregistration" in config and smri_files is None:
-        raise ValueError("smri_files must be passed.")
+        raise ValueError("smri_files must be passed if we are coregistering.")
     elif smri_files is None:
-        smri_files = [None] * len(subjects)
+        smri_files = [None] * n_subjects
+
+    if pos_files is None:
+        pos_files = [None] * n_subjects
 
     # Create partial function with fixed options
     pool_func = partial(
@@ -523,16 +530,13 @@ def run_src_batch(
         mneverbose=mneverbose,
     )
 
-    if pos_files is None:
-        pos_files = [None] * len(subjects)
-
     # Loop through input files to generate arguments for run_coreg_chain
     args = []
     for subject, preproc_file, smri_file, pos_file in zip(
         subjects, preproc_files, smri_files, pos_files
     ):
         args.append((
-            config, subject, preproc_file, smri_file, src_dir, pos_file
+            config, subject, preproc_file, src_dir, smri_file, pos_file
         ))
 
     # Actually run the processes
