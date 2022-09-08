@@ -548,7 +548,7 @@ def run_proc_chain(
         run_id=run_id.replace('_raw', ''), ftype='preproc_raw', fext='fif'
     )
     if os.path.exists(fifout) and (overwrite is False):
-        osl_logger.critical('Skipping preprocessing - existing output detected')
+        logger.critical('Skipping preprocessing - existing output detected')
         return False
 
     # Load config
