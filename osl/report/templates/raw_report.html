@@ -29,17 +29,32 @@
 
 <body>
 
-<div style='width:80%; margin: auto; text-align: center' >
+<div style='width:90%; margin: auto; text-align: center' >
     <h2>OSL Report</h2>
 </div>
 
-<div style='width:80%; margin: auto; text-align: center' >
-    <div style='max-width: 70%; margin: auto; padding: 0px 25px 20px 25px;'>
-        The panels below summarise each fif file. Use arrow keys to navigate tabs.
+<div class="float-container">
+    <div style='width:70%; margin: auto; text-align: center' >
+        <form onsubmit="return false">
+          <label for="fid" id="">Navigate to file:</label>
+          <input type="text" id="fid" name="fid">
+          <button class="button" type="button" onclick="navigateToFif()">Go</button>
+          <br><br>
+        </form>
+        <div style='max-width: 70%; margin: auto; padding: 0px 25px 20px 25px;'>
+            The panels below summarise each fif file (full list on the right). Use arrow keys to navigate tabs.
+        </div>
     </div>
-    {% for panel in panels[::-1] %}
-        {{ panel }}
-    {% endfor %}
+    <div style='width: 80%; margin: auto; text-align: center; float: left'>
+        {% for panel in panels %}
+            {{ panel }}
+        {% endfor %}
+    </div>
+    <div style="width: 20%; text-align: left; float: right">
+        <div>
+            {{ filenames }}
+        </div>
+    </div>
 </div>
 
 <script>
@@ -54,6 +69,9 @@ window.addEventListener("keydown", function(e) {
 // All fif panels and buttons
 fifs = document.getElementsByClassName("fif");
 buttons = document.getElementsByClassName("button1");
+
+// Text input box for navigating files
+var fnav = document.getElementById("fid");
 
 // Hide all panels apart from the first
 hideFifs(1);
@@ -78,12 +96,14 @@ function checkKey(e) {
         if (currentButton > 0) {
             currentButton--;
         }
+        clickButton(currentButton + currentFif * numButtons);
     }
     else if (e.keyCode == '40') {
         // down arrow
         if (currentButton < numButtons - 1) {
             currentButton++;
         }
+        clickButton(currentButton + currentFif * numButtons);
     }
     else if (e.keyCode == '37') {
         // left arrow
@@ -91,6 +111,7 @@ function checkKey(e) {
             currentFif--;
             switchFif(currentFif);
         }
+        clickButton(currentButton + currentFif * numButtons);
     }
     else if (e.keyCode == '39') {
         // right arrow
@@ -98,11 +119,15 @@ function checkKey(e) {
             currentFif++;
             switchFif(currentFif);
         }
+        clickButton(currentButton + currentFif * numButtons);
     }
-    clickButton(currentButton + currentFif * numButtons);
+    else if (e.keyCode == '13') {
+        // enter
+        navigateToFif();
+    }
 }
 
-function openTab(evt, figTag, button) {
+function openTab(event, figTag, button) {
     // Get all elements with class="tabpage" and hide them
     tabpage = document.getElementsByClassName("tabpage");
     for (i = 0; i < tabpage.length; i++) {
@@ -110,6 +135,24 @@ function openTab(evt, figTag, button) {
     }
     // Show the current tab
     document.getElementById(figTag).style.display = "block";
+    if (figTag.includes('info')) {
+        currentButton = 0;
+    }
+    if (figTag.includes('timeseries')) {
+        currentButton = 1;
+    }
+    if (figTag.includes('channels')) {
+        currentButton = 2;
+    }
+    if (figTag.includes('spectra')) {
+        currentButton = 3;
+    }
+    if (figTag.includes('digitisation')) {
+        currentButton = 4;
+    }
+    if (figTag.includes('coregistration')) {
+        currentButton = 5;
+    }
 }
 
 function clickButton(ind) {
@@ -120,6 +163,23 @@ function clickButton(ind) {
 function switchFif(ind) {
     hideFifs(0);
     fifs[ind].style.display = "block";
+    fnav.value = ind + 1;    
+}
+
+function navigateToFif() {
+    fif = fnav.value - 1;
+    if (fif > fifs.length - 1) {
+        fif = fifs.length - 1;
+    }
+    if (fif < 0) {
+        fif = 0;
+    }
+    if (fif == null) {
+        fif = currentFif;
+    }
+    currentFif = fif;
+    switchFif(currentFif);
+    clickButton(currentButton + currentFif * numButtons);
 }
 
 </script>
