@@ -131,7 +131,7 @@ def run_src_chain(
     flag : bool
         Flag indicating whether source reconstruction was successful.
     """
-    rhino_utils.check_fsl()
+    rhino.fsl_wrappers.check_fsl()
 
     # Directories
     src_dir = validate_outdir(src_dir)
@@ -262,7 +262,7 @@ def run_src_batch(
     flags : list of bool
         Flags indicating whether coregistration was successful.
     """
-    rhino_utils.check_fsl()
+    rhino.fsl_wrappers.check_fsl()
 
     # Directories
     src_dir = validate_outdir(src_dir)
