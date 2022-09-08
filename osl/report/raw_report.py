@@ -200,12 +200,12 @@ def gen_html_page(outdir):
         except:
             pass
 
-    if len(data) == 0:
+    total = len(data)
+    if total == 0:
         return False
 
     # Add info to data indicating the total number of files
     # and an id for each file
-    total = len(subdirs)
     for i in range(total):
         data[i]["num"] = i + 1
         data[i]["total"] = total
