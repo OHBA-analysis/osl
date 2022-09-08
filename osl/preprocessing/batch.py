@@ -12,11 +12,11 @@ import argparse
 import matplotlib.pyplot as plt
 import os
 import sys
-import pathlib
 import pprint
 import traceback
 import re
 import logging
+from pathlib import Path
 from copy import deepcopy
 from functools import partial, wraps
 from time import localtime, strftime
@@ -333,7 +333,7 @@ def write_dataset(dataset, outbase, run_id, overwrite=False):
     outname = outbase.format(
         run_id=run_id.replace("_raw", ""), ftype="preproc_raw", fext="fif"
     )
-    if pathlib.Path(outname).exists() and not overwrite:
+    if Path(outname).exists() and not overwrite:
         raise ValueError(
             "{} already exists. Please delete or do use overwrite=True.".format(outname)
         )
@@ -343,6 +343,10 @@ def write_dataset(dataset, outbase, run_id, overwrite=False):
         outname = outbase.format(run_id=run_id, ftype="events", fext="npy")
         np.save(outname, dataset["events"])
 
+    if dataset["event_id"] is not None:
+        outname = outbase.format(run_id=run_id, ftype="event-id", fext="yml")
+        yaml.dump(dataset["event_id"], open(outname, "w"))
+
     if dataset["epochs"] is not None:
         outname = outbase.format(run_id=run_id, ftype="epo", fext="fif")
         dataset["epochs"].save(outname, overwrite=overwrite)
@@ -350,6 +354,64 @@ def write_dataset(dataset, outbase, run_id, overwrite=False):
     if dataset["ica"] is not None:
         outname = outbase.format(run_id=run_id, ftype="ica", fext="fif")
         dataset["ica"].save(outname, overwrite=overwrite)
+
+
+def read_dataset(fif):
+    """Reads a fif file and returns a dataset.
+
+    Parameters
+    ----------
+    fif : str
+        Path to raw fif file (can be preprocessed).
+
+    Returns
+    -------
+    dataset : dict
+        Contains keys: 'raw', 'events', 'epochs', 'ica'.
+    """
+    print("Loading dataset:")
+
+    print("Reading", fif)
+    raw = mne.io.read_raw_fif(fif)
+
+    events = Path(fif.replace("preproc_raw.fif", "events.npy"))
+    if events.exists():
+        print("Reading", events)
+        events = np.load(events)
+    else:
+        events = None
+
+    event_id = Path(fif.replace("preproc_raw.fif", "event-id.yml"))
+    if event_id.exists():
+        print("Reading", event_id)
+        with open(event_id, "r") as file:
+            event_id = yaml.safe_load(file)
+    else:
+        event_id = None
+
+    epochs = Path(fif.replace("preproc_raw", "epo"))
+    if epochs.exists():
+        print("Reading", epochs)
+        epochs = mne.read_epochs(epochs)
+    else:
+        epochs = None
+
+    ica = Path(fif.replace("preproc_raw", "ica"))
+    if ica.exists():
+        print("Reading", ica)
+        ica = mne.preprocessing.read_ica(ica)
+    else:
+        ica = None
+
+    dataset = {
+        "raw": raw,
+        "events": events,
+        "event_id": event_id,
+        "epochs": epochs,
+        "ica": ica,
+    }
+
+    return dataset
 
 
 def plot_preproc_flowchart(
@@ -566,10 +628,10 @@ def run_proc_chain(
         # Create a dataset dict to hold the preprocessed dataset
         dataset = {
             "raw": raw,
-            "ica": None,
-            "epochs": None,
             "events": None,
+            "epochs": None,
             "event_id": config["meta"]["event_codes"],
+            "ica": None,
         }
 
         # Do the preprocessing
