@@ -170,7 +170,13 @@ def get_coreg_filenames(subjects_dir, subject):
 
 
 def extract_polhemus_from_info(
-    fif_file, outdir, include_eeg_as_headshape=False, include_hpi_as_headshape=True
+    fif_file,
+    headshape_outfile,
+    nasion_outfile,
+    rpa_outfile,
+    lpa_outfile,
+    include_eeg_as_headshape=False,
+    include_hpi_as_headshape=True,
 ):
     """Extract polhemus from FIF info.
 
@@ -183,69 +189,54 @@ def extract_polhemus_from_info(
     ----------
     fif_file : string
         Full path to MNE-derived fif file.
-    outdir : string
-        Full path to directory to write out files to
+    headshape_outfile : string
+        Filename to save naison to.
+    nasion_outfile : string
+        Filename to save naison to.
+    rpa_outfile : string
+        Filename to save naison to.
+    lpa_outfile : string
+        Filename to save naison to.
     include_eeg_as_headshape : bool
         Should we include EEG locations as headshape points?
     include_hpi_as_headshape : bool
         Should we include HPI locations as headshape points?
-
-    Returns
-    -------
-    polhemus_headshape_file : string
-    polhemus_nasion_file : string
-    polhemus_rpa_file : string
-    polhemus_lpa_file : string
-        Polhemus filenames for Rhino to use in call to rhino.coreg
     """
-    polhemus_nasion_file = op.join(outdir, "polhemus_nasion.txt")
-    polhemus_rpa_file = op.join(outdir, "polhemus_rpa.txt")
-    polhemus_lpa_file = op.join(outdir, "polhemus_lpa.txt")
-    polhemus_headshape_file = op.join(outdir, "polhemus_headshape.txt")
+    # Lists to hold polhemus data
+    polhemus_headshape = []
+    polhemus_rpa = []
+    polhemus_lpa = []
+    polhemus_nasion = []
 
+    # Read info from fif file
     info = read_info(fif_file)
-
-    if not op.isdir(outdir):
-        os.mkdir(outdir)
-
-    # Setup polhemus files for coreg
-    polhemus_headshape_polhemus = []
-    polhemus_rpa_polhemus = []
-    polhemus_lpa_polhemus = []
-    polhemus_nasion_polhemus = []
-
     for dig in info["dig"]:
+
         # Check dig is in HEAD/Polhemus space
         if dig["coord_frame"] != FIFF.FIFFV_COORD_HEAD:
             raise ValueError("{} is not in Head/Polhemus space".format(dig["ident"]))
 
         if dig["kind"] == FIFF.FIFFV_POINT_CARDINAL:
             if dig["ident"] == FIFF.FIFFV_POINT_LPA:
-                polhemus_lpa_polhemus = dig["r"]
+                polhemus_lpa = dig["r"]
             elif dig["ident"] == FIFF.FIFFV_POINT_RPA:
-                polhemus_rpa_polhemus = dig["r"]
+                polhemus_rpa = dig["r"]
             elif dig["ident"] == FIFF.FIFFV_POINT_NASION:
-                polhemus_nasion_polhemus = dig["r"]
+                polhemus_nasion = dig["r"]
             else:
                 raise ValueError("Unknown fiducial: {}".format(dig["ident"]))
         elif dig["kind"] == FIFF.FIFFV_POINT_EXTRA:
-            polhemus_headshape_polhemus.append(dig["r"])
+            polhemus_headshape.append(dig["r"])
         elif dig["kind"] == FIFF.FIFFV_POINT_EEG and include_eeg_as_headshape:
-            polhemus_headshape_polhemus.append(dig["r"])
+            polhemus_headshape.append(dig["r"])
         elif dig["kind"] == FIFF.FIFFV_POINT_HPI and include_hpi_as_headshape:
-            polhemus_headshape_polhemus.append(dig["r"])
+            polhemus_headshape.append(dig["r"])
 
-    np.savetxt(polhemus_nasion_file, polhemus_nasion_polhemus * 1000)
-    np.savetxt(polhemus_rpa_file, polhemus_rpa_polhemus * 1000)
-    np.savetxt(polhemus_lpa_file, polhemus_lpa_polhemus * 1000)
-    np.savetxt(polhemus_headshape_file, np.array(polhemus_headshape_polhemus).T * 1000)
-
-    return (
-        polhemus_headshape_file,
-        polhemus_nasion_file,
-        polhemus_rpa_file,
-        polhemus_lpa_file,
-    )
+    # Save
+    np.savetxt(nasion_outfile, polhemus_nasion * 1000)
+    np.savetxt(rpa_outfile, polhemus_rpa * 1000)
+    np.savetxt(lpa_outfile, polhemus_lpa * 1000)
+    np.savetxt(headshape_outfile, np.array(polhemus_headshape).T * 1000)
 
 
 def compute_surfaces(
@@ -317,7 +308,7 @@ def compute_surfaces(
     # MRI (native) -- mri_mrivoxel_t (native2nativeindex) --> MRI (native) voxel indices
     # MRI (native) -- sform (mri2mniaxes) --> MNI axes
     #
-    # Rhino does everthing in mm
+    # RHINO does everthing in mm
 
     log_or_print("*** RUNNING OSL RHINO COMPUTE SURFACES ***", logger)
 
@@ -348,7 +339,7 @@ def compute_surfaces(
     # Copy smri_name to new file for modification
     copyfile(smri_file, filenames["smri_file"])
 
-    # Rhino will always use the sform, and so we will set the qform to be same
+    # RHINO will always use the sform, and so we will set the qform to be same
     # as sform for sMRI, to stop the original qform from being used by mistake
     # (e.g. by flirt)
     cmd = "fslorient -copysform2qform {}".format(filenames["smri_file"])
@@ -824,10 +815,6 @@ def coreg(
     fif_file,
     subjects_dir,
     subject,
-    polhemus_headshape_file,
-    polhemus_nasion_file,
-    polhemus_rpa_file,
-    polhemus_lpa_file,
     use_headshape=True,
     use_nose=True,
     use_dev_ctf_t=True,
@@ -879,18 +866,6 @@ def coreg(
     subject : string
         Subject name dir to put RHINO files in.
         Files will be in subjects_dir/subject/rhino/coreg/
-    polhemus_headshape_file : string
-        3 x num_pnts space-separated text file of
-        the polhemus derived headshape points in polhemus space in mm.
-    polhemus_nasion_file : string
-        3 x 1 text file of the polhemus
-        derived nasion point in polhemus space in mm.
-    polhemus_rpa_file : string
-        3 x 1 text file of the polhemus
-        derived rpa point in polhemus space in mm.
-    polhemus_lpa_file : string
-        3 x 1 text file of the polhemus
-        derived lpa point in polhemus space in mm .
     use_headshape : bool
         Determines whether polhemus derived headshape points are used.
     use_nose : bool
@@ -942,20 +917,18 @@ def coreg(
                 logger,
             )
 
-    # Copy passed in polhemus pnts
-    for fil in (
-        "polhemus_headshape_file",
-        "polhemus_nasion_file",
-        "polhemus_rpa_file",
-        "polhemus_lpa_file",
-    ):
-        copyfile(locals()[fil], filenames[fil])
-
     # Load in the "polhemus-derived fiducial points"
-    polhemus_nasion_polhemus = np.loadtxt(polhemus_nasion_file)
-    polhemus_rpa_polhemus = np.loadtxt(polhemus_rpa_file)
-    polhemus_lpa_polhemus = np.loadtxt(polhemus_lpa_file)
-    polhemus_headshape_polhemus = np.loadtxt(polhemus_headshape_file)
+    log_or_print(f"loading: {filenames['polhemus_headshape_file']}", logger)
+    polhemus_headshape = np.loadtxt(filenames["polhemus_headshape_file"])
+
+    log_or_print(f"loading: {filenames['polhemus_nasion_file']}", logger)
+    polhemus_nasion = np.loadtxt(filenames["polhemus_nasion_file"])
+
+    log_or_print(f"loading: {filenames['polhemus_rpa_file']}", logger)
+    polhemus_rpa = np.loadtxt(filenames["polhemus_rpa_file"])
+
+    log_or_print(f"loading: {filenames['polhemus_lpa_file']}", logger)
+    polhemus_lpa = np.loadtxt(filenames["polhemus_lpa_file"])
 
     # Load in outskin_mesh_file to get the "sMRI-derived headshape points"
     if use_nose:
@@ -1025,9 +998,9 @@ def coreg(
     # Note that smri_fid_native are the sMRI-derived fids in native space
     polhemus_fid_polhemus = np.concatenate(
         (
-            np.reshape(polhemus_nasion_polhemus, [-1, 1]),
-            np.reshape(polhemus_rpa_polhemus, [-1, 1]),
-            np.reshape(polhemus_lpa_polhemus, [-1, 1]),
+            np.reshape(polhemus_nasion, [-1, 1]),
+            np.reshape(polhemus_rpa, [-1, 1]),
+            np.reshape(polhemus_lpa, [-1, 1]),
         ),
         axis=1,
     )
@@ -1078,12 +1051,12 @@ def coreg(
         # Combined polhemus-derived headshape points and polhemus-derived fids,
         # with them both in polhemus space
         # These are the "source" points that will be moved around
-        polhemus_headshape_polhemus_4icp = np.concatenate(
-            (polhemus_headshape_polhemus, polhemus_fid_polhemus), axis=1
+        polhemus_headshape_4icp = np.concatenate(
+            (polhemus_headshape, polhemus_fid_polhemus), axis=1
         )
 
         xform_icp, err, e = rhino_utils.rhino_icp(
-            smri_headshape_polhemus, polhemus_headshape_polhemus_4icp, 30
+            smri_headshape_polhemus, polhemus_headshape_4icp, 30
         )
 
     else:
@@ -1201,7 +1174,7 @@ def coreg_display(
     # HEAD (polhemus)-- head_mri_t (polhemus2native) --> MRI (native)
     # MRI (native) -- mri_mrivoxel_t (native2nativeindex) --> MRI (native) voxel indices
     #
-    # Rhino does everthing in mm
+    # RHINO does everthing in mm
 
     surfaces_filenames = get_surfaces_filenames(subjects_dir, subject)
 
@@ -1266,23 +1239,23 @@ def coreg_display(
     # Setup fids and headshape points
 
     # Load, these are in mm
-    polhemus_nasion_polhemus = np.loadtxt(polhemus_nasion_file)
-    polhemus_rpa_polhemus = np.loadtxt(polhemus_rpa_file)
-    polhemus_lpa_polhemus = np.loadtxt(polhemus_lpa_file)
-    polhemus_headshape_polhemus = np.loadtxt(polhemus_headshape_file)
+    polhemus_nasion = np.loadtxt(polhemus_nasion_file)
+    polhemus_rpa = np.loadtxt(polhemus_rpa_file)
+    polhemus_lpa = np.loadtxt(polhemus_lpa_file)
+    polhemus_headshape = np.loadtxt(polhemus_headshape_file)
 
     # Move to MEG (device) space
     polhemus_nasion_meg = rhino_utils.xform_points(
-        head_trans["trans"], polhemus_nasion_polhemus
+        head_trans["trans"], polhemus_nasion
     )
     polhemus_rpa_meg = rhino_utils.xform_points(
-        head_trans["trans"], polhemus_rpa_polhemus
+        head_trans["trans"], polhemus_rpa
     )
     polhemus_lpa_meg = rhino_utils.xform_points(
-        head_trans["trans"], polhemus_lpa_polhemus
+        head_trans["trans"], polhemus_lpa
     )
     polhemus_headshape_meg = rhino_utils.xform_points(
-        head_trans["trans"], polhemus_headshape_polhemus
+        head_trans["trans"], polhemus_headshape
     )
 
     # Load sMRI derived fids, these are in mm in polhemus/head space
@@ -1649,7 +1622,7 @@ def bem_display(
     # HEAD (polhemus)-- head_mri_t (polhemus2native) --> MRI (native)
     # MRI (native) -- mri_mrivoxel_t (native2nativeindex) --> MRI (native) voxel indices
     #
-    # Rhino does everthing in mm
+    # RHINO does everthing in mm
 
     surfaces_filenames = get_surfaces_filenames(subjects_dir, subject)
 
@@ -2323,7 +2296,7 @@ def recon_timeseries2niftii(
         coreg_filenames['forward_model_file'].
         Typically derive from the VolSourceEstimate's output by
         MNE source recon methods, e.g. mne.beamformer.apply_lcmv, obtained
-        using a forward model generated by Rhino.
+        using a forward model generated by RHINO.
     spatial_resolution : int
         Resolution to use for the reference brain in mm
         (must be an integer, or will be cast to nearest int)

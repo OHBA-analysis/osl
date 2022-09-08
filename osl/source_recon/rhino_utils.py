@@ -1050,7 +1050,7 @@ def _make_lcmv(
 
     Notes
     -----
-    Rhino version of mne.beamformer.make_lcmv
+    RHINO version of mne.beamformer.make_lcmv
 
     Code that is different to mne.beamformer.make_lcmv is labelled with MWW.
 
@@ -1180,7 +1180,7 @@ def _compute_beamformer(
     For more detailed information on the parameters, see the docstrings of
     `make_lcmv` and `make_dics`.
 
-    Rhino version of mne.beamformer._compute_beamformer
+    RHINO version of mne.beamformer._compute_beamformer
     See lines marked MWW for where code has been changed
 
     Parameters
@@ -1468,7 +1468,7 @@ def _prepare_beamformer_input(
     limit_depth_chs=False,
 ):
     """Input preparation common for LCMV, DICS, and RAP-MUSIC.
-    Rhino version of mne.beamformer._prepare_beamformer_input
+    RHINO version of mne.beamformer._prepare_beamformer_input
     See lines marked MWW for where code has been changed
     """
 

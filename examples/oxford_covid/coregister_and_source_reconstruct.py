@@ -19,17 +19,18 @@ SUBJECTS = ["004", "005"]
 
 # Settings
 config = """
-    coregistration:
-        model: Single Layer
+    source_recon:
+    - extract_fiducials_from_fif: {}
+    - coregister:
         include_nose: true
         use_nose: true
         use_headshape: true
-    beamforming:
+        model: Single Layer
+    - beamform_and_parcellate:
         freq_range: [1, 45]
         chantypes: meg
         rank: {meg: 60}
-    parcellation:
-        file: fmri_d100_parcellation_with_PCC_reduced_2mm_ss5mm_ds8mm.nii.gz
+        parcellation_file: fmri_d100_parcellation_with_PCC_reduced_2mm_ss5mm_ds8mm.nii.gz
         method: spatial_basis
         orthogonalisation: symmetric
 """
@@ -46,8 +47,8 @@ for subject in SUBJECTS:
 # Source reconstruction
 source_recon.run_src_batch(
     config,
+    src_dir=SRC_DIR,
     subjects=SUBJECTS,
     preproc_files=preproc_files,
     smri_files=smri_files,
-    src_dir=SRC_DIR,
 )

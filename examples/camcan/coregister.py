@@ -6,6 +6,7 @@
 
 import numpy as np
 import pathlib
+import os.path as op
 from glob import glob
 from dask.distributed import Client
 
@@ -24,28 +25,42 @@ PREPROC_FILE = PREPROC_DIR + "/{0}_ses-rest_task-rest_meg_preproc_raw.fif"
 
 # Settings
 config = """
-    coregistration:
-        model: Single Layer
-        use_headshape: true
+    source_recon:
+    - extract_fiducials_from_fif: {}
+    - remove_headshape_points: {}
+    - coregister:
         include_nose: true
         use_nose: true
+        use_headshape: true
+        model: Single Layer
 """
 
-def remove_points(
-    polhemus_headshape_file,
-    polhemus_nasion_file,
-    **kwargs,
-):
+
+def remove_headshape_points(src_dir, subject, preproc_file, smri_file, logger):
     """Removes headshape points near the nose."""
-    hs = np.loadtxt(polhemus_headshape_file)
-    nas = np.loadtxt(polhemus_nasion_file)
-    nas[2] -= 40  # drop nasion by 4cm
+
+    # Get coreg filenames
+    subjects_dir = op.join(src_dir, "coreg")
+    filenames = source_recon.rhino.get_coreg_filenames(subjects_dir, subject)
+
+    # Load saved headshape and nasion files
+    hs = np.loadtxt(filenames["polhemus_headshape_file"])
+    nas = np.loadtxt(filenames["polhemus_nasion_file"])
+
+    # Drop nasion by 4cm
+    nas[2] -= 40  
     distances = np.sqrt(
         (nas[0] - hs[0]) ** 2 + (nas[1] - hs[1]) ** 2 + (nas[2] - hs[2]) ** 2
     )
-    keep = distances > 70  # keep headshape points more than 7cm away
+
+    # Keep headshape points more than 7cm away
+    keep = distances > 70  
     hs = hs[:, keep]
-    np.savetxt(polhemus_headshape_file, hs)
+
+    # Overwrite headshape file
+    logger.info(f"overwritting {filenames['polhemus_headshape_file']}")
+    np.savetxt(filenames["polhemus_headshape_file"], hs)
+
 
 if __name__ == "__main__":
     utils.logger.set_up(level="INFO")
@@ -70,10 +85,10 @@ if __name__ == "__main__":
     # Coregistration
     source_recon.run_src_batch(
         config,
+        src_dir=SRC_DIR,
         subjects=subjects,
         preproc_files=preproc_files,
         smri_files=smri_files,
-        src_dir=SRC_DIR,
-        edit_polhemus_func=remove_points,
+        extra_funcs=[remove_headshape_points],
         dask_client=True,
     )

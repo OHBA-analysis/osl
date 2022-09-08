@@ -17,12 +17,12 @@ SUBJECTS = ["004", "005"]
 
 # Settings
 config = """
-    beamforming:
+    source_recon:
+    - beamform_and_parcellate:
         freq_range: [1, 45]
         chantypes: meg
         rank: {meg: 60}
-    parcellation:
-        file: fmri_d100_parcellation_with_PCC_reduced_2mm_ss5mm_ds8mm.nii.gz
+        parcellation_file: fmri_d100_parcellation_with_PCC_reduced_2mm_ss5mm_ds8mm.nii.gz
         method: spatial_basis
         orthogonalisation: symmetric
 """
@@ -35,7 +35,7 @@ for subject in SUBJECTS:
 # Beamforming and parcellation
 source_recon.run_src_batch(
     config,
+    src_dir=SRC_DIR,
     subjects=SUBJECTS,
     preproc_files=preproc_files,
-    src_dir=SRC_DIR,
 )
