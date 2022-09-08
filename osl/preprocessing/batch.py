@@ -754,11 +754,10 @@ def run_proc_batch(
     # Generate a report
     if gen_report:
         from ..report import raw_report # avoids circular import
-        raw_report.gen_html_page(reportdir)
-
-        logger.info("******************************" + "*" * len(str(reportdir)))
-        logger.info(f"* REMEMBER TO CHECK REPORT: {reportdir} *")
-        logger.info("******************************" + "*" * len(str(reportdir)))
+        if raw_report.gen_html_page(reportdir):
+            logger.info("******************************" + "*" * len(str(reportdir)))
+            logger.info(f"* REMEMBER TO CHECK REPORT: {reportdir} *")
+            logger.info("******************************" + "*" * len(str(reportdir)))
 
     # Return flags
     return proc_flags

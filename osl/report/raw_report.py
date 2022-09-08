@@ -194,7 +194,14 @@ def gen_html_page(outdir):
     data = []
     for subdir in subdirs:
         subdir = pathlib.Path(subdir)
-        data.append(pickle.load(open(outdir / subdir / "data.pkl", "rb")))
+        # Just generate the html page with the successful runs
+        try:
+            data.append(pickle.load(open(outdir / subdir / "data.pkl", "rb")))
+        except:
+            pass
+
+    if len(data) == 0:
+        return False
 
     # Add info to data indicating the total number of files
     # and an id for each file
@@ -223,6 +230,8 @@ def gen_html_page(outdir):
     outpath = pathlib.Path(outdir) / 'report.html'
     with open(outpath, 'w') as f:
         f.write(page)
+
+    return True
 
 
 def load_template(tname):

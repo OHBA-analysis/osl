@@ -4,7 +4,6 @@
 
 # Authors: Chetan Gohil <chetan.gohil@psych.ox.ac.uk>
 
-import os
 from osl import source_recon
 
 

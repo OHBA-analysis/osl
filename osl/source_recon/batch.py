@@ -139,8 +139,6 @@ def run_src_chain(
     preproc_file,
     src_dir,
     smri_file=None,
-    pos_file=None,
-    edit_polhemus_func=None,
     cleanup_files=True,
     verbose="INFO",
     mneverbose="WARNING",
@@ -159,18 +157,6 @@ def run_src_chain(
         Source reconstruction directory.
     smri_file : string
         Structural MRI file.
-    pos_file : string
-        Pos files.
-    edit_polhemus_func : function
-        Function to edit the headshape/nasion/rpa/lpa points.
-        This function will be called with the following keyword arguments:
-        edit_polhemus_func(
-            subject,
-            polhemus_headshape_file=polhemus_headshape_file,
-            polhemus_nasion_file=polhemus_naison,
-            polhemus_rpa_file=polhemus_rpa_file,
-            polhemus_lpa_file=polhemus_lpa_file,
-        )
     cleanup_files : bool
         Should we clean up the files?
     verbose : string
@@ -232,39 +218,18 @@ def run_src_chain(
             use_headshape = config["coregistration"]["use_headshape"]
             model = config["coregistration"]["model"]
 
-            # Setup polhemus files
+            # Setup polhemus files, we get the fiduals from the
+            # preproc fif file
             current_status = "Setting up polhemus files"
             logger.info(current_status)
-            if pos_file is None:
-                # Use the preprocessed fif file to get positions
-                (
-                    polhemus_headshape_file,
-                    polhemus_nasion_file,
-                    polhemus_rpa_file,
-                    polhemus_lpa_file,
-                ) = rhino.extract_polhemus_from_info(
-                    fif_file=preproc_file, outdir=coreg_dir / subject
-                )
-            else:
-                # Use the pos file
-                (
-                    polhemus_headshape_file,
-                    polhemus_nasion_file,
-                    polhemus_rpa_file,
-                    polhemus_lpa_file,
-                ) = rhino.extract_polhemus_from_pos_file(
-                    pos_file=pos_file, outdir=coreg_dir / subject
-                )
-
-            if edit_polhemus_func is not None:
-                logger.info(f"edit_polhemus_func: {edit_polhemus_func.__name__}")
-                edit_polhemus_func(
-                    subject=subject,
-                    polhemus_headshape_file=polhemus_headshape_file,
-                    polhemus_nasion_file=polhemus_nasion_file,
-                    polhemus_rpa_file=polhemus_rpa_file,
-                    polhemus_lpa_file=polhemus_lpa_file,
-                )
+            (
+                polhemus_headshape_file,
+                polhemus_nasion_file,
+                polhemus_rpa_file,
+                polhemus_lpa_file,
+            ) = rhino.extract_polhemus_from_info(
+                fif_file=preproc_file, outdir=coreg_dir / subject
+            )
 
             # Compute surface
             current_status = "Computing surface"
@@ -437,8 +402,6 @@ def run_src_batch(
     preproc_files,
     src_dir,
     smri_files=None,
-    pos_files=None,
-    edit_polhemus_func=None,
     cleanup_files=True,
     verbose="INFO",
     mneverbose="WARNING",
@@ -458,18 +421,6 @@ def run_src_batch(
         Source reconstruction directory.
     smri_files : list of strings
         Structural MRI files.
-    pos_files : list of strings
-        Pos files.
-    edit_polhemus_func : function
-        Function to edit the headshape/nasion/rpa/lpa points.
-        This function will be called with the following keyword arguments:
-        edit_polhemus_func(
-            subject,
-            polhemus_headshape_file=polhemus_headshape_file,
-            polhemus_nasion_file=polhemus_naison,
-            polhemus_rpa_file=polhemus_rpa_file,
-            polhemus_lpa_file=polhemus_lpa_file,
-        )
     cleanup_files : bool
         Should we clean up the files?
     verbose : string
@@ -517,13 +468,9 @@ def run_src_batch(
     elif smri_files is None:
         smri_files = [None] * n_subjects
 
-    if pos_files is None:
-        pos_files = [None] * n_subjects
-
     # Create partial function with fixed options
     pool_func = partial(
         run_src_chain,
-        edit_polhemus_func=edit_polhemus_func,
         cleanup_files=cleanup_files,
         verbose=verbose,
         mneverbose=mneverbose,
@@ -531,11 +478,11 @@ def run_src_batch(
 
     # Loop through input files to generate arguments for run_coreg_chain
     args = []
-    for subject, preproc_file, smri_file, pos_file in zip(
-        subjects, preproc_files, smri_files, pos_files
+    for subject, preproc_file, smri_file, in zip(
+        subjects, preproc_files, smri_files
     ):
         args.append((
-            config, subject, preproc_file, src_dir, smri_file, pos_file
+            config, subject, preproc_file, src_dir, smri_file
         ))
 
     # Actually run the processes
@@ -548,9 +495,9 @@ def run_src_batch(
 
     if "coregistration" in config:
         # Generate HTML report
-        raw_report.gen_html_page(reportdir)
-        logger.info("******************************" + "*" * len(str(reportdir)))
-        logger.info(f"* REMEMBER TO CHECK REPORT: {reportdir} *")
-        logger.info("******************************" + "*" * len(str(reportdir)))
+        if raw_report.gen_html_page(reportdir):
+            logger.info("******************************" + "*" * len(str(reportdir)))
+            logger.info(f"* REMEMBER TO CHECK REPORT: {reportdir} *")
+            logger.info("******************************" + "*" * len(str(reportdir)))
 
     return flags
