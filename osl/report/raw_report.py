@@ -28,6 +28,7 @@ from matplotlib.lines import Line2D
 from matplotlib.patches import Rectangle
 
 from ..utils import process_file_inputs, validate_outdir
+from ..utils.logger import log_or_print
 from ..preprocessing import (
     import_data,
     load_config,
@@ -72,7 +73,7 @@ def get_header_id(raw):
     return raw.filenames[0].split('/')[-1].strip('.fif')
 
 
-def gen_html_data(raw, outdir, coreg=None):
+def gen_html_data(raw, outdir, coreg=None, logger=None):
     """Generate HTML web-report for an MNE data object.
 
     Parameters
@@ -83,6 +84,8 @@ def gen_html_data(raw, outdir, coreg=None):
         Directory to write HTML data and plots to.
     coreg : string
         Path to coregistration plot. (Should be an interactive HTML object.)
+    logger : logging.getLogger
+        Logger.
     """
 
     data = {}
@@ -104,7 +107,7 @@ def gen_html_data(raw, outdir, coreg=None):
     try:
         data['nhpi'] = len(raw.info['hpi_meas'][0]['hpi_coils'])
     except:
-        print("No HPI info in fif file")
+        log_or_print("No HPI info in fif file", logger)
 
     chtype = [channel_type(raw.info, c) for c in range(data['nchans'])]
     chs, chcounts = np.unique(chtype, return_counts=True)

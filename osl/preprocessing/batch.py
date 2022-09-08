@@ -620,7 +620,7 @@ def run_proc_chain(
         from ..report import gen_html_data  # avoids circular import
         logger.info("{0} : Generating Report".format(now))
         reportdir = validate_outdir(reportdir / run_id)
-        gen_html_data(dataset["raw"], reportdir)
+        gen_html_data(dataset["raw"], reportdir, logger=logger)
 
     return True
 
