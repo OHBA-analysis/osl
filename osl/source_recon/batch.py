@@ -20,7 +20,8 @@ import numpy as np
 import yaml
 import mne
 
-from . import rhino, rhino_utils, wrappers
+import osl.source_recon.rhino.utils as rhino_utils
+from . import rhino, wrappers
 from ..preprocessing import import_data
 from ..report import raw_report
 from ..utils import logger as osl_logger

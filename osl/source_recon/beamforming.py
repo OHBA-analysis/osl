@@ -19,7 +19,8 @@ from mne import (
     compute_raw_covariance,
 )
 
-from osl.source_recon import rhino, rhino_utils
+import osl.source_recon.rhino.utils as rhino_utils
+from osl.source_recon.rhino import rhino
 from osl.utils.logger import log_or_print
 
 

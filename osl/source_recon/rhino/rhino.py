@@ -47,7 +47,7 @@ from mne import (
 from mne.io.constants import FIFF
 from mne.bem import ConductorModel, read_bem_solution
 
-from osl.source_recon import rhino_utils
+import osl.source_recon.rhino.utils as rhino_utils
 from osl.utils import soft_import
 from osl.utils.logger import log_or_print
 

@@ -173,11 +173,11 @@ def beamform_and_parcellate(
     parcel_ts = p.parcel_timeseries["data"]
 
     # Orthogonalisation
-    if orthogonalisation not in ["symmetric"]:
+    if orthogonalisation not in [None, "symmetric"]:
         raise NotImplementedError(orthogonalisation)
 
-    logger.info(f"{orthogonalisation} orthogonalisation")
     if orthogonalisation == "symmetric":
+        logger.info(f"{orthogonalisation} orthogonalisation")
         parcel_ts = parcellation.symmetric_orthogonalise(
             parcel_ts, maintain_magnitudes=True
         )

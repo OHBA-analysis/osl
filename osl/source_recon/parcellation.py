@@ -17,9 +17,9 @@ import scipy.sparse.linalg
 from scipy.spatial import KDTree
 from nilearn.plotting import plot_markers
 
-from osl.source_recon import rhino_utils
-from osl.utils import soft_import
-from osl.utils.logger import log_or_print
+import osl.source_recon.rhino.utils as rhino_utils
+from ..utils import soft_import
+from ..utils.logger import log_or_print
 
 
 class Parcellation:
