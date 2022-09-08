@@ -8,7 +8,6 @@
 
 import os
 import sys
-import pathlib
 import traceback
 import pprint
 import inspect
@@ -20,7 +19,6 @@ import numpy as np
 import yaml
 import mne
 
-import osl.source_recon.rhino.utils as rhino_utils
 from . import rhino, wrappers
 from ..preprocessing import import_data
 from ..report import raw_report

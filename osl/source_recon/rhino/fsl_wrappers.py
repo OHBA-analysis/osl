@@ -8,6 +8,9 @@
 #          Chetan Gohil <chetan.gohil@psych.ox.ac.uk>
 
 import os
+import os.path as op
+
+import nibabel as nib
 
 import osl.source_recon.rhino.utils as rhino_utils
 
