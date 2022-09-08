@@ -139,7 +139,6 @@ def run_src_chain(
     preproc_file,
     src_dir,
     smri_file=None,
-    cleanup_files=True,
     verbose="INFO",
     mneverbose="WARNING",
 ):
@@ -157,8 +156,6 @@ def run_src_chain(
         Source reconstruction directory.
     smri_file : string
         Structural MRI file.
-    cleanup_files : bool
-        Should we clean up the files?
     verbose : string
         Level of verbose.
     mneverbose : string
@@ -239,7 +236,6 @@ def run_src_chain(
                 subjects_dir=coreg_dir,
                 subject=subject,
                 include_nose=include_nose,
-                cleanup_files=cleanup_files,
                 logger=logger,
             )
 
@@ -402,7 +398,6 @@ def run_src_batch(
     preproc_files,
     src_dir,
     smri_files=None,
-    cleanup_files=True,
     verbose="INFO",
     mneverbose="WARNING",
     dask_client=False,
@@ -421,8 +416,6 @@ def run_src_batch(
         Source reconstruction directory.
     smri_files : list of strings
         Structural MRI files.
-    cleanup_files : bool
-        Should we clean up the files?
     verbose : string
         Level of verbose.
     mneverbose : string
@@ -471,7 +464,6 @@ def run_src_batch(
     # Create partial function with fixed options
     pool_func = partial(
         run_src_chain,
-        cleanup_files=cleanup_files,
         verbose=verbose,
         mneverbose=mneverbose,
     )

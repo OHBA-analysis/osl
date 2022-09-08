@@ -253,7 +253,7 @@ def compute_surfaces(
     subjects_dir,
     subject,
     include_nose=True,
-    cleanup_files=False,
+    cleanup_files=True,
     logger=None,
 ):
     """Compute surfaces.
