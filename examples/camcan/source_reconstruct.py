@@ -6,6 +6,7 @@
 
 import numpy as np
 import pathlib
+import os.path as op
 from glob import glob
 from dask.distributed import Client
 
@@ -19,12 +20,12 @@ PREPROC_FILE = PREPROC_DIR + "/{0}_ses-rest_task-rest_meg_preproc_raw.fif"
 
 # Settings
 config = """
-    beamforming:
+    source_recon:
+    - beamform_and_parcellate:
         freq_range: [1, 45]
         chantypes: meg
         rank: {meg: 60}
-    parcellation:
-        file: fmri_d100_parcellation_with_PCC_reduced_2mm_ss5mm_ds8mm.nii.gz
+        parcellation_file: fmri_d100_parcellation_with_PCC_reduced_2mm_ss5mm_ds8mm.nii.gz
         method: spatial_basis
         orthogonalisation: symmetric
 """

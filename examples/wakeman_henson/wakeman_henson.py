@@ -1,30 +1,42 @@
 #!/usr/bin/env python
 
-"""Run RHINO-based source recon on Wakeman-Henson dataset.
+"""Run RHINO-based source reconstruction on the Wakeman-Henson dataset.
+
+This script can be copy and pasted into any directory on hbaws and executed with:
+python wakeman_henson.py
 
 See run_wakeman_henson.m for matlab equivalent.
 """
 
+# Authors: Mark Woolrich <mark.woolrich@ohba.ox.ac.uk>
+#          Chetan Gohil <chetan.gohil@psych.ox.ac.uk>
+
 import os
 import os.path as op
+from pathlib import Path
 
 import numpy as np
 import matplotlib.pyplot as plt
 import h5py
+
 import mne
-from mne.beamformer import make_lcmv, apply_lcmv_epochs
+from mne.beamformer import apply_lcmv_epochs
 
 import glmtools as glm
 from anamnesis import obj_from_hdf5file
 
 import osl
-from osl import rhino
+from osl.source_recon import rhino, beamforming
 
-base_dir = "/Users/woolrich/homedir/vols_data/WakeHen/"
-fif_file_in = op.join(base_dir, "raw/sub001/MEG/run_02_sss.fif")
 
-outbase = op.join(base_dir, "wakehen_glm")
-fif_file_preproc = op.join(outbase, "preproc_data/sub001_run_02_sss_raw.fif")
+base_dir = "/ohba/pi/mwoolrich/datasets/WakemanHenson/ds117"
+in_fif_file = op.join(base_dir, "sub001/MEG/run_02_sss.fif")
+
+subj_id = Path(in_fif_file).stem + "_{ftype}.{ext}"
+
+out_dir = "./wakehen_glm"
+preproc_dir = op.join(out_dir, "preproc")
+outbase = op.join(out_dir, subj_id)
 
 baseline_correct = True
 run_compute_surfaces = True
@@ -33,8 +45,6 @@ run_forward_model = True
 run_sensor_space = False
 
 contrast_of_interest = 15
-
-outname = os.path.join(outbase, fif_file_preproc.split("/")[-1])
 
 use_eeg = False
 use_meg = True
@@ -57,11 +67,9 @@ if use_meg:
 print("Channel types to use: {}".format(chantypes))
 print("Channel types and ranks for source recon: {}".format(rank))
 
-# ------------- #
-# Preprocessing #
-# ------------- #
+# -------------
+# Preprocessing
 
-# Load config file
 config = """
     meta:
       event_codes:
@@ -80,20 +88,21 @@ config = """
       - filter:            {l_freq: 1.1, h_freq: 175}
       - notch_filter:      {freqs: 50 100 150}
       - resample:          {sfreq: 150}
+      - filter:            {l_freq: 1, h_freq: 30, method: iir, iir_params: {order: 5, btype: bandpass, ftype: butter}}
 """
 
-# Run preproc
-dataset = osl.preprocessing.run_proc_chain(
-    fif_file_in, config, outdir=outbase, overwrite=True
+# Run preprocessing
+osl.preprocessing.run_proc_chain(
+    in_fif_file, config, outdir=preproc_dir, overwrite=True
 )
 
-dataset["raw"].filter(
-    l_freq=1,
-    h_freq=30,
-    method="iir",
-    iir_params={"order": 5, "btype": "bandpass", "ftype": "butter"},
+# Load preprocessed data
+preproc_fif_file = op.join(
+    preproc_dir, subj_id.format(ftype="preproc_raw", ext="fif")
 )
+dataset = osl.preprocessing.read_dataset(preproc_fif_file)
 
+# Epoch
 epochs = mne.Epochs(
     dataset["raw"],
     dataset["events"],
@@ -103,14 +112,15 @@ epochs = mne.Epochs(
     baseline=(None, 0),
 )
 
+# Reject bad epochs
 epochs.drop_bad(reject=chantypes_reject_thresh)
 
 if use_eeg:
     epochs.set_eeg_reference(ref_channels="average", projection=True)
 
-# ------------------- #
-# Setup design matrix #
-# ------------------- #
+# -------------------
+# Setup design matrix
+print("\nSetting up design matrix")
 
 DC = glm.design.DesignConfig()
 DC.add_regressor(name="FamousFirst", rtype="Categorical", codes=5)
@@ -178,33 +188,35 @@ DC.add_contrast(
 
 print(DC.to_yaml())
 
+# Load data in glmtools
 data = glm.io.load_mne_epochs(epochs)
 
 # Create Design Matrix
 des = DC.design_from_datainfo(data.info)
-des.plot_summary(show=True, savepath=outname.replace(".fif", "_design.png"))
+print("Please close the pop-up figures to continue running the code")
+des.plot_summary(show=True, savepath=outbase.format(ftype="design", ext="png"))
 
-# --------------------- #
-# Sensor Space Analysis #
-# --------------------- #
+# ---------------------
+# Sensor Space Analysis
 
 if run_sensor_space:
+    print("Sensor Space Analysis")
 
     # Create GLM data
-
     epochs.load_data()
     epochs.pick(chantypes)
-
     data = glm.io.load_mne_epochs(epochs)
 
     # ------------------------------------------------------
 
     # Fit Model
+    print("Fitting GLM")
     model_sensor = glm.fit.OLSModel(des, data)
 
     # Save GLM
-    glmname = outname.replace(".fif", "_glm.hdf5")
-    out = h5py.File(outname.replace(".fif", "_glm.hdf5"), "w")
+    glmname = outbase.format(ftype="glm", ext="hdf5")
+    print("Saving GLM:", glmname)
+    out = h5py.File(glmname, "w")
     des.to_hdf5(out.create_group("design"))
     data.to_hdf5(out.create_group("data"))
     model_sensor.to_hdf5(out.create_group("model_sensor"))
@@ -212,12 +224,14 @@ if run_sensor_space:
 
     # ------------------------------------------------------
 
-    # Load Subj GLM
+    # Load subject GLM
     model_sensor = obj_from_hdf5file(glmname, "model_sensor")
 
     # Make MNE object with contrast
     ev = mne.EvokedArray(
-        np.abs(model_sensor.copes[contrast_of_interest, :, :]), epochs.info, tmin=-0.5
+        np.abs(model_sensor.copes[contrast_of_interest]),
+        epochs.info,
+        tmin=-0.5
     )
 
     if baseline_correct:
@@ -227,45 +241,42 @@ if run_sensor_space:
     times = [0.115 + 0.034, 0.17 + 0.034]
     ev.plot_joint(times=times)
 
-# --------------------------------------------------------- #
-# Compute info for source recon (coreg, forward model, BEM) #
-# --------------------------------------------------------- #
+# ------------------------------------------------------------------
+# Compute info for source reconstruction (coreg, forward model, BEM)
+print("Computing info for source reconstruction")
 
-subjects_dir = outbase
+subjects_dir = op.join(out_dir, "coreg")
 subject = "subject1_run2"
 
-# input files
-smri_file = op.join(
-    "/Users/woolrich/homedir/vols_data/WakeHen", "structurals", "highres001.nii.gz"
+# Input files
+smri_file = (
+    "/ohba/pi/mwoolrich/datasets/WakemanHenson/ds117/sub001/anatomy/highres001.nii.gz"
 )
 gridstep = 8  # mm
 
 # Setup polhemus files for coreg
-outdir = op.join(subjects_dir, subject)
-(
-    polhemus_headshape_file,
-    polhemus_nasion_file,
-    polhemus_rpa_file,
-    polhemus_lpa_file,
-) = rhino.extract_polhemus_from_info(fif_file_preproc, outdir)
+coreg_filenames = rhino.get_coreg_filenames(subjects_dir, subject)
+rhino.extract_polhemus_from_info(
+    fif_file=preproc_fif_file,
+    headshape_outfile=coreg_filenames["polhemus_headshape_file"],
+    nasion_outfile=coreg_filenames["polhemus_nasion_file"],
+    rpa_outfile=coreg_filenames["polhemus_rpa_file"],
+    lpa_outfile=coreg_filenames["polhemus_lpa_file"],
+)
 
 if run_compute_surfaces:
     rhino.compute_surfaces(
         smri_file, subjects_dir, subject, include_nose=False, cleanup_files=True
     )
 
-    rhino.surfaces_display(subjects_dir, subject)
+    #rhino.surfaces_display(subjects_dir, subject)
 
 if run_coreg:
-    # call rhino
+    # Call RHINO
     rhino.coreg(
-        fif_file_preproc,
+        preproc_fif_file,
         subjects_dir,
         subject,
-        polhemus_headshape_file,
-        polhemus_nasion_file,
-        polhemus_rpa_file,
-        polhemus_lpa_file,
         use_headshape=True,
         use_nose=False,
     )
@@ -274,13 +285,13 @@ if run_coreg:
     # Yellow diamonds are the sMRI derived fiducials
     # Position of sMRI derived fiducials are the ones that are refined if
     # useheadshape=True was used for rhino.coreg
-    rhino.coreg_display(
-        subjects_dir,
-        subject,
-        plot_type="surf",
-        display_outskin_with_nose=False,
-        display_sensors=True,
-    )
+    #rhino.coreg_display(
+    #    subjects_dir,
+    #    subject,
+    #    plot_type="surf",
+    #    display_outskin_with_nose=False,
+    #    display_sensors=True,
+    #)
 
 if run_forward_model:
     if use_eeg:
@@ -298,18 +309,19 @@ if run_forward_model:
         mindist=4.0,
     )
 
-    rhino.bem_display(
-        subjects_dir,
-        subject,
-        plot_type="surf",
-        display_outskin_with_nose=False,
-        display_sensors=True,
-    )
+    #rhino.bem_display(
+    #    subjects_dir,
+    #    subject,
+    #    plot_type="surf",
+    #    display_outskin_with_nose=False,
+    #    display_sensors=True,
+    #)
 
-# -------------------------------- #
-# Apply source recon to epoch data #
-# -------------------------------- #
+# -------------------------------------------
+# Apply source reconstruction to epoched data
+print("Applying source reconstruction to epoched data")
 
+# Epoch the preprocessed data again from scratch and drop bad epochs
 epochs = mne.Epochs(
     dataset["raw"],
     dataset["events"],
@@ -318,9 +330,7 @@ epochs = mne.Epochs(
     tmax=1.5,
     baseline=(None, 0),
 )
-
 epochs.drop_bad(reject=chantypes_reject_thresh, verbose=True)
-
 epochs.load_data()
 
 if use_eeg:
@@ -328,8 +338,8 @@ if use_eeg:
 
 epochs.pick(chantypes)
 
-# make LCMV filter
-filters = rhino.make_lcmv(
+# Make LCMV filter
+filters = beamforming.make_lcmv(
     subjects_dir,
     subject,
     epochs,
@@ -342,17 +352,19 @@ filters = rhino.make_lcmv(
     verbose=True,
 )
 
-# plot data covariance matrix
+# Plot data covariance matrix
+print("Plotting covariance matrix and rank")
+print("Please close the pop-up figures to continue running the code")
 filters["data_cov"].plot(epochs.info)
 
 # stc is list of source space trial time series (in head/polhemus space)
 stc = apply_lcmv_epochs(epochs, filters)
 
-# ---------------------------- #
-# Fit GLM to source recon data #
-# ---------------------------- #
+# ------------------------------------
+# Fit GLM to source reconstructed data
+print("Source Space Analysis")
 
-# turns this into a ntrials x nsources x ntpts array
+# Turns this into a ntrials x nsources x ntpts array
 sourcespace_epoched_data = []
 for trial in stc:
     sourcespace_epoched_data.append(trial.data)
@@ -362,49 +374,53 @@ sourcespace_epoched_data = np.stack(sourcespace_epoched_data)
 data = glm.data.TrialGLMData(data=sourcespace_epoched_data)
 
 # Show Design Matrix
-des.plot_summary(show=True, savepath=outname.replace(".fif", "_design.png"))
+print("Please close the pop-up figures to continue running the code")
+des.plot_summary(show=True, savepath=preproc_fif_file.replace(".fif", "_design.png"))
 
 # ------------------------------------------------------
 
 # Fit Model
+print("Fitting GLM")
 model_source = glm.fit.OLSModel(des, data)
 
 # Save GLM
-glmname = outname.replace(".fif", "_source_glm.hdf5")
-out = h5py.File(outname.replace(".fif", "_source_glm.hdf5"), "w")
+glmname = outbase.format(ftype="source_glm", ext="hdf5")
+print("Saving GLM:", glmname)
+out = h5py.File(glmname, "w")
 des.to_hdf5(out.create_group("design"))
 data.to_hdf5(out.create_group("data"))
 model_source.to_hdf5(out.create_group("model_source_epochs"))
 out.close()
 
-# -------------------------------------- #
-# Compute stats of interest from GLM fit #
-# -------------------------------------- #
+# --------------------------------------
+# Compute stats of interest from GLM fit
+print("Computing stats from GLM fit")
 
 acopes = []
 
-# take abs(cope) due to 180 degree ambiguity in dipole orientation
+# Take abs(cope) due to 180 degree ambiguity in dipole orientation
 acope = np.abs(model_source.copes[contrast_of_interest])
 
-# globally normalise by the mean
+# Globally normalise by the mean
 acope = acope / np.mean(acope)
 
 if baseline_correct:
     baseline_mean = np.mean(
-        abs(model_source.copes[contrast_of_interest][:, epochs.times < 0]), 1
+        abs(model_source.copes[contrast_of_interest][:, epochs.times < 0]),
+        axis=1,
     )
     # acope = acope - np.reshape(baseline_mean.T,[acope.shape[0],1])
     acope = acope - np.reshape(baseline_mean, [-1, 1])
 
 acopes.append(acope)
 
-# ----------------------------------------------- #
-# Output stats as 3D nii files at tpt of interest #
-# ----------------------------------------------- #
+# ------------------------------------------------------
+# Output stats as 3D nii files at time point of interest
+print("Saving stats nii")
 
 stats_dir = op.join(subjects_dir, subject, "rhino", "stats")
-if not os.path.isdir(stats_dir):
-    os.mkdir(stats_dir)
+if not op.isdir(stats_dir):
+    os.makedirs(stats_dir, exist_ok=True)
 
 # output nii nearest to this time point in msecs:
 tpt = 0.110 + 0.034
@@ -414,7 +430,7 @@ out_nii_fname = op.join(
     stats_dir,
     "acope{}_vol{}_mni_{}mm.nii.gz".format(contrast_of_interest, volume_num, gridstep),
 )
-out_nii_fname, stdbrain_mask_fname = rhino.recon_timeseries2niftii(
+out_nii_fname, stdbrain_mask_fname = rhino.utils.recon_timeseries2niftii(
     subjects_dir,
     subject,
     recon_timeseries=acopes[0][:, volume_num],
@@ -423,13 +439,13 @@ out_nii_fname, stdbrain_mask_fname = rhino.recon_timeseries2niftii(
 
 rhino.fsleyes_overlay(stdbrain_mask_fname, out_nii_fname)
 
-# ------------------------------------------------------ #
-# Plot time course of cope at a specified MNI coordinate #
-# ------------------------------------------------------ #
+# ------------------------------------------------------
+# Plot time course of cope at a specified MNI coordinate
 
 coord_mni = np.array([18, -80, -7])
+print("Plotting COPE time course for MNI coord:", coord_mni)
 
-recon_timeseries = rhino.get_recon_timeseries(
+recon_timeseries = beamforming.get_recon_timeseries(
     subjects_dir, subject, coord_mni, acopes[0]
 )
 
@@ -442,30 +458,29 @@ plt.title(
 )
 plt.xlabel("time (s)")
 plt.ylabel("abs(cope)")
+print("Please close the pop-up figures to continue running the code")
+plt.show()
 
-# -------------------------------------------------------------------------- #
-# Convert cope to standard brain grid in MNI space, for doing group stats    #
-# (sourcespace_epoched_data and therefore acopes are in head/polhemus space) #
-# -------------------------------------------------------------------------- #
+# --------------------------------------------------------------------------
+# Convert cope to standard brain grid in MNI space, for doing group stats
+# (sourcespace_epoched_data and therefore acopes are in head/polhemus space)
+print("Converting COPE to MNI space")
 
 (
-    acope_timeseries_mni,
-    reference_brain_fname,
-    mni_coords_out,
-    _,
-) = rhino.transform_recon_timeseries(
+    acope_timeseries_mni, reference_brain_fname, mni_coords_out, _,
+) = beamforming.transform_recon_timeseries(
     subjects_dir, subject, recon_timeseries=acopes[0], reference_brain="mni"
 )
 
-# ------------------------------------------------------------------ #
-# Write cope as 4D niftii file on a standard brain grid in MNI space #
-# 4th dimension is timepoint within a trial                          #
-# ------------------------------------------------------------------ #
+# ------------------------------------------------------------------
+# Write cope as 4D niftii file on a standard brain grid in MNI space
+# 4th dimension is timepoint within a trial
 
 out_nii_fname = op.join(
     stats_dir, "acope{}_mni_{}mm.nii.gz".format(contrast_of_interest, gridstep)
 )
-out_nii_fname, stdbrain_mask_fname = rhino.recon_timeseries2niftii(
+print("Saving:", out_nii_fname)
+out_nii_fname, stdbrain_mask_fname = rhino.utils.recon_timeseries2niftii(
     subjects_dir,
     subject,
     recon_timeseries=acopes[0],
@@ -478,5 +493,5 @@ rhino.fsleyes_overlay(stdbrain_mask_fname, out_nii_fname)
 
 # From fsleyes drop down menus Select "View/Time series"
 # To see time labelling in secs:
-#   - In the Time series panel, select Settings (the spanner icon)
-#   - In the Time series settings popup, select "Use Pix Dims"
+# - In the Time series panel, select Settings (the spanner icon)
+# - In the Time series settings popup, select "Use Pix Dims"

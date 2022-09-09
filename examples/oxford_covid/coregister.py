@@ -4,7 +4,6 @@
 
 # Authors: Chetan Gohil <chetan.gohil@psych.ox.ac.uk>
 
-import os
 from osl import source_recon
 
 
@@ -19,11 +18,13 @@ SUBJECTS = ["004", "005"]
 
 # Settings
 config = """
-    coregistration:
-        model: Single Layer
-        use_headshape: true
+    source_recon:
+    - extract_fiducials_from_fif: {}
+    - coregister:
         include_nose: true
         use_nose: true
+        use_headshape: true
+        model: Single Layer
 """
 
 # Setup
@@ -38,8 +39,8 @@ for subject in SUBJECTS:
 # Coregistration
 source_recon.run_src_batch(
     config,
+    src_dir=SRC_DIR,
     subjects=SUBJECTS,
     preproc_files=preproc_files,
     smri_files=smri_files,
-    src_dir=SRC_DIR,
 )
