@@ -59,14 +59,18 @@
             <h4>Variance Across Sensors</h4>
             <img src="{{ data.plt_temporalsumsq }}" alt="" style='max-width: 100%'/>
         </div>
-        <div style="width: 100%">
-            <h4>EOG Recording</h4>
-            <img src="{{ data.plt_artefacts_eog }}" alt="" style='max-width: 100%'/>
-        </div>
-        <div style="width: 100%">
-            <h4>ECG Recording</h4>
-            <img src="{{ data.plt_artefacts_ecg }}" alt="" style='max-width: 100%'/>
-        </div>
+        {% if data.plt_artefacts_eog is not none %}
+            <div style="width: 100%">
+                <h4>EOG Recording</h4>
+                <img src="{{ data.plt_artefacts_eog }}" alt="" style='max-width: 100%'/>
+            </div>
+        {% endif %}
+        {% if data.plt_artefacts_ecg is not none %}
+            <div style="width: 100%">
+                <h4>ECG Recording</h4>
+                <img src="{{ data.plt_artefacts_ecg }}" alt="" style='max-width: 100%'/>
+            </div>
+        {% endif %}
     </div>
         
     <div class="tabpage" style="width: 100%; display: none" id={{ data.fif_id }}_channels>

@@ -300,7 +300,8 @@ def plot_channel_time_series(raw, savebase=None):
     channel_types = {
         'mag': mne.pick_types(raw.info, meg='mag'),
         'grad': mne.pick_types(raw.info, meg='grad'),
-        'eeg': mne.pick_types(raw.info, meg=False, eeg=True),
+        'eeg': mne.pick_types(raw.info, eeg=True),
+        'csd': mne.pick_types(raw.info, csd=True),
     }
     t = raw.times
     x = raw.get_data()
@@ -312,7 +313,7 @@ def plot_channel_time_series(raw, savebase=None):
             nrows += 1
 
     if nrows == 0:
-        return 'No MEG or EEG channels.'
+        return None
 
     # Make sum-square plots
     fig, ax = plt.subplots(nrows=nrows, ncols=1, figsize=(16, 4))
@@ -374,7 +375,8 @@ def plot_channel_dists(raw, savebase=None):
     channel_types = {
         'Magnetometers': mne.pick_types(raw.info, meg='mag'),
         'Gradiometers': mne.pick_types(raw.info, meg='grad'),
-        'EEG': mne.pick_types(raw.info, meg=False, eeg=True),
+        'EEG': mne.pick_types(raw.info, eeg=True),
+        'CSD': mne.pick_types(raw.info, csd=True),
     }
     t = raw.times
     x = raw.get_data()
@@ -386,7 +388,7 @@ def plot_channel_dists(raw, savebase=None):
             ncols += 1
 
     if ncols == 0:
-        return 'No MEG or EEG channels.'
+        return None
     
     # Make plots
     fig, ax = plt.subplots(nrows=1, ncols=ncols, figsize=(9, 3.5))
@@ -529,7 +531,7 @@ def plot_eog_summary(raw, savebase=None):
     # Get the raw EOG data
     chan_inds = mne.pick_types(raw.info, eog=True)
     if len(chan_inds) == 0:
-        return 'EOG Channel Not Found'
+        return None
     t = raw.times
     x = raw.get_data(chan_inds).T
 
@@ -557,7 +559,7 @@ def plot_ecg_summary(raw, savebase=None):
     # Get the raw ECG data
     chan_inds = mne.pick_types(raw.info, ecg=True)
     if len(chan_inds) == 0:
-        return 'ECG Channel Not Found'
+        return None
     t = raw.times
     x = raw.get_data(chan_inds).T
 
