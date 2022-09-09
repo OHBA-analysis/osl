@@ -19,6 +19,9 @@ config = """
     - resample: {sfreq: 250}
     - bad_segments: {segment_len: 2000, picks: 'mag'}
     - bad_segments: {segment_len: 2000, picks: 'grad'}
+    - bad_channels: {picks: 'meg'}
+    - ica_raw: {n_components: 20, picks: 'meg'}
+    - ica_autoreject: {apply: False}
 """
 
 # Setup

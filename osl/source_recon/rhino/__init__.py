@@ -4,7 +4,7 @@
 
 """
 
-from .rhino import *  # noqa: F401, F403
+from .coreg import *  # noqa: F401, F403
 from .polhemus import *  # noqa: F401, F403
 from .freesurfer import *  # noqa: F401, F403
 from .forward_model import *  # noqa: F401, F403

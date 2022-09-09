@@ -7,6 +7,11 @@
 # Authors: Mark Woolrich <mark.woolrich@ohba.ox.ac.uk>
 #          Chetan Gohil <chetan.gohil@psych.ox.ac.uk>
 
+import os
+import os.path as op
+from copy import deepcopy
+
+import nibabel as nib
 
 from mne import (
     make_bem_model,
@@ -15,11 +20,14 @@ from mne import (
     write_forward_solution,
 )
 from mne.bem import ConductorModel, read_bem_solution
-from mne.transforms import read_trans
+from mne.transforms import read_trans, Transform
 from mne.io import read_info
 from mne.io.constants import FIFF
+from mne.surface import read_surface, write_surface
+from mne.source_space import _make_volume_source_space, _complete_vol_src
 
-from osl.source_recon.rhino import get_coreg_filenames, setup_volume_source_space
+from osl.source_recon.rhino import get_coreg_filenames
+from osl.source_recon.rhino.surfaces import get_surfaces_filenames
 from osl.utils.logger import log_or_print
 
 
@@ -217,3 +225,193 @@ def make_fwd_solution(
         raise RuntimeError("fwd['src'][0] is not in HEAD coordinates")
 
     return fwd
+
+
+def setup_volume_source_space(
+    subjects_dir, subject, gridstep=5, mindist=5.0, exclude=0.0, logger=None
+):
+    """Set up a volume source space grid inside the inner skull surface.
+    This is a RHINO specific version of mne.setup_volume_source_space.
+
+    Parameters
+    ----------
+    subjects_dir : string
+        Directory to find RHINO subject dirs in.
+    subject : string
+        Subject name dir to find RHINO files in.
+    gridstep : int
+        A grid will be constructed with the spacing given by ``gridstep`` in mm,
+        generating a volume source space.
+    mindist : float
+        Exclude points closer than this distance (mm) to the bounding surface.
+    exclude : float
+        Exclude points closer than this distance (mm) from the center of mass
+        of the bounding surface.
+    logger : logging.getLogger
+        Logger
+
+    Returns
+    -------
+    src : SourceSpaces
+        A single source space object.
+
+    See Also
+    --------
+    mne.setup_volume_source_space
+
+    Notes
+    -----
+    This is a RHINO specific version of mne.setup_volume_source_space, which
+    can handle smri's that are niftii files. This specifically
+    uses the inner skull surface in:
+        get_surfaces_filenames(subjects_dir, subject)['bet_inskull_surf_file']
+    to define the source space grid.
+
+    This will also copy the:
+        get_surfaces_filenames(subjects_dir, subject)['bet_inskull_surf_file']
+    file to:
+        subjects_dir/subject/bem/inner_skull.surf
+    since this is where mne expects to find it when mne.make_bem_model
+    is called.
+
+    The coords of points to reconstruct to can be found in the output here:
+        src[0]['rr'][src[0]['vertno']]
+    where they are in native MRI space in metres.
+    """
+
+    pos = int(gridstep)
+
+    surfaces_filenames = get_surfaces_filenames(subjects_dir, subject)
+
+    # -------------------------------------------------------------------------
+    # Move the surfaces to where MNE expects to find them for the
+    # forward modelling, see make_bem_model in mne/bem.py
+
+    # First make sure bem directory exists:
+    bem_dir_name = op.join(subjects_dir, subject, "bem")
+    if not op.isdir(bem_dir_name):
+        os.mkdir(bem_dir_name)
+
+    # Note that due to the unusal naming conventions used by BET and MNE:
+    # - bet_inskull_*_file is actually the brain surface
+    # - bet_outskull_*_file is actually the inner skull surface
+    # - bet_outskin_*_file is the outer skin/scalp surface
+    # These correspond in mne to (in order):
+    # - inner_skull
+    # - outer_skull
+    # - outer_skin
+    #
+    # This means that for single shell model, i.e. with conductivities set
+    # to length one, the surface used by MNE willalways be the inner_skull, i.e.
+    # it actually corresponds to the brain/cortex surface!! Not sure that is
+    # correct/optimal.
+    #
+    # Note that this is done in Fieldtrip too!, see the
+    # "Realistic single-shell model, using brain surface from segmented mri"
+    # section at:
+    # https://www.fieldtriptoolbox.org/example/make_leadfields_using_different_headmodels/#realistic-single-shell-model-using-brain-surface-from-segmented-mri
+    #
+    # However, others are clear that it should really be the actual inner surface
+    # of the skull, see the "single-shell Boundary Element Model (BEM)" bit at:
+    # https://imaging.mrc-cbu.cam.ac.uk/meg/SpmForwardModels
+    #
+    # To be continued... need to get in touch with mne folks perhaps?
+
+    verts, tris = read_surface(surfaces_filenames["bet_inskull_surf_file"])
+    tris = tris.astype(int)
+    write_surface(
+        op.join(bem_dir_name, "inner_skull.surf"),
+        verts,
+        tris,
+        file_format="freesurfer",
+        overwrite=True,
+    )
+    log_or_print("Using bet_inskull_surf_file for single shell surface", logger)
+
+    #verts, tris = read_surface(surfaces_filenames["bet_outskull_surf_file"])
+    #tris = tris.astype(int)
+    #write_surface(
+    #    op.join(bem_dir_name, "inner_skull.surf"),
+    #    verts,
+    #    tris,
+    #    file_format="freesurfer",
+    #    overwrite=True,
+    #)
+    #print("Using bet_outskull_surf_file for single shell surface")
+
+    verts, tris = read_surface(surfaces_filenames["bet_outskull_surf_file"])
+    tris = tris.astype(int)
+    write_surface(
+        op.join(bem_dir_name, "outer_skull.surf"),
+        verts,
+        tris,
+        file_format="freesurfer",
+        overwrite=True,
+    )
+
+    verts, tris = read_surface(surfaces_filenames["bet_outskin_surf_file"])
+    tris = tris.astype(int)
+    write_surface(
+        op.join(bem_dir_name, "outer_skin.surf"),
+        verts,
+        tris,
+        file_format="freesurfer",
+        overwrite=True,
+    )
+
+    # -------------------------------------------------------------------------
+    # Setup main MNE call to _make_volume_source_space
+
+    surface = op.join(subjects_dir, subject, "bem", "inner_skull.surf")
+
+    pos = float(pos)
+    pos /= 1000.0  # convert pos to m from mm for MNE call
+
+    # -------------------------------------------------------------------------
+    def get_mri_info_from_nii(mri):
+        out = dict()
+        dims = nib.load(mri).get_fdata().shape
+        out.update(
+            mri_width=dims[0],
+            mri_height=dims[1],
+            mri_depth=dims[1],
+            mri_volume_name=mri,
+        )
+        return out
+
+    vol_info = get_mri_info_from_nii(surfaces_filenames["smri_file"])
+
+    surf = read_surface(surface, return_dict=True)[-1]
+
+    surf = deepcopy(surf)
+    surf["rr"] *= 1e-3  # must be in metres for MNE call
+
+    # Main MNE call to _make_volume_source_space
+    sp = _make_volume_source_space(
+        surf,
+        pos,
+        exclude,
+        mindist,
+        surfaces_filenames["smri_file"],
+        None,
+        vol_info=vol_info,
+        single_volume=False,
+    )
+
+    sp[0]["type"] = "vol"
+
+    # -------------------------------------------------------------------------
+    # Save and return result
+
+    sp = _complete_vol_src(sp, subject)
+
+    # add dummy mri_ras_t and vox_mri_t transforms as these are needed for the
+    # forward model to be saved (for some reason)
+    sp[0]["mri_ras_t"] = Transform("mri", "ras")
+
+    sp[0]["vox_mri_t"] = Transform("mri_voxel", "mri")
+
+    if sp[0]["coord_frame"] != FIFF.FIFFV_COORD_MRI:
+        raise RuntimeError("source space is not in MRI coordinates")
+
+    return sp

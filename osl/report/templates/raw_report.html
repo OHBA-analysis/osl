@@ -150,8 +150,11 @@ function openTab(event, figTag, button) {
     if (figTag.includes('digitisation')) {
         currentButton = 4;
     }
-    if (figTag.includes('coregistration')) {
+    if (figTag.includes('ica')) {
         currentButton = 5;
+    }
+    if (figTag.includes('coregistration')) {
+        currentButton = numButtons - 1;
     }
 }
 
