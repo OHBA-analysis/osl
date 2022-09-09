@@ -298,8 +298,8 @@ def transform_recon_timeseries(
     reference_brain="mni",
 ):
     """Spatially resamples a (ndipoles x ntpts) array of reconstructed time
-    courses (in head/polhemus space) to dipoles on the brain grid of the specified
-    reference brain.
+    courses (in head/polhemus space) to dipoles on the brain grid of the
+    specified reference brain.
 
     Parameters
     ----------
