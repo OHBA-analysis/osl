@@ -69,7 +69,7 @@ def gen_report_from_fif(infiles, outdir):
     gen_html_page(outdir)
 
     print("************" + "*" * len(str(outdir)))
-    print(f"* Report: {outdir} *")
+    print(f"* REPORT: {outdir} *")
     print("************" + "*" * len(str(outdir)))
 
 
