@@ -44,8 +44,8 @@ from mne.utils import (
     warn,
 )
 
-import osl.source_recon.rhino.utils as rhino_utils
-from osl.source_recon.rhino import rhino
+from osl.source_recon import rhino
+from osl.source_recon.rhino import utils as rhino_utils
 from osl.utils.logger import log_or_print
 
 
