@@ -30,7 +30,7 @@ from matplotlib.patches import Rectangle
 from ..utils import process_file_inputs, validate_outdir
 from ..utils.logger import log_or_print
 from ..preprocessing import (
-    import_data,
+    read_dataset,
     load_config,
     run_proc_chain,
     get_config_from_fif,
@@ -59,13 +59,18 @@ def gen_report_from_fif(infiles, outdir):
 
     # Generate HTML data
     for infile in infiles:
-        raw = import_data(infile)
-        run_id = get_header_id(raw)
+        print("Generating report for", infile)
+        dataset = read_dataset(infile)
+        run_id = get_header_id(dataset['raw'])
         htmldatadir = validate_outdir(outdir / run_id)
-        gen_html_data(raw, htmldatadir)
+        gen_html_data(dataset['raw'], htmldatadir, ica=dataset['ica'])
 
     # Create report
     gen_html_page(outdir)
+
+    print("************" + "*" * len(str(outdir)))
+    print(f"* Report: {outdir} *")
+    print("************" + "*" * len(str(outdir)))
 
 
 def get_header_id(raw):
@@ -73,7 +78,7 @@ def get_header_id(raw):
     return raw.filenames[0].split('/')[-1].strip('.fif')
 
 
-def gen_html_data(raw, outdir, coreg=None, logger=None):
+def gen_html_data(raw, outdir, ica=None, coreg=None, logger=None):
     """Generate HTML web-report for an MNE data object.
 
     Parameters
@@ -82,6 +87,8 @@ def gen_html_data(raw, outdir, coreg=None, logger=None):
         MNE Raw object.
     outdir : string
         Directory to write HTML data and plots to.
+    ica : mne.preprocessing.ICA
+        ICA object.
     coreg : string
         Path to coregistration plot. (Should be an interactive HTML object.)
     logger : logging.getLogger
@@ -165,6 +172,10 @@ def gen_html_data(raw, outdir, coreg=None, logger=None):
     data['plt_artefacts_ecg'] = plot_ecg_summary(raw, savebase)
     #filenames = plot_artefact_scan(raw, savebase)
     #data.update(filenames)
+
+    # Add ICA if it's been passed
+    if ica is not None:
+        data['plt_ica'] = plot_bad_ica(raw, ica, savebase)
 
     # Add the coregistration plot if it's passed
     if coreg is not None:

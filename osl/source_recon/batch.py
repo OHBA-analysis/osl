@@ -20,7 +20,7 @@ import yaml
 import mne
 
 from . import rhino, wrappers
-from ..preprocessing import import_data
+from ..preprocessing import read_dataset
 from ..report import raw_report
 from ..utils import logger as osl_logger
 from ..utils import validate_outdir, find_run_id, parallel
@@ -213,9 +213,12 @@ def run_src_chain(
         )
 
         # Generate HTML data for the report
-        preproc_data = import_data(preproc_file)
+        preproc_data = read_dataset(preproc_file)
         raw_report.gen_html_data(
-            preproc_data, reportdir, coreg=run_id + "/coreg.html"
+            preproc_data["raw"],
+            reportdir,
+            ica=preproc_data["ica"],
+            coreg=run_id + "/coreg.html",
         )
 
     return True
