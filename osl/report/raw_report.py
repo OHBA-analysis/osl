@@ -606,10 +606,18 @@ def plot_bad_ica(raw, ica, savebase):
         if np.any([x in ica.labels_.keys() for x in ica._ica_names]): # this is for the osl_plot_ica convention
             title = "".join((ica._ica_names[exclude_uniq[i]]," - ", ica.labels_[ica._ica_names[exclude_uniq[i]]].upper()))
 
-        elif np.logical_or('eog' in ica.labels_.keys(), 'ecg' in ica.labels_.keys()): # this is for the MNE automatic labelling convention
+        elif 'eog' in ica.labels_.keys() and 'ecg' in ica.labels_.keys(): # this is for the MNE automatic labelling convention
             flag_eog = exclude_uniq[i] in ica.labels_['eog']
             flag_ecg = exclude_uniq[i] in ica.labels_['ecg']
             title = "".join((ica._ica_names[exclude_uniq[i]]," - ", flag_eog*'EOG', flag_ecg*flag_eog*'/', flag_ecg*'ECG'))
+
+        elif 'eog' in ica.labels_.keys():
+            flag_eog = exclude_uniq[i] in ica.labels_['eog']
+            title = "".join((ica._ica_names[exclude_uniq[i]]," - ", flag_eog*'EOG'))
+
+        elif 'ecg' in ica.labels_.keys():
+            flag_ecg = exclude_uniq[i] in ica.labels_['ecg']
+            title = "".join((ica._ica_names[exclude_uniq[i]]," - ", flag_ecg*'ECG'))
 
         else: # this is for if there is nothing in ica.labels_
             title = None
