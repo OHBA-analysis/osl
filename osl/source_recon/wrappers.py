@@ -34,7 +34,7 @@ logger = logging.getLogger(__name__)
 def extract_fiducials_from_fif(
     src_dir, subject, preproc_file, smri_file, logger, **userargs,
 ):
-    # Get coreg filenames
+    #Get coreg filenames
     subjects_dir = op.join(src_dir, "coreg")
     filenames = rhino.get_coreg_filenames(subjects_dir, subject)
 
@@ -63,6 +63,7 @@ def coregister(
     use_nose,
     use_headshape,
     model,
+    eeg=False,
 ):
     subjects_dir = op.join(src_dir, "coreg")
 
@@ -90,6 +91,7 @@ def coregister(
         subjects_dir=subjects_dir,
         subject=subject,
         model=model,
+        eeg=eeg,
         logger=logger,
     )
 
