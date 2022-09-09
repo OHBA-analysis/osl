@@ -330,7 +330,7 @@ def plot_channel_time_series(raw, savebase=None):
         ax[row].set_xlim(t[0], t[-1])
         ylim = ax[row].get_ylim()
         for a in raw.annotations:
-            if name in a["description"]:
+            if "bad_segment" in a["description"]:
                 ax[row].axvspan(
                     a["onset"] - raw.first_time,
                     a["onset"] + a["duration"] - raw.first_time,
