@@ -316,6 +316,8 @@ def plot_channel_time_series(raw, savebase=None):
 
     # Make sum-square plots
     fig, ax = plt.subplots(nrows=nrows, ncols=1, figsize=(16, 4))
+    if nrows == 1:
+        ax = [ax]
     row = 0
     for name, chan_inds in channel_types.items():
         if len(chan_inds) == 0:
@@ -388,6 +390,8 @@ def plot_channel_dists(raw, savebase=None):
     
     # Make plots
     fig, ax = plt.subplots(nrows=1, ncols=ncols, figsize=(9, 3.5))
+    if ncols == 1:
+        ax = [ax]
     row = 0
     for name, chan_inds in channel_types.items():
         if len(chan_inds) == 0:
