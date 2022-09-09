@@ -357,7 +357,7 @@ def write_dataset(dataset, outbase, run_id, overwrite=False):
 
 
 def read_dataset(fif):
-    """Reads a fif file and returns a dataset.
+    """Reads fif/npy/yml files associated with a dataset.
 
     Parameters
     ----------
