@@ -30,6 +30,8 @@ def process_file_inputs(inputs):
     outnames = []
     check_paths = True
 
+    if isinstance(inputs, pathlib.PosixPath):
+        inputs = str(inputs)
     if isinstance(inputs, str):
         try:
             # Check if path to unicode file...
@@ -42,6 +44,8 @@ def process_file_inputs(inputs):
     elif isinstance(inputs, (list, tuple)):
         if len(inputs) == 0:
             raise ValueError("inputs is an empty list!")
+        if isinstance(inputs[0], pathlib.PosixPath):
+            inputs = [str(i) for i in inputs]
         if isinstance(inputs[0], str):
             # We have a list of paths
             infiles = [sanitise_filepath(f) for f in inputs]
