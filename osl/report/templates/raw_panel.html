@@ -118,3 +118,35 @@
     </div>
   </div>
 </div>
+
+<script>
+
+function openTab(event, figTag, button) {
+    // Get all elements with class="tabpage" and hide them
+    tabpage = document.getElementsByClassName("tabpage");
+    for (i = 0; i < tabpage.length; i++) {
+        tabpage[i].style.display = "none";
+    }
+    // Show the current tab
+    document.getElementById(figTag).style.display = "block";
+    if (figTag.includes('info')) {
+        currentButton = 0;
+    }
+    if (figTag.includes('timeseries')) {
+        currentButton = 1;
+    }
+    if (figTag.includes('channels')) {
+        currentButton = 2;
+    }
+    if (figTag.includes('spectra')) {
+        currentButton = 3;
+    }
+    if (figTag.includes('digitisation')) {
+        currentButton = 4;
+    }
+    if (figTag.includes('ica')) {
+        currentButton = 5;
+    }
+}
+
+</script>

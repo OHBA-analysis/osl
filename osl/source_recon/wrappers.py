@@ -34,8 +34,8 @@ logger = logging.getLogger(__name__)
 def extract_fiducials_from_fif(
     src_dir, subject, preproc_file, smri_file, logger, **userargs,
 ):
-    #Get coreg filenames
-    subjects_dir = op.join(src_dir, "coreg")
+    # Get coreg filenames
+    subjects_dir = op.join(src_dir, "rhino")
     filenames = rhino.get_coreg_filenames(subjects_dir, subject)
 
     logger.info("Setting up polhemus files")
@@ -65,7 +65,7 @@ def coregister(
     model,
     eeg=False,
 ):
-    subjects_dir = op.join(src_dir, "coreg")
+    subjects_dir = op.join(src_dir, "rhino")
 
     # Compute surface
     rhino.compute_surfaces(
@@ -115,6 +115,8 @@ def beamform_and_parcellate(
 ):
     from ..preprocessing import import_data
 
+    subjects_dir = op.join(src_dir, "rhino")
+
     # Load preprocessed data
     preproc_data = import_data(preproc_file)
     preproc_data.pick(chantypes)
@@ -137,8 +139,6 @@ def beamform_and_parcellate(
     if isinstance(chantypes, str):
         chantypes = [chantypes]
 
-    subjects_dir = op.join(src_dir, "coreg")
-
     # Create beamforming filters
     logger.info("beamforming.make_lcmv")
     logger.info(f"chantypes: {chantypes}")
@@ -151,6 +151,7 @@ def beamform_and_parcellate(
         weight_norm="nai",
         rank=rank,
         logger=logger,
+        save_figs=True,
     )
 
     # Apply beamforming

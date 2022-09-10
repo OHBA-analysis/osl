@@ -1,0 +1,73 @@
+<div class="fif" style='max-width: 90%; margin: auto; margin-bottom: 40px; background: #f6f6f6; box-shadow: 10px 10px 5px grey; padding: 25px 25px 25px 0px;' id="{{ data.fif_id }}">
+
+  <div>
+    <h3>{{ data.fif_id }} &ensp; ({{ data.num }} of {{ data.total }})</h3>
+  </div>
+
+  <div class="flex-container" style="display: flex">
+
+  <div class="flex-child" style="flex: 1">
+    <div class="tab" style="display: grid">
+        <button class="button1" onclick="openTab(event, '{{ data.fif_id }}_coregistration', this.id)" style="border-top-style: solid">Coregistration</button>
+        <button class="button1" onclick="openTab(event, '{{ data.fif_id }}_beamforming', this.id)" style="border-top-style: solid">Beamforming</button>
+        <button class="button1" onclick="openTab(event, '{{ data.fif_id }}_parcellation', this.id)" style="border-top-style: solid">Parcellation</button>
+    </div>
+  </div>
+
+  <div class="flex-child" style="flex: 5; padding-left: 25px">
+
+    <div class="tabpage" style='width: 100%' id={{ data.fif_id }}_coregistration>
+        <h3>Coregistration</h3>
+        <iframe src="{{ data.plt_coreg }}" width="525" height="525"></iframe>
+    </div>
+
+    <div class="tabpage" style='width: 100%; display: none' id={{ data.fif_id }}_beamforming>
+        <h3>Beamforming</h3>
+        <div>
+            <b>Bandpass filtering:</b> {{ data.beamform_and_parcellate.freq_range[0] }}-{{ data.beamform_and_parcellate.freq_range[1]}} Hz</br>
+            <b>Channel types:</b> {{ data.beamform_and_parcellate.chantypes }}</br>
+            <b>Rank:</b> {{ data.beamform_and_parcellate.rank }}</br></br>
+        </div>
+        <div style="width: 70%; margin: auto">
+            <img src="{{ data.plt_filter_cov }}" alt="" style='max-width: 100%'/>
+            <img src="{{ data.plt_filter_svd }}" alt="" style='max-width: 100%'/>
+        </div>
+    </div>
+    <div class="tabpage" style='width: 100%; display: none' id={{ data.fif_id }}_parcellation>
+        <h3>Parcellation</h3>
+        <div>
+            <b>Parcellation file:</b> {{ data.beamform_and_parcellate.parcellation_file }}</br>
+            <b>Method:</b> {{ data.beamform_and_parcellate.method }}</br>
+            <b>Orthogonalisation:</b> {{ data.beamform_and_parcellate.orthogonalisation }}</br></br>
+        </div>
+        <div style="width: 70%; margin: auto">
+            <img src="{{ data.plt_parc }}" alt="" style='max-width: 100%'/>
+        </div>
+    </div>
+
+    </div>
+  </div>
+</div>
+
+<script>
+
+function openTab(event, figTag, button) {
+    // Get all elements with class="tabpage" and hide them
+    tabpage = document.getElementsByClassName("tabpage");
+    for (i = 0; i < tabpage.length; i++) {
+        tabpage[i].style.display = "none";
+    }
+    // Show the current tab
+    document.getElementById(figTag).style.display = "block";
+    if (figTag.includes('coregistration')) {
+        currentButton = 0;
+    }
+    if (figTag.includes('beamforming')) {
+        currentButton = 1;
+    }
+    if (figTag.includes('parcellation')) {
+        currentButton = 2;
+    }
+}
+
+</script>

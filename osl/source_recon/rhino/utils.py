@@ -28,6 +28,7 @@ import logging
 logging.getLogger("numba").setLevel(logging.WARNING)
 
 from osl.source_recon.beamforming import transform_recon_timeseries
+from osl.utils.logger import log_or_print
 
 
 def system_call(cmd, verbose=False):
@@ -491,7 +492,9 @@ def icp(A, B, init_pose=None, max_iterations=50, tolerance=0.0001):
     return T, distances, i
 
 
-def rhino_icp(smri_headshape_polhemus, polhemus_headshape_polhemus, Ninits=10):
+def rhino_icp(
+    smri_headshape_polhemus, polhemus_headshape_polhemus, Ninits=10, logger=None
+):
     """Runs Iterative Closest Point with multiple initialisations.
 
     Parameters
@@ -503,6 +506,8 @@ def rhino_icp(smri_headshape_polhemus, polhemus_headshape_polhemus, Ninits=10):
         [3 x N] locations of the Polhemus headshape points in polhemus space
     Ninits : int
         Number of random initialisations to perform.
+    logger : logging.getLogger
+        Logger.
 
     Returns
     -------
@@ -541,7 +546,7 @@ def rhino_icp(smri_headshape_polhemus, polhemus_headshape_polhemus, Ninits=10):
 
         if err[init] < err_old:
 
-            print("ICP found better xform, error={}".format(e))
+            log_or_print("ICP found better xform, error={}".format(e), logger)
 
             err_old = e
 

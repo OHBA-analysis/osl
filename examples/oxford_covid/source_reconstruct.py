@@ -1,6 +1,6 @@
 """Source reconstruction.
 
-This include coregistration, beamforming and parcellation.
+This include coregistration, beamforming, parcellation and orthogonalisation.
 """
 
 # Authors: Chetan Gohil <chetan.gohil@psych.ox.ac.uk>
@@ -8,14 +8,17 @@ This include coregistration, beamforming and parcellation.
 from osl import source_recon
 
 
+# Directories
 RAW_DIR = "/ohba/pi/knobre/datasets/covid/rawbids"
 PREPROC_DIR = "/ohba/pi/knobre/cgohil/covid/preproc"
 SRC_DIR = "/ohba/pi/knobre/cgohil/covid/src"
 
-SMRI_FILE = RAW_DIR + "/sub-{0}/anat/sub-{0}_T1w.nii"
-PREPROC_FILE = PREPROC_DIR + "/sub-{0}_task-restEO_preproc_raw.fif"
+# Files
+SMRI_FILE = RAW_DIR + "/{0}/anat/{0}_T1w.nii"
+PREPROC_FILE = PREPROC_DIR + "/{0}_task-restEO_preproc_raw.fif"
 
-SUBJECTS = ["004", "005"]
+# Subjects to do
+SUBJECTS = ["sub-004", "sub-005"]
 
 # Settings
 config = """
@@ -35,9 +38,10 @@ config = """
         orthogonalisation: symmetric
 """
 
-# Setup
+# Setup FSL
 source_recon.setup_fsl("/home/cgohil/local/fsl")
 
+# Get paths to files
 smri_files = []
 preproc_files = []
 for subject in SUBJECTS:

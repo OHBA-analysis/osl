@@ -33,10 +33,10 @@ def get_surfaces_filenames(subjects_dir, subject):
     ----------
     subjects_dir : string
         Directory to put RHINO subject dirs in.
-        Files will be in subjects_dir/subject/rhino/surfaces/
+        Files will be in subjects_dir/subject/surfaces/
     subject : string
         Subject name dir to put RHINO files in.
-        Files will be in subjects_dir/subject/rhino/surfaces/
+        Files will be in subjects_dir/subject/surfaces/
 
     Returns
     -------
@@ -48,7 +48,7 @@ def get_surfaces_filenames(subjects_dir, subject):
          - bet_outskull_*_file is actually the inner skull surface
          - bet_outskin_*_file is the outer skin/scalp surface
     """
-    basedir = op.join(subjects_dir, subject, "rhino", "surfaces")
+    basedir = op.join(subjects_dir, subject, "surfaces")
     os.makedirs(basedir, exist_ok=True)
 
     filenames = {
@@ -129,10 +129,10 @@ def compute_surfaces(
         will be ignored.
     subjects_dir : string
         Directory to put RHINO subject dirs in.
-        Files will be in subjects_dir/subject/rhino/surfaces/
+        Files will be in subjects_dir/subject/surfaces/
     subject : string
         Subject name dir to put RHINO files in.
-        Files will be in subjects_dir/subject/rhino/surfaces/
+        Files will be in subjects_dir/subject/surfaces/
     include_nose : bool
         Specifies whether to add the nose to the outer skin
         (scalp) surface. This can help rhino's coreg to work
@@ -636,10 +636,10 @@ def surfaces_display(subjects_dir, subject):
     ----------
     subjects_dir : string
         Directory to put RHINO subject dirs in.
-        Files will be in subjects_dir/subject/rhino/surfaces/
+        Files will be in subjects_dir/subject/surfaces/
     subject : string
         Subject name dir to put RHINO files in.
-        Files will be in subjects_dir/subject/rhino/surfaces/
+        Files will be in subjects_dir/subject/surfaces/
 
     Note that bet_inskull_mesh_file is actually the brain surface and
     bet_outskull_mesh_file is the inner skull surface, due to the naming
