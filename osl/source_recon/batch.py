@@ -21,7 +21,7 @@ import mne
 
 from . import rhino, wrappers
 from ..preprocessing import read_dataset
-from ..report import raw_report
+#from ..report import src_report
 from ..utils import logger as osl_logger
 from ..utils import validate_outdir, find_run_id, parallel
 
@@ -134,7 +134,7 @@ def run_src_chain(
     # Directories
     src_dir = validate_outdir(src_dir)
     coreg_dir = validate_outdir(src_dir / "coreg")
-    reportdir = validate_outdir(coreg_dir / "report")
+    #reportdir = validate_outdir(coreg_dir / "report")
     logsdir = validate_outdir(src_dir / "logs")
 
     # Get run ID
@@ -155,8 +155,8 @@ def run_src_chain(
     logger.info("input : {0}".format(coreg_dir / subject))
 
     # Create directory for coregistration and report
-    os.makedirs(coreg_dir / subject, exist_ok=True)
-    reportdir = validate_outdir(reportdir / run_id)
+    #os.makedirs(coreg_dir / subject, exist_ok=True)
+    #reportdir = validate_outdir(reportdir / run_id)
 
     # Load config
     if not isinstance(config, dict):
@@ -204,22 +204,22 @@ def run_src_chain(
 
         return False
 
-    if doing_coreg:
-        # Save coregistration plot
-        rhino.coreg_display(
-            subjects_dir=coreg_dir,
-            subject=subject,
-            filename=reportdir / "coreg.html"
-        )
+    #if doing_coreg:
+    #    # Save coregistration plot
+    #    rhino.coreg_display(
+    #        subjects_dir=coreg_dir,
+    #        subject=subject,
+    #        filename=reportdir / "coreg.html"
+    #    )
 
-        # Generate HTML data for the report
-        preproc_data = read_dataset(preproc_file)
-        raw_report.gen_html_data(
-            preproc_data["raw"],
-            reportdir,
-            ica=preproc_data["ica"],
-            coreg=run_id + "/coreg.html",
-        )
+    #    # Generate HTML data for the report
+    #    preproc_data = read_dataset(preproc_file)
+    #    src_report.gen_html_data(
+    #        preproc_data["raw"],
+    #        reportdir,
+    #        ica=preproc_data["ica"],
+    #        coreg=run_id + "/coreg.html",
+    #    )
 
     return True
 
@@ -269,7 +269,7 @@ def run_src_batch(
     src_dir = validate_outdir(src_dir)
     coreg_dir = validate_outdir(src_dir / "coreg")
     logsdir = validate_outdir(src_dir / "logs")
-    reportdir = validate_outdir(coreg_dir / "report")
+    #reportdir = validate_outdir(coreg_dir / "report")
 
     # Initialise Loggers
     mne.set_log_level(mneverbose)
@@ -319,11 +319,10 @@ def run_src_batch(
 
     logger.info("Processed {0}/{1} files successfully".format(np.sum(flags), len(flags)))
 
-    if doing_coreg:
-        # Generate HTML report
-        if raw_report.gen_html_page(reportdir):
-            logger.info("******************************" + "*" * len(str(reportdir)))
-            logger.info(f"* REMEMBER TO CHECK REPORT: {reportdir} *")
-            logger.info("******************************" + "*" * len(str(reportdir)))
+    # Generate HTML report
+    #if src_report.gen_html_page(reportdir):
+    #    logger.info("******************************" + "*" * len(str(reportdir)))
+    #    logger.info(f"* REMEMBER TO CHECK REPORT: {reportdir} *")
+    #    logger.info("******************************" + "*" * len(str(reportdir)))
 
     return flags

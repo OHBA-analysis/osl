@@ -78,7 +78,7 @@ def get_header_id(raw):
     return raw.filenames[0].split('/')[-1].strip('.fif')
 
 
-def gen_html_data(raw, outdir, ica=None, coreg=None, logger=None):
+def gen_html_data(raw, outdir, ica=None, logger=None):
     """Generate HTML web-report for an MNE data object.
 
     Parameters
@@ -89,8 +89,6 @@ def gen_html_data(raw, outdir, ica=None, coreg=None, logger=None):
         Directory to write HTML data and plots to.
     ica : mne.preprocessing.ICA
         ICA object.
-    coreg : string
-        Path to coregistration plot. (Should be an interactive HTML object.)
     logger : logging.getLogger
         Logger.
     """
@@ -176,10 +174,6 @@ def gen_html_data(raw, outdir, ica=None, coreg=None, logger=None):
     # Add ICA if it's been passed
     if ica is not None:
         data['plt_ica'] = plot_bad_ica(raw, ica, savebase)
-
-    # Add the coregistration plot if it's passed
-    if coreg is not None:
-        data['plt_coreg'] = coreg
 
     # Save data that will be used to create html page
     with open(outdir / 'data.pkl', 'wb') as outfile:
