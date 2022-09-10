@@ -47,10 +47,11 @@ def gen_html_data(config, src_dir, rhino_dir, subject, reportdir, logger=None):
             copy(rhino_plot, report_plot)
             data[f"plt_filter_{name}"] = op.join(subject, f"filter_{name}.png")
 
-    # Parcellation plots
-    data["plt_parc"] = plot_parcellation(
-        data["beamform_and_parcellate"]["parcellation_file"], reportdir, subject
-    )
+    if "beamform_and_parcellate" in data:
+        # Parcellation plots
+        data["plt_parc"] = plot_parcellation(
+            data["beamform_and_parcellate"]["parcellation_file"], reportdir, subject
+        )
 
     # Save data that will be used to create html page
     with open(reportdir / subject / 'data.pkl', 'wb') as outfile:
