@@ -188,4 +188,4 @@ def beamform_and_parcellate(
     # Save parcellated data
     parc_data_file = src_dir / f"{subject}.npy"
     logger.info(f"saving {parc_data_file}")
-    np.save(parc_data_file, parcel_ts)
+    np.save(parc_data_file, parcel_ts.T)
