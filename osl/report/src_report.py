@@ -19,7 +19,26 @@ from ..source_recon import rhino, parcellation
 
 
 def gen_html_data(config, src_dir, rhino_dir, subject, reportdir, logger=None):
-    """Generate data for HTML report."""
+    """Generate data for HTML report.
+
+    Parameters
+    ----------
+    config : dict
+        Source reconstruction config.
+    src_dir : str
+        Source reconstruction directory.
+    rhino_dir : str
+        RHINO directory.
+    subject : str
+        Subject name.
+    reportdir : str
+        Report directory.
+    logger : logging.getLogger
+        Logger.
+    """
+    src_dir = Path(src_dir)
+    rhino_dir = Path(rhino_dir)
+    reportdir = Path(reportdir)
 
     # Make directory for plots contained in the report
     os.makedirs(reportdir / subject, exist_ok=True)
@@ -33,8 +52,7 @@ def gen_html_data(config, src_dir, rhino_dir, subject, reportdir, logger=None):
 
     # Subject info
     data["fif_id"] = subject
-    data["subject"] = subject
-    data["filename"] = subject + ".npy"
+    data["filename"] = subject
 
     # Coregistration plots
     data["plt_coreg"] = plot_coreg(reportdir, rhino_dir, subject)
@@ -48,6 +66,14 @@ def gen_html_data(config, src_dir, rhino_dir, subject, reportdir, logger=None):
             data[f"plt_filter_{name}"] = op.join(subject, f"filter_{name}.png")
 
     if "beamform_and_parcellate" in data:
+        # Parcellation info
+        data["filename"] += ".npy"
+        data["filepath"] = src_dir / data["filename"]
+
+        parcel_ts = np.load(data["filepath"])
+        data["n_samples"] = parcel_ts.shape[0]
+        data["n_parcels"] = parcel_ts.shape[1]
+
         # Parcellation plots
         data["plt_parc"] = plot_parcellation(
             data["beamform_and_parcellate"]["parcellation_file"], reportdir, subject

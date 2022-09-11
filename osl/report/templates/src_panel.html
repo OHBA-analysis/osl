@@ -39,9 +39,12 @@
         <div class="tabpage" style='width: 100%; display: none' id={{ data.fif_id }}_parcellation>
             <h3>Parcellation</h3>
             <div>
+                <b>Parcellated data file:</b> {{ data.filepath }}</br></br>
                 <b>Parcellation file:</b> {{ data.beamform_and_parcellate.parcellation_file }}</br>
                 <b>Method:</b> {{ data.beamform_and_parcellate.method }}</br>
                 <b>Orthogonalisation:</b> {{ data.beamform_and_parcellate.orthogonalisation }}</br></br>
+                <b>Number of parcels:</b> {{ data.n_parcels }}</br>
+                <b>Number of samples:</b> {{ data.n_samples }}</br></br>
             </div>
             <div style="width: 70%; margin: auto">
                 <img src="{{ data.plt_parc }}" alt="" style='max-width: 100%'/>
