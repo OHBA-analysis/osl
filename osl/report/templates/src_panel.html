@@ -20,7 +20,7 @@
 
     <div class="tabpage" style='width: 100%' id={{ data.fif_id }}_coregistration>
         <h3>Coregistration</h3>
-        <iframe src="{{ data.plt_coreg }}" width="525" height="525"></iframe>
+        <iframe data-src="{{ data.plt_coreg }}" width="525" height="525" id="{{ data.fif_id}}_coregistration_iframe"></iframe>
     </div>
 
     {% if data.beamform_and_parcellate is defined %}
@@ -67,6 +67,8 @@ function openTab(event, figTag, button) {
     // Show the current tab
     document.getElementById(figTag).style.display = "block";
     if (figTag.includes('coregistration')) {
+        iframe = document.getElementById(figTag.concat('_iframe'));
+        iframe.src = iframe.getAttribute('data-src');
         currentButton = 0;
     }
     if (figTag.includes('beamforming')) {
