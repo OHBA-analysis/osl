@@ -8,6 +8,7 @@
 #          Chetan Gohil <chetan.gohil@psych.ox.ac.uk>
 
 import os
+from pathlib import Path
 
 import numpy as np
 from sklearn.neighbors import NearestNeighbors
@@ -952,7 +953,16 @@ def save_or_show_renderer(renderer, filename):
     if filename is None:
         renderer.show()
     else:
-        if ".html" not in str(filename):
-            raise ValueError("filename must have extension .html")
+        allowed_extensions = [".html", ".pdf", ".svg", ".eps", ".ps", ".tex"]
+        ext = Path(filename).suffix
+        if ext not in allowed_extensions:
+            raise ValueError(
+                f"{ext} not allowed, please use one of the following: "
+                + " ".join(allowed_extensions)
+            )
+
         print("Saving", filename)
-        renderer.figure.plotter.export_html(filename)
+        if ext == ".html":
+            renderer.figure.plotter.export_html(filename)
+        elif ext in allowed_extensions:
+            renderer.figure.plotter.save_graphic(filename)
