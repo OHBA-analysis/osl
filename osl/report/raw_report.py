@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 
-"""Reporting tool.
+"""Reporting tool for preprocessing.
 
 """
 
@@ -69,7 +69,7 @@ def gen_report_from_fif(infiles, outdir):
     gen_html_page(outdir)
 
     print("************" + "*" * len(str(outdir)))
-    print(f"* Report: {outdir} *")
+    print(f"* REPORT: {outdir} *")
     print("************" + "*" * len(str(outdir)))
 
 
@@ -78,7 +78,7 @@ def get_header_id(raw):
     return raw.filenames[0].split('/')[-1].strip('.fif')
 
 
-def gen_html_data(raw, outdir, ica=None, coreg=None, logger=None):
+def gen_html_data(raw, outdir, ica=None, logger=None):
     """Generate HTML web-report for an MNE data object.
 
     Parameters
@@ -89,8 +89,6 @@ def gen_html_data(raw, outdir, ica=None, coreg=None, logger=None):
         Directory to write HTML data and plots to.
     ica : mne.preprocessing.ICA
         ICA object.
-    coreg : string
-        Path to coregistration plot. (Should be an interactive HTML object.)
     logger : logging.getLogger
         Logger.
     """
@@ -177,10 +175,6 @@ def gen_html_data(raw, outdir, ica=None, coreg=None, logger=None):
     if ica is not None:
         data['plt_ica'] = plot_bad_ica(raw, ica, savebase)
 
-    # Add the coregistration plot if it's passed
-    if coreg is not None:
-        data['plt_coreg'] = coreg
-
     # Save data that will be used to create html page
     with open(outdir / 'data.pkl', 'wb') as outfile:
         pickle.dump(data, outfile)
@@ -223,7 +217,7 @@ def gen_html_page(outdir):
 
     # Create panels
     panels = []
-    panel_template = load_template('panel')
+    panel_template = load_template('raw_panel')
     for i in range(total):
         panels.append(panel_template.render(data=data[i]))
 
@@ -234,7 +228,7 @@ def gen_html_page(outdir):
         filenames += "{0}. {1}<br>".format(i + 1, filename)
 
     # Render the full page
-    page_template = load_template('raw_report')
+    page_template = load_template('report')
     page = page_template.render(panels=panels, filenames=filenames)
 
     # Write the output file
@@ -300,7 +294,8 @@ def plot_channel_time_series(raw, savebase=None):
     channel_types = {
         'mag': mne.pick_types(raw.info, meg='mag'),
         'grad': mne.pick_types(raw.info, meg='grad'),
-        'eeg': mne.pick_types(raw.info, meg=False, eeg=True),
+        'eeg': mne.pick_types(raw.info, eeg=True),
+        'csd': mne.pick_types(raw.info, csd=True),
     }
     t = raw.times
     x = raw.get_data()
@@ -312,10 +307,12 @@ def plot_channel_time_series(raw, savebase=None):
             nrows += 1
 
     if nrows == 0:
-        return 'No MEG or EEG channels.'
+        return None
 
     # Make sum-square plots
     fig, ax = plt.subplots(nrows=nrows, ncols=1, figsize=(16, 4))
+    if nrows == 1:
+        ax = [ax]
     row = 0
     for name, chan_inds in channel_types.items():
         if len(chan_inds) == 0:
@@ -327,7 +324,7 @@ def plot_channel_time_series(raw, savebase=None):
         ax[row].set_xlim(t[0], t[-1])
         ylim = ax[row].get_ylim()
         for a in raw.annotations:
-            if name in a["description"]:
+            if "bad_segment" in a["description"]:
                 ax[row].axvspan(
                     a["onset"] - raw.first_time,
                     a["onset"] + a["duration"] - raw.first_time,
@@ -372,7 +369,8 @@ def plot_channel_dists(raw, savebase=None):
     channel_types = {
         'Magnetometers': mne.pick_types(raw.info, meg='mag'),
         'Gradiometers': mne.pick_types(raw.info, meg='grad'),
-        'EEG': mne.pick_types(raw.info, meg=False, eeg=True),
+        'EEG': mne.pick_types(raw.info, eeg=True),
+        'CSD': mne.pick_types(raw.info, csd=True),
     }
     t = raw.times
     x = raw.get_data()
@@ -384,10 +382,12 @@ def plot_channel_dists(raw, savebase=None):
             ncols += 1
 
     if ncols == 0:
-        return 'No MEG or EEG channels.'
+        return None
     
     # Make plots
     fig, ax = plt.subplots(nrows=1, ncols=ncols, figsize=(9, 3.5))
+    if ncols == 1:
+        ax = [ax]
     row = 0
     for name, chan_inds in channel_types.items():
         if len(chan_inds) == 0:
@@ -525,7 +525,7 @@ def plot_eog_summary(raw, savebase=None):
     # Get the raw EOG data
     chan_inds = mne.pick_types(raw.info, eog=True)
     if len(chan_inds) == 0:
-        return 'EOG Channel Not Found'
+        return None
     t = raw.times
     x = raw.get_data(chan_inds).T
 
@@ -553,7 +553,7 @@ def plot_ecg_summary(raw, savebase=None):
     # Get the raw ECG data
     chan_inds = mne.pick_types(raw.info, ecg=True)
     if len(chan_inds) == 0:
-        return 'ECG Channel Not Found'
+        return None
     t = raw.times
     x = raw.get_data(chan_inds).T
 
@@ -602,10 +602,18 @@ def plot_bad_ica(raw, ica, savebase):
         if np.any([x in ica.labels_.keys() for x in ica._ica_names]): # this is for the osl_plot_ica convention
             title = "".join((ica._ica_names[exclude_uniq[i]]," - ", ica.labels_[ica._ica_names[exclude_uniq[i]]].upper()))
 
-        elif np.logical_or('eog' in ica.labels_.keys(), 'ecg' in ica.labels_.keys()): # this is for the MNE automatic labelling convention
+        elif 'eog' in ica.labels_.keys() and 'ecg' in ica.labels_.keys(): # this is for the MNE automatic labelling convention
             flag_eog = exclude_uniq[i] in ica.labels_['eog']
             flag_ecg = exclude_uniq[i] in ica.labels_['ecg']
             title = "".join((ica._ica_names[exclude_uniq[i]]," - ", flag_eog*'EOG', flag_ecg*flag_eog*'/', flag_ecg*'ECG'))
+
+        elif 'eog' in ica.labels_.keys():
+            flag_eog = exclude_uniq[i] in ica.labels_['eog']
+            title = "".join((ica._ica_names[exclude_uniq[i]]," - ", flag_eog*'EOG'))
+
+        elif 'ecg' in ica.labels_.keys():
+            flag_ecg = exclude_uniq[i] in ica.labels_['ecg']
+            title = "".join((ica._ica_names[exclude_uniq[i]]," - ", flag_ecg*'ECG'))
 
         else: # this is for if there is nothing in ica.labels_
             title = None

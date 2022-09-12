@@ -386,7 +386,7 @@ def run_osl_ica_manualreject(dataset, userargs):
     logger.info("OSL Stage - {0}".format("ICA Manual Reject"))
     logger.info("userargs: {0}".format(str(userargs)))
 
-    from .ica.plot_ica import plot_ica
+    from .plot_ica import plot_ica
 
     plot_ica(dataset["ica"], dataset["raw"], block=True)
     logger.info("Removing {0} IC".format(len(dataset["ica"].exclude)))

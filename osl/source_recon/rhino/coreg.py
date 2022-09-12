@@ -46,17 +46,17 @@ def get_coreg_filenames(subjects_dir, subject):
     ----------
     subjects_dir : string
         Directory to put RHINO subject dirs in.
-        Files will be in subjects_dir/subject/rhino/coreg/
+        Files will be in subjects_dir/subject/coreg/
     subject : string
         Subject name dir to put RHINO files in.
-        Files will be in subjects_dir/subject/rhino/coreg/
+        Files will be in subjects_dir/subject/coreg/
 
     Returns
     -------
     filenames : dict
         A dict of files generated and used by RHINO.
     """
-    basedir = op.join(subjects_dir, subject, "rhino", "coreg")
+    basedir = op.join(subjects_dir, subject, "coreg")
     os.makedirs(basedir, exist_ok=True)
 
     filenames = {
@@ -132,10 +132,10 @@ def coreg(
         Full path to MNE-derived fif file.
     subjects_dir : string
         Directory to put RHINO subject dirs in.
-        Files will be in subjects_dir/subject/rhino/coreg/
+        Files will be in subjects_dir/subject/coreg/
     subject : string
         Subject name dir to put RHINO files in.
-        Files will be in subjects_dir/subject/rhino/coreg/
+        Files will be in subjects_dir/subject/coreg/
     use_headshape : bool
         Determines whether polhemus derived headshape points are used.
     use_nose : bool
@@ -318,7 +318,7 @@ def coreg(
         )
 
         xform_icp, err, e = rhino_utils.rhino_icp(
-            smri_headshape_polhemus, polhemus_headshape_4icp, 30
+            smri_headshape_polhemus, polhemus_headshape_4icp, 30, logger=logger
         )
 
     else:

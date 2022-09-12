@@ -8,6 +8,7 @@
 #          Chetan Gohil <chetan.gohil@psych.ox.ac.uk>
 
 import os
+from pathlib import Path
 
 import numpy as np
 from sklearn.neighbors import NearestNeighbors
@@ -28,6 +29,7 @@ import logging
 logging.getLogger("numba").setLevel(logging.WARNING)
 
 from osl.source_recon.beamforming import transform_recon_timeseries
+from osl.utils.logger import log_or_print
 
 
 def system_call(cmd, verbose=False):
@@ -491,7 +493,9 @@ def icp(A, B, init_pose=None, max_iterations=50, tolerance=0.0001):
     return T, distances, i
 
 
-def rhino_icp(smri_headshape_polhemus, polhemus_headshape_polhemus, Ninits=10):
+def rhino_icp(
+    smri_headshape_polhemus, polhemus_headshape_polhemus, Ninits=10, logger=None
+):
     """Runs Iterative Closest Point with multiple initialisations.
 
     Parameters
@@ -503,6 +507,8 @@ def rhino_icp(smri_headshape_polhemus, polhemus_headshape_polhemus, Ninits=10):
         [3 x N] locations of the Polhemus headshape points in polhemus space
     Ninits : int
         Number of random initialisations to perform.
+    logger : logging.getLogger
+        Logger.
 
     Returns
     -------
@@ -541,7 +547,7 @@ def rhino_icp(smri_headshape_polhemus, polhemus_headshape_polhemus, Ninits=10):
 
         if err[init] < err_old:
 
-            print("ICP found better xform, error={}".format(e))
+            log_or_print("ICP found better xform, error={}".format(e), logger)
 
             err_old = e
 
@@ -947,7 +953,16 @@ def save_or_show_renderer(renderer, filename):
     if filename is None:
         renderer.show()
     else:
-        if ".html" not in str(filename):
-            raise ValueError("filename must have extension .html")
+        allowed_extensions = [".html", ".pdf", ".svg", ".eps", ".ps", ".tex"]
+        ext = Path(filename).suffix
+        if ext not in allowed_extensions:
+            raise ValueError(
+                f"{ext} not allowed, please use one of the following: "
+                + " ".join(allowed_extensions)
+            )
+
         print("Saving", filename)
-        renderer.figure.plotter.export_html(filename)
+        if ext == ".html":
+            renderer.figure.plotter.export_html(filename)
+        elif ext in allowed_extensions:
+            renderer.figure.plotter.save_graphic(filename)

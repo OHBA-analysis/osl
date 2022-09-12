@@ -67,6 +67,7 @@ def make_lcmv(
     inversion="matrix",
     verbose=None,
     logger=None,
+    save_figs=False,
 ):
     """Compute LCMV spatial filter.
 
@@ -98,63 +99,13 @@ def make_lcmv(
         Restricts the LCMV solution to a given label.
     logger : logging.getLogger()
         Logger.
+    save_figs : bool
+        Should we save figures?
 
     Returns
     -------
-    filters : instance of Beamformer
-        Dictionary containing filter weights from LCMV beamformer.
-        Contains the following keys:
-            'kind' : str
-                The type of beamformer, in this case 'LCMV'.
-            'weights' : array
-                The filter weights of the beamformer.
-            'data_cov' : instance of Covariance
-                The data covariance matrix used to compute the beamformer.
-                If None will be computed from raw.
-            'noise_cov' : instance of Covariance | None
-                The noise covariance matrix used to whiten.
-            'whitener' : None | ndarray, shape (n_channels, n_channels)
-                Whitening matrix, provided if whitening was applied to the
-                covariance matrix and leadfield during computation of the
-                beamformer weights.
-            'weight_norm' : str | None
-                Type of weight normalization used to compute the filter
-                weights.
-            'pick-ori' : None | 'max-power' | 'normal' | 'vector'
-                The orientation in which the beamformer filters were computed.
-            'ch_names' : list of str
-                Channels used to compute the beamformer.
-            'proj' : array
-                Projections used to compute the beamformer.
-            'is_ssp' : bool
-                If True, projections were applied prior to filter computation.
-            'vertices' : list
-                Vertices for which the filter weights were computed.
-            'is_free_ori' : bool
-                If True, the filter was computed with free source orientation.
-            'n_sources' : int
-                Number of source location for which the filter weight were
-                computed.
-            'src_type' : str
-                Type of source space.
-            'source_nn' : ndarray, shape (n_sources, 3)
-                For each source location, the surface normal.
-            'proj' : ndarray, shape (n_channels, n_channels)
-                Projections used to compute the beamformer.
-            'subject' : str
-                The subject ID.
-            'rank' : int
-                The rank of the data covariance matrix used to compute the
-                beamformer weights.
-            'max-power-ori' : ndarray, shape (n_sources, 3) | None
-                When pick_ori='max-power', this fields contains the estimated
-                direction of maximum ?weight normalised power? at each source location.
-                When pick_ori='max-power-pre-weight-norm', this fields contains the estimated
-                direction of maximum power at each source location.
-            'inversion' : 'single' | 'matrix'
-                Whether the spatial filters were computed for each dipole
-                separately or jointly for all dipoles at each vertex using a
-                matrix inversion.
+    filters : instance of MNE Beamformer
+        Dictionary containing filter weights from LCMV beamformer. See MNE docs.
     """
     log_or_print("*** RUNNING OSL MAKE LCMV ***", logger)
 
@@ -233,6 +184,14 @@ def make_lcmv(
         reduce_rank=reduce_rank,
         verbose=verbose,
     )
+
+    if save_figs:
+        # Plot covariances
+        fig_cov, fig_svd = filters["data_cov"].plot(
+            data.info, show=False, verbose=verbose
+        )
+        fig_cov.savefig(op.join(subjects_dir, subject, "filter_cov.png"), dpi=150)
+        fig_svd.savefig(op.join(subjects_dir, subject, "filter_svd.png"), dpi=150)
 
     log_or_print("*** OSL MAKE LCMV COMPLETE ***", logger)
 
