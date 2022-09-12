@@ -5,5 +5,4 @@ These scripts use oslpy to preprocess and source reconstruct the CamCAN dataset.
 
 Order to execute:
 1. python preprocess.py
-2. python coregister.py
-3. python source_reconstruct.py
+2. python source_reconstruct.py
