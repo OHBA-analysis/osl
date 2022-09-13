@@ -342,9 +342,14 @@ def run_mne_ica_raw(dataset, userargs):
     logger.info("MNE Stage - {0}".format("mne.preprocessing.ICA"))
     logger.info("userargs: {0}".format(str(userargs)))
 
+    # MNE recommends applying a high pass filter at 1 Hz before calculating
+    # the ICA:
+    # https://mne.tools/stable/auto_tutorials/preprocessing/40_artifact_correction_ica.html#filtering-to-remove-slow-drifts
+    filt_raw = dataset["raw"].copy().filter(l_freq=1, h_freq=None)
+
     # NOTE: **userargs doesn't work because 'picks' is in there
     ica = mne.preprocessing.ICA(n_components=userargs["n_components"])
-    ica.fit(dataset["raw"], picks=userargs["picks"])
+    ica.fit(filt_raw, picks=userargs["picks"])
     dataset["ica"] = ica
     return dataset
 
@@ -386,7 +391,7 @@ def run_osl_ica_manualreject(dataset, userargs):
     logger.info("OSL Stage - {0}".format("ICA Manual Reject"))
     logger.info("userargs: {0}".format(str(userargs)))
 
-    from .ica.plot_ica import plot_ica
+    from .plot_ica import plot_ica
 
     plot_ica(dataset["ica"], dataset["raw"], block=True)
     logger.info("Removing {0} IC".format(len(dataset["ica"].exclude)))

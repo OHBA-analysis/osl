@@ -1,5 +1,3 @@
-# TODO: SHOULD BE MOVED SOMEWHERE ELSE.
-#
 # This script will be used for the mass-labeling event of the MEGUK partnership data - July 2021
 # It intends to speed up the process by loading in the data based on a data name, clearing ica.exclude, plotting the
 # components interactively, and saving afterwards - in a researcher specific folder.

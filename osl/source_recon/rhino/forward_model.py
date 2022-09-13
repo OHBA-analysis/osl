@@ -289,8 +289,7 @@ def setup_volume_source_space(
 
     # First make sure bem directory exists:
     bem_dir_name = op.join(subjects_dir, subject, "bem")
-    if not op.isdir(bem_dir_name):
-        os.mkdir(bem_dir_name)
+    os.makedirs(bem_dir_name, exist_ok=True)
 
     # Note that due to the unusal naming conventions used by BET and MNE:
     # - bet_inskull_*_file is actually the brain surface

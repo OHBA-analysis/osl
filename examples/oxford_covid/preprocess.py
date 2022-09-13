@@ -6,10 +6,10 @@
 
 from osl import preprocessing
 
-RAW_FILE = "/ohba/pi/knobre/datasets/covid/rawbids/sub-{0}/meg/sub-{0}_task-restEO.fif"
+RAW_FILE = "/ohba/pi/knobre/datasets/covid/rawbids/{0}/meg/{0}_task-restEO.fif"
 PREPROC_DIR = "/ohba/pi/knobre/cgohil/covid/preproc"
 
-SUBJECTS = ["004", "005"]
+SUBJECTS = ["sub-004", "sub-005"]
 
 # Settings
 config = """

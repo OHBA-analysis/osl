@@ -11,6 +11,7 @@ import os
 import os.path as op
 from pathlib import Path
 from shutil import copyfile
+from datetime import datetime
 
 import cv2
 import numpy as np
@@ -32,10 +33,10 @@ def get_surfaces_filenames(subjects_dir, subject):
     ----------
     subjects_dir : string
         Directory to put RHINO subject dirs in.
-        Files will be in subjects_dir/subject/rhino/surfaces/
+        Files will be in subjects_dir/subject/surfaces/
     subject : string
         Subject name dir to put RHINO files in.
-        Files will be in subjects_dir/subject/rhino/surfaces/
+        Files will be in subjects_dir/subject/surfaces/
 
     Returns
     -------
@@ -47,7 +48,7 @@ def get_surfaces_filenames(subjects_dir, subject):
          - bet_outskull_*_file is actually the inner skull surface
          - bet_outskin_*_file is the outer skin/scalp surface
     """
-    basedir = op.join(subjects_dir, subject, "rhino", "surfaces")
+    basedir = op.join(subjects_dir, subject, "surfaces")
     os.makedirs(basedir, exist_ok=True)
 
     filenames = {
@@ -75,6 +76,7 @@ def get_surfaces_filenames(subjects_dir, subject):
         + "/data/standard/MNI152_T1_1mm_brain.nii.gz",
         "std_brain_bigfov": os.environ["FSLDIR"]
         + "/data/standard/MNI152_T1_1mm_BigFoV_facemask.nii.gz",
+        "completed": op.join(basedir, "completed.txt"),
     }
 
     return filenames
@@ -127,10 +129,10 @@ def compute_surfaces(
         will be ignored.
     subjects_dir : string
         Directory to put RHINO subject dirs in.
-        Files will be in subjects_dir/subject/rhino/surfaces/
+        Files will be in subjects_dir/subject/surfaces/
     subject : string
         Subject name dir to put RHINO files in.
-        Files will be in subjects_dir/subject/rhino/surfaces/
+        Files will be in subjects_dir/subject/surfaces/
     include_nose : bool
         Specifies whether to add the nose to the outer skin
         (scalp) surface. This can help rhino's coreg to work
@@ -151,10 +153,26 @@ def compute_surfaces(
     #
     # RHINO does everthing in mm
 
-    log_or_print("*** RUNNING OSL RHINO COMPUTE SURFACES ***", logger)
-
     filenames = get_surfaces_filenames(subjects_dir, subject)
 
+    # Check if surface have already been computed
+    if Path(filenames["completed"]).exists():
+        with open(filenames["completed"], "r") as file:
+            lines = file.readlines()
+            completed_mri_file = lines[1].split(":")[1].strip()
+            completed_include_nose = lines[2].split(":")[1].strip() == "True"
+            is_same_mri = completed_mri_file == filenames["smri_file"]
+            is_same_include_nose = completed_include_nose == include_nose
+            if is_same_mri and is_same_include_nose:
+                log_or_print(
+                    "*** OSL RHINO: USING PREVIOUSLY COMPUTED SURFACES ***",
+                    logger,
+                )
+                log_or_print(f"Surfaces directory: {filenames['basedir']}", logger)
+                log_or_print(f"include_nose={completed_include_nose}", logger)
+                return
+
+    log_or_print("*** RUNNING OSL RHINO COMPUTE SURFACES ***", logger)
     if include_nose:
         log_or_print(
             "The nose is going to be added to the outer skin (scalp) surface.",
@@ -585,6 +603,14 @@ please check output of:\n fslorient -orient {}".format(filenames["smri_file"])
         )
 
     # -------------------------------------------------------------------------
+    # Write a file to indicate RHINO has been run
+
+    with open(filenames["completed"], "w") as file:
+        file.write(f"Completed: {datetime.now()}\n")
+        file.write(f"MRI file: {filenames['smri_file']}\n")
+        file.write(f"Include nose: {include_nose}\n")
+
+    # -------------------------------------------------------------------------
     # Clean up
 
     rhino_utils.system_call(
@@ -610,10 +636,10 @@ def surfaces_display(subjects_dir, subject):
     ----------
     subjects_dir : string
         Directory to put RHINO subject dirs in.
-        Files will be in subjects_dir/subject/rhino/surfaces/
+        Files will be in subjects_dir/subject/surfaces/
     subject : string
         Subject name dir to put RHINO files in.
-        Files will be in subjects_dir/subject/rhino/surfaces/
+        Files will be in subjects_dir/subject/surfaces/
 
     Note that bet_inskull_mesh_file is actually the brain surface and
     bet_outskull_mesh_file is the inner skull surface, due to the naming
