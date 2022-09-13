@@ -3,6 +3,7 @@
 """
 
 # Authors: Andrew Quinn <a.quinn@bham.ac.uk>
+#          Mats van Es <mats.vanes@psych.ox.ac.uk>
 
 import os
 import mne
@@ -10,6 +11,8 @@ import sys
 import argparse
 import tempfile
 import numpy as np
+from ..utils import validate_outdir, add_subdir
+
 
 
 def _add_headpos(cmd, args, outfif):
@@ -480,7 +483,7 @@ def run_cbu_3stage_maxfilter(infif, outbase, args):
 
 
 def main(argv=None):
-
+    print('HELLO!?')
     if argv is None:
         argv = sys.argv[1:]
     print(argv)
@@ -573,13 +576,21 @@ def main(argv=None):
             sys.exit('Trans file not found ({0})'.format(args.trans))
 
     print('Processing {0} files'.format(sum(good_fifs)))
+    if args.outdir == None:
+        args.outdir = 'None'
+    print('we came to 0')
     if args.outdir == 'adjacent':
         print('Outputs will be saved alongside inputs\n\n')
     else:
-        if os.path.isdir(args.outdir) is False:
-            sys.exit('Output directory not found ({0})'.format(args.trans))
+        if '{' in args.outdir and '}' in args.outdir:
+            print('we came to 1')
+            # validate the parrent outdir - later do so for each subdirectory
+            _ = validate_outdir(args.outdir.split('{')[0])
+        else:
+            print('we came to 2')
+            args.outdir = validate_outdir(args.outdir)
         print('Outputs saving to: {0}\n\n'.format(args.outdir))
-
+    print('we came to 3')
     # -------------------------------------------------
 
     for idx, fif in enumerate(infifs):
@@ -600,7 +611,9 @@ def main(argv=None):
         if args.outdir == 'adjacent':
             outfif = fif[:-4]
         else:
-            outfif = os.path.join(args.outdir, outname)[:-4]
+            outdir = add_subdir(fif, args.outdir)
+            outdir = validate_outdir(outdir)
+            outfif = os.path.join(outdir, outname)[:-4]
 
         # Skip run if the output exists and we don't want to overwrite
         if os.path.isfile(outfif) and (args.overwrite is False):

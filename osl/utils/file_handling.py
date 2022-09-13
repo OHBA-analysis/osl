@@ -166,6 +166,23 @@ def get_rawdir(files):
     return rawfile.parent
 
 
+def add_subdir(file, outdir):
+    if not type(outdir) == str:
+        outdir = str(outdir)
+    if '{' in outdir and '}' in outdir:
+        try:
+            base = outdir.split('{')[0]
+            pat = outdir.split('{')[1].split('}')[0]
+            pat0, pat1 = pat.split(':')
+            outdir = base + pat0 + file.split(pat0)[1][:int(pat1)]
+        except:
+            # pattern extraction failed
+            raise ValueError(
+                    "Please make sure the subdirectory structure is present in the input file(s)"
+                    )
+    return outdir
+
+
 # Should not be final home for this function - Needs replacing with logger
 def osl_print(s, logfile=None):
     print(s)

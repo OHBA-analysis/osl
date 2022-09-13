@@ -27,7 +27,7 @@ import numpy as np
 import yaml
 
 from . import mne_wrappers, osl_wrappers
-from ..utils import find_run_id, validate_outdir, process_file_inputs
+from ..utils import find_run_id, validate_outdir, process_file_inputs, add_subdir
 from ..utils import logger as osl_logger
 from ..utils.parallel import dask_parallel_bag
 
@@ -551,7 +551,14 @@ def run_proc_chain(
     outname : str
         Output filename.
     outdir : str
-        Output directory.
+        Output directory. If processing multiple files, they can
+        be put in unique sub directories by including {x:0} at 
+        the end of the outdir, where x is the pattern which
+        precedes the unique identifier and 0 is the length of 
+        the unique identifier. For example: if the outdir is
+        ../../{sub-:3} and each is like 
+        /sub-001_task-rest.fif, the outdir for the file will be
+        ../../sub-001/
     logsdir : str
         Directory to save log files to.
     reportdir : str
@@ -577,6 +584,7 @@ def run_proc_chain(
     if outdir is None:
         # Use the current working directory
         outdir = os.getcwd()
+    outdir = add_subdir(infile, outdir)
     outdir = validate_outdir(outdir)
     logsdir = validate_outdir(logsdir or outdir / "logs")
     reportdir = validate_outdir(reportdir or outdir / "report")
@@ -716,7 +724,13 @@ def run_proc_batch(
         Can be a list of Raw objects or a list of filenames or a path to a
         textfile list of filenames.
     outdir : str
-        Output directory.
+        Output directory. If processing multiple files, they can
+        be put in unique sub directories by including {x:0} at 
+        the end of the outdir, where x is the pattern which
+        precedes the unique identifier and 0 is the length of 
+        the unique identifier. For example: if the outdir is
+        ../../{sub-:3} and each is like /sub-001_task-rest.fif, 
+        the outdir for the file will be ../../sub-001/
     logsdir : str
         Directory to save log files to.
     reportdir : str
@@ -748,9 +762,15 @@ def run_proc_batch(
     if outdir is None:
         # Use the current working directory
         outdir = os.getcwd()
-    outdir = validate_outdir(outdir)
-    logsdir = validate_outdir(logsdir or outdir / "logs")
-    reportdir = validate_outdir(reportdir or outdir / "report")
+    if '{' in outdir and '}' in outdir:
+        # validate the parrent outdir - later do so for each subdirectory
+        tmpoutdir = validate_outdir(outdir.split('{')[0])
+        logsdir = validate_outdir(logsdir or tmpoutdir / "logs")
+        reportdir = validate_outdir(reportdir or tmpoutdir / "report")
+    else:
+        outdir = validate_outdir(outdir)
+        logsdir = validate_outdir(logsdir or outdir / "logs")
+        reportdir = validate_outdir(reportdir or outdir / "report")
 
     # Initialise Loggers
     mne.set_log_level(mneverbose)
@@ -794,6 +814,7 @@ def run_proc_batch(
         run_proc_chain,
         outdir=outdir,
         logsdir=logsdir,
+        reportdir=reportdir,
         overwrite=overwrite,
         extra_funcs=extra_funcs,
     )
