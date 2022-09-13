@@ -93,7 +93,7 @@ class TestPreprocessingBatch(unittest.TestCase):
 
         # Normal run
         td = tempfile.TemporaryDirectory()
-        goods = run_proc_batch(cfg, self.infiles, outdir=td.name, ret_dataset=False)
+        goods = run_proc_batch(cfg, self.infiles, outdir=td.name)
 
         assert(np.all(goods == np.array([1, 0, 1])))
 
