@@ -535,7 +535,7 @@ def run_proc_chain(
     logsdir=None,
     reportdir=None,
     ret_dataset=True,
-    gen_report=True,
+    gen_report=None,
     overwrite=False,
     extra_funcs=None,
     verbose="INFO",
@@ -554,7 +554,7 @@ def run_proc_chain(
     outdir : str
         Output directory.
     logsdir : str
-            Directory to save log files to.
+        Directory to save log files to.
     reportdir : str
         Directory to save report files to.
     ret_dataset : bool
@@ -575,39 +575,55 @@ def run_proc_chain(
     Returns
     -------
     dict or bool
-        A dict containing the preprocessed dataset is returned if ret_dataset=True.
-        The dict has keys: raw, ica, epochs, events, event_id.
-        Otherwise, a flag indicating whether preprocessing was successful is
-        returned.
+        If ret_dataset=True, a dict containing the preprocessed dataset with the
+        following keys: raw, ica, epochs, events, event_id. An empty dict is returned
+        if preprocessing fail. If return an empty dict. if ret_dataset=False, we
+        return a flag indicating whether preprocessing was successful.
     """
+    if not ret_dataset:
+        # Let's make sure we have an output directory
+        outdir = outdir or os.getcwd()
 
-    if outdir is None and ret_dataset is False:
-        # Use the current working directory
-        outdir = os.getcwd()
+    if outdir is not None:
+        # We're saving the output to disk
 
-    if not outdir is None:
-        # Only do the following if we want to save the data - otherwise return the dataset
+        # Generate a report by default, this is overriden if the user passes
+        # gen_report=False
+        gen_report = gen_report or True
+
+        # Create output directories if they don't exist
         outdir = validate_outdir(outdir)
         logsdir = validate_outdir(logsdir or outdir / "logs")
         reportdir = validate_outdir(reportdir or outdir / "report")
+
     else:
-        logsdir = None
-        reportdir = None
-        gen_report = False
-        ret_dataset = True
+        # We're not saving the output to disk
+
+        # Don't generate a report by default, this is overriden if the user passes
+        # something for reportdir or gen_report=True
+        gen_report = gen_report or reportdir is not None or False
+        if gen_report:
+            # Make sure we have a directory to write the report to
+            reportdir = validate_outdir(reportdir or os.getcwd() + "/report")
+
+        # Allow the user to create a log if they pass logsdir
+        if logsdir is not None:
+            logsdir = validate_outdir(logsdir)
 
     # Generate a run ID
     if outname is None:
         run_id = find_run_id(infile)
     else:
         run_id = os.path.splitext(outname)[0]
-
     name_base = "{run_id}_{ftype}.{fext}"
-    outbase = os.path.join(outdir, name_base)
-    logbase = os.path.join(logsdir, name_base)
+
+    # Create output filename
+    if outdir is not None:
+        outbase = os.path.join(outdir, name_base)
 
     # Generate log filename
-    if outdir is not None:
+    if logsdir is not None:
+        logbase = os.path.join(logsdir, name_base)
         logfile = logbase.format(
             run_id=run_id.replace("_raw", ""), ftype="preproc_raw", fext="log"
         )
@@ -693,7 +709,13 @@ def run_proc_chain(
             f.write("\n")
             traceback.print_tb(ex_traceback, file=f)
 
-        return False
+        if ret_dataset:
+            # We return an empty dict to indicate preproc failed
+            # This ensures the function consistently returns one
+            # variable type
+            return {}
+        else:
+            return False
 
     now = strftime("%Y-%m-%d %H:%M:%S", localtime())
     logger.info("{0} : Processing Complete".format(now))
