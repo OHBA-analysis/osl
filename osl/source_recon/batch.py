@@ -159,8 +159,12 @@ def run_src_chain(
     if not isinstance(config, dict):
         config = load_config(config)
 
-    # Validation
     doing_coreg = any(["coregister" in method for method in config["source_recon"]])
+    doing_bf_parc = any(
+        ["beamform_and_parcellate" in method for method in config["source_recon"]]
+    )
+
+    # Validation
     if doing_coreg and smri_file is None:
         raise ValueError("smri_file must be passed if we're doing coregistration.")
 
@@ -201,8 +205,11 @@ def run_src_chain(
 
         return False
 
-    # Generate HTML data for the report
-    src_report.gen_html_data(config, src_dir, rhino_dir, subject, reportdir, logger)
+    if doing_coreg or doing_bf_parc:
+        # Generate HTML data for the report
+        src_report.gen_html_data(
+            config, src_dir, rhino_dir, subject, reportdir, logger
+        )
 
     return True
 
