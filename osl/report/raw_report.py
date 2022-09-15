@@ -350,8 +350,21 @@ def plot_channel_time_series(raw, savebase=None):
 
 def plot_sensors(raw, savebase=None):
     """Plots sensors with bad channels highlighted."""
-
-    fig = raw.plot_sensors(show=False)
+    # plot channel types seperately for neuromag306 (3 coils in same location)
+    if 3012 in np.unique([i['coil_type'] for i in raw.info['chs']]):
+        with open('utils/neuromag306_info.yml', 'r') as f:
+            channels = yaml.load(f, Loader=yaml.FullLoader)
+        if 3024 in np.unique([i['coil_type'] for i in raw.info['chs']]):
+            coil_types = ['mag', 'grad_longitude', 'grad_lattitude']
+        else:
+            coil_types = ['grad_longitude', 'grad_lattitude']
+        fig, ax = plt.subplots(1,len(coil_types))
+        for k in range(len(coil_types)):
+            raw.copy().pick_channels(channels[coil_types[k]]).plot_sensors(axes=ax[k], show=False)
+            ax[k].set_title(f"{coil_types[k].replace('_', ' ')}")
+        plt.tight_layout()
+    else:
+        fig = raw.plot_sensors(show=False)
     figname = savebase.format('bad_chans')
     fig.savefig(figname, dpi=150, transparent=True)
     plt.close(fig)
