@@ -26,6 +26,7 @@ from mne.channels.channels import channel_type
 from scipy.ndimage.filters import uniform_filter1d
 from matplotlib.lines import Line2D
 from matplotlib.patches import Rectangle
+from pathlib import Path
 
 from ..utils import process_file_inputs, validate_outdir
 from ..utils.logger import log_or_print
@@ -350,8 +351,24 @@ def plot_channel_time_series(raw, savebase=None):
 
 def plot_sensors(raw, savebase=None):
     """Plots sensors with bad channels highlighted."""
-
-    fig = raw.plot_sensors(show=False)
+    # plot channel types seperately for neuromag306 (3 coils in same location)
+    if 3012 in np.unique([i['coil_type'] for i in raw.info['chs']]):
+        with open(str(Path(__file__).parent.parent) + "/utils/neuromag306_info.yml", 'r') as f:
+            channels = yaml.safe_load(f)
+        if 3024 in np.unique([i['coil_type'] for i in raw.info['chs']]):
+            coil_types = ['mag', 'grad_longitude', 'grad_lattitude']
+        else:
+            coil_types = ['grad_longitude', 'grad_lattitude']
+        fig, ax = plt.subplots(1,len(coil_types), figsize=(16,4))
+        for k in range(len(coil_types)):
+            raw.copy().pick_channels(channels[coil_types[k]]).plot_sensors(axes=ax[k], show=False)
+            ax[k].set_title(f"{coil_types[k].replace('_', ' ')}")
+        plt.tight_layout()
+    else:
+        fig, ax = plt.subplots(1, 3, figsize=(16, 4))
+        ax[0].axis('off')
+        ax[2].axis('off')
+        raw.plot_sensors(show=False, axes=ax[1])
     figname = savebase.format('bad_chans')
     fig.savefig(figname, dpi=150, transparent=True)
     plt.close(fig)
