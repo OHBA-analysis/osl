@@ -11,6 +11,7 @@ import os
 import os.path as op
 
 import numpy as np
+import mne
 from mne import (
     read_forward_solution,
     Covariance,
@@ -116,8 +117,6 @@ def make_lcmv(
     fwd_fname = rhino.get_coreg_filenames(subjects_dir, subject)["forward_model_file"]
     fwd = read_forward_solution(fwd_fname)
 
-    is_epoched = len(data.get_data().shape) == 3 and len(data) > 1
-
     if data_cov is None:
         # Note that if chantypes are meg, eeg; and meg includes mag, grad
         # then compute_covariance will project data separately for meg and eeg
@@ -134,7 +133,7 @@ def make_lcmv(
         # subspace and improve numerical stability. This is equivalent to what the
         # osl_normalise_sensor_data.m function in Matlab OSL is trying to do.
         # Note that in the output data_cov the scalings have been undone.
-        if is_epoched:
+        if isinstance(data, mne.Epochs):
             data_cov = compute_covariance(data, method="empirical", rank=rank)
         else:
             data_cov = compute_raw_covariance(data, method="empirical", rank=rank)
