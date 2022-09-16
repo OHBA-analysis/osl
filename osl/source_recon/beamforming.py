@@ -25,12 +25,15 @@ from mne.minimum_norm.inverse import _check_depth, _prepare_forward, _get_vertno
 from mne.source_estimate import _get_src_type
 from mne.forward import _subject_from_forward
 from mne.forward.forward import is_fixed_orient
+from mne.beamformer._lcmv import _apply_lcmv
 from mne.beamformer._compute_beamformer import (
     _reduce_leadfield_rank,
-    Beamformer,
     _sym_inv_sm,
+    Beamformer,
 )
+from mne.minimum_norm.inverse import _check_reference
 from mne.utils import (
+    _check_channels_spatial_filter,
     _check_one_ch_type,
     _check_info_inv,
     _check_option,
@@ -196,6 +199,32 @@ def make_lcmv(
     log_or_print("*** OSL MAKE LCMV COMPLETE ***", logger)
 
     return filters
+
+
+def apply_lcmv_raw(raw, filters, reject_by_annotations="omit"):
+    """Modified version of mne.beamformer.apply_lcmv_raw.
+
+    This function has the option to remove bad segments
+    (reject_by_annotations='omit') whereas the MNE function does not.
+    """
+    _check_reference(raw)
+
+    # Get data from the mne.Raw object
+    data, times = raw.get_data(
+        reject_by_annotation=reject_by_annotations, return_times=True
+    )
+
+    # Select channels
+    sel = _check_channels_spatial_filter(raw.ch_names, filters)
+    data = data[sel]
+
+    info = raw.info
+    tmin = times[0]
+
+    # Apply LCMV beamformer
+    stc = _apply_lcmv(data=data, filters=filters, info=info, tmin=tmin)
+
+    return next(stc)
 
 
 def get_recon_timeseries(subjects_dir, subject, coord_mni, recon_timeseries_head):
@@ -385,7 +414,6 @@ def transform_recon_timeseries(
     recon_timeseries_out = np.zeros(
         np.insert(recon_timeseries.shape[1:], 0, coords_out.shape[1])
     )
-    #import pdb; pdb.set_trace()
 
     recon_indices = np.zeros([coords_out.shape[1]])
 
@@ -437,15 +465,16 @@ def _make_lcmv(
     data_rank = compute_rank(data_cov, rank=rank, info=info)
     noise_rank = compute_rank(noise_cov, rank=noise_rank, info=info)
 
-    if False:  # MWW
-        for key in data_rank:
-            if (
-                key not in noise_rank or data_rank[key] != noise_rank[key]
-            ) and not allow_mismatch:
-                raise ValueError(
-                    "%s data rank (%s) did not match the noise "
-                    "rank (%s)" % (key, data_rank[key], noise_rank.get(key, None))
-                )
+    # MWW, CG
+    #for key in data_rank:
+    #    if (
+    #        key not in noise_rank or data_rank[key] != noise_rank[key]
+    #    ) and not allow_mismatch:
+    #        raise ValueError(
+    #            "%s data rank (%s) did not match the noise "
+    #            "rank (%s)" % (key, data_rank[key], noise_rank.get(key, None))
+    #        )
+
     # MWW
     # del noise_rank
     rank = data_rank
@@ -823,7 +852,7 @@ def _prepare_beamformer_input(
         ("normal", "max-power", "vector", "max-power-pre-weight-norm", None),
     )
 
-    # CG
+    # MWW, CG
     # Restrict forward solution to selected vertices
     #if label is not None:
     #    _, src_sel = label_src_vertno_sel(label, forward["src"])
@@ -832,7 +861,7 @@ def _prepare_beamformer_input(
     if loose is None:
         loose = 0.0 if is_fixed_orient(forward) else 1.0
 
-    # CG
+    # MWW, CG
     #if noise_cov is None:
     #    noise_cov = make_ad_hoc_cov(info, std=1.0)
 
