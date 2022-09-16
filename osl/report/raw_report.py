@@ -578,7 +578,7 @@ def plot_ecg_summary(raw, savebase=None):
 def plot_bad_ica(raw, ica, savebase):
     """Plot ICA characteristics for rejected components."""
 
-    exclude_uniq = np.sort(np.unique(ica.exclude))
+    exclude_uniq = np.sort(np.unique(ica.exclude))[::-1]
     nbad = len(exclude_uniq)
 
     # Create figure
