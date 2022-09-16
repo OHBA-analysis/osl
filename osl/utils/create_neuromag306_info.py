@@ -1,10 +1,8 @@
 import yaml
+from pathlib import Path
 
 channels = {}
 channels['right_occipital'] = ['MEG2031', 'MEG2032', 'MEG2033', 'MEG2341', 'MEG2342', 'MEG2343', 'MEG2131', 'MEG2132',
-                               'MEG2133', 'MEG2331', 'MEG2332', 'MEG2333', 'MEG2541', 'MEG2542', 'MEG2543', 'MEG2511',
-                               'MEG2512', 'MEG2513', 'MEG2321', 'MEG2322', 'MEG2323', 'MEG2311', 'MEG2312', 'MEG2313',
-                               'MEG2531', 'MEG2532', 'MEG2533', 'MEG2431', 'MEG2432', 'MEG2433', 'MEG2521', 'MEG2522',
                                'MEG2523', 'MEG2121', 'MEG2122', 'MEG2123']
 channels['left_occipital'] = ['MEG2041', 'MEG2042', 'MEG2043', 'MEG1911', 'MEG1912', 'MEG1913', 'MEG1941', 'MEG1942',
                               'MEG1943', 'MEG1641', 'MEG1642', 'MEG1643', 'MEG1721', 'MEG1722', 'MEG1723', 'MEG1711',
@@ -95,6 +93,6 @@ channels['mag'] = ['MEG0111', 'MEG0121', 'MEG0131', 'MEG0141', 'MEG0211', 'MEG02
 for i in channels.keys():
     channels[i] = sorted(channels[i])
 
-with open('utils/neuromag306_info.yml', 'w') as outfile:
+with open(str(Path(__file__).parent) + '/neuromag306_info.yml', 'w') as outfile:
     yaml.dump(channels, outfile, default_flow_style=False)
 
