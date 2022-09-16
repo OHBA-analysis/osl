@@ -359,13 +359,16 @@ def plot_sensors(raw, savebase=None):
             coil_types = ['mag', 'grad_longitude', 'grad_lattitude']
         else:
             coil_types = ['grad_longitude', 'grad_lattitude']
-        fig, ax = plt.subplots(1,len(coil_types))
+        fig, ax = plt.subplots(1,len(coil_types), figsize=(16,4))
         for k in range(len(coil_types)):
             raw.copy().pick_channels(channels[coil_types[k]]).plot_sensors(axes=ax[k], show=False)
             ax[k].set_title(f"{coil_types[k].replace('_', ' ')}")
         plt.tight_layout()
     else:
-        fig = raw.plot_sensors(show=False)
+        fig, ax = plt.subplots(1, 3, figsize=(16, 4))
+        ax[0].axis('off')
+        ax[2].axis('off')
+        raw.plot_sensors(show=False, axes=ax[1])
     figname = savebase.format('bad_chans')
     fig.savefig(figname, dpi=150, transparent=True)
     plt.close(fig)
