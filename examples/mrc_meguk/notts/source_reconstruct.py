@@ -92,8 +92,8 @@ source_recon.setup_fsl("/home/cgohil/local/fsl")
 
 # Get input files
 subjects = []
-smri_files = []
 preproc_files = []
+smri_files = []
 for path in sorted(glob(PREPROC_DIR + "/sub-*_preproc_raw.fif")):
     subject = Path(path).stem.split("_")[0]
     subjects.append(subject)

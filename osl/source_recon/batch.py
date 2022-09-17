@@ -277,7 +277,7 @@ def run_src_batch(
     n_preproc_files = len(preproc_files)
     if n_subjects != n_preproc_files:
         raise ValueError(
-            "Got {n_subjects} subjects and {n_preproc_files} preproc_files."
+            f"Got {n_subjects} subjects and {n_preproc_files} preproc_files."
         )
 
     doing_coreg = any(["coregister" in method for method in config["source_recon"]])
