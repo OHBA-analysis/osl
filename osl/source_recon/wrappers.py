@@ -19,7 +19,6 @@ import logging
 import os.path as op
 
 import numpy as np
-from mne.beamformer import apply_lcmv_raw
 
 from . import rhino, beamforming, parcellation
 
@@ -155,8 +154,8 @@ def beamform_and_parcellate(
     )
 
     # Apply beamforming
-    logger.info("mne.beamforming.apply_lcmv")
-    src_data = apply_lcmv_raw(preproc_data, filters)
+    logger.info("beamforming.apply_lcmv_raw")
+    src_data = beamforming.apply_lcmv_raw(preproc_data, filters)
     src_ts_mni, _, src_coords_mni, _ = beamforming.transform_recon_timeseries(
         subjects_dir=subjects_dir,
         subject=subject,

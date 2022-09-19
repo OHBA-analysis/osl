@@ -11,6 +11,7 @@ import os
 import os.path as op
 
 import numpy as np
+import mne
 from mne import (
     read_forward_solution,
     Covariance,
@@ -25,12 +26,15 @@ from mne.minimum_norm.inverse import _check_depth, _prepare_forward, _get_vertno
 from mne.source_estimate import _get_src_type
 from mne.forward import _subject_from_forward
 from mne.forward.forward import is_fixed_orient
+from mne.beamformer._lcmv import _apply_lcmv
 from mne.beamformer._compute_beamformer import (
     _reduce_leadfield_rank,
-    Beamformer,
     _sym_inv_sm,
+    Beamformer,
 )
+from mne.minimum_norm.inverse import _check_reference
 from mne.utils import (
+    _check_channels_spatial_filter,
     _check_one_ch_type,
     _check_info_inv,
     _check_option,
@@ -113,8 +117,6 @@ def make_lcmv(
     fwd_fname = rhino.get_coreg_filenames(subjects_dir, subject)["forward_model_file"]
     fwd = read_forward_solution(fwd_fname)
 
-    is_epoched = len(data.get_data().shape) == 3 and len(data) > 1
-
     if data_cov is None:
         # Note that if chantypes are meg, eeg; and meg includes mag, grad
         # then compute_covariance will project data separately for meg and eeg
@@ -131,7 +133,7 @@ def make_lcmv(
         # subspace and improve numerical stability. This is equivalent to what the
         # osl_normalise_sensor_data.m function in Matlab OSL is trying to do.
         # Note that in the output data_cov the scalings have been undone.
-        if is_epoched:
+        if isinstance(data, mne.Epochs):
             data_cov = compute_covariance(data, method="empirical", rank=rank)
         else:
             data_cov = compute_raw_covariance(data, method="empirical", rank=rank)
@@ -196,6 +198,32 @@ def make_lcmv(
     log_or_print("*** OSL MAKE LCMV COMPLETE ***", logger)
 
     return filters
+
+
+def apply_lcmv_raw(raw, filters, reject_by_annotations="omit"):
+    """Modified version of mne.beamformer.apply_lcmv_raw.
+
+    This function has the option to remove bad segments
+    (reject_by_annotations='omit') whereas the MNE function does not.
+    """
+    _check_reference(raw)
+
+    # Get data from the mne.Raw object
+    data, times = raw.get_data(
+        reject_by_annotation=reject_by_annotations, return_times=True
+    )
+
+    # Select channels
+    sel = _check_channels_spatial_filter(raw.ch_names, filters)
+    data = data[sel]
+
+    info = raw.info
+    tmin = times[0]
+
+    # Apply LCMV beamformer
+    stc = _apply_lcmv(data=data, filters=filters, info=info, tmin=tmin)
+
+    return next(stc)
 
 
 def get_recon_timeseries(subjects_dir, subject, coord_mni, recon_timeseries_head):
@@ -385,7 +413,6 @@ def transform_recon_timeseries(
     recon_timeseries_out = np.zeros(
         np.insert(recon_timeseries.shape[1:], 0, coords_out.shape[1])
     )
-    #import pdb; pdb.set_trace()
 
     recon_indices = np.zeros([coords_out.shape[1]])
 
@@ -437,15 +464,16 @@ def _make_lcmv(
     data_rank = compute_rank(data_cov, rank=rank, info=info)
     noise_rank = compute_rank(noise_cov, rank=noise_rank, info=info)
 
-    if False:  # MWW
-        for key in data_rank:
-            if (
-                key not in noise_rank or data_rank[key] != noise_rank[key]
-            ) and not allow_mismatch:
-                raise ValueError(
-                    "%s data rank (%s) did not match the noise "
-                    "rank (%s)" % (key, data_rank[key], noise_rank.get(key, None))
-                )
+    # MWW, CG
+    #for key in data_rank:
+    #    if (
+    #        key not in noise_rank or data_rank[key] != noise_rank[key]
+    #    ) and not allow_mismatch:
+    #        raise ValueError(
+    #            "%s data rank (%s) did not match the noise "
+    #            "rank (%s)" % (key, data_rank[key], noise_rank.get(key, None))
+    #        )
+
     # MWW
     # del noise_rank
     rank = data_rank
@@ -823,7 +851,7 @@ def _prepare_beamformer_input(
         ("normal", "max-power", "vector", "max-power-pre-weight-norm", None),
     )
 
-    # CG
+    # MWW, CG
     # Restrict forward solution to selected vertices
     #if label is not None:
     #    _, src_sel = label_src_vertno_sel(label, forward["src"])
@@ -832,7 +860,7 @@ def _prepare_beamformer_input(
     if loose is None:
         loose = 0.0 if is_fixed_orient(forward) else 1.0
 
-    # CG
+    # MWW, CG
     #if noise_cov is None:
     #    noise_cov = make_ad_hoc_cov(info, std=1.0)
 
