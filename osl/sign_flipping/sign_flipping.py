@@ -12,67 +12,6 @@ from mpl_toolkits.axes_grid1 import make_axes_locatable
 from tqdm import trange
 
 from . import data_preparation
-from ..utils import validate_outdir
-
-
-def fix_sign_ambiguity(
-    subject_files,
-    n_embeddings=1,
-    standardize=True,
-    n_init=1,
-    n_iter=100,
-    max_flips=20,
-    outdir=None,
-):
-    """Wrapper function for fixing the dipole sign ambiguity.
-
-    Parameters
-    ----------
-    subject_files : list of str
-        List of paths to parcellated data files.
-    n_embeddings : int
-        Number of time-delay embeddings that we will use (if we are doing any).
-    standardize : bool
-        Should we standardize (z-transform) the data before sign flipping?
-    n_init : int
-        Number of initializations.
-    n_iter : int
-        Number of sign flipping iterations per subject to perform.
-    max_flips : int
-        Maximum number of channels to flip in an iteration.
-    outdir : str
-        Directory to write sign flipped data to.
-    """
-    print("Performing sign flipping:")
-
-    # Validation
-    n_subjects = len(subject_files)
-    if n_subjects < 2:
-        raise ValueError(f"two or more subject files must be passed, got {n_subjects}")
-
-    if outdir is None:
-        # Use the directory the parcellated data files are kept in
-        outdir = Path(subject_files[0]).parent + "/sflip"
-    outdir = validate_outdir(outdir)
-    print("Using output directory:", outdir)
-
-    # Get covariance matrices
-    covs = load_covariances(subject_files, n_embeddings, standardize)
-
-    # Find a subject to use as a template
-    template_index = find_template_subject(covs, n_embeddings)
-    print(f"Using template: {subject_files[template_index]}")
-
-    # Find the channels to flip
-    flips, metrics = find_flips(
-        covs, template_index, n_embeddings, n_init, n_iter, max_flips
-    )
-
-    # Plot a summary figure describing the sign flipping solution
-    plot_sign_flipping(covs, n_embeddings, template_index, metrics, outdir)
-
-    # Apply flips to the parcellated data
-    apply_flips(subject_files, flips, outdir)
 
 
 def find_flips(covs, template_index, n_embeddings, n_init=1, n_iter=100, max_flips=20):
@@ -123,7 +62,6 @@ def find_flips(covs, template_index, n_embeddings, n_init=1, n_iter=100, max_fli
     # Find the best channels to flip
     best_flips = np.ones([n_subjects, n_channels])
     best_metrics = np.zeros(n_subjects)
-    best_metrics[template_index] = 1
     metrics = []
     for n in trange(n_init, desc="Sign flipping", ncols=98):
 
@@ -131,33 +69,20 @@ def find_flips(covs, template_index, n_embeddings, n_init=1, n_iter=100, max_fli
         for i in trange(n_subjects, desc="Aligning dipoles", ncols=98):
             if i == template_index:
                 # Skip the template subject
+                best_metrics[i] = 1
                 continue
 
-            # Calculate the evaluation metric before sign flipping
+            # Reset the flips and calculate the evaluation metric before sign flipping
+            flips = np.ones(n_channels)
             metric = covariance_matrix_correlation(covs[i], template_cov, n_embeddings)
 
-            # Reset the flips for this initialisation
-            flips = np.ones(n_channels)
-
-            # Randomly permute the sign of different channels and calculate the
-            # correlation of this subject's covariance with respect to the template
-            # subject
+            # Randomly permute the sign of different channels and calculate the metric
             for j in range(n_iter):
-                if j == 1:
-                    # Flip all channels
-                    new_flips = -flips
-                else:
-                    # Randomly pick channels to flip
-                    new_flips = randomly_flip(flips, max_flips)
-
-                # Apply flips to covariance matrix
+                new_flips = randomly_flip(flips, max_flips)
                 cov = apply_flips_to_covariance(covs[i], new_flips, n_embeddings)
-
-                # Calculate the evaluation metric with the new covariance
                 new_metric = covariance_matrix_correlation(
                     cov, template_cov, n_embeddings
                 )
-
                 if new_metric > metric:
                     # We've found an improved solution, let's save it
                     flips = new_flips
@@ -193,7 +118,6 @@ def load_covariances(subject_files, n_embeddings=1, standardize=True):
     """
     covs = []
     for i in trange(len(subject_files), desc="Calculating covariances", ncols=98):
-
         # Load data
         x = np.load(subject_files[i])
 
@@ -210,6 +134,9 @@ def load_covariances(subject_files, n_embeddings=1, standardize=True):
 
 def find_template_subject(covs, diag_offset=0):
     """Find a good template subject to use to align dipoles.
+
+    We select the median subject after calculating the similarity between
+    the covariances of each subject.
 
     Parameters
     ----------
@@ -256,7 +183,7 @@ def covariance_matrix_correlation(M1, M2, diag_offset=0, mode=None):
         This argument allows us to specify an offet from the diagonal
         so we can choose not to take elements near the diagonal.
     mode : str
-        Either 'abs' or 'sign'.
+        Either 'abs', 'sign' or None.
     """
     if mode == "abs":
         M1 = np.abs(M1)
@@ -265,17 +192,13 @@ def covariance_matrix_correlation(M1, M2, diag_offset=0, mode=None):
         M1 = np.sign(M1)
         M2 = np.sign(M2)
 
-    # Indices for the elements to keep
-    i, j = np.triu_indices(M1.shape[0], k=diag_offset)
-
     # Get the upper triangles
+    i, j = np.triu_indices(M1.shape[0], k=diag_offset)
     M1 = M1[i, j]
     M2 = M2[i, j]
 
     # Calculate correlation
-    corr = np.corrcoef([M1, M2])[0, 1]
-
-    return corr
+    return np.corrcoef([M1, M2])[0, 1]
 
 
 def randomly_flip(flips, max_flips):
@@ -295,11 +218,16 @@ def randomly_flip(flips, max_flips):
     """
     n_channels = flips.shape[0]
     new_flips = np.copy(flips)
+
+    # Select the number of channels to flip
     n_channels_to_flip = np.random.choice(max_flips, size=1)
+
+    # Select the channels to flip
     random_channels_to_flip = np.random.choice(
         n_channels, size=n_channels_to_flip, replace=False
     )
     new_flips[random_channels_to_flip] *= -1
+
     return new_flips
 
 
@@ -330,6 +258,39 @@ def apply_flips_to_covariance(cov, flips, n_embeddings=1):
     return cov * flips
 
 
+def apply_flips(subject_files, flips, outdir):
+    """Saves the sign flipped data.
+
+    Parameters
+    ----------
+    subject_files : list of str
+        List of paths to parcellated data files.
+    flips : numpy.ndarray
+        Flips to apply.
+    outdir : str
+        Path to output directory. We will save npy files containing the sign
+        flipped data to this directory.
+    """
+    # Validation
+    n_subjects = len(subject_files)
+    n_flips = len(flips)
+    if n_subjects != n_flips:
+        raise ValueError(
+            f"different number of subject files ({n_subjects}) and flips ({n_flips}) passed"
+        )
+
+    for i in trange(n_subjects, desc="Saving data", ncols=98):
+        # Load parcellated data
+        data = np.load(subject_files[i])
+
+        # Flip the sign of the channels
+        flipped_data = data * flips[i][np.newaxis, ...]
+
+        # Save
+        outfile = Path(outdir) / Path(subject_files[i]).name
+        np.save(outfile, flipped_data)
+
+
 def plot_sign_flipping(covs, n_embeddings, template_index, metrics, outdir):
     """Plots the results of the sign flipping.
 
@@ -349,7 +310,7 @@ def plot_sign_flipping(covs, n_embeddings, template_index, metrics, outdir):
         Output directory to save plot to.
     """
     plot_filename = Path(outdir) / "sign_flipping_results.png"
-    print(f"Saving: {plot_filename}")
+    print("Saving:", plot_filename)
 
     # Create a figure
     fig, ax = plt.subplots(nrows=1, ncols=2, figsize=(6, 3))
@@ -384,36 +345,3 @@ def plot_sign_flipping(covs, n_embeddings, template_index, metrics, outdir):
     plt.tight_layout()
     fig.savefig(plot_filename)
     fig.clf()
-
-
-def apply_flips(subject_files, flips, outdir):
-    """Saves the sign flipped data.
-
-    Parameters
-    ----------
-    subject_files : list of str
-        List of paths to parcellated data files.
-    flips : numpy.ndarray
-        Flips to apply.
-    outdir : str
-        Path to output directory. We will save npy files containing the sign
-        flipped data to this directory.
-    """
-    # Validation
-    n_subjects = len(subject_files)
-    n_flips = len(flips)
-    if n_subjects != n_flips:
-        raise ValueError(
-            f"different number of subject files ({n_subjects}) and flips ({n_flips}) passed"
-        )
-
-    for i in trange(n_subjects, desc="Saving data", ncols=98):
-        # Load parcellated data
-        data = np.load(subject_files[i])
-
-        # Flip the sign of the channels
-        flipped_data = data * flips[i][np.newaxis, ...]
-
-        # Save
-        outfile = Path(outdir) / Path(subject_files[i]).name
-        np.save(outfile, flipped_data)
