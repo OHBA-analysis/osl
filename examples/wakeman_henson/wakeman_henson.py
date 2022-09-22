@@ -93,7 +93,7 @@ config = """
 
 # Run preprocessing
 osl.preprocessing.run_proc_chain(
-    in_fif_file, config, outdir=preproc_dir, overwrite=True
+    config, in_fif_file, outdir=preproc_dir, overwrite=True
 )
 
 # Load preprocessed data

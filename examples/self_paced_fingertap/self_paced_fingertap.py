@@ -53,7 +53,7 @@ if run_preproc:
 
     # Process a single file, this outputs fif_file
     dataset = osl.preprocessing.run_proc_chain(
-        ds_file, config, outdir=op.join(subjects_dir, subject), overwrite=True
+        config, ds_file, outdir=op.join(subjects_dir, subject), overwrite=True
     )
 
 # ------------
