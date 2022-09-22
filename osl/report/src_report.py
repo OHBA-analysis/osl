@@ -18,7 +18,7 @@ from . import raw_report
 from ..source_recon import rhino, parcellation
 
 
-def gen_html_data(config, src_dir, rhino_dir, subject, reportdir, logger=None):
+def gen_html_data(config, src_dir, subject, reportdir, logger=None):
     """Generate data for HTML report.
 
     Parameters
@@ -27,8 +27,6 @@ def gen_html_data(config, src_dir, rhino_dir, subject, reportdir, logger=None):
         Source reconstruction config.
     src_dir : str
         Source reconstruction directory.
-    rhino_dir : str
-        RHINO directory.
     subject : str
         Subject name.
     reportdir : str
@@ -37,7 +35,6 @@ def gen_html_data(config, src_dir, rhino_dir, subject, reportdir, logger=None):
         Logger.
     """
     src_dir = Path(src_dir)
-    rhino_dir = Path(rhino_dir)
     reportdir = Path(reportdir)
 
     # Make directory for plots contained in the report
@@ -55,11 +52,11 @@ def gen_html_data(config, src_dir, rhino_dir, subject, reportdir, logger=None):
     data["filename"] = subject
 
     # Coregistration plots
-    data["plt_coreg"] = plot_coreg(reportdir, rhino_dir, subject)
+    data["plt_coreg"] = plot_coreg(reportdir, src_dir, subject)
 
     # Beamforming plots
     for name in ["cov", "svd"]:
-        rhino_plot = op.join(rhino_dir, subject, f"filter_{name}.png")
+        rhino_plot = op.join(src_dir, subject, f"filter_{name}.png")
         if Path(rhino_plot).exists():
             report_plot = op.join(reportdir, subject, f"filter_{name}.png")
             copy(rhino_plot, report_plot)
@@ -67,8 +64,7 @@ def gen_html_data(config, src_dir, rhino_dir, subject, reportdir, logger=None):
 
     if "beamform_and_parcellate" in data:
         # Parcellation info
-        data["filename"] += ".npy"
-        data["filepath"] = src_dir / data["filename"]
+        data["filepath"] = src_dir / subject / "parc.npy"
 
         parcel_ts = np.load(data["filepath"])
         data["n_samples"] = parcel_ts.shape[0]
@@ -143,9 +139,9 @@ def gen_html_page(reportdir):
     return True
 
 
-def plot_coreg(reportdir, rhino_dir, subject):
+def plot_coreg(reportdir, src_dir, subject):
     """Plot coregistration."""
-    rhino.coreg_display(rhino_dir, subject, filename=reportdir / subject / "coreg.html")
+    rhino.coreg_display(src_dir, subject, filename=reportdir / subject / "coreg.html")
     return f"{subject}/coreg.html"
 
 

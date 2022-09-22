@@ -42,21 +42,21 @@ def get_coreg_filenames(subjects_dir, subject):
     """
     Generates a dict of files generated and used by RHINO.
 
+    Files will be in subjects_dir/subject/rhino/coreg.
+
     Parameters
     ----------
     subjects_dir : string
-        Directory to put RHINO subject dirs in.
-        Files will be in subjects_dir/subject/coreg/
+        Directory containing the subject directories.
     subject : string
-        Subject name dir to put RHINO files in.
-        Files will be in subjects_dir/subject/coreg/
+        Subject directory name to put the coregistration files in.
 
     Returns
     -------
     filenames : dict
         A dict of files generated and used by RHINO.
     """
-    basedir = op.join(subjects_dir, subject, "coreg")
+    basedir = op.join(subjects_dir, subject, "rhino", "coreg")
     os.makedirs(basedir, exist_ok=True)
 
     filenames = {
