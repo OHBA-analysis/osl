@@ -33,7 +33,6 @@ from ..utils.logger import log_or_print
 from ..preprocessing import (
     read_dataset,
     load_config,
-    run_proc_chain,
     get_config_from_fif,
     plot_preproc_flowchart,
 )

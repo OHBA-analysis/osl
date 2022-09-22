@@ -528,8 +528,8 @@ def plot_preproc_flowchart(
 
 
 def run_proc_chain(
-    infile,
     config,
+    infile,
     outname=None,
     outdir=None,
     logsdir=None,
@@ -848,7 +848,7 @@ def run_proc_batch(
     # Loop through input files to generate arguments for run_proc_chain
     args = []
     for infile, outname in zip(infiles, outnames):
-        args.append((infile, config, outname))
+        args.append((config, infile, outname))
 
     # Actually run the processes
     if dask_client:

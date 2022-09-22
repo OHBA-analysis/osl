@@ -43,7 +43,7 @@ class TestPreprocessingChain(unittest.TestCase):
           - bad_segments:   {segment_len: 800, picks: 'grad'}
         """
 
-        dataset = run_proc_chain(self.fpath, cfg)
+        dataset = run_proc_chain(cfg, self.fpath)
 
         # Just testing that things run not that the outputs are sensible...
         assert(isinstance(dataset["raw"], mne.io.fiff.raw.Raw))

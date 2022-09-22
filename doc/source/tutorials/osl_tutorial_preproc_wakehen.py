@@ -89,11 +89,11 @@ print(config['preproc'][0])
 yaml.dump(config, open(outdir + 'config.yaml', 'w'))
 
 #%% And now run the the preprocessing on a single dataset. We can either use the config we specified before, or load it from disk.
-dataset = osl.preprocessing.run_proc_chain(raw, config)
+dataset = osl.preprocessing.run_proc_chain(config, raw)
 
 # alternative:
 config_from_file = osl.preprocessing.load_config(outdir + 'config.yaml')
-dataset = osl.preprocessing.run_proc_chain(raw, config_from_file)
+dataset = osl.preprocessing.run_proc_chain(config_from_file, raw)
 
 #%% `dataset` is a python dictionary that contains the preprocessed data and its derivatives: raw, ica, epochs, events, and event_id, which are all in the standard MNE-python format. Under the hood, all preprocessing calls in OSL, including those to MNE-python functions, have a dataset as input and as output argument.
 dataset.keys()
@@ -137,7 +137,7 @@ def ica_kurtosisreject(dataset, userargs):
 config['preproc'][14] = {'method': 'ica_kurtosisreject'}
 
 # Now that our config contains a method that is not part of the OSL toolbox, we have to add the function as a user argument to `run_proc_chain` or `run_proc_batch`. This is done by specifying the argument `extra_funcs`. This is the command to run the preprocessing with the custom function on a single dataset:
-dataset=osl.preprocessing.run_proc_chain(raw, config, extra_funcs=[ica_kurtosisreject])
+dataset=osl.preprocessing.run_proc_chain(config, raw, extra_funcs=[ica_kurtosisreject])
 
 # or on all datasets
 osl.preprocessing.run_proc_batch(config, list_of_raw_files, outdir, overwrite=True, extra_funcs=[ica_kurtosisreject])
