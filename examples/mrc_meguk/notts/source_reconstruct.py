@@ -31,8 +31,7 @@ def save_polhemus_from_pos(src_dir, subject, preproc_file, smri_file, logger):
     logger.info(f"Saving polhemus from {pos_file}")
 
     # Get coreg filenames
-    subjects_dir = op.join(src_dir, "rhino")
-    filenames = source_recon.rhino.get_coreg_filenames(subjects_dir, subject)
+    filenames = source_recon.rhino.get_coreg_filenames(src_dir, subject)
 
     # Load in txt file, these values are in cm in polhemus space:
     num_headshape_pnts = int(pd.read_csv(pos_file, header=None).to_numpy()[0])

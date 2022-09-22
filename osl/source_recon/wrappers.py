@@ -34,8 +34,7 @@ def extract_fiducials_from_fif(
     src_dir, subject, preproc_file, smri_file, logger, **userargs,
 ):
     # Get coreg filenames
-    subjects_dir = op.join(src_dir, "rhino")
-    filenames = rhino.get_coreg_filenames(subjects_dir, subject)
+    filenames = rhino.get_coreg_filenames(src_dir, subject)
 
     logger.info("Setting up polhemus files")
     rhino.extract_polhemus_from_info(
@@ -64,12 +63,10 @@ def coregister(
     model,
     eeg=False,
 ):
-    subjects_dir = op.join(src_dir, "rhino")
-
     # Compute surface
     rhino.compute_surfaces(
         smri_file=smri_file,
-        subjects_dir=subjects_dir,
+        subjects_dir=src_dir,
         subject=subject,
         include_nose=include_nose,
         logger=logger,
@@ -78,7 +75,7 @@ def coregister(
     # Run coregistration
     rhino.coreg(
         fif_file=preproc_file,
-        subjects_dir=subjects_dir,
+        subjects_dir=src_dir,
         subject=subject,
         use_headshape=use_headshape,
         use_nose=use_nose,
@@ -87,7 +84,7 @@ def coregister(
 
     # Compute forward model
     rhino.forward_model(
-        subjects_dir=subjects_dir,
+        subjects_dir=src_dir,
         subject=subject,
         model=model,
         eeg=eeg,
@@ -113,8 +110,6 @@ def beamform_and_parcellate(
     orthogonalisation,
 ):
     from ..preprocessing import import_data
-
-    subjects_dir = op.join(src_dir, "rhino")
 
     # Load preprocessed data
     preproc_data = import_data(preproc_file)
@@ -143,7 +138,7 @@ def beamform_and_parcellate(
     logger.info(f"chantypes: {chantypes}")
     logger.info(f"rank: {rank}")
     filters = beamforming.make_lcmv(
-        subjects_dir=subjects_dir,
+        subjects_dir=src_dir,
         subject=subject,
         data=preproc_data,
         chantypes=chantypes,
@@ -157,7 +152,7 @@ def beamform_and_parcellate(
     logger.info("beamforming.apply_lcmv_raw")
     src_data = beamforming.apply_lcmv_raw(preproc_data, filters)
     src_ts_mni, _, src_coords_mni, _ = beamforming.transform_recon_timeseries(
-        subjects_dir=subjects_dir,
+        subjects_dir=src_dir,
         subject=subject,
         recon_timeseries=src_data.data,
     )
@@ -185,6 +180,6 @@ def beamform_and_parcellate(
         )
 
     # Save parcellated data
-    parc_data_file = src_dir / f"{subject}.npy"
+    parc_data_file = src_dir / subject / "parc.npy"
     logger.info(f"saving {parc_data_file}")
     np.save(parc_data_file, parcel_ts.T)

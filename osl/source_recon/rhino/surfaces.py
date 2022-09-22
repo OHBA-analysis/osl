@@ -29,14 +29,14 @@ def get_surfaces_filenames(subjects_dir, subject):
     """
     Generates a dict of files generated and used by rhino.compute_surfaces.
 
+    Files will be in subjects_dir/subject/rhino/surfaces.
+
     Parameters
     ----------
     subjects_dir : string
-        Directory to put RHINO subject dirs in.
-        Files will be in subjects_dir/subject/surfaces/
+        Directory containing the subject directories.
     subject : string
-        Subject name dir to put RHINO files in.
-        Files will be in subjects_dir/subject/surfaces/
+        Subject directory name to put the surfaces in.
 
     Returns
     -------
@@ -48,7 +48,7 @@ def get_surfaces_filenames(subjects_dir, subject):
          - bet_outskull_*_file is actually the inner skull surface
          - bet_outskin_*_file is the outer skin/scalp surface
     """
-    basedir = op.join(subjects_dir, subject, "surfaces")
+    basedir = op.join(subjects_dir, subject, "rhino", "surfaces")
     os.makedirs(basedir, exist_ok=True)
 
     filenames = {

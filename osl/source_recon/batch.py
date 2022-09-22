@@ -133,8 +133,6 @@ def run_src_chain(
 
     # Directories
     src_dir = validate_outdir(src_dir)
-    rhino_dir = validate_outdir(src_dir / "rhino")
-    os.makedirs(rhino_dir / subject, exist_ok=True)
     logsdir = validate_outdir(src_dir / "logs")
     reportdir = validate_outdir(src_dir / "report")
 
@@ -153,7 +151,7 @@ def run_src_chain(
     logger = logging.getLogger(__name__)
     now = strftime("%Y-%m-%d %H:%M:%S", localtime())
     logger.info("{0} : Starting OSL Processing".format(now))
-    logger.info("input : {0}".format(rhino_dir / subject))
+    logger.info("input : {0}".format(src_dir / subject))
 
     # Load config
     if not isinstance(config, dict):
@@ -207,9 +205,7 @@ def run_src_chain(
 
     if doing_coreg or doing_bf_parc:
         # Generate HTML data for the report
-        src_report.gen_html_data(
-            config, src_dir, rhino_dir, subject, reportdir, logger
-        )
+        src_report.gen_html_data(config, src_dir, subject, reportdir, logger)
 
     return True
 
@@ -257,7 +253,6 @@ def run_src_batch(
 
     # Directories
     src_dir = validate_outdir(src_dir)
-    rhino_dir = validate_outdir(src_dir / "rhino")
     logsdir = validate_outdir(src_dir / "logs")
     reportdir = validate_outdir(src_dir / "report")
 
