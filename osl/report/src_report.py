@@ -56,7 +56,7 @@ def gen_html_data(config, src_dir, subject, reportdir, logger=None):
 
     # Beamforming plots
     for name in ["cov", "svd"]:
-        rhino_plot = op.join(src_dir, subject, f"filter_{name}.png")
+        rhino_plot = op.join(src_dir, subject, "rhino", f"filter_{name}.png")
         if Path(rhino_plot).exists():
             report_plot = op.join(reportdir, subject, f"filter_{name}.png")
             copy(rhino_plot, report_plot)
@@ -64,7 +64,7 @@ def gen_html_data(config, src_dir, subject, reportdir, logger=None):
 
     if "beamform_and_parcellate" in data:
         # Parcellation info
-        data["filepath"] = src_dir / subject / "parc.npy"
+        data["filepath"] = src_dir / subject / "rhino/parc.npy"
 
         parcel_ts = np.load(data["filepath"])
         data["n_samples"] = parcel_ts.shape[0]

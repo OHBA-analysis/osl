@@ -4,7 +4,6 @@
 
 # Authors: Chetan Gohil <chetan.gohil@psych.ox.ac.uk>
 
-import os.path as op
 from glob import glob
 from pathlib import Path
 
@@ -86,7 +85,7 @@ config = """
         orthogonalisation: symmetric
 """
 
-# Setup FSL
+# Setup FSL (optional if you have already setup FSL yourself)
 source_recon.setup_fsl("/home/cgohil/local/fsl")
 
 # Get input files

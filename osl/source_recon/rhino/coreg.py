@@ -74,8 +74,12 @@ def get_coreg_filenames(subjects_dir, subject):
         "polhemus_lpa_file": op.join(basedir, "polhemus_lpa.txt"),
         "polhemus_headshape_file": op.join(basedir, "polhemus_headshape.txt"),
         "forward_model_file": op.join(basedir, "forward-fwd.fif"),
-        "std_brain": os.environ["FSLDIR"]
-        + "/data/standard/MNI152_T1_1mm_brain.nii.gz",
+        "std_brain": op.join(
+            os.environ["FSLDIR"],
+            "data",
+            "standard",
+            "MNI152_T1_1mm_brain.nii.gz",
+        ),
     }
 
     return filenames
