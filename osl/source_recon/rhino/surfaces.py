@@ -72,10 +72,18 @@ def get_surfaces_filenames(subjects_dir, subject):
         "bet_outskull_mesh_file": op.join(basedir, "outskull_mesh.nii.gz"),
         "bet_outskull_mesh_vtk_file": op.join(basedir, "outskull_mesh.vtk"),
         "bet_outskull_surf_file": op.join(basedir, "outskull_surf.surf"),
-        "std_brain": os.environ["FSLDIR"]
-        + "/data/standard/MNI152_T1_1mm_brain.nii.gz",
-        "std_brain_bigfov": os.environ["FSLDIR"]
-        + "/data/standard/MNI152_T1_1mm_BigFoV_facemask.nii.gz",
+        "std_brain": op.join(
+            os.environ["FSLDIR"],
+            "data",
+            "standard",
+            "MNI152_T1_1mm_brain.nii.gz",
+        ),
+        "std_brain_bigfov": op.join(
+            os.environ["FSLDIR"],
+            "data",
+            "standard",
+            "MNI152_T1_1mm_BigFoV_facemask.nii.gz",
+        ),
         "completed": op.join(basedir, "completed.txt"),
     }
 

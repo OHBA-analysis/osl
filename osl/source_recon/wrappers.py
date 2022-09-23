@@ -180,6 +180,6 @@ def beamform_and_parcellate(
         )
 
     # Save parcellated data
-    parc_data_file = src_dir / subject / "parc.npy"
+    parc_data_file = src_dir / subject / "rhino/parc.npy"
     logger.info(f"saving {parc_data_file}")
     np.save(parc_data_file, parcel_ts.T)

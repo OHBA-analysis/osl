@@ -64,7 +64,7 @@ def gen_html_data(config, src_dir, subject, reportdir, logger=None):
 
     if "beamform_and_parcellate" in data:
         # Parcellation info
-        data["filepath"] = src_dir / subject / "parc.npy"
+        data["filepath"] = src_dir / subject / "rhino/parc.npy"
 
         parcel_ts = np.load(data["filepath"])
         data["n_samples"] = parcel_ts.shape[0]
