@@ -13,8 +13,7 @@ import os.path as op
 
 import numpy as np
 import matplotlib.pyplot as plt
-from osl import rhino
-from osl import parcellation
+from osl.source_recon import rhino, beamforming, parcellation
 
 import glmtools
 
@@ -28,7 +27,7 @@ fwd_fname = rhino.get_coreg_filenames(subjects_dir, subject)["forward_model_file
 fwd = mne.read_forward_solution(fwd_fname)
 
 # preprocessed fif file
-fif_file = op.join(subjects_dir, subject, "JRH_MotorCon_20100429_01_FORMARK_raw.fif")
+fif_file = op.join(subjects_dir, subject, "JRH_MotorCon_20100429_01_FORMARK_preproc_raw.fif")
 
 # parcellation to use
 parcellation_fname = op.join(
@@ -41,9 +40,9 @@ parcellation_background_fname = op.join(
     os.environ["FSLDIR"], "data/standard/MNI152_T1_2mm_brain.nii.gz"
 )
 
-run_recon = True
-orthogonalise_parcel_timeseries = True
+run_recon = False
 
+orthogonalise_parcel_timeseries = True
 rank = {"mag": 125}
 chantypes = ["mag"]
 
@@ -78,7 +77,7 @@ raw.apply_hilbert()
 
 if run_recon:
     # make LCMV filter
-    filters = rhino.make_lcmv(
+    filters = beamforming.make_lcmv(
         subjects_dir,
         subject,
         original_raw,
@@ -103,7 +102,7 @@ if run_recon:
         reference_brain_fname,
         recon_coords_mni,
         _,
-    ) = rhino.transform_recon_timeseries(
+    ) = beamforming.transform_recon_timeseries(
         subjects_dir, subject, recon_timeseries=data, reference_brain="mni"
     )
 
@@ -119,36 +118,38 @@ p.plot()
 
 # view parcellation in fsleyes
 # note that it is a 4D niftii file, where the 4th dimension is over parcels
-
-rhino.fsleyes_overlay(parcellation_background_fname, p.file)
+# rhino.fsleyes_overlay(parcellation_background_fname, p.file)
 
 # Apply parcellation to voxelwise data (voxels x tpts) contained in recon_timeseries_mni
 # Resulting parcel_timeseries will be (parcels x tpts) in MNI space
-parcel_timeseries = p.parcellate(
+p.parcellate(
     recon_timeseries_mni, recon_coords_mni, method="spatial_basis"
 )
+
+parcel_ts = p.parcel_timeseries["data"]
 
 # -------------
 # Orthogonalise
 
 if orthogonalise_parcel_timeseries:
-    # this is nsources x ntpts x ntrials
-    timeseries = parcel_timeseries["data"]
-    ortho_timeseries = parcellation.symmetric_orthogonalise(timeseries, True)
+    # this is nsources x ntpts
+    ortho_parcel_ts = parcellation.symmetric_orthogonalise(
+        parcel_ts, maintain_magnitudes=True
+    )
 
     # plot first bit of example parcel time course
     parcel_index = 20
     plt.figure()
-    plt.plot(raw.times[:500], parcel_timeseries["data"][parcel_index, :500])
-    plt.plot(raw.times[:500], ortho_timeseries[parcel_index, :500])
+    plt.plot(raw.times[:500], parcel_ts[parcel_index, :500])
+    plt.plot(raw.times[:500], ortho_parcel_ts[parcel_index, :500])
     plt.xlabel("time (s)")
     plt.legend(("Before orth", "After orth"))
 
     # plot between parcel correlations before and after orthog
     plt.figure()
     fig, axs = plt.subplots(1, 2, sharey="row")
-    axs[0].imshow(np.corrcoef(np.reshape(parcel_timeseries["data"], (39, -1))))
-    axs[1].imshow(np.corrcoef(np.reshape(ortho_timeseries, (39, -1))))
+    axs[0].imshow(np.corrcoef(np.reshape(parcel_ts, (39, -1))))
+    axs[1].imshow(np.corrcoef(np.reshape(ortho_parcel_ts, (39, -1))))
     axs[0].title.set_text("Corrs before orthogonalisation")
     axs[1].title.set_text("Corrs after orthogonalisation")
     axs[0].set_xlabel("Parcel")
@@ -156,13 +157,13 @@ if orthogonalise_parcel_timeseries:
     axs[1].set_xlabel("Parcel")
 
     # so that orth time series get used in rest of the script:
-    parcel_timeseries["data"] = ortho_timeseries
+    parcel_ts = ortho_parcel_ts
 
 # -----------------------------------------------------------------
 # Compute the power for each parcel and view as a niftii in fsleyes
 
-parcel_power = np.mean(parcel_timeseries["data"], axis=1) / np.std(
-    parcel_timeseries["data"], axis=1
+parcel_power = np.mean(parcel_ts, axis=1) / np.std(
+    parcel_ts, axis=1
 )
 rhino.fsleyes_overlay(
     parcellation_background_fname, p.nii(parcel_power, method="assignments")
@@ -232,7 +233,7 @@ glmdes = glmtools.design.GLMDesign.initialise_from_matrices(
 
 # fit GLM
 glmdata = glmtools.data.ContinuousGLMData(
-    data=parcel_timeseries["data"].T, sample_rate=raw.info["sfreq"]
+    data=parcel_ts.T, sample_rate=raw.info["sfreq"]
 )
 model = glmtools.fit.OLSModel(glmdes, glmdata)
 tstats = []

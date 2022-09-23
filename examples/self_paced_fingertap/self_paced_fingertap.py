@@ -13,18 +13,20 @@ import os.path as op
 import numpy as np
 import pandas as pd
 import matplotlib.pyplot as plt
-from osl import rhino
-import mne
 
-import yaml
 import osl
+from osl.source_recon import rhino
+from osl.source_recon import beamforming
+from osl.source_recon.rhino import utils
+
+import mne
 
 subjects_dir = "/Users/woolrich/homedir/vols_data/mne/self_paced_fingertap"
 subject = "subject1"
 
 # input files
 ds_file = op.join(subjects_dir, subject, "JRH_MotorCon_20100429_01_FORMARK.ds")
-fif_file = op.join(subjects_dir, subject, "JRH_MotorCon_20100429_01_FORMARK_raw.fif")
+fif_file = op.join(subjects_dir, subject, "JRH_MotorCon_20100429_01_FORMARK_preproc_raw.fif")
 pos_file = op.join(subjects_dir, subject, "JH_Motorcon.pos")
 smri_file = (
     "/Users/woolrich/homedir/vols_data/ukmp/sub-not002/anat/sub-not002_T1w.nii.gz"
@@ -33,9 +35,9 @@ smri_file = (
 run_sensorspace = False  # if false then do source space
 
 run_preproc = False
-run_compute_surfaces = True
-run_coreg = True
-run_forward_model = True
+run_compute_surfaces = False
+run_coreg = False
+run_forward_model = False
 
 rank = {"mag": 125}
 chantypes = ["mag"]
@@ -137,7 +139,6 @@ glmdes = glmtools.design.GLMDesign.initialise_from_matrices(
 
 #glmdes.plot_summary()
 
-
 def glm_fast(data, design_matrix, contrasts):
     pinvxtx = np.linalg.pinv(design_matrix.T @ design_matrix)
     pinvx = np.linalg.pinv(design_matrix)
@@ -154,11 +155,10 @@ def glm_fast(data, design_matrix, contrasts):
         tstat.append(cope[cc] / np.sqrt(varcope))
     return tstat, cope
 
-
-# ----------------------
-# Do GLM in sensor space
-
 if run_sensorspace:
+
+    # ----------------------
+    # Do GLM in sensor space
 
     # Do hilbert transform
     raw.apply_hilbert()
@@ -204,10 +204,10 @@ else:
     # i.e. in polhemus space in mm
 
     # setup filenames
-    polhemus_nasion_file = op.join(subjects_dir, subject, "polhemus_nasion.txt")
-    polhemus_rpa_file = op.join(subjects_dir, subject, "polhemus_rpa.txt")
-    polhemus_lpa_file = op.join(subjects_dir, subject, "polhemus_lpa.txt")
-    polhemus_headshape_file = op.join(subjects_dir, subject, "polhemus_headshape.txt")
+    polhemus_nasion_file = op.join(subjects_dir, subject, "rhino/coreg/polhemus_nasion.txt")
+    polhemus_rpa_file = op.join(subjects_dir, subject, "rhino/coreg/polhemus_rpa.txt")
+    polhemus_lpa_file = op.join(subjects_dir, subject, "rhino/coreg/polhemus_lpa.txt")
+    polhemus_headshape_file = op.join(subjects_dir, subject, "rhino/coreg/polhemus_headshape.txt")
 
     # Load in txt file, these values are in cm in polhemus space:
     num_headshape_pnts = int(pd.read_csv(pos_file, header=None).to_numpy()[0])
@@ -252,7 +252,7 @@ else:
     # Compute surfaces, coreg, forward model
     if run_compute_surfaces:
         rhino.compute_surfaces(
-            smri_file, subjects_dir, subject, include_nose=True, cleanup_files=True
+            smri_file, subjects_dir, subject, include_nose=True, cleanup_files=False
         )
 
         rhino.surfaces_display(subjects_dir, subject)
@@ -263,11 +263,7 @@ else:
             fif_file,
             subjects_dir,
             subject,
-            polhemus_headshape_file,
-            polhemus_nasion_file,
-            polhemus_rpa_file,
-            polhemus_lpa_file,
-            use_headshape=True,
+            use_headshape=True
         )
 
         # Purple dots are the polhemus derived fiducials
@@ -288,13 +284,14 @@ else:
             subjects_dir, subject, model="Single Layer", gridstep=gridstep, mindist=4.0
         )
 
-        rhino.bem_display(
-            subjects_dir,
-            subject,
-            plot_type="surf",
-            display_outskin_with_nose=False,
-            display_sensors=True,
-        )
+        if False:
+            rhino.bem_display(
+                subjects_dir,
+                subject,
+                plot_type="surf",
+                display_outskin_with_nose=False,
+                display_sensors=True,
+            )
 
     # -------------------------
     # Take a look at leadfields
@@ -313,7 +310,7 @@ else:
     # Source recon
 
     # make LCMV filter
-    filters = rhino.make_lcmv(
+    filters = beamforming.make_lcmv(
         subjects_dir,
         subject,
         raw,
@@ -421,7 +418,7 @@ else:
 
     # Write stats as niftii file on a standard brain grid in MNI space
     con = 0
-    out_nii_fname, stdbrain_mask_fname = rhino.recon_timeseries2niftii(
+    out_nii_fname, stdbrain_mask_fname = utils.recon_timeseries2niftii(
         subjects_dir,
         subject,
         recon_timeseries=volumes[con],
