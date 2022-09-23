@@ -97,7 +97,7 @@ def run_src_chain(
     config,
     src_dir,
     subject,
-    preproc_file,
+    preproc_file=None,
     smri_file=None,
     verbose="INFO",
     mneverbose="WARNING",
@@ -137,7 +137,10 @@ def run_src_chain(
     reportdir = validate_outdir(src_dir / "report")
 
     # Get run ID
-    run_id = find_run_id(preproc_file)
+    if preproc_file is None:
+        run_id = subject
+    else:
+        run_id = find_run_id(preproc_file)
 
     # Generate log filename
     name_base = "{run_id}_{ftype}.{fext}"
@@ -214,7 +217,7 @@ def run_src_batch(
     config,
     src_dir,
     subjects,
-    preproc_files,
+    preproc_files=None,
     smri_files=None,
     verbose="INFO",
     mneverbose="WARNING",
@@ -269,17 +272,21 @@ def run_src_batch(
 
     # Validation
     n_subjects = len(subjects)
-    n_preproc_files = len(preproc_files)
-    if n_subjects != n_preproc_files:
-        raise ValueError(
-            f"Got {n_subjects} subjects and {n_preproc_files} preproc_files."
-        )
+    if preproc_files != None:
+        n_preproc_files = len(preproc_files)
+        if n_subjects != n_preproc_files:
+            raise ValueError(
+                f"Got {n_subjects} subjects and {n_preproc_files} preproc_files."
+            )
 
     doing_coreg = any(["coregister" in method for method in config["source_recon"]])
     if doing_coreg and smri_files is None:
         raise ValueError("smri_files must be passed if we are coregistering.")
     elif smri_files is None:
         smri_files = [None] * n_subjects
+
+    if preproc_files is None:
+        preproc_files = [None] * n_subjects
 
     # Create partial function with fixed options
     pool_func = partial(

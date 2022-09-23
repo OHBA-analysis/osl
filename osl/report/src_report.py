@@ -56,7 +56,7 @@ def gen_html_data(config, src_dir, subject, reportdir, logger=None):
 
     # Beamforming plots
     for name in ["cov", "svd"]:
-        rhino_plot = op.join(src_dir, subject, f"filter_{name}.png")
+        rhino_plot = op.join(src_dir, subject, "rhino", f"filter_{name}.png")
         if Path(rhino_plot).exists():
             report_plot = op.join(reportdir, subject, f"filter_{name}.png")
             copy(rhino_plot, report_plot)

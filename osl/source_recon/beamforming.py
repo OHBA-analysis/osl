@@ -192,8 +192,12 @@ def make_lcmv(
         fig_cov, fig_svd = filters["data_cov"].plot(
             data.info, show=False, verbose=verbose
         )
-        fig_cov.savefig(op.join(subjects_dir, subject, "filter_cov.png"), dpi=150)
-        fig_svd.savefig(op.join(subjects_dir, subject, "filter_svd.png"), dpi=150)
+        fig_cov.savefig(
+            op.join(subjects_dir, subject, "rhino", "filter_cov.png"), dpi=150
+        )
+        fig_svd.savefig(
+            op.join(subjects_dir, subject, "rhino", "filter_svd.png"), dpi=150
+        )
 
     log_or_print("*** OSL MAKE LCMV COMPLETE ***", logger)
 
