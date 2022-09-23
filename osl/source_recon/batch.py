@@ -161,6 +161,8 @@ def run_src_chain(
         config = load_config(config)
 
     doing_coreg = any(["coregister" in method for method in config["source_recon"]])
+
+    # Note that beamform_and_parcellate is in osl.source_recon.wrappers
     doing_bf_parc = any(
         ["beamform_and_parcellate" in method for method in config["source_recon"]]
     )
