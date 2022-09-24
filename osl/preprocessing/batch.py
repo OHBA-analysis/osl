@@ -589,7 +589,7 @@ def run_proc_chain(
 
         # Generate a report by default, this is overriden if the user passes
         # gen_report=False
-        gen_report = gen_report or True
+        gen_report = True if gen_report is None else gen_report
 
         # Create output directories if they don't exist
         outdir = validate_outdir(outdir)
