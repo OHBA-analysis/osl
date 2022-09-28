@@ -34,10 +34,10 @@ smri_file = (
 
 run_sensorspace = False  # if false then do source space
 
-run_preproc = False
-run_compute_surfaces = False
-run_coreg = False
-run_forward_model = False
+run_preproc = True
+run_compute_surfaces = True
+run_coreg = True
+run_forward_model = True
 
 rank = {"mag": 125}
 chantypes = ["mag"]
@@ -276,6 +276,7 @@ else:
             plot_type="surf",
             display_outskin_with_nose=True,
             display_sensors=True,
+            display_sensor_oris=True
         )
 
     #  Forward modelling

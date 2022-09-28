@@ -28,13 +28,19 @@ from anamnesis import obj_from_hdf5file
 import osl
 from osl.source_recon import rhino, beamforming
 
-
 base_dir = "/ohba/pi/mwoolrich/datasets/WakemanHenson/ds117"
 in_fif_file = op.join(base_dir, "sub001/MEG/run_02_sss.fif")
+out_dir = "./wakehen_glm"
+smri_file = op.join(base_dir, "sub001/anatomy/highres001.nii.gz")
+
+if False:
+    base_dir = "/Users/woolrich/homedir/vols_data/WakeHen"
+    in_fif_file = op.join(base_dir, 'raw/sub001/MEG/run_02_sss.fif')
+    out_dir = "/Users/woolrich/homedir/vols_data/wakehen_glm"
+    smri_file = op.join(base_dir, "structurals/highres001.nii.gz")
 
 subj_id = Path(in_fif_file).stem + "_{ftype}.{ext}"
 
-out_dir = "./wakehen_glm"
 preproc_dir = op.join(out_dir, "preproc")
 outbase = op.join(out_dir, subj_id)
 
@@ -248,10 +254,6 @@ print("Computing info for source reconstruction")
 subjects_dir = op.join(out_dir, "coreg")
 subject = "subject1_run2"
 
-# Input files
-smri_file = (
-    "/ohba/pi/mwoolrich/datasets/WakemanHenson/ds117/sub001/anatomy/highres001.nii.gz"
-)
 gridstep = 8  # mm
 
 # Setup polhemus files for coreg
@@ -262,6 +264,7 @@ rhino.extract_polhemus_from_info(
     nasion_outfile=coreg_filenames["polhemus_nasion_file"],
     rpa_outfile=coreg_filenames["polhemus_rpa_file"],
     lpa_outfile=coreg_filenames["polhemus_lpa_file"],
+    include_eeg_as_headshape=True
 )
 
 if run_compute_surfaces:
@@ -277,7 +280,7 @@ if run_coreg:
         preproc_fif_file,
         subjects_dir,
         subject,
-        use_headshape=True,
+        use_headshape=False,
         use_nose=False,
     )
 
@@ -285,13 +288,20 @@ if run_coreg:
     # Yellow diamonds are the sMRI derived fiducials
     # Position of sMRI derived fiducials are the ones that are refined if
     # useheadshape=True was used for rhino.coreg
-    #rhino.coreg_display(
-    #    subjects_dir,
-    #    subject,
-    #    plot_type="surf",
-    #    display_outskin_with_nose=False,
-    #    display_sensors=True,
-    #)
+    rhino.coreg_display(
+        subjects_dir,
+        subject,
+        plot_type="surf",
+        display_outskin_with_nose=True,
+        display_sensors=True,
+        display_fiducials=True,
+        display_sensor_oris=True
+    )
+
+    coreg_filenames = rhino.get_coreg_filenames(subjects_dir, subject)
+    polhemus_headshape_file = coreg_filenames["polhemus_headshape_file"]
+    polhemus_headshape_polhemus = np.loadtxt(polhemus_headshape_file)
+    print(polhemus_headshape_polhemus.shape)
 
 if run_forward_model:
     if use_eeg:
