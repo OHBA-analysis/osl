@@ -159,7 +159,6 @@ def coreg(
         This means that dev_head_t is identity and that dev_mri_t is identity.
         This simplified coreg is needed to ensure that all the necessary coreg
         output files are created.
-
     logger : logging.getLogger
         Logger.
     """
@@ -205,8 +204,9 @@ def coreg(
     fif_file = filenames["fif_file"]
 
     if already_coregistered:
-
         # data is already coregistered.
+        log_or_print('DATA ALREADY COREGISTERED', logger)
+
         # Assumes that device space, head space and mri space are all the same space,
         # and that the sensor locations and polhemus points (if there are any) are already in that space.
         # This means that dev_head_t is identity and that dev_mri_t is identity.
@@ -221,32 +221,16 @@ def coreg(
         write_trans(filenames['head_mri_t_file'], head_mri_t, overwrite=True)
 
     else:
-
         # run full coreg
 
         if use_headshape:
             if use_nose:
-                log_or_print(
-                    "The MRI-derived nose is going to be used to aid coreg.",
-                    logger,
-                )
-                log_or_print(
-                    "Please ensure that rhino.compute_surfaces was run with include_nose=True.",
-                    logger,
-                )
-                log_or_print(
-                    "Please ensure that the polhemus headshape points include the nose.",
-                    logger,
-                )
+                log_or_print("The MRI-derived nose is going to be used to aid coreg.", logger)
+                log_or_print("Please ensure that rhino.compute_surfaces was run with include_nose=True.", logger)
+                log_or_print("Please ensure that the polhemus headshape points include the nose.", logger)
             else:
-                log_or_print(
-                    "The MRI-derived nose is not going to be used to aid coreg.",
-                    logger,
-                )
-                log_or_print(
-                    "Please ensure that the polhemus headshape points do not include the nose",
-                    logger,
-                )
+                log_or_print("The MRI-derived nose is not going to be used to aid coreg.", logger)
+                log_or_print("Please ensure that the polhemus headshape points do not include the nose", logger)
 
         # Load in the "polhemus-derived fiducial points"
         log_or_print(f"loading: {filenames['polhemus_headshape_file']}", logger)
@@ -399,7 +383,7 @@ def coreg(
     # Create sMRI-derived surfaces in native/mri space in mm, for use by forward modelling
     rhino_utils._create_surface_meshes(surfaces_filenames, mrivoxel_mri_t['trans'])
 
-    print('*** OSL RHINO COREGISTRATION COMPLETE ***')
+    log_or_print('*** OSL RHINO COREGISTRATION COMPLETE ***', logger)
 
 def coreg_display(
     subjects_dir,
