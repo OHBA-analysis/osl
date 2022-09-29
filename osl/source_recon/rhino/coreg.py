@@ -202,7 +202,6 @@ def coreg(
             dev_head_t["trans"] = dev_ctf_t["trans"]
 
     raw.save(filenames["fif_file"], overwrite=True)
-    fif_file = filenames["fif_file"]
 
     if already_coregistered:
 
@@ -406,9 +405,9 @@ def coreg_display(
     subject,
     plot_type="surf",
     display_outskin=True,
-    display_outskin_with_nose=False,
+    display_outskin_with_nose=True,
     display_sensors=True,
-    display_sensor_oris=False,
+    display_sensor_oris=True,
     display_fiducials=True,
     display_headshape_pnts=True,
     filename=None,
