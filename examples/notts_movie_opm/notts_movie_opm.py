@@ -10,12 +10,9 @@ import os
 import os.path as op
 import numpy as np
 import matplotlib.pyplot as plt
-from osl.source_recon import rhino
-from osl.source_recon import parcellation
-from osl.source_recon import beamforming
-from osl.source_recon import batch
 
 from osl import preprocessing
+from osl import source_recon
 
 import yaml
 
@@ -25,17 +22,13 @@ subjects_to_do = np.arange(0, 10)
 sessions_to_do = np.arange(0, 2)
 subj_sess_2exclude = np.zeros([10, 2]).astype(bool)
 
-#subj_sess_2exclude = np.ones([10, 2]).astype(bool)
-#subj_sess_2exclude[0,:] = True
+subj_sess_2exclude = np.ones([10, 2]).astype(bool)
+subj_sess_2exclude[0:2,:] = False
 
 run_convert = False
 run_preproc = False
-run_compute_surfaces = False
-run_coreg = True
-run_forward_model = True
-run_source_recon_parcellate = True
-run_orth = True
-run_extract_parcel_timeseries = True
+run_beamform_and_parcellate = False
+run_fix_sign_ambiguity = True
 
 # parcellation to use
 parcellation_fname = op.join('/Users/woolrich/Dropbox/vols_scripts/hmm_misc_funcs/parcellations',
@@ -62,11 +55,13 @@ tsv_files = []
 
 fif_files = []
 preproc_fif_files = []
-recon_dirs = []
+
+recon_dir = op.join(subjects_dir, 'recon')
 
 for sub in subjects_to_do:
     for ses in sessions_to_do:
         if not subj_sess_2exclude[sub, ses]:
+
             sub_dir = 'sub-' + ('{}'.format(subjects_to_do[sub]+1)).zfill(3)
             ses_dir = 'ses-' + ('{}'.format(sessions_to_do[ses]+1)).zfill(3)
             subject = sub_dir + '_' + ses_dir
@@ -78,8 +73,7 @@ for sub in subjects_to_do:
 
             # output files
             fif_file = op.join(subjects_dir, subject, subject + '_meg.fif')
-            recon_dir = op.join(subjects_dir, subject, 'meg')
-            preproc_fif_file = op.join(recon_dir, subject + '_meg_preproc_raw.fif')
+            preproc_fif_file = op.join(subjects_dir, subject, subject + '_meg_preproc_raw.fif')
 
             # check opm file and structural file exists for this subject
             if op.exists(notts_opm_mat_file) and op.exists(smri_file):
@@ -90,13 +84,11 @@ for sub in subjects_to_do:
 
                 fif_files.append(fif_file)
                 preproc_fif_files.append(preproc_fif_file)
-                recon_dirs.append(recon_dirs)
 
                 # Make directories that will be needed
                 if not os.path.isdir(op.join(subjects_dir, subject)):
                     os.mkdir(op.join(subjects_dir, subject))
-                if not os.path.isdir(recon_dir):
-                    os.mkdir(op.join(recon_dir))
+
 
 # -------------------------------------------------------------
 # %% Create fif files
@@ -135,82 +127,90 @@ if run_preproc:
 
     preproc:
         - resample:     {sfreq: 150, n_jobs: 6}            
-        - filter:       {l_freq: 1, h_freq: 45}
-        - bad_segments: {segment_len: 800, picks: 'meg'}
+        - filter:       {l_freq: 4, h_freq: 45}
+        - bad_segments: {segment_len: 800, picks: 'meg', significance_level: 0.1}
         - bad_channels: {picks: 'meg'}        
     """
 
-    # - bad_segments: {segment_len: 800, picks: 'meg'}
-    # - bad_channels: {picks: 'meg'}
     config = yaml.load(config_text, Loader=yaml.FullLoader)
 
-    # This outputs fif_file
     dataset = preprocessing.run_proc_batch(config, fif_files, outdir=subjects_dir, overwrite=True)
 
-    for subject in subjects:
+    # preprocessing.run_proc_batch will output preproc fif_files in subjects_dir
+    # we will now move them into the subjects_dir/subject dirs
+    for subject, preproc_fif_file in zip(subjects, preproc_fif_files):
         os.system('mv {} {}'.format(
-            op.join(subjects_dir, subject + '_meg_preproc_raw.*'),
-            op.join(subjects_dir, subject, 'meg')
+            op.join(subjects_dir, subject + '_meg_preproc_raw.fif'),
+            preproc_fif_file
         ))
 
+# -------------------------------------------------------------
+# %% Coreg and Source recon and Parcellate
 
-##########################
+if run_beamform_and_parcellate:
+    # Settings
+    config = """
+        source_recon:
+        - coregister:
+            include_nose: False
+            use_nose: False
+            use_headshape: true
+            model: Single Layer
+            already_coregistered: true
+        - beamform_and_parcellate:
+            freq_range: [5, 40]
+            chantypes: mag
+            rank: {mag: 120}
+            parcellation_file: fmri_d100_parcellation_with_PCC_reduced_2mm_ss5mm_ds8mm.nii.gz
+            method: spatial_basis
+            orthogonalisation: symmetric
+    """
 
-if run_compute_surfaces:
-
-    rhino.compute_surfaces(smri_file,
-                           subjects_dir, subject,
-                           include_nose=False,
-                           cleanup_files=False)
-
-    rhino.surfaces_display(subjects_dir, subject)
-
-##########################
-
-if run_coreg:
-
-    rhino.coreg(
-        preproc_fif_file,
-        subjects_dir,
-        subject,
-        already_coregistered=True)
-
-    rhino.coreg_display(subjects_dir, subject,
-                        plot_type='surf',
-                        display_outskin=True,
-                        display_outskin_with_nose=True,
-                        display_fiducials=True,
-                        display_sensors=True,
-                        display_sensor_oris=True,
-                        display_headshape_pnts=True)
-
-###########################
-#  Forward modelling
-
-if run_forward_model:
-    rhino.forward_model(subjects_dir, subject,
-                        model='Single Layer',
-                        gridstep=gridstep,
-                        mindist=4.0)
+    source_recon.run_src_batch(
+        config,
+        src_dir=recon_dir,
+        subjects=subjects,
+        preproc_files=preproc_fif_files,
+        smri_files=smri_files,
+    )
 
     if False:
-        rhino.bem_display(subjects_dir, subject,
-                      plot_type='surf',
-                      display_outskin_with_nose=False,
-                      display_sensors=True,
-                      display_sensor_oris=True)
+        source_recon.rhino.coreg_display(recon_dir, subjects[0],
+                        plot_type='surf')
 
+if False:
+    # -------------------------------------------------------------
+    # %% Take a look at leadfields
 
-    if False:
-        # -------------------------------------------------------------
-        # %% Take a look at leadfields
+    # load forward solution
+    fwd_fname = rhino.get_coreg_filenames(subjects_dir, subject)['forward_model_file']
+    fwd = mne.read_forward_solution(fwd_fname)
 
-        # load forward solution
-        fwd_fname = rhino.get_coreg_filenames(subjects_dir, subject)['forward_model_file']
-        fwd = mne.read_forward_solution(fwd_fname)
-
-        leadfield = fwd['sol']['data']
-        print("Leadfield size : %d sensors x %d dipoles" % leadfield.shape)
+    leadfield = fwd['sol']['data']
+    print("Leadfield size : %d sensors x %d dipoles" % leadfield.shape)
 
 # -------------------------------------------------------------
-# %% Source recon
+# %% Sign flip
+
+if run_fix_sign_ambiguity:
+
+    # Find a good template subject to align other subjects to
+    template = source_recon.find_template_subject(
+        recon_dir, subjects, n_embeddings=15, standardize=True
+    )
+
+    # Settings for batch processing
+    config = f"""
+        source_recon:
+        - fix_sign_ambiguity:
+            template: {template}
+            n_embeddings: 15
+            standardize: True
+            n_init: 3
+            n_iter: 2500
+            max_flips: 20
+    """
+
+    # Do the sign flipping
+    source_recon.run_src_batch(config, recon_dir, subjects)
+
