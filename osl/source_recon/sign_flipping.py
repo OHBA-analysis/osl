@@ -167,7 +167,7 @@ def find_template_subject(covs, diag_offset=0):
     metric_sum = np.sum(metric, axis=1)
     median = np.median(metric_sum)
 
-    return np.argwhere(metric_sum == median)[0][0]
+    return np.argmin(np.abs(metric_sum - median))
 
 
 def covariance_matrix_correlation(M1, M2, diag_offset=0, mode=None):
