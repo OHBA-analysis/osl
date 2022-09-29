@@ -722,12 +722,13 @@ def run_proc_chain(
 
     # Generate report data
     if gen_report:
-        from ..report import gen_html_data  # avoids circular import
+        from ..report import gen_html_data, gen_html_page  # avoids circular import
         logger.info("{0} : Generating Report".format(now))
-        reportdir = validate_outdir(reportdir / run_id)
+        report_data_dir = validate_outdir(reportdir / run_id)
         gen_html_data(
-            dataset["raw"], reportdir, ica=dataset["ica"], logger=logger
+            dataset["raw"], report_data_dir, ica=dataset["ica"], logger=logger
         )
+        gen_html_page(reportdir)
 
     if ret_dataset:
         return dataset
