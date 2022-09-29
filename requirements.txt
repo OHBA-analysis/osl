@@ -10,6 +10,7 @@ pyyaml>=5.1
 neurokit2
 jinja2
 file-tree
+pymatreader
 # Docs
 sphinx==4.0.2
 numpydoc

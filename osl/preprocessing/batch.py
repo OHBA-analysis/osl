@@ -118,6 +118,13 @@ def import_data(infile, preload=True):
         )
         raw = mne.io.read_raw_brainvision(infile, preload=preload)
 
+    # EEGLAB .set
+    elif os.path.splitext(infile)[1] == ".set":
+        logger.info(
+            "Detected EEGLAB file format, using: mne.io.read_raw_eeglab"
+        )
+        raw = mne.io.read_raw_eeglab(infile, preload=preload)
+        
     # Other formats not accepted
     else:
         msg = "Unable to determine file type of input {0}".format(infile)
@@ -712,7 +719,7 @@ def run_proc_chain(
         if ret_dataset:
             # We return an empty dict to indicate preproc failed
             # This ensures the function consistently returns one
-            # variable type
+            # variable type
             return {}
         else:
             return False
