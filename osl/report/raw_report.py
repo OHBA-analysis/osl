@@ -161,9 +161,11 @@ def gen_html_data(raw, outdir, ica=None, logger=None):
     savebase = str(outdir / '{0}.png')
     
     # Generate plots for the report
-    data['plt_temporalsumsq'] = plot_channel_time_series(raw, savebase)
+    data['plt_temporalsumsq'] = plot_channel_time_series(raw, savebase, exclude_badsegs=False)
+    data['plt_temporalsumsq_exclude_badsegs'] = plot_channel_time_series(raw, savebase, exclude_badsegs=True)
     data['plt_badchans'] = plot_sensors(raw, savebase)
-    data['plt_channeldev'] = plot_channel_dists(raw, savebase)
+    data['plt_channeldev'] = plot_channel_dists(raw, savebase, exclude_badchans=False)
+    data['plt_channeldev_exclude_badchans'] = plot_channel_dists(raw, savebase, exclude_badchans=True)
     data['plt_spectra'], data['plt_zoomspectra'] = plot_spectra(raw, savebase)
     data['plt_digitisation'] = plot_digitisation_2d(raw, savebase)
     data['plt_artefacts_eog'] = plot_eog_summary(raw, savebase)
@@ -287,7 +289,7 @@ def plot_flowchart(raw, savebase=None):
     filebase = savebase.parent.name + "/" + savebase.name
     return filebase.format('flowchart')
 
-def plot_channel_time_series(raw, savebase=None):
+def plot_channel_time_series(raw, savebase=None, exclude_badsegs=False):
     """Plots sum-square time courses."""
 
     # Raw data
@@ -318,7 +320,15 @@ def plot_channel_time_series(raw, savebase=None):
         if len(chan_inds) == 0:
             continue
         ss = np.sum(x[chan_inds] ** 2, axis=0)
+        if exclude_badsegs:
+            # set bad segs to mean
+            for aa in raw.annotations:
+                if "bad_segment" in aa["description"]:
+                    time_inds = np.where((raw.times >= aa["onset"]) & (raw.times <= (aa["onset"] + aa["duration"])))[0]
+                    ss[time_inds] = np.mean(ss)
+
         ss = uniform_filter1d(ss, int(raw.info['sfreq']))
+
         ax[row].plot(t, ss)
         ax[row].legend([name], frameon=False, fontsize=16)
         ax[row].set_xlim(t[0], t[-1])
@@ -338,14 +348,18 @@ def plot_channel_time_series(raw, savebase=None):
     # Save
     if savebase is not None:
         plt.tight_layout()
-        figname = savebase.format('temporal_sumsq')
+        if exclude_badsegs:
+            plot_name = 'temporal_sumsq_exclude_badsegs'
+        else:
+            plot_name = 'temporal_sumsq'
+        figname = savebase.format(plot_name)
         fig.savefig(figname, dpi=150, transparent=True)
         plt.close(fig)
 
     # Return the filename
     savebase = pathlib.Path(savebase)
     filebase = savebase.parent.name + "/" + savebase.name
-    return filebase.format('temporal_sumsq')
+    return filebase.format(plot_name)
 
 
 def plot_sensors(raw, savebase=None):
@@ -378,18 +392,23 @@ def plot_sensors(raw, savebase=None):
     return filebase.format('bad_chans')
 
 
-def plot_channel_dists(raw, savebase=None):
+def plot_channel_dists(raw, savebase=None, exclude_badchans=True):
     """Plot distributions of temporal standard deviation."""
+
+    if exclude_badchans:
+        exclude = 'bads'
+    else:
+        exclude = []
 
     # Raw data
     channel_types = {
-        'Magnetometers': mne.pick_types(raw.info, meg='mag'),
-        'Gradiometers': mne.pick_types(raw.info, meg='grad'),
+        'Magnetometers': mne.pick_types(raw.info, meg='mag', exclude=exclude),
+        'Gradiometers': mne.pick_types(raw.info, meg='grad', exclude=exclude),
         'EEG': mne.pick_types(raw.info, eeg=True),
         'CSD': mne.pick_types(raw.info, csd=True),
     }
-    t = raw.times
-    x = raw.get_data()
+
+    x = raw.get_data(reject_by_annotation='omit')
 
     # Number of subplots, i.e. the number of different channel types in the fif file
     ncols = 0
@@ -408,6 +427,7 @@ def plot_channel_dists(raw, savebase=None):
     for name, chan_inds in channel_types.items():
         if len(chan_inds) == 0:
             continue
+
         ax[row].hist(x[chan_inds, :].std(axis=1), bins=24, histtype='step')
         ax[row].legend(['Temporal Std-Dev'], frameon=False)
         ax[row].set_xlabel('Std-Dev')
@@ -415,17 +435,22 @@ def plot_channel_dists(raw, savebase=None):
         ax[row].set_title(name)
         row += 1
 
+    if exclude_badchans:
+        plot_name = 'channel_dev_exclude_badchans'
+    else:
+        plot_name = 'channel_dev'
+
     # Save
     if savebase is not None:
         plt.tight_layout()
-        figname = savebase.format('channel_dev')
+        figname = savebase.format(plot_name)
         fig.savefig(figname, dpi=150, transparent=True)
         plt.close(fig)
 
     # Return the filename
     savebase = pathlib.Path(savebase)
     filebase = savebase.parent.name + "/" + savebase.name
-    return filebase.format('channel_dev')
+    return filebase.format(plot_name)
 
 
 def plot_spectra(raw, savebase=None):

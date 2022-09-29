@@ -19,15 +19,16 @@ logger = logging.getLogger(__name__)
 #
 
 
-def detect_badsegments(raw, segment_len=1000, picks="grad", mode=None):
+def detect_badsegments(raw, segment_len=1000, significance_level=0.05, picks="grad", mode=None):
     """Set bad segments in MNE object."""
     if mode is None:
         XX = raw.get_data(picks=picks)
     elif mode == "diff":
         XX = np.diff(raw.get_data(picks=picks), axis=1)
 
+    gesd_args = {'alpha': significance_level}
     bdinds = sails.utils.detect_artefacts(
-        XX, 1, reject_mode="segments", segment_len=segment_len, ret_mode="bad_inds"
+        XX, 1, reject_mode="segments", segment_len=segment_len, ret_mode="bad_inds", gesd_args = gesd_args
     )
 
     onsets = np.where(np.diff(bdinds.astype(float)) == 1)[0]
