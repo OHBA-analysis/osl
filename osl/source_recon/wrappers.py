@@ -86,6 +86,7 @@ def coregister(
     use_nose,
     use_headshape,
     model,
+    already_coregistered=False,
     eeg=False,
 ):
     """Wrapper for coregistration.
@@ -110,6 +111,8 @@ def coregister(
         Should we use the headshape points in the coregistration?
     model : str
         Forward model to use.
+    already_coregistered : bool
+        Indicates that the data is already coregistered.
     eeg : bool
         Are we using EEG channels in the source reconstruction?
     """
@@ -129,6 +132,7 @@ def coregister(
         subject=subject,
         use_headshape=use_headshape,
         use_nose=use_nose,
+        already_coregistered=already_coregistered,
         logger=logger,
     )
 
