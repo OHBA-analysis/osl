@@ -29,14 +29,14 @@ def get_surfaces_filenames(subjects_dir, subject):
     """
     Generates a dict of files generated and used by rhino.compute_surfaces.
 
+    Files will be in subjects_dir/subject/rhino/surfaces.
+
     Parameters
     ----------
     subjects_dir : string
-        Directory to put RHINO subject dirs in.
-        Files will be in subjects_dir/subject/surfaces/
+        Directory containing the subject directories.
     subject : string
-        Subject name dir to put RHINO files in.
-        Files will be in subjects_dir/subject/surfaces/
+        Subject directory name to put the surfaces in.
 
     Returns
     -------
@@ -48,7 +48,7 @@ def get_surfaces_filenames(subjects_dir, subject):
          - bet_outskull_*_file is actually the inner skull surface
          - bet_outskin_*_file is the outer skin/scalp surface
     """
-    basedir = op.join(subjects_dir, subject, "surfaces")
+    basedir = op.join(subjects_dir, subject, "rhino", "surfaces")
     os.makedirs(basedir, exist_ok=True)
 
     filenames = {
@@ -72,10 +72,18 @@ def get_surfaces_filenames(subjects_dir, subject):
         "bet_outskull_mesh_file": op.join(basedir, "outskull_mesh.nii.gz"),
         "bet_outskull_mesh_vtk_file": op.join(basedir, "outskull_mesh.vtk"),
         "bet_outskull_surf_file": op.join(basedir, "outskull_surf.surf"),
-        "std_brain": os.environ["FSLDIR"]
-        + "/data/standard/MNI152_T1_1mm_brain.nii.gz",
-        "std_brain_bigfov": os.environ["FSLDIR"]
-        + "/data/standard/MNI152_T1_1mm_BigFoV_facemask.nii.gz",
+        "std_brain": op.join(
+            os.environ["FSLDIR"],
+            "data",
+            "standard",
+            "MNI152_T1_1mm_brain.nii.gz",
+        ),
+        "std_brain_bigfov": op.join(
+            os.environ["FSLDIR"],
+            "data",
+            "standard",
+            "MNI152_T1_1mm_BigFoV_facemask.nii.gz",
+        ),
         "completed": op.join(basedir, "completed.txt"),
     }
 

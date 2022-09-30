@@ -26,13 +26,13 @@ from mne.channels.channels import channel_type
 from scipy.ndimage.filters import uniform_filter1d
 from matplotlib.lines import Line2D
 from matplotlib.patches import Rectangle
+from pathlib import Path
 
 from ..utils import process_file_inputs, validate_outdir
 from ..utils.logger import log_or_print
 from ..preprocessing import (
     read_dataset,
     load_config,
-    run_proc_chain,
     get_config_from_fif,
     plot_preproc_flowchart,
 )
@@ -122,8 +122,11 @@ def gen_html_data(raw, outdir, ica=None, logger=None):
     # Head digitisation
     dig_codes = ('Cardinal', 'HPI', 'EEG', 'Extra')
     dig_counts = np.zeros((4,))
-    for ii in range(1, 5):
-        dig_counts[ii-1] = np.sum([d['kind'] == ii for d in raw.info['dig']])
+
+    # Only run this if digitisation is available
+    if raw.info['dig']:
+        for ii in range(1, 5):
+            dig_counts[ii-1] = np.sum([d['kind'] == ii for d in raw.info['dig']])
     #d, dcounts = np.unique(digs, return_counts=True)
     data['digitable'] = tabulate(np.c_[dig_codes, dig_counts], tablefmt='html',
                                  headers=['Digitisation Stage', 'Points Acquired'])
@@ -350,8 +353,24 @@ def plot_channel_time_series(raw, savebase=None):
 
 def plot_sensors(raw, savebase=None):
     """Plots sensors with bad channels highlighted."""
-
-    fig = raw.plot_sensors(show=False)
+    # plot channel types seperately for neuromag306 (3 coils in same location)
+    if 3012 in np.unique([i['coil_type'] for i in raw.info['chs']]):
+        with open(str(Path(__file__).parent.parent) + "/utils/neuromag306_info.yml", 'r') as f:
+            channels = yaml.safe_load(f)
+        if 3024 in np.unique([i['coil_type'] for i in raw.info['chs']]):
+            coil_types = ['mag', 'grad_longitude', 'grad_lattitude']
+        else:
+            coil_types = ['grad_longitude', 'grad_lattitude']
+        fig, ax = plt.subplots(1,len(coil_types), figsize=(16,4))
+        for k in range(len(coil_types)):
+            raw.copy().pick_channels(channels[coil_types[k]]).plot_sensors(axes=ax[k], show=False)
+            ax[k].set_title(f"{coil_types[k].replace('_', ' ')}")
+        plt.tight_layout()
+    else:
+        fig, ax = plt.subplots(1, 3, figsize=(16, 4))
+        ax[0].axis('off')
+        ax[2].axis('off')
+        raw.plot_sensors(show=False, axes=ax[1])
     figname = savebase.format('bad_chans')
     fig.savefig(figname, dpi=150, transparent=True)
     plt.close(fig)
@@ -443,6 +462,10 @@ def plot_spectra(raw, savebase=None):
 
 def plot_digitisation_2d(raw, savebase=None):
     """Plots the digitisation and headshape."""
+
+    # Return if no digitisation available
+    if not raw.info['dig']:
+        return None
 
     # Make plot
     fig = plt.figure(figsize=(16, 4))
@@ -578,7 +601,7 @@ def plot_ecg_summary(raw, savebase=None):
 def plot_bad_ica(raw, ica, savebase):
     """Plot ICA characteristics for rejected components."""
 
-    exclude_uniq = np.sort(np.unique(ica.exclude))
+    exclude_uniq = np.sort(np.unique(ica.exclude))[::-1]
     nbad = len(exclude_uniq)
 
     # Create figure
@@ -590,7 +613,12 @@ def plot_bad_ica(raw, ica, savebase):
 
         # Create axis for subplot
         # adapted from mne/viz/ica._create_properties_layout
-        axes_params = (('topomap', [0.08, lowerlimit + 0.5 / multiplier, 0.3, 0.45 / multiplier]),
+        if 'mag' in raw.get_channel_types() and 'grad' in raw.get_channel_types():
+            topomap1_layout = [0.08, lowerlimit + 0.5 / multiplier, (0.3-0.08)/2+0.08, 0.45 / multiplier]
+            topomap2_layout = [(0.3-0.08)/2+0.08, lowerlimit + 0.5 / multiplier, 0.3, 0.45 / multiplier]
+        else:
+            topomap1_layout = [0.08, lowerlimit + 0.5 / multiplier, 0.3, 0.45 / multiplier]
+        axes_params = (('topomap', topomap1_layout),
                        ('image', [0.5, lowerlimit + 0.6 / multiplier, 0.45, 0.35 / multiplier]),
                        ('erp', [0.5, lowerlimit + 0.5 / multiplier, 0.45, 0.1 / multiplier]),
                        ('spectrum', [0.08, lowerlimit + 0.1 / multiplier, 0.32, 0.3 / multiplier]),
@@ -598,6 +626,13 @@ def plot_bad_ica(raw, ica, savebase):
         axes += [[fig.add_axes(loc, label=name) for name, loc in axes_params]]
 
         ica.plot_properties(raw, picks=exclude_uniq[i], axes=axes[i], show=False, verbose=0)
+
+        # Add another topo if we're dealing with two sensor types
+        if 'mag' in raw.get_channel_types() and 'grad' in raw.get_channel_types():
+            ax2 = fig.add_axes(topomap2_layout, label='topomap2')
+            kind, dropped_indices, epochs_src, data = mne.viz.ica._prepare_data_ica_properties(
+                raw, ica, reject_by_annotation=True, reject='auto')
+            mne.viz.ica._plot_ica_topomap(ica, exclude_uniq[i], ch_type='grad',  axes=ax2, show=False)
 
         if np.any([x in ica.labels_.keys() for x in ica._ica_names]): # this is for the osl_plot_ica convention
             title = "".join((ica._ica_names[exclude_uniq[i]]," - ", ica.labels_[ica._ica_names[exclude_uniq[i]]].upper()))
@@ -614,6 +649,10 @@ def plot_bad_ica(raw, ica, savebase):
         elif 'ecg' in ica.labels_.keys():
             flag_ecg = exclude_uniq[i] in ica.labels_['ecg']
             title = "".join((ica._ica_names[exclude_uniq[i]]," - ", flag_ecg*'ECG'))
+
+        if 'mag' in raw.get_channel_types() and 'grad' in raw.get_channel_types():
+            title = title + '\n (mag)'
+            ax2.set_title(title.replace('mag', 'grad'))
 
         else: # this is for if there is nothing in ica.labels_
             title = None

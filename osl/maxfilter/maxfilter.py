@@ -334,7 +334,7 @@ def run_multistage_maxfilter(infif, outbase, args):
         if key in args:
             stage1_args[key] = args[key]
 
-    outfif, outlog = run_maxfilter(infif, outfif, stage1_args, '_autobad')
+    outfif, outlog = run_maxfilter(infif, outfif, stage1_args)
 
     if args['dryrun'] is False:
         # Read in bad channels from logfile
@@ -369,7 +369,7 @@ def run_multistage_maxfilter(infif, outbase, args):
         if key in args:
             stage2_args[key] = args[key]
 
-    outfif, outlog = run_maxfilter(infif, outfif, stage2_args, '_tsss')
+    outfif, outlog = run_maxfilter(infif, outfif, stage2_args)
 
     # --------------------------------------
     # Stage 3 - Translate to reference file
@@ -390,7 +390,7 @@ def run_multistage_maxfilter(infif, outbase, args):
             if key in args:
                 stage3_args[key] = args[key]
 
-        outfif, outlog = run_maxfilter(infif, outfif, stage3_args, '_trans')
+        outfif, outlog = run_maxfilter(infif, outfif, stage3_args)
 
 
 def run_cbu_3stage_maxfilter(infif, outbase, args):
@@ -418,7 +418,7 @@ def run_cbu_3stage_maxfilter(infif, outbase, args):
         if key in args:
             stage1_args[key] = args[key]
 
-    outfif, outlog = run_maxfilter(infif, outfif, stage1_args, '_autobad')
+    outfif, outlog = run_maxfilter(infif, outfif, stage1_args)
 
     if args['dryrun'] is False:
         # Read in bad channels from logfile
@@ -455,7 +455,7 @@ def run_cbu_3stage_maxfilter(infif, outbase, args):
         if key in args:
             stage2_args[key] = args[key]
 
-    outfif, outlog = run_maxfilter(infif, outfif, stage2_args, '_tsss')
+    outfif, outlog = run_maxfilter(infif, outfif, stage2_args)
 
     # --------------------------------------
     # Stage 3 - Translate to default
@@ -476,7 +476,7 @@ def run_cbu_3stage_maxfilter(infif, outbase, args):
         if key in args:
             stage3_args[key] = args[key]
 
-    outfif, outlog = run_maxfilter(infif, outfif, stage3_args, '_trans')
+    outfif, outlog = run_maxfilter(infif, outfif, stage3_args)
 
 
 # -------------------------------------------------

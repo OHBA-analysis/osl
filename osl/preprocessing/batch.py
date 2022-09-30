@@ -528,13 +528,14 @@ def plot_preproc_flowchart(
 
 
 def run_proc_chain(
-    infile,
     config,
+    infile,
     outname=None,
     outdir=None,
     logsdir=None,
     reportdir=None,
-    gen_report=True,
+    ret_dataset=True,
+    gen_report=None,
     overwrite=False,
     extra_funcs=None,
     verbose="INFO",
@@ -563,6 +564,8 @@ def run_proc_chain(
         Directory to save log files to.
     reportdir : str
         Directory to save report files to.
+    ret_dataset : bool
+        Should we return a dataset dict?
     gen_report : bool
         Should we generate a report?
     overwrite : bool
@@ -578,32 +581,64 @@ def run_proc_chain(
 
     Returns
     -------
-    flag : bool
-        A flag indicating whether preprocessing was successful.
+    dict or bool
+        If ret_dataset=True, a dict containing the preprocessed dataset with the
+        following keys: raw, ica, epochs, events, event_id. An empty dict is returned
+        if preprocessing fail. If return an empty dict. if ret_dataset=False, we
+        return a flag indicating whether preprocessing was successful.
     """
-    if outdir is None:
-        # Use the current working directory
-        outdir = os.getcwd()
-    outdir = add_subdir(infile, outdir)
-    outdir = validate_outdir(outdir)
-    logsdir = validate_outdir(logsdir or outdir / "logs")
-    reportdir = validate_outdir(reportdir or outdir / "report")
+
+    if not ret_dataset:
+        # Let's make sure we have an output directory
+        outdir = outdir or os.getcwd()
+
+    if outdir is not None:
+        # We're saving the output to disk
+
+        # Generate a report by default, this is overriden if the user passes
+        # gen_report=False
+        gen_report = True if gen_report is None else gen_report
+
+        # Create output directories if they don't exist
+        outdir = add_subdir(infile, outdir)
+        outdir = validate_outdir(outdir)
+        logsdir = validate_outdir(logsdir or outdir / "logs")
+        reportdir = validate_outdir(reportdir or outdir / "report")
+
+    else:
+        # We're not saving the output to disk
+
+        # Don't generate a report by default, this is overriden if the user passes
+        # something for reportdir or gen_report=True
+        gen_report = gen_report or reportdir is not None or False
+        if gen_report:
+            # Make sure we have a directory to write the report to
+            reportdir = validate_outdir(reportdir or os.getcwd() + "/report")
+
+        # Allow the user to create a log if they pass logsdir
+        if logsdir is not None:
+            logsdir = validate_outdir(logsdir)
 
     # Generate a run ID
     if outname is None:
         run_id = find_run_id(infile)
     else:
         run_id = os.path.splitext(outname)[0]
-
     name_base = "{run_id}_{ftype}.{fext}"
-    outbase = os.path.join(outdir, name_base)
-    logbase = os.path.join(logsdir, name_base)
+
+    # Create output filename
+    if outdir is not None:
+        outbase = os.path.join(outdir, name_base)
 
     # Generate log filename
-    logfile = logbase.format(
-        run_id=run_id.replace("_raw", ""), ftype="preproc_raw", fext="log"
-    )
-    mne.utils._logging.set_log_file(logfile, overwrite=overwrite)
+    if logsdir is not None:
+        logbase = os.path.join(logsdir, name_base)
+        logfile = logbase.format(
+            run_id=run_id.replace("_raw", ""), ftype="preproc_raw", fext="log"
+        )
+        mne.utils._logging.set_log_file(logfile, overwrite=overwrite)
+    else:
+        logfile = None
 
     # Finish setting up loggers
     osl_logger.set_up(prefix=run_id, log_file=logfile, level=verbose, startup=False)
@@ -613,13 +648,15 @@ def run_proc_chain(
     logger.info("{0} : Starting OSL Processing".format(now))
     logger.info("input : {0}".format(infile))
 
-    # Check for existing outputs - should be a .fif at least
-    fifout = outbase.format(
-        run_id=run_id.replace('_raw', ''), ftype='preproc_raw', fext='fif'
-    )
-    if os.path.exists(fifout) and (overwrite is False):
-        logger.critical('Skipping preprocessing - existing output detected')
-        return False
+    # Write preprocessed data to output directory
+    if outdir is not None:
+        # Check for existing outputs - should be a .fif at least
+        fifout = outbase.format(
+            run_id=run_id.replace('_raw', ''), ftype='preproc_raw', fext='fif'
+        )
+        if os.path.exists(fifout) and (overwrite is False):
+            logger.critical('Skipping preprocessing - existing output detected')
+            return False
 
     # Load config
     if not isinstance(config, dict):
@@ -653,7 +690,8 @@ def run_proc_chain(
         # Add preprocessing info to dataset dict
         dataset = append_preproc_info(dataset, config)
 
-        write_dataset(dataset, outbase, run_id, overwrite=overwrite)
+        if outdir is not None:
+            write_dataset(dataset, outbase, run_id, overwrite=overwrite)
 
     except Exception as e:
         # Preprocessing failed
@@ -680,21 +718,31 @@ def run_proc_chain(
             f.write("\n")
             traceback.print_tb(ex_traceback, file=f)
 
-        return False
+        if ret_dataset:
+            # We return an empty dict to indicate preproc failed
+            # This ensures the function consistently returns one
+            # variable type
+            return {}
+        else:
+            return False
 
     now = strftime("%Y-%m-%d %H:%M:%S", localtime())
     logger.info("{0} : Processing Complete".format(now))
 
     # Generate report data
     if gen_report:
-        from ..report import gen_html_data  # avoids circular import
+        from ..report import gen_html_data, gen_html_page  # avoids circular import
         logger.info("{0} : Generating Report".format(now))
-        reportdir = validate_outdir(reportdir / run_id)
+        report_data_dir = validate_outdir(reportdir / run_id)
         gen_html_data(
-            dataset["raw"], reportdir, ica=dataset["ica"], logger=logger
+            dataset["raw"], report_data_dir, ica=dataset["ica"], logger=logger
         )
+        gen_html_page(reportdir)
 
-    return True
+    if ret_dataset:
+        return dataset
+    else:
+        return True
 
 
 def run_proc_batch(
@@ -815,6 +863,7 @@ def run_proc_batch(
         outdir=outdir,
         logsdir=logsdir,
         reportdir=reportdir,
+        ret_dataset=False,
         overwrite=overwrite,
         extra_funcs=extra_funcs,
     )
@@ -822,7 +871,7 @@ def run_proc_batch(
     # Loop through input files to generate arguments for run_proc_chain
     args = []
     for infile, outname in zip(infiles, outnames):
-        args.append((infile, config, outname))
+        args.append((config, infile, outname))
 
     # Actually run the processes
     if dask_client:

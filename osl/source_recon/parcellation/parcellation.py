@@ -287,7 +287,6 @@ def _resample_parcellation(
             # away from the best matching parcellation_coords
             if distance < gridstep:
                 parcellation_asmatrix[ind, parcel_index] = parcellation_vals[index]
-
     return parcellation_asmatrix
 
 
@@ -615,7 +614,7 @@ def _parcel_timeseries2nii(
     # voxel_coords is nmaskvoxels x 3 in mm
     voxel_coords = parcellation.parcel_timeseries["voxel_coords"]
 
-    gridstep = int(rhino_utils._get_gridstep(voxel_coords.T) / 1000)
+    gridstep = int(rhino_utils.get_gridstep(voxel_coords.T) / 1000)
 
     # Sample parcellation_mask to the desired resolution
     pth, ref_brain_name = op.split(

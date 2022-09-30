@@ -7,4 +7,5 @@ from .file_handling import *  # noqa: F401, F403
 from .spmio import SPMMEEG  # noqa: F401, F403
 from .parallel import dask_parallel_bag  # noqa: F401, F403
 from .simulate import *  # noqa: F401, F403
+from .opm import *  # noqa: F401, F403
 from .package import soft_import

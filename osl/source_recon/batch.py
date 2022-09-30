@@ -97,7 +97,7 @@ def run_src_chain(
     config,
     src_dir,
     subject,
-    preproc_file,
+    preproc_file=None,
     smri_file=None,
     verbose="INFO",
     mneverbose="WARNING",
@@ -133,13 +133,14 @@ def run_src_chain(
 
     # Directories
     src_dir = validate_outdir(src_dir)
-    rhino_dir = validate_outdir(src_dir / "rhino")
-    os.makedirs(rhino_dir / subject, exist_ok=True)
     logsdir = validate_outdir(src_dir / "logs")
     reportdir = validate_outdir(src_dir / "report")
 
     # Get run ID
-    run_id = find_run_id(preproc_file)
+    if preproc_file is None:
+        run_id = subject
+    else:
+        run_id = find_run_id(preproc_file)
 
     # Generate log filename
     name_base = "{run_id}_{ftype}.{fext}"
@@ -153,14 +154,20 @@ def run_src_chain(
     logger = logging.getLogger(__name__)
     now = strftime("%Y-%m-%d %H:%M:%S", localtime())
     logger.info("{0} : Starting OSL Processing".format(now))
-    logger.info("input : {0}".format(rhino_dir / subject))
+    logger.info("input : {0}".format(src_dir / subject))
 
     # Load config
     if not isinstance(config, dict):
         config = load_config(config)
 
-    # Validation
     doing_coreg = any(["coregister" in method for method in config["source_recon"]])
+
+    # Note that beamform_and_parcellate is in osl.source_recon.wrappers
+    doing_bf_parc = any(
+        ["beamform_and_parcellate" in method for method in config["source_recon"]]
+    )
+
+    # Validation
     if doing_coreg and smri_file is None:
         raise ValueError("smri_file must be passed if we're doing coregistration.")
 
@@ -201,8 +208,9 @@ def run_src_chain(
 
         return False
 
-    # Generate HTML data for the report
-    src_report.gen_html_data(config, src_dir, rhino_dir, subject, reportdir, logger)
+    if doing_coreg or doing_bf_parc:
+        # Generate HTML data for the report
+        src_report.gen_html_data(config, src_dir, subject, reportdir, logger)
 
     return True
 
@@ -211,7 +219,7 @@ def run_src_batch(
     config,
     src_dir,
     subjects,
-    preproc_files,
+    preproc_files=None,
     smri_files=None,
     verbose="INFO",
     mneverbose="WARNING",
@@ -250,7 +258,6 @@ def run_src_batch(
 
     # Directories
     src_dir = validate_outdir(src_dir)
-    rhino_dir = validate_outdir(src_dir / "rhino")
     logsdir = validate_outdir(src_dir / "logs")
     reportdir = validate_outdir(src_dir / "report")
 
@@ -267,17 +274,21 @@ def run_src_batch(
 
     # Validation
     n_subjects = len(subjects)
-    n_preproc_files = len(preproc_files)
-    if n_subjects != n_preproc_files:
-        raise ValueError(
-            "Got {n_subjects} subjects and {n_preproc_files} preproc_files."
-        )
+    if preproc_files != None:
+        n_preproc_files = len(preproc_files)
+        if n_subjects != n_preproc_files:
+            raise ValueError(
+                f"Got {n_subjects} subjects and {n_preproc_files} preproc_files."
+            )
 
     doing_coreg = any(["coregister" in method for method in config["source_recon"]])
     if doing_coreg and smri_files is None:
         raise ValueError("smri_files must be passed if we are coregistering.")
     elif smri_files is None:
         smri_files = [None] * n_subjects
+
+    if preproc_files is None:
+        preproc_files = [None] * n_subjects
 
     # Create partial function with fixed options
     pool_func = partial(

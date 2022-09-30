@@ -6,12 +6,10 @@ Usage: For Human evoked field MEG data.
 Links for paper and data/scripts:
 - https://www.sciencedirect.com/science/article/pii/S1053811920302846?via%3Dihub
 - https://zenodo.org/record/3233557
-        
-Note: The code is used in the study:
-- 'Comparison of beamformer implementations for MEG source localizations'
+
 """
 
-# Authors: Mark Woolrich <mark.woolrich@ohba.ox.ac.uk>
+# Authors of this adapted version to include osl-rhino : Mark Woolrich <mark.woolrich@ohba.ox.ac.uk>
 
 from scipy.io import loadmat
 import os
@@ -21,7 +19,8 @@ from collections import OrderedDict
 import mne
 import numpy as np
 import matplotlib.pyplot as plt
-from osl import rhino
+from osl.source_recon import rhino
+from osl.source_recon.rhino import utils
 
 from nilearn.plotting import plot_stat_map
 from nilearn.image import index_img
@@ -207,16 +206,14 @@ if do_rhino:
     gridstep = 8  # mm
 
     # Setup polhemus files for coreg
-    outdir = op.join(subjects_dir, subject)
-    (
-        polhemus_headshape_file,
-        polhemus_nasion_file,
-        polhemus_rpa_file,
-        polhemus_lpa_file,
-    ) = rhino.extract_polhemus_from_info(fif_file_preproc, outdir)
-
-    # delete nose headshape pnts
-    pnts = np.loadtxt(polhemus_headshape_file)
+    coreg_filenames = rhino.get_coreg_filenames(subjects_dir, subject)
+    rhino.extract_polhemus_from_info(
+        fif_file=fif_file_preproc,
+        headshape_outfile=coreg_filenames["polhemus_headshape_file"],
+        nasion_outfile=coreg_filenames["polhemus_nasion_file"],
+        rpa_outfile=coreg_filenames["polhemus_rpa_file"],
+        lpa_outfile=coreg_filenames["polhemus_lpa_file"],
+    )
 
     if run_compute_surfaces:
         rhino.compute_surfaces(
@@ -231,12 +228,8 @@ if do_rhino:
             fif_file_preproc,
             subjects_dir,
             subject,
-            polhemus_headshape_file,
-            polhemus_nasion_file,
-            polhemus_rpa_file,
-            polhemus_lpa_file,
             use_nose=True,
-            use_headshape=True,
+            use_headshape=True
         )
 
         # Purple dots are the polhemus derived fiducials
@@ -464,7 +457,7 @@ if do_rhino:
     out_nii_fname = op.join(
         subjects_dir, subject, "rhino", "power_{}mm.nii.gz".format(gridstep)
     )
-    out_nii_fname, stdbrain_mask_fname = rhino.recon_timeseries2niftii(
+    out_nii_fname, stdbrain_mask_fname = utils.recon_timeseries2niftii(
         subjects_dir,
         subject,
         recon_timeseries=stc_pow_series.data,

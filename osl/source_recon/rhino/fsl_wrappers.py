@@ -25,7 +25,9 @@ def setup_fsl(directory):
     """
     if "FSLDIR" not in os.environ:
         os.environ["FSLDIR"] = directory
+    if "{:s}/bin" not in os.getenv("PATH"):
         os.environ["PATH"] = "{:s}/bin:{:s}".format(directory, os.getenv("PATH"))
+    if "FSLOUTPUTTYPE" not in os.environ:
         os.environ["FSLOUTPUTTYPE"] = "NIFTI_GZ"
 
 

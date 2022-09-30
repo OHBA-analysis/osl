@@ -20,7 +20,7 @@ config = """
     - filter: {l_freq: 0.5, h_freq: 125, method: 'iir', iir_params: {order: 5, ftype: butter}}
     - notch_filter: {freqs: 50 100}
     - resample: {sfreq: 250}
-    - bad_segments: {segment_len: 2000, picks: 'meg'}
+    - bad_segments: {segment_len: 800, picks: 'meg'}
 """
 
 # Setup
