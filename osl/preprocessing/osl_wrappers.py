@@ -73,6 +73,8 @@ def detect_badsegments(raw, segment_len=1000, picks="grad", mode=None):
         XX, 1, reject_mode="segments", segment_len=segment_len, ret_mode="bad_inds"
     )
     for count, bdinds in enumerate([bdinds_std, bdinds_maxfilt]):
+        if bdinds is None:
+            continue
         if count == 1:
             descp = 'maxfilter_'
         else:
