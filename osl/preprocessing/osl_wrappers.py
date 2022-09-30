@@ -75,10 +75,8 @@ def detect_badsegments(raw, segment_len=1000, picks="grad", mode=None):
     for count, bdinds in enumerate([bdinds_std, bdinds_maxfilt]):
         if bdinds is None:
             continue
-        if count == 1:
-            descp = 'maxfilter_'
-        else:
-            descp = ''
+        descp = count * 'maxfilter_' # when count==0, should be ''
+        
         onsets = np.where(np.diff(bdinds.astype(float)) == 1)[0]
         if bdinds[0]:
             onsets = np.r_[0, onsets]
