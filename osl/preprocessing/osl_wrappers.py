@@ -52,11 +52,12 @@ def detect_maxfilt_zeros(raw):
             return bad_inds.astype(bool)
         except:
             s = "detecting zeroed out data from maxfilter log file failed"
-            logger.error(s)
+            logger.warning(s)
+            return None
     else:
         s = "No maxfilter logfile detected - detecting zeroed out data not possible"
         logger.info(s)
-        return
+        return None
 
 
 def detect_badsegments(raw, segment_len=1000, picks="grad", mode=None):
