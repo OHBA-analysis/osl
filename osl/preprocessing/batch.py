@@ -190,7 +190,7 @@ def find_func(method, target="raw", extra_funcs=None):
     if func is None:
         logger.critical("Function not found! {}".format(method))
 
-    return func
+    return func 
 
 
 def load_config(config):
@@ -545,10 +545,10 @@ def run_proc_chain(
 
     Parameters
     ----------
-    infile : str
-        Path to input file.
     config : str or dict
         Preprocessing config.
+    infile : str
+        Path to input file.
     outname : str
         Output filename.
     outdir : str
