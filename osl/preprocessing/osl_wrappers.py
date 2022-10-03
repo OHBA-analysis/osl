@@ -75,8 +75,12 @@ def detect_badsegments(raw, segment_len=1000, picks="grad", mode=None):
     for count, bdinds in enumerate([bdinds_std, bdinds_maxfilt]):
         if bdinds is None:
             continue
-        descp = count * 'maxfilter_' # when count==0, should be ''
-        
+        if count==1:
+            descp1 = count * 'maxfilter_' # when count==0, should be ''
+            descp2 = ' (maxfilter)'
+        else:
+            descp1 = ''
+            descp2 = ''
         onsets = np.where(np.diff(bdinds.astype(float)) == 1)[0]
         if bdinds[0]:
             onsets = np.r_[0, onsets]
@@ -86,7 +90,7 @@ def detect_badsegments(raw, segment_len=1000, picks="grad", mode=None):
             offsets = np.r_[offsets, len(bdinds) - 1]
         assert len(onsets) == len(offsets)
         durations = offsets - onsets
-        descriptions = np.repeat("{0}bad_segment_{1}".format(descp, picks), len(onsets))
+        descriptions = np.repeat("{0}bad_segment_{1}".format(descp1, picks), len(onsets))
         logger.info("Found {0} bad segments".format(len(onsets)))
 
         onsets = (onsets + raw.first_samp) / raw.info["sfreq"]
@@ -98,7 +102,7 @@ def detect_badsegments(raw, segment_len=1000, picks="grad", mode=None):
         full_dur = raw.n_times / raw.info["sfreq"]
         pc = (mod_dur / full_dur) * 100
         s = "Modality {0}{1} - {2:02f}/{3} seconds rejected     ({4:02f}%)"
-        logger.info(s.format("picks", descp.replace('m',' (m').replace('_',')'), mod_dur, full_dur, pc))
+        logger.info(s.format("picks", descp2, mod_dur, full_dur, pc))
 
     return raw
 
