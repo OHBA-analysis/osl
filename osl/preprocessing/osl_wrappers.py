@@ -21,8 +21,9 @@ logger = logging.getLogger(__name__)
 
 def detect_maxfilt_zeros(raw):
     """This function tries to load the maxfilter log files in order to annotate zeroed out data"""
-    log_fname = raw.filenames[0].replace('.fif', '.log')
-    if exists(log_fname):
+    if raw.filenames[0] is not None:
+        log_fname = raw.filenames[0].replace('.fif', '.log')
+    if 'log_fname' in locals() and exists(log_fname):
         try:
             starttime = raw.first_time
             endtime = raw._last_time
