@@ -10,6 +10,7 @@ import logging
 import mne
 import numpy as np
 import sails
+from os.path import exists
 
 logger = logging.getLogger(__name__)
 
@@ -18,40 +19,91 @@ logger = logging.getLogger(__name__)
 # OSL preprocessing functions
 #
 
+def detect_maxfilt_zeros(raw):
+    """This function tries to load the maxfilter log files in order to annotate zeroed out data"""
+    if raw.filenames[0] is not None:
+        log_fname = raw.filenames[0].replace('.fif', '.log')
+    if 'log_fname' in locals() and exists(log_fname):
+        try:
+            starttime = raw.first_time
+            endtime = raw._last_time
+            with open(log_fname) as f:
+                lines = f.readlines()
+
+            # for determining the start, end and  point
+            phrase_ndataseg = ['(', ' data buffers)']
+            gotduration = False
+
+            # for detecting zeroed out data
+            zeroed=[]
+            phrase_zero = ['Time ', ': cont HPI is off, data block is skipped!']
+            for line in lines:
+                if gotduration == False and phrase_ndataseg[1] in line:
+                    gotduration = True
+                    n_dataseg = float(line.split(phrase_ndataseg[0])[1].split(phrase_ndataseg[1])[0]) # number of segments
+                if phrase_zero[1] in line:
+                    zeroed.append(float(line.split(phrase_zero[0])[1].split(phrase_zero[1])[0])) # in seconds
+
+            duration = raw.n_times/n_dataseg # duration of each data segment in samples
+            starts = (np.array(zeroed) - starttime) * raw.info['sfreq'] # in samples
+            bad_inds = np.zeros(raw.n_times)
+            for ii in range(len(starts)):
+                stop = starts[ii] + duration  # in samples
+                bad_inds[int(starts[ii]):int(stop)] = 1
+            return bad_inds.astype(bool)
+        except:
+            s = "detecting zeroed out data from maxfilter log file failed"
+            logger.warning(s)
+            return None
+    else:
+        s = "No maxfilter logfile detected - detecting zeroed out data not possible"
+        logger.info(s)
+        return None
+
 
 def detect_badsegments(raw, segment_len=1000, picks="grad", mode=None):
     """Set bad segments in MNE object."""
     if mode is None:
+        bdinds_maxfilt = detect_maxfilt_zeros(raw)
         XX = raw.get_data(picks=picks)
     elif mode == "diff":
+        bdinds_maxfilt = None
         XX = np.diff(raw.get_data(picks=picks), axis=1)
 
-    bdinds = sails.utils.detect_artefacts(
+    bdinds_std = sails.utils.detect_artefacts(
         XX, 1, reject_mode="segments", segment_len=segment_len, ret_mode="bad_inds"
     )
+    for count, bdinds in enumerate([bdinds_std, bdinds_maxfilt]):
+        if bdinds is None:
+            continue
+        if count==1:
+            descp1 = count * 'maxfilter_' # when count==0, should be ''
+            descp2 = ' (maxfilter)'
+        else:
+            descp1 = ''
+            descp2 = ''
+        onsets = np.where(np.diff(bdinds.astype(float)) == 1)[0]
+        if bdinds[0]:
+            onsets = np.r_[0, onsets]
+        offsets = np.where(np.diff(bdinds.astype(float)) == -1)[0]
 
-    onsets = np.where(np.diff(bdinds.astype(float)) == 1)[0]
-    if bdinds[0]:
-        onsets = np.r_[0, onsets]
-    offsets = np.where(np.diff(bdinds.astype(float)) == -1)[0]
+        if bdinds[-1]:
+            offsets = np.r_[offsets, len(bdinds) - 1]
+        assert len(onsets) == len(offsets)
+        durations = offsets - onsets
+        descriptions = np.repeat("{0}bad_segment_{1}".format(descp1, picks), len(onsets))
+        logger.info("Found {0} bad segments".format(len(onsets)))
 
-    if bdinds[-1]:
-        offsets = np.r_[offsets, len(bdinds) - 1]
-    assert len(onsets) == len(offsets)
-    durations = offsets - onsets
-    descriptions = np.repeat("bad_segment_{0}".format(picks), len(onsets))
-    logger.info("Found {0} bad segments".format(len(onsets)))
+        onsets = (onsets + raw.first_samp) / raw.info["sfreq"]
+        durations = durations / raw.info["sfreq"]
 
-    onsets = (onsets + raw.first_samp) / raw.info["sfreq"]
-    durations = durations / raw.info["sfreq"]
+        raw.annotations.append(onsets, durations, descriptions)
 
-    raw.annotations.append(onsets, durations, descriptions)
-
-    mod_dur = durations.sum()
-    full_dur = raw.n_times / raw.info["sfreq"]
-    pc = (mod_dur / full_dur) * 100
-    s = "Modality {0} - {1:02f}/{2} seconds rejected     ({3:02f}%)"
-    logger.info(s.format("picks", mod_dur, full_dur, pc))
+        mod_dur = durations.sum()
+        full_dur = raw.n_times / raw.info["sfreq"]
+        pc = (mod_dur / full_dur) * 100
+        s = "Modality {0}{1} - {2:02f}/{3} seconds rejected     ({4:02f}%)"
+        logger.info(s.format("picks", descp2, mod_dur, full_dur, pc))
 
     return raw
 
