@@ -398,6 +398,8 @@ def coreg(
     # Create sMRI-derived surfaces in native/mri space in mm, for use by forward modelling
     rhino_utils._create_surface_meshes(surfaces_filenames, mrivoxel_mri_t['trans'])
 
+    log_or_print("rhino.coreg_display(\"{}\", \"{}\") can be used to check the result".format(
+        subjects_dir, subject), logger)
     print('*** OSL RHINO COREGISTRATION COMPLETE ***')
 
 def coreg_display(

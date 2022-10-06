@@ -87,6 +87,7 @@ def coregister(
     use_headshape,
     model,
     already_coregistered=False,
+    overwrite=False,
     eeg=False,
 ):
     """Wrapper for coregistration.
@@ -113,6 +114,9 @@ def coregister(
         Forward model to use.
     already_coregistered : bool
         Indicates that the data is already coregistered.
+    overwrite: bool
+        Specifies whether or not to run compute_surfaces, if the passed in
+        options have already been run
     eeg : bool
         Are we using EEG channels in the source reconstruction?
     """
@@ -122,6 +126,7 @@ def coregister(
         subjects_dir=src_dir,
         subject=subject,
         include_nose=include_nose,
+        overwrite=overwrite,
         logger=logger,
     )
 
