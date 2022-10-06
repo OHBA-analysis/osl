@@ -8,6 +8,7 @@ Created on Tue Nov  9 15:39:24 2021
 
 import os
 import os.path as op
+
 import numpy as np
 import matplotlib.pyplot as plt
 
@@ -22,19 +23,19 @@ subjects_to_do = np.arange(0, 10)
 sessions_to_do = np.arange(0, 2)
 subj_sess_2exclude = np.zeros([10, 2]).astype(bool)
 
-subj_sess_2exclude = np.ones([10, 2]).astype(bool)
-subj_sess_2exclude[0:2,:] = False
+#subj_sess_2exclude = np.ones([10, 2]).astype(bool)
+#subj_sess_2exclude[1:3, 0] = False
 
-run_convert = False
-run_preproc = False
-run_beamform_and_parcellate = False
+run_convert = True
+run_preproc = True
+run_beamform_and_parcellate = True
 run_fix_sign_ambiguity = True
 
 # parcellation to use
 parcellation_fname = op.join('/Users/woolrich/Dropbox/vols_scripts/hmm_misc_funcs/parcellations',
                              'fmri_d100_parcellation_with_PCC_reduced_2mm_ss5mm_ds8mm.nii.gz')
 
-std_brain = '/Users/woolrich/homedir/vols_data/mne/self_paced_fingertap/subject1/rhino/surfaces/MNI152_T1_brain_2mm.nii.gz'
+std_brain = '/Users/woolrich/homedir/vols_data/self_paced_fingertap/subject1/rhino/surfaces/MNI152_T1_brain_2mm.nii.gz'
 
 subjects_dir = '/Users/woolrich/homedir/vols_data/notts_movie_opm'
 
@@ -49,8 +50,10 @@ gridstep = 8  # mm
 # %% Setup file names
 
 subjects = []
+sub_dirs = []
 notts_opm_mat_files = []
 smri_files = []
+smri_fixed_files = []
 tsv_files = []
 
 fif_files = []
@@ -62,13 +65,14 @@ for sub in subjects_to_do:
     for ses in sessions_to_do:
         if not subj_sess_2exclude[sub, ses]:
 
-            sub_dir = 'sub-' + ('{}'.format(subjects_to_do[sub]+1)).zfill(3)
-            ses_dir = 'ses-' + ('{}'.format(sessions_to_do[ses]+1)).zfill(3)
+            sub_dir = 'sub-' + ('{}'.format(subjects_to_do[sub] + 1)).zfill(3)
+            ses_dir = 'ses-' + ('{}'.format(sessions_to_do[ses] + 1)).zfill(3)
             subject = sub_dir + '_' + ses_dir
 
             # input files
             notts_opm_mat_file = op.join(subjects_dir, sub_dir, ses_dir, subject + '_meg.mat')
             smri_file = op.join(subjects_dir, sub_dir, 'mri', sub_dir + '.nii')
+            smri_fixed_file = op.join(subjects_dir, sub_dir, 'mri', sub_dir + '_fixed.nii')
             tsv_file = op.join(subjects_dir, sub_dir, ses_dir, subject + '_channels.tsv')
 
             # output files
@@ -78,10 +82,12 @@ for sub in subjects_to_do:
             # check opm file and structural file exists for this subject
             if op.exists(notts_opm_mat_file) and op.exists(smri_file):
                 subjects.append(subject)
+                sub_dirs.append(sub_dir)
                 notts_opm_mat_files.append(notts_opm_mat_file)
                 smri_files.append(smri_file)
-                tsv_files.append(tsv_file)
 
+                smri_fixed_files.append(smri_fixed_file)
+                tsv_files.append(tsv_file)
                 fif_files.append(fif_file)
                 preproc_fif_files.append(preproc_fif_file)
 
@@ -89,32 +95,16 @@ for sub in subjects_to_do:
                 if not os.path.isdir(op.join(subjects_dir, subject)):
                     os.mkdir(op.join(subjects_dir, subject))
 
-
 # -------------------------------------------------------------
 # %% Create fif files
 
 if run_convert:
-    for notts_opm_mat_file, tsv_file, fif_file in zip(notts_opm_mat_files, tsv_files, fif_files):
-        opm.convert_notts(notts_opm_mat_file, tsv_file, fif_file)
+    for notts_opm_mat_file, tsv_file, fif_file, smri_file, smri_fixed_file in zip(notts_opm_mat_files, tsv_files,
+                                                                                  fif_files, smri_files,
+                                                                                  smri_fixed_files):
+        opm.convert_notts(notts_opm_mat_file, smri_file, tsv_file, fif_file, smri_fixed_file)
 
-# -------------------------------------------------------------
-# %% Sort out structural
-
-if False:
-    smri_file_new = op.join(subjects_dir, sub_dir, 'mri', sub_dir +'_copy.nii.gz')
-
-    # Copy smri_name to new file for modification
-    copyfile(smri_file_in, smri_file_new)
-
-    smri = nib.load(smri_file_new)
-    sform = smri.header.get_sform()
-    sform_std = np.copy(sform)
-    sform_std[0, 0:4] = [1, 0, 0, -90]
-    sform_std[1, 0:4] = [0, -1, 0, 126]
-    sform_std[2, 0:4] = [0, 0, -1, 72]
-    rhino.rhino_utils.system_call('fslorient -setsform {} {}'.format(' '.join(map(str, sform_std.flatten())), smri_file_new))
-
-    smri_file = smri_file_new
+smri_files = smri_fixed_files
 
 # -------------------------------------------------------------
 # %% Run preproc
@@ -126,9 +116,9 @@ if run_preproc:
       event_codes:
 
     preproc:
+        - crop:         {tmin: 5}
         - resample:     {sfreq: 150, n_jobs: 6}            
         - filter:       {l_freq: 4, h_freq: 45}
-        - bad_segments: {segment_len: 800, picks: 'meg', significance_level: 0.1}
         - bad_channels: {picks: 'meg'}        
     """
 
@@ -144,6 +134,31 @@ if run_preproc:
             preproc_fif_file
         ))
 
+
+if False:
+    # to just run coreg for subject 0:
+    source_recon.rhino.coreg(
+        preproc_fif_files[0],
+        recon_dir,
+        subjects[0],
+        already_coregistered=True
+    )
+
+    # to view coreg result for subject 0:
+    source_recon.rhino.coreg_display(recon_dir, subjects[2],
+                                     plot_type='surf')
+
+    # to just run surfaces for subject 0:
+    source_recon.rhino.compute_surfaces(
+        smri_files[0],
+        recon_dir,
+        subjects[0],
+        overwrite=True
+    )
+
+    # to view surfaces for subject 0:
+    source_recon.rhino.surfaces_display(recon_dir, subjects[3])
+
 # -------------------------------------------------------------
 # %% Coreg and Source recon and Parcellate
 
@@ -152,15 +167,16 @@ if run_beamform_and_parcellate:
     config = """
         source_recon:
         - coregister:
-            include_nose: False
-            use_nose: False
+            include_nose: false
+            use_nose: false
             use_headshape: true
             model: Single Layer
             already_coregistered: true
+            overwrite: false
         - beamform_and_parcellate:
             freq_range: [5, 40]
             chantypes: mag
-            rank: {mag: 120}
+            rank: {mag: 100}
             parcellation_file: fmri_d100_parcellation_with_PCC_reduced_2mm_ss5mm_ds8mm.nii.gz
             method: spatial_basis
             orthogonalisation: symmetric
@@ -173,10 +189,6 @@ if run_beamform_and_parcellate:
         preproc_files=preproc_fif_files,
         smri_files=smri_files,
     )
-
-    if False:
-        source_recon.rhino.coreg_display(recon_dir, subjects[0],
-                        plot_type='surf')
 
 if False:
     # -------------------------------------------------------------
@@ -193,7 +205,6 @@ if False:
 # %% Sign flip
 
 if run_fix_sign_ambiguity:
-
     # Find a good template subject to align other subjects to
     template = source_recon.find_template_subject(
         recon_dir, subjects, n_embeddings=15, standardize=True
