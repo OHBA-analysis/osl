@@ -7,13 +7,15 @@ Created on Tue Nov  9 15:39:24 2021
 """
 
 import os.path
+from shutil import copyfile
+import nibabel as nib
 
 import numpy as np
 
 import mne
 from mne.io import _coil_trans_to_loc
 from mne.io.constants import FIFF
-from mne.transforms import Transform
+from mne.transforms import Transform, apply_trans
 
 import pandas as pd
 import scipy
@@ -21,7 +23,16 @@ import scipy
 # -------------------------------------------------------------
 # %% Get sensor locations and orientations from tsv file
 
-def convert_notts(notts_opm_mat_file, tsv_file, fif_file):
+def convert_notts(notts_opm_mat_file, smri_file, tsv_file, fif_file, smri_fixed_file):
+
+    # correct sform for smri
+    sform_std_fixed = correct_mri(smri_file, smri_fixed_file)
+
+    # Note that later in this function, we will also apply this sform to
+    # the sensor coordinates.
+    # This is because, with the OPM Notts data, coregistration on the sensor coordinations 
+    # has already been carried out, and so the sensor coordinates need to stay matching 
+    # the coordinates used in the MRI
 
     # Convert passed in OPM matlab file and tsv file to fif file
 
@@ -29,9 +40,21 @@ def convert_notts(notts_opm_mat_file, tsv_file, fif_file):
     chan_info = pd.read_csv(tsv_file, header=None, skiprows=[0], sep='\t')
 
     sensor_names = chan_info.iloc[:, 0].to_numpy().T
-    sensor_locs = chan_info.iloc[:, 4:7].to_numpy().T
+    sensor_locs = chan_info.iloc[:, 4:7].to_numpy().T # in metres
     sensor_oris = chan_info.iloc[:, 7:10].to_numpy().T
     sensor_bads = chan_info.iloc[:, 3].to_numpy().T
+
+    #import pdb; pdb.set_trace()
+        
+    # Need to undo orginal sform on sensor locs and then apply new sform
+    smri = nib.load(smri_file)
+    overall_xform = sform_std_fixed @ np.linalg.pinv(smri.header.get_sform())
+    
+    # This trans isn't really mri to head, it is mri to "mri_fixed", but mri_fixed is not available as an option
+    overall_xform_trans = Transform('mri', 'head', overall_xform)
+    
+    # Note sensor_locs are in metres, overall_xform_trans is in mm
+    sensor_locs = apply_trans(overall_xform_trans, sensor_locs.T*1000).T/1000
 
     # -------------------------------------------------------------
     # %% Create fif file from mat file and chan_info
@@ -146,6 +169,27 @@ def convert_notts(notts_opm_mat_file, tsv_file, fif_file):
     data = scipy.io.loadmat(notts_opm_mat_file)['data'].T * 1e-15  # fT
     raw = mne.io.RawArray(data, info)
     raw.save(fif_file, overwrite=True)
+
+def correct_mri(smri_file, smri_fixed_file):
+
+    # Copy smri_name to new file for modification
+    copyfile(smri_file, smri_fixed_file)
+
+    smri = nib.load(smri_fixed_file)
+    sform = smri.header.get_sform()
+    sform_std = np.copy(sform)
+
+    # sform_std[0, 0:4] = [-1, 0, 0, 128]
+    # sform_std[1, 0:4] = [0, 1, 0, -128]
+    # sform_std[2, 0:4] = [0, 0, 1, -90]
+
+    sform_std[0, 0:4] = [1, 0, 0, -90]
+    sform_std[1, 0:4] = [0, -1, 0, 126]
+    sform_std[2, 0:4] = [0, 0, -1, 72]
+    
+    os.system('fslorient -setsform {} {}'.format(' '.join(map(str, sform_std.flatten())), smri_fixed_file))
+
+    return sform_std
 
 #########################################################################
 

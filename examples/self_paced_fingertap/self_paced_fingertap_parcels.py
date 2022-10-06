@@ -19,7 +19,7 @@ import glmtools
 
 import mne
 
-subjects_dir = "/Users/woolrich/homedir/vols_data/mne/self_paced_fingertap"
+subjects_dir = "/Users/woolrich/homedir/vols_data/self_paced_fingertap"
 subject = "subject1"
 
 # load precomputed forward solution
