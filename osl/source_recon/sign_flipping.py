@@ -48,7 +48,8 @@ def find_flips(cov, template_cov, n_embeddings, n_init, n_iter, max_flips, logge
         Evaluation metric (correlation between covariance matrices) as a function
         of iterations. Shape is (n_iter,).
     """
-    log_or_print("find_flips", logger)
+    if logger is not None:
+        log_or_print("find_flips", logger)
 
     # Get the number of channels
     n_channels = cov.shape[-1] // n_embeddings
@@ -73,7 +74,11 @@ def find_flips(cov, template_cov, n_embeddings, n_init, n_iter, max_flips, logge
             log_or_print(f"init {n}, unflipped metric: {metric}", logger)
 
         # Randomly permute the sign of different channels and calculate the metric
-        for j in range(n_iter):
+        if logger is None:
+            iterator = trange(n_iter, desc="sign flipping", ncols=98)
+        else:
+            iterator = range(n_iter)
+        for j in iterator:
             new_flips = randomly_flip(flips, max_flips)
             new_cov = apply_flips_to_covariance(cov, new_flips, n_embeddings)
             new_metric = covariance_matrix_correlation(
@@ -96,7 +101,9 @@ def find_flips(cov, template_cov, n_embeddings, n_init, n_iter, max_flips, logge
     return best_flips, metrics
 
 
-def load_covariances(parc_files, n_embeddings=1, standardize=True, use_tqdm=True):
+def load_covariances(
+    parc_files, n_embeddings=1, standardize=True, loader=np.load, use_tqdm=True
+):
     """Loads data and returns its covariance matrix.
 
     Parameters
@@ -107,6 +114,10 @@ def load_covariances(parc_files, n_embeddings=1, standardize=True, use_tqdm=True
         Number of time-delay embeddings to perform.
     standardize : bool
         Should we standardize the data?
+    loader : function
+        Custom function to load parcellated data files.
+    use_tqdm : bool
+        Should we display a tqdm progress bar?
 
     Returns
     -------
@@ -120,7 +131,7 @@ def load_covariances(parc_files, n_embeddings=1, standardize=True, use_tqdm=True
         iterator = range(len(parc_files))
     for i in iterator:
         # Load data
-        x = np.load(parc_files[i])
+        x = loader(parc_files[i])
 
         # Prepare
         x = time_embed(x, n_embeddings)
@@ -165,9 +176,9 @@ def find_template_subject(covs, diag_offset=0):
 
     # Get the median subject
     metric_sum = np.sum(metric, axis=1)
-    median = np.median(metric_sum)
+    argmedian = np.argsort(metric_sum)[len(metric_sum) // 2]
 
-    return np.argwhere(metric_sum == median)[0][0]
+    return argmedian
 
 
 def covariance_matrix_correlation(M1, M2, diag_offset=0, mode=None):

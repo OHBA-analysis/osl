@@ -122,8 +122,11 @@ def gen_html_data(raw, outdir, ica=None, logger=None):
     # Head digitisation
     dig_codes = ('Cardinal', 'HPI', 'EEG', 'Extra')
     dig_counts = np.zeros((4,))
-    for ii in range(1, 5):
-        dig_counts[ii-1] = np.sum([d['kind'] == ii for d in raw.info['dig']])
+
+    # Only run this if digitisation is available
+    if raw.info['dig']:
+        for ii in range(1, 5):
+            dig_counts[ii-1] = np.sum([d['kind'] == ii for d in raw.info['dig']])
     #d, dcounts = np.unique(digs, return_counts=True)
     data['digitable'] = tabulate(np.c_[dig_codes, dig_counts], tablefmt='html',
                                  headers=['Digitisation Stage', 'Points Acquired'])
@@ -484,6 +487,10 @@ def plot_spectra(raw, savebase=None):
 
 def plot_digitisation_2d(raw, savebase=None):
     """Plots the digitisation and headshape."""
+
+    # Return if no digitisation available
+    if not raw.info['dig']:
+        return None
 
     # Make plot
     fig = plt.figure(figsize=(16, 4))

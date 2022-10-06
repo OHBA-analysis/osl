@@ -3,6 +3,7 @@
 """
 
 # Authors: Andrew Quinn <a.quinn@bham.ac.uk>
+#          Mats van Es <mats.vanes@psych.ox.ac.uk>
 
 import os
 import mne
@@ -10,6 +11,8 @@ import sys
 import argparse
 import tempfile
 import numpy as np
+from ..utils import validate_outdir, add_subdir
+
 
 
 def _add_headpos(cmd, args, outfif):
@@ -331,7 +334,7 @@ def run_multistage_maxfilter(infif, outbase, args):
         if key in args:
             stage1_args[key] = args[key]
 
-    outfif, outlog = run_maxfilter(infif, outfif, stage1_args, '_autobad')
+    outfif, outlog = run_maxfilter(infif, outfif, stage1_args)
 
     if args['dryrun'] is False:
         # Read in bad channels from logfile
@@ -366,7 +369,7 @@ def run_multistage_maxfilter(infif, outbase, args):
         if key in args:
             stage2_args[key] = args[key]
 
-    outfif, outlog = run_maxfilter(infif, outfif, stage2_args, '_tsss')
+    outfif, outlog = run_maxfilter(infif, outfif, stage2_args)
 
     # --------------------------------------
     # Stage 3 - Translate to reference file
@@ -387,7 +390,7 @@ def run_multistage_maxfilter(infif, outbase, args):
             if key in args:
                 stage3_args[key] = args[key]
 
-        outfif, outlog = run_maxfilter(infif, outfif, stage3_args, '_trans')
+        outfif, outlog = run_maxfilter(infif, outfif, stage3_args)
 
 
 def run_cbu_3stage_maxfilter(infif, outbase, args):
@@ -415,7 +418,7 @@ def run_cbu_3stage_maxfilter(infif, outbase, args):
         if key in args:
             stage1_args[key] = args[key]
 
-    outfif, outlog = run_maxfilter(infif, outfif, stage1_args, '_autobad')
+    outfif, outlog = run_maxfilter(infif, outfif, stage1_args)
 
     if args['dryrun'] is False:
         # Read in bad channels from logfile
@@ -452,7 +455,7 @@ def run_cbu_3stage_maxfilter(infif, outbase, args):
         if key in args:
             stage2_args[key] = args[key]
 
-    outfif, outlog = run_maxfilter(infif, outfif, stage2_args, '_tsss')
+    outfif, outlog = run_maxfilter(infif, outfif, stage2_args)
 
     # --------------------------------------
     # Stage 3 - Translate to default
@@ -473,14 +476,13 @@ def run_cbu_3stage_maxfilter(infif, outbase, args):
         if key in args:
             stage3_args[key] = args[key]
 
-    outfif, outlog = run_maxfilter(infif, outfif, stage3_args, '_trans')
+    outfif, outlog = run_maxfilter(infif, outfif, stage3_args)
 
 
 # -------------------------------------------------
 
 
 def main(argv=None):
-
     if argv is None:
         argv = sys.argv[1:]
     print(argv)
@@ -576,8 +578,11 @@ def main(argv=None):
     if args.outdir == 'adjacent':
         print('Outputs will be saved alongside inputs\n\n')
     else:
-        if os.path.isdir(args.outdir) is False:
-            sys.exit('Output directory not found ({0})'.format(args.trans))
+        if '{' in args.outdir and '}' in args.outdir:
+            # validate the parrent outdir - later do so for each subdirectory
+            _ = validate_outdir(args.outdir.split('{')[0])
+        else:
+            args.outdir = validate_outdir(args.outdir)
         print('Outputs saving to: {0}\n\n'.format(args.outdir))
 
     # -------------------------------------------------
@@ -600,7 +605,9 @@ def main(argv=None):
         if args.outdir == 'adjacent':
             outfif = fif[:-4]
         else:
-            outfif = os.path.join(args.outdir, outname)[:-4]
+            outdir = add_subdir(fif, args.outdir)
+            outdir = validate_outdir(outdir)
+            outfif = os.path.join(outdir, outname)[:-4]
 
         # Skip run if the output exists and we don't want to overwrite
         if os.path.isfile(outfif) and (args.overwrite is False):
