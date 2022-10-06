@@ -56,6 +56,10 @@
             <h4>Variance Across Sensors</h4>
             <img src="{{ data.plt_temporalsumsq }}" alt="" style='max-width: 100%'/>
         </div>
+        <div style="width: 100%">
+            <h4>Variance Across Sensors Excluding Bad Segs</h4>
+            <img src="{{ data.plt_temporalsumsq_exclude_badsegs }}" alt="" style='max-width: 100%'/>
+        </div>
         {% if data.plt_artefacts_eog is not none %}
             <div style="width: 100%">
                 <h4>EOG Recording</h4>
@@ -72,8 +76,12 @@
         
     <div class="tabpage" style="width: 100%; display: none" id={{ data.fif_id }}_channels>
         <div style="width: 75%; margin:0 auto">
-            <h4>Distribution of Per-Sensor Variance Across Recording</h4>
+            <h4>Distribution of Per-Sensor Variance</h4>
             <img src="{{ data.plt_channeldev }}" alt="" style='max-width: 100%'/>
+        </div>
+        <div style="width: 75%; margin:0 auto">
+            <h4>Distribution of Per-Sensor Variance Excluding Bad Chans</h4>
+            <img src="{{ data.plt_channeldev_exclude_badchans }}" alt="" style='max-width: 100%'/>
         </div>
         <div style="width: 100%">
             <h4>Bad channels</h4>
