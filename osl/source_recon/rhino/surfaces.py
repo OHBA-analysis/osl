@@ -24,7 +24,6 @@ from mne.transforms import write_trans, Transform
 import osl.source_recon.rhino.utils as rhino_utils
 from osl.utils.logger import log_or_print
 
-
 def get_surfaces_filenames(subjects_dir, subject):
     """
     Generates a dict of files generated and used by rhino.compute_surfaces.
@@ -96,6 +95,7 @@ def compute_surfaces(
     subject,
     include_nose=True,
     cleanup_files=True,
+    overwrite=False,
     logger=None,
 ):
     """Compute surfaces.
@@ -149,6 +149,9 @@ def compute_surfaces(
         Requires the smri_file to have a FOV that includes the nose!
     cleanup_files : bool
         Specifies whether to cleanup intermediate files in the coreg dir.
+    overwrite: bool
+        Specifies whether or not to run compute_surfaces, if the passed in
+        options have already been run
     logger : logging.getLogger
         Logger.
     """
@@ -163,22 +166,23 @@ def compute_surfaces(
 
     filenames = get_surfaces_filenames(subjects_dir, subject)
 
-    # Check if surface have already been computed
-    if Path(filenames["completed"]).exists():
-        with open(filenames["completed"], "r") as file:
-            lines = file.readlines()
-            completed_mri_file = lines[1].split(":")[1].strip()
-            completed_include_nose = lines[2].split(":")[1].strip() == "True"
-            is_same_mri = completed_mri_file == filenames["smri_file"]
-            is_same_include_nose = completed_include_nose == include_nose
-            if is_same_mri and is_same_include_nose:
-                log_or_print(
-                    "*** OSL RHINO: USING PREVIOUSLY COMPUTED SURFACES ***",
-                    logger,
-                )
-                log_or_print(f"Surfaces directory: {filenames['basedir']}", logger)
-                log_or_print(f"include_nose={completed_include_nose}", logger)
-                return
+    if not overwrite:
+        # Check if surfaces have already been computed
+        if Path(filenames["completed"]).exists():
+            with open(filenames["completed"], "r") as file:
+                lines = file.readlines()
+                completed_mri_file = lines[1].split(":")[1].strip()
+                completed_include_nose = lines[2].split(":")[1].strip() == "True"
+                is_same_mri = completed_mri_file == filenames["smri_file"]
+                is_same_include_nose = completed_include_nose == include_nose
+                if is_same_mri and is_same_include_nose:
+                    log_or_print(
+                        "*** OSL RHINO: USING PREVIOUSLY COMPUTED SURFACES ***",
+                        logger,
+                    )
+                    log_or_print(f"Surfaces directory: {filenames['basedir']}", logger)
+                    log_or_print(f"include_nose={completed_include_nose}", logger)
+                    return
 
     log_or_print("*** RUNNING OSL RHINO COMPUTE SURFACES ***", logger)
     if include_nose:
@@ -237,6 +241,16 @@ please check output of:\n fslorient -orient {}".format(filenames["smri_file"])
         rhino_utils.system_call(
             "fslorient -forceradiological {}".format(filenames["smri_file"])
         )
+
+    log_or_print("You can use the following call to check the passed in structural MRI is appropriate, \n\
+including checking that the L-R, S-I, A-P labels are sensible:\n\
+   In Python:\n\
+   fsleyes(\"{}\", \"{}\")\n\
+   From the cmd line:\n\
+   fsleyes {} {}".format(
+        filenames["smri_file"], filenames["std_brain"],
+        filenames["smri_file"], filenames["std_brain"]),
+        logger)
 
     # -------------------------------------------------------------------------
     # 1) Transform sMRI to be aligned with the MNI axes so that BET works well
@@ -631,6 +645,8 @@ please check output of:\n fslorient -orient {}".format(filenames["smri_file"])
             "rm -f {}".format(op.join(filenames["basedir"], "flirt*"))
         )
 
+    log_or_print("rhino.surfaces_display(\"{}\", \"{}\") can be used to check the result".format(
+        subjects_dir, subject), logger)
     log_or_print("*** OSL RHINO COMPUTE SURFACES COMPLETE ***", logger)
 
 

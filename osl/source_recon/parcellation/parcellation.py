@@ -157,6 +157,8 @@ class Parcellation:
         Parameters
         ----------
         parcel_timeseries_data : numpy.ndarray
+            Needs to have same number of parcels as the parcellation
+            Needs to be nparcels x ntpts
         method : str
             Method used to allocate values to voxels given the parcel values,
             use either:
@@ -547,13 +549,15 @@ def _parcel_timeseries2nii(
     times=None,
     method="assignments",
 ):
-    """Outputs parcel_timeseries_data as a niftii file using passed in parcellation
+    """Outputs parcel_timeseries_data as a niftii file using passed in parcellation,
+    parcellation and parcel_timeseries_data need to have the same number of parcels.
 
     Parameters
     ----------
     parcellation : parcellation.Parcellation
         Parcellation to use
     parcel_timeseries_data: numpy.ndarray
+        Needs to be nparcels x ntpts
     working_dir : str
         Dir name to put files in
     out_nii_fname : str
@@ -736,7 +740,7 @@ def symmetric_orthogonalise(
         # polar factors of A
         ortho_timeseries = U @ np.conjugate(V)
     else:
-        raise ValueError("Not full rank")
+        raise ValueError("Not full rank, rank required is {}, but rank is only {}".format(timeseries.shape[1], r))
 
     if compute_weights:
         # weights are a weighting matrix such that,

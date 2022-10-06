@@ -199,7 +199,7 @@ def run_src_chain(
         logger.error(traceback.print_tb(ex_traceback))
 
         with open(logfile.replace(".log", ".error.log"), "w") as f:
-            f.write('Processing filed during stage : "{0}"'.format(method))
+            f.write('Processing failed during stage : "{0}"'.format(method))
             f.write(str(ex_type))
             f.write("\n")
             f.write(str(ex_value))
