@@ -61,17 +61,20 @@ def detect_maxfilt_zeros(raw):
         return None
 
 
-def detect_badsegments(raw, segment_len=1000, significance_level=0.05, picks="grad", mode=None):
+def detect_badsegments(raw, segment_len=1000, significance_level=0.05, picks="grad", mode=None, detect_zeros=True):
     """Set bad segments in MNE object."""
     if mode is None:
-        bdinds_maxfilt = detect_maxfilt_zeros(raw)
+        if detect_zeros:
+            bdinds_maxfilt = detect_maxfilt_zeros(raw)
+        else:
+            bdinds_maxfilt = None
         XX = raw.get_data(picks=picks)
     elif mode == "diff":
         bdinds_maxfilt = None
         XX = np.diff(raw.get_data(picks=picks), axis=1)
 
     gesd_args = {'alpha': significance_level}
-    bdinds = sails.utils.detect_artefacts(
+    bdinds_std = sails.utils.detect_artefacts(
         XX, 1, reject_mode="segments", segment_len=segment_len, ret_mode="bad_inds", gesd_args = gesd_args
     )
     for count, bdinds in enumerate([bdinds_std, bdinds_maxfilt]):
