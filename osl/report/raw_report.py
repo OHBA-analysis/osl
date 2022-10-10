@@ -629,6 +629,11 @@ def plot_bad_ica(raw, ica, savebase):
     exclude_uniq = np.sort(np.unique(ica.exclude))[::-1]
     nbad = len(exclude_uniq)
 
+    # Handle the case when ica.labels_ is empty
+    if not ica.labels_:
+        # Make a dummy labels_ dict
+        ica.labels_ = {ica._ica_names[exc]: '' for exc in exclude_uniq}
+
     # Create figure
     fig = plt.figure(figsize=(16, 5 * nbad), facecolor=[0.95] * 3)
     axes = []
