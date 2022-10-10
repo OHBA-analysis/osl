@@ -153,3 +153,20 @@ def run_osl_bad_channels(dataset, userargs, logfile=None):
     logger.info("userargs: {0}".format(str(userargs)))
     dataset["raw"] = detect_badchannels(dataset["raw"], **userargs)
     return dataset
+
+
+def run_osl_ica_manualreject(dataset, userargs):
+    target = userargs.pop("target", "raw")
+    logger.info("OSL Stage - {0}".format("ICA Manual Reject"))
+    logger.info("userargs: {0}".format(str(userargs)))
+
+    from .plot_ica import plot_ica
+
+    plot_ica(dataset["ica"], dataset["raw"], block=True)
+    logger.info("Removing {0} IC".format(len(dataset["ica"].exclude)))
+    if np.logical_or("apply" not in userargs, userargs["apply"] is True):
+        logger.info("Removing selected components from raw data")
+        dataset["ica"].apply(dataset["raw"])
+    else:
+        logger.info("Components were not removed from raw data")
+    return dataset
