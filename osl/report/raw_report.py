@@ -629,8 +629,8 @@ def plot_bad_ica(raw, ica, savebase):
     exclude_uniq = np.sort(np.unique(ica.exclude))[::-1]
     nbad = len(exclude_uniq)
 
-    # Handle the case when ica.labels_ is empty
-    if not ica.labels_:
+    # Handle the case when ica.labels_ and ica.exclude don't match
+    if len(ica.labels_) != nbad:
         # Make a dummy labels_ dict
         ica.labels_ = {ica._ica_names[exc]: '' for exc in exclude_uniq}
 
