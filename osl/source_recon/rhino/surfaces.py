@@ -242,15 +242,21 @@ please check output of:\n fslorient -orient {}".format(filenames["smri_file"])
             "fslorient -forceradiological {}".format(filenames["smri_file"])
         )
 
-    log_or_print("You can use the following call to check the passed in structural MRI is appropriate, \n\
-including checking that the L-R, S-I, A-P labels are sensible:\n\
-   In Python:\n\
-   fsleyes(\"{}\", \"{}\")\n\
-   From the cmd line:\n\
-   fsleyes {} {}".format(
-        filenames["smri_file"], filenames["std_brain"],
-        filenames["smri_file"], filenames["std_brain"]),
-        logger)
+    log_or_print(
+        "You can use the following call to check the passed in structural MRI is appropriate,",
+        logger,
+    )
+    log_or_print("including checking that the L-R, S-I, A-P labels are sensible:", logger)
+    log_or_print("In Python:", logger)
+    log_or_print("fsleyes(\"{}\", \"{}\")", logger)
+    log_or_print("From the cmd line:", logger)
+    log_or_print(
+        "fsleyes {} {}".format(
+            filenames["smri_file"], filenames["std_brain"],
+            filenames["smri_file"], filenames["std_brain"],
+        ),
+        logger,
+    )
 
     # -------------------------------------------------------------------------
     # 1) Transform sMRI to be aligned with the MNI axes so that BET works well
