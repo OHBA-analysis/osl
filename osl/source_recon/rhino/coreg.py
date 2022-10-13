@@ -407,7 +407,7 @@ def coreg_display(
     subject,
     plot_type="surf",
     display_outskin=True,
-    display_outskin_with_nose=True,
+    display_outskin_with_nose=False,
     display_sensors=True,
     display_sensor_oris=True,
     display_fiducials=True,
