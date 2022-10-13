@@ -673,7 +673,8 @@ def run_proc_chain(
     try:
         if isinstance(infile, str):
             raw = import_data(infile)
-        elif isinstance(infile, mne.io.fiff.raw.Raw):
+        elif (isinstance(infile, mne.io.fiff.raw.Raw)
+              or isinstance(infile, mne.io.curry.curry.RawCurry)):
             raw = infile
             infile = raw.filenames[0]  # assuming only one file here
 
