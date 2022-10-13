@@ -76,6 +76,124 @@ def extract_fiducials_from_fif(
     logger.info(f"saved: {filenames['polhemus_lpa_file']}")
 
 
+def compute_surfaces(
+    src_dir,
+    subject,
+    preproc_file,
+    smri_file,
+    logger,
+    include_nose,
+    overwrite=False,
+):
+    """Wrapper for computing surfaces.
+
+    Parameters
+    ----------
+    src_dir : str
+        Path to where to output the source reconstruction files.
+    subject : str
+        Subject name/id.
+    preproc_file : str
+        Path to the preprocessed fif file.
+    smri_file : str
+        Path to the T1 weighted structural MRI file to use in source reconstruction.
+    logger : logging.getLogger
+        Logger.
+    include_nose : bool
+        Should we include the nose when we're extracting the surfaces?
+    overwrite: bool
+        Specifies whether or not to run compute_surfaces, if the passed in
+        options have already been run
+    """
+    # Compute surfaces
+    rhino.compute_surfaces(
+        smri_file=smri_file,
+        subjects_dir=src_dir,
+        subject=subject,
+        include_nose=include_nose,
+        overwrite=overwrite,
+        logger=logger,
+    )
+
+
+def coreg(
+    src_dir,
+    subject,
+    preproc_file,
+    smri_file,
+    logger,
+    use_nose,
+    use_headshape,
+    already_coregistered=False,
+):
+    """Wrapper for full coregistration: compute_surfaces, coreg and forward_model.
+
+    Parameters
+    ----------
+    src_dir : str
+        Path to where to output the source reconstruction files.
+    subject : str
+        Subject name/id.
+    preproc_file : str
+        Path to the preprocessed fif file.
+    smri_file : str
+        Path to the T1 weighted structural MRI file to use in source reconstruction.
+    logger : logging.getLogger
+        Logger.
+    use_nose : bool
+        Should we use the nose in the coregistration?
+    use_headshape : bool
+        Should we use the headshape points in the coregistration?
+    already_coregistered : bool
+        Indicates that the data is already coregistered.
+    """
+    # Run coregistration
+    rhino.coreg(
+        fif_file=preproc_file,
+        subjects_dir=src_dir,
+        subject=subject,
+        use_headshape=use_headshape,
+        use_nose=use_nose,
+        already_coregistered=already_coregistered,
+        logger=logger,
+    )
+
+
+def forward_model(
+    src_dir,
+    subject,
+    preproc_file,
+    smri_file,
+    logger,
+    model,
+    eeg=False,
+):
+    """Wrapper for computing the forward model.
+
+    Parameters
+    ----------
+    src_dir : str
+        Path to where to output the source reconstruction files.
+    subject : str
+        Subject name/id.
+    preproc_file : str
+        Path to the preprocessed fif file.
+    smri_file : str
+        Path to the T1 weighted structural MRI file to use in source reconstruction.
+    logger : logging.getLogger
+        Logger.
+    eeg : bool
+        Are we using EEG channels in the source reconstruction?
+    """
+    # Compute forward model
+    rhino.forward_model(
+        subjects_dir=src_dir,
+        subject=subject,
+        model=model,
+        eeg=eeg,
+        logger=logger,
+    )
+
 def coregister(
     src_dir,
     subject,
@@ -86,11 +204,11 @@ def coregister(
     use_nose,
     use_headshape,
     model,
-    already_coregistered=False,
     overwrite=False,
+    already_coregistered=False,
     eeg=False,
 ):
-    """Wrapper for coregistration.
+    """Wrapper for full coregistration: compute_surfaces, coreg and forward_model.
 
     Parameters
     ----------
@@ -112,15 +230,15 @@ def coregister(
         Should we use the headshape points in the coregistration?
     model : str
         Forward model to use.
-    already_coregistered : bool
-        Indicates that the data is already coregistered.
-    overwrite: bool
+    overwrite : bool
         Specifies whether or not to run compute_surfaces, if the passed in
         options have already been run
+    already_coregistered : bool
+        Indicates that the data is already coregistered.
     eeg : bool
         Are we using EEG channels in the source reconstruction?
     """
-    # Compute surface
+    # Compute surfaces
     rhino.compute_surfaces(
         smri_file=smri_file,
         subjects_dir=src_dir,

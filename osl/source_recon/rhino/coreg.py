@@ -400,7 +400,7 @@ def coreg(
 
     log_or_print("rhino.coreg_display(\"{}\", \"{}\") can be used to check the result".format(
         subjects_dir, subject), logger)
-    print('*** OSL RHINO COREGISTRATION COMPLETE ***')
+    log_or_print('*** OSL RHINO COREGISTRATION COMPLETE ***', logger)
 
 def coreg_display(
     subjects_dir,
