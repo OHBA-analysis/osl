@@ -76,6 +76,124 @@ def extract_fiducials_from_fif(
     logger.info(f"saved: {filenames['polhemus_lpa_file']}")
 
 
+def compute_surfaces(
+    src_dir,
+    subject,
+    preproc_file,
+    smri_file,
+    logger,
+    include_nose,
+    overwrite=False,
+):
+    """Wrapper for computing surfaces.
+
+    Parameters
+    ----------
+    src_dir : str
+        Path to where to output the source reconstruction files.
+    subject : str
+        Subject name/id.
+    preproc_file : str
+        Path to the preprocessed fif file.
+    smri_file : str
+        Path to the T1 weighted structural MRI file to use in source reconstruction.
+    logger : logging.getLogger
+        Logger.
+    include_nose : bool
+        Should we include the nose when we're extracting the surfaces?
+    overwrite: bool
+        Specifies whether or not to run compute_surfaces, if the passed in
+        options have already been run
+    """
+    # Compute surfaces
+    rhino.compute_surfaces(
+        smri_file=smri_file,
+        subjects_dir=src_dir,
+        subject=subject,
+        include_nose=include_nose,
+        overwrite=overwrite,
+        logger=logger,
+    )
+
+
+def coreg(
+    src_dir,
+    subject,
+    preproc_file,
+    smri_file,
+    logger,
+    use_nose,
+    use_headshape,
+    already_coregistered=False,
+):
+    """Wrapper for full coregistration: compute_surfaces, coreg and forward_model.
+
+    Parameters
+    ----------
+    src_dir : str
+        Path to where to output the source reconstruction files.
+    subject : str
+        Subject name/id.
+    preproc_file : str
+        Path to the preprocessed fif file.
+    smri_file : str
+        Path to the T1 weighted structural MRI file to use in source reconstruction.
+    logger : logging.getLogger
+        Logger.
+    use_nose : bool
+        Should we use the nose in the coregistration?
+    use_headshape : bool
+        Should we use the headshape points in the coregistration?
+    already_coregistered : bool
+        Indicates that the data is already coregistered.
+    """
+    # Run coregistration
+    rhino.coreg(
+        fif_file=preproc_file,
+        subjects_dir=src_dir,
+        subject=subject,
+        use_headshape=use_headshape,
+        use_nose=use_nose,
+        already_coregistered=already_coregistered,
+        logger=logger,
+    )
+
+
+def forward_model(
+    src_dir,
+    subject,
+    preproc_file,
+    smri_file,
+    logger,
+    model,
+    eeg=False,
+):
+    """Wrapper for computing the forward model.
+
+    Parameters
+    ----------
+    src_dir : str
+        Path to where to output the source reconstruction files.
+    subject : str
+        Subject name/id.
+    preproc_file : str
+        Path to the preprocessed fif file.
+    smri_file : str
+        Path to the T1 weighted structural MRI file to use in source reconstruction.
+    logger : logging.getLogger
+        Logger.
+    eeg : bool
+        Are we using EEG channels in the source reconstruction?
+    """
+    # Compute forward model
+    rhino.forward_model(
+        subjects_dir=src_dir,
+        subject=subject,
+        model=model,
+        eeg=eeg,
+        logger=logger,
+    )
+
 def coregister(
     src_dir,
     subject,
@@ -86,11 +204,11 @@ def coregister(
     use_nose,
     use_headshape,
     model,
-    already_coregistered=False,
     overwrite=False,
+    already_coregistered=False,
     eeg=False,
 ):
-    """Wrapper for coregistration.
+    """Wrapper for full coregistration: compute_surfaces, coreg and forward_model.
 
     Parameters
     ----------
@@ -112,15 +230,15 @@ def coregister(
         Should we use the headshape points in the coregistration?
     model : str
         Forward model to use.
-    already_coregistered : bool
-        Indicates that the data is already coregistered.
-    overwrite: bool
+    overwrite : bool
         Specifies whether or not to run compute_surfaces, if the passed in
         options have already been run
+    already_coregistered : bool
+        Indicates that the data is already coregistered.
     eeg : bool
         Are we using EEG channels in the source reconstruction?
     """
-    # Compute surface
+    # Compute surfaces
     rhino.compute_surfaces(
         smri_file=smri_file,
         subjects_dir=src_dir,
@@ -153,6 +271,83 @@ def coregister(
 
 # ------------------------------------------------------------------
 # Beamforming and parcellation wrappers
+
+
+def beamform(
+    src_dir,
+    subject,
+    preproc_file,
+    smri_file,
+    logger,
+    chantypes,
+    rank,
+    freq_range,
+):
+    """Wrapper function for beamforming.
+
+    Parameters
+    ----------
+    src_dir : str
+        Path to where to output the source reconstruction files.
+    subject : str
+        Subject name/id.
+    preproc_file : str
+        Path to the preprocessed fif file.
+    smri_file : str
+        Path to the T1 weighted structural MRI file to use in source reconstruction.
+    logger : logging.getLogger
+        Logger.
+    chantypes : list of str
+        Channel types to use in beamforming.
+    rank : dict
+        Keys should be the channel types and the value should be the rank to use.
+    freq_range : list
+        Lower and upper band to bandpass filter before beamforming. If None,
+        no filtering is done.
+    """
+    from ..preprocessing import import_data
+
+    # Load preprocessed data
+    preproc_data = import_data(preproc_file)
+    preproc_data.pick(chantypes)
+
+    if freq_range is not None:
+        # Bandpass filter
+        logger.info("bandpass filtering: {}-{} Hz".format(freq_range[0], freq_range[1]))
+        preproc_data = preproc_data.filter(
+            l_freq=freq_range[0],
+            h_freq=freq_range[1],
+            method="iir",
+            iir_params={"order": 5, "ftype": "butter"},
+        )
+
+    # Validation
+    if isinstance(chantypes, str):
+        chantypes = [chantypes]
+
+    # Create beamforming filters
+    logger.info("beamforming.make_lcmv")
+    logger.info(f"chantypes: {chantypes}")
+    logger.info(f"rank: {rank}")
+    filters = beamforming.make_lcmv(
+        subjects_dir=src_dir,
+        subject=subject,
+        data=preproc_data,
+        chantypes=chantypes,
+        weight_norm="nai",
+        rank=rank,
+        logger=logger,
+        save_figs=True,
+    )
+
+    # Apply beamforming
+    logger.info("beamforming.apply_lcmv_raw")
+    src_data = beamforming.apply_lcmv_raw(preproc_data, filters)
+    src_ts_mni, _, src_coords_mni, _ = beamforming.transform_recon_timeseries(
+        subjects_dir=src_dir,
+        subject=subject,
+        recon_timeseries=src_data.data,
+    )
 
 
 def beamform_and_parcellate(

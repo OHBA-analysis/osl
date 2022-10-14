@@ -160,7 +160,12 @@ def run_src_chain(
     if not isinstance(config, dict):
         config = load_config(config)
 
-    doing_coreg = any(["coregister" in method for method in config["source_recon"]])
+    doing_coreg = (
+        any(["coregister" in method for method in config["source_recon"]]) or
+        any(["compute_surfaces" in method for method in config["source_recon"]]) or
+        any(["coreg" in method for method in config["source_recon"]]) or
+        any(["forward_model" in method for method in config["source_recon"]])
+    )
 
     # Note that beamform_and_parcellate is in osl.source_recon.wrappers
     doing_bf_parc = any(
@@ -208,9 +213,8 @@ def run_src_chain(
 
         return False
 
-    if doing_coreg or doing_bf_parc:
-        # Generate HTML data for the report
-        src_report.gen_html_data(config, src_dir, subject, reportdir, logger)
+    # Generate HTML data for the report
+    src_report.gen_html_data(config, src_dir, subject, reportdir, logger)
 
     return True
 
@@ -281,7 +285,12 @@ def run_src_batch(
                 f"Got {n_subjects} subjects and {n_preproc_files} preproc_files."
             )
 
-    doing_coreg = any(["coregister" in method for method in config["source_recon"]])
+    doing_coreg = (
+        any(["coregister" in method for method in config["source_recon"]]) or
+        any(["compute_surfaces" in method for method in config["source_recon"]]) or
+        any(["coreg" in method for method in config["source_recon"]]) or
+        any(["forward_model" in method for method in config["source_recon"]])
+    )
     if doing_coreg and smri_files is None:
         raise ValueError("smri_files must be passed if we are coregistering.")
     elif smri_files is None:

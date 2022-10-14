@@ -141,7 +141,12 @@ def gen_html_page(reportdir):
 
 def plot_coreg(reportdir, src_dir, subject):
     """Plot coregistration."""
-    rhino.coreg_display(src_dir, subject, filename=reportdir / subject / "coreg.html")
+    rhino.coreg_display(
+        src_dir,
+        subject,
+        filename=reportdir / subject / "coreg.html",
+        display_outskin_with_nose=False,
+    )
     return f"{subject}/coreg.html"
 
 
