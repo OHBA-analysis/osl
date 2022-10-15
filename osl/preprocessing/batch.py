@@ -872,6 +872,7 @@ def run_proc_batch(
         logsdir=logsdir,
         reportdir=reportdir,
         ret_dataset=False,
+        gen_report=gen_report,
         overwrite=overwrite,
         extra_funcs=extra_funcs,
     )

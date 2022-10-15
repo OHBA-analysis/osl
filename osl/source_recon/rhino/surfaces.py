@@ -248,13 +248,13 @@ please check output of:\n fslorient -orient {}".format(filenames["smri_file"])
     )
     log_or_print("including checking that the L-R, S-I, A-P labels are sensible:", logger)
     log_or_print("In Python:", logger)
-    log_or_print("fsleyes(\"{}\", \"{}\")", logger)
+    log_or_print(
+        "fsleyes(\"{}\", \"{}\")".format(filenames["smri_file"], filenames["std_brain"]),
+        logger,
+    )
     log_or_print("From the cmd line:", logger)
     log_or_print(
-        "fsleyes {} {}".format(
-            filenames["smri_file"], filenames["std_brain"],
-            filenames["smri_file"], filenames["std_brain"],
-        ),
+        "fsleyes {} {}".format(filenames["smri_file"], filenames["std_brain"]),
         logger,
     )
 
