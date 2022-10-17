@@ -565,7 +565,7 @@ def fix_sign_ambiguity(
     # Get path to the parcellated data file for this subject and the template
     parc_files = []
     for sub in [subject, template]:
-        parc_file = op.join(src_dir, sub, "rhino", "parc.npy")
+        parc_file = op.join(src_dir, str(sub), "rhino", "parc.npy")
         if not Path(parc_file).exists():
             raise ValueError(f"{parc_file} not found")
         parc_files.append(parc_file)
