@@ -285,14 +285,14 @@ def apply_flips(src_dir, subject, flips, logger=None):
         Logger.
     """
     # Load parcellated data
-    parc_file = op.join(src_dir, subject, "rhino", "parc.npy")
+    parc_file = op.join(src_dir, str(subject), "rhino", "parc.npy")
     data = np.load(parc_file)
 
     # Flip the sign of the channels
     flipped_data = data * flips[np.newaxis, ...]
 
     # Save
-    outfile = op.join(src_dir, subject, "sflip_parc.npy")
+    outfile = op.join(src_dir, str(subject), "sflip_parc.npy")
     log_or_print(f"saving: {outfile}", logger)
     np.save(outfile, flipped_data)
 
