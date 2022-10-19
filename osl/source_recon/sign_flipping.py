@@ -5,6 +5,7 @@
 # Authors: Chetan Gohil <chetan.gohil@psych.ox.ac.uk>
 
 import pickle
+import os
 import os.path as op
 from pathlib import Path
 
@@ -298,21 +299,17 @@ def apply_flips(src_dir, subject, flips, logger=None):
 
 
 def plot_sign_flipping(
-    src_dir, subject, cov, template_cov, n_embeddings, flips, metrics
+    cov, template_cov, n_embeddings, flips, plot_filename
 ):
-    """Plots the results of the sign flipping.
+    """Plots the results of a sign flipping
 
     Parameters
     ----------
-    src_dir : str
-        Path to source reconstruction directory.
-    subject : str
-        Subject name/id.
     cov : numpy.ndarray
-        Covariance matrix of time-delay embedded and standardized data.
+        Covariance matrix of time-delay embedded and standardized data (e.g. from one session/subject)
         Shape must be (n_channels*n_embeddings, n_channels*n_embeddings).
     template_cov : numpy.ndarray
-        Template covariance matrix of time-delay embedded and standardized data.
+        Template covariance matrix of time-delay embedded and standardized data (e.g. from template session/subject)
         Shape must be (n_channels*n_embeddings, n_channels*n_embeddings).
     n_embeddings : int
         Number of time delay embeddings used.
@@ -321,8 +318,9 @@ def plot_sign_flipping(
         a channels. Shape must be (n_channels,).
     metrics : numpy.ndarray
         Metrics calculated during sign flipping.
+    plot_filename : basestring
+        Filepath to save plots to
     """
-    plot_filename = op.join(src_dir, "report", subject, "sign_flipping_results.png")
 
     # Create a figure
     fig, ax = plt.subplots(nrows=1, ncols=2, figsize=(6, 3))
@@ -343,7 +341,7 @@ def plot_sign_flipping(
     cax = divider.append_axes("right", size="5%", pad=0.05)
     fig.colorbar(im, cax=cax, orientation="vertical")
 
-    # Plot the covariance of this subject
+    # Plot the covariance
     cov = apply_flips_to_covariance(cov, flips, n_embeddings)
     i, j = np.triu_indices(cov.shape[-1], k=n_embeddings)
     cov_ = np.zeros([cov.shape[-1], cov.shape[-1]])
@@ -361,15 +359,6 @@ def plot_sign_flipping(
     plt.tight_layout()
     fig.savefig(plot_filename)
     fig.clf()
-
-    # Save info to the data.pkl in the report directory
-    report_data_file = op.join(src_dir, "report", subject, "data.pkl")
-    if Path(report_data_file).exists():
-        data = pickle.load(open(report_data_file, "rb"))
-        data["plt_sflip"] = op.join(subject, "sign_flipping_results.png")
-        data["sflip"] = {"metrics": np.around(metrics, decimals=3)}
-        pickle.dump(data, open(report_data_file, "wb"))
-
 
 def time_embed(x, n_embeddings):
     """Performs time-delay embedding.
