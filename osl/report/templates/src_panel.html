@@ -8,23 +8,27 @@
 
   <div class="flex-child" style="flex: 1">
     <div class="tab" style="display: grid">
-        <button class="button1" onclick="openTab(event, '{{ data.fif_id }}_coregistration', this.id)" style="border-top-style: solid">Coregistration</button>
+        {% if data.coregister is defined %}
+            <button class="button1" onclick="openTab(event, '{{ data.fif_id }}_coregistration', this.id)" style="border-top-style: solid">Coregistration</button>
+        {% endif %}
         {% if data.beamform_and_parcellate is defined %}
             <button class="button1" onclick="openTab(event, '{{ data.fif_id }}_beamforming', this.id)" style="border-top-style: solid">Beamforming</button>
             <button class="button1" onclick="openTab(event, '{{ data.fif_id }}_parcellation', this.id)" style="border-top-style: solid">Parcellation</button>
         {% endif %}
-        {% if data.sflip is defined %}
-            <button class="button1" onclick="openTab(event, '{{ data.fif_id }}_sflip', this.id)">Sign Flipping</button>
+        {% if data.fix_sign_ambiguity is defined %}
+            <button class="button1" onclick="openTab(event, '{{ data.fif_id }}_sflip', this.id)" style="border-top-style: solid">Sign Flipping</button>
         {% endif %}
     </div>
   </div>
 
   <div class="flex-child" style="flex: 5; padding-left: 25px">
 
-    <div class="tabpage" style='width: 100%' id={{ data.fif_id }}_coregistration>
-        <h3>Coregistration</h3>
-        <iframe data-src="{{ data.plt_coreg }}" width="525" height="525" id="{{ data.fif_id}}_coregistration_iframe"></iframe>
-    </div>
+    {% if data.coregister is defined %}
+        <div class="tabpage" style='width: 100%' id={{ data.fif_id }}_coregistration>
+            <h3>Coregistration</h3>
+            <iframe data-src="{{ data.plt_coreg }}" width="525" height="525" id="{{ data.fif_id}}_coregistration_iframe"></iframe>
+        </div>
+    {% endif %}
 
     {% if data.beamform_and_parcellate is defined %}
         <div class="tabpage" style='width: 100%; display: none' id={{ data.fif_id }}_beamforming>

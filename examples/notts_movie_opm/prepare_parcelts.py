@@ -10,7 +10,6 @@ import os
 import os.path as op
 
 import numpy as np
-import matplotlib.pyplot as plt
 
 from osl import preprocessing
 from osl import source_recon
@@ -24,11 +23,11 @@ sessions_to_do = np.arange(0, 2)
 subj_sess_2exclude = np.zeros([10, 2]).astype(bool)
 
 #subj_sess_2exclude = np.ones([10, 2]).astype(bool)
-#subj_sess_2exclude[1:3, 0] = False
+#subj_sess_2exclude[4:, :] = False
 
-run_convert = True
-run_preproc = True
-run_beamform_and_parcellate = True
+run_convert = False
+run_preproc = False
+run_beamform_and_parcellate = False
 run_fix_sign_ambiguity = True
 
 # parcellation to use
@@ -41,7 +40,6 @@ subjects_dir = '/Users/woolrich/homedir/vols_data/notts_movie_opm'
 
 rank = {'mag': 100}
 chantypes = ['mag']
-freq_range = (1, 45)
 
 # resolution of dipole grid for source recon
 gridstep = 8  # mm
@@ -116,10 +114,15 @@ if run_preproc:
       event_codes:
 
     preproc:
-        - crop:         {tmin: 5}
+        - crop:         {tmin: 20}
         - resample:     {sfreq: 150, n_jobs: 6}            
-        - filter:       {l_freq: 4, h_freq: 45}
+        - filter:       {l_freq: 4, h_freq: 40}
         - bad_channels: {picks: 'meg'}        
+        - bad_segments: {segment_len: 200, picks: 'meg', significance_level: 0.1}
+        - bad_segments: {segment_len: 400, picks: 'meg', significance_level: 0.1}
+        - bad_segments: {segment_len: 600, picks: 'meg', significance_level: 0.1}
+        - bad_segments: {segment_len: 800, picks: 'meg', significance_level: 0.1}
+
     """
 
     config = yaml.load(config_text, Loader=yaml.FullLoader)
@@ -133,7 +136,6 @@ if run_preproc:
             op.join(subjects_dir, subject + '_meg_preproc_raw.fif'),
             preproc_fif_file
         ))
-
 
 if False:
     # to just run coreg for subject 0:
@@ -174,7 +176,7 @@ if run_beamform_and_parcellate:
             already_coregistered: true
             overwrite: false
         - beamform_and_parcellate:
-            freq_range: [5, 40]
+            freq_range: [4, 40]
             chantypes: mag
             rank: {mag: 100}
             parcellation_file: fmri_d100_parcellation_with_PCC_reduced_2mm_ss5mm_ds8mm.nii.gz
@@ -188,6 +190,7 @@ if run_beamform_and_parcellate:
         subjects=subjects,
         preproc_files=preproc_fif_files,
         smri_files=smri_files,
+        report_name='recon_report'
     )
 
 if False:
@@ -223,5 +226,17 @@ if run_fix_sign_ambiguity:
     """
 
     # Do the sign flipping
-    source_recon.run_src_batch(config, recon_dir, subjects)
+    source_recon.run_src_batch(config, recon_dir, subjects, report_name='sflip_report')
 
+    if True:
+        # copy sf files to a single directory (makes it easier to copy minimal files to, e.g. BMRC, for downstream analysis)
+        os.makedirs(op.join(recon_dir, 'sflip_data'), exist_ok=True)
+
+        sflip_parc_files = []
+        for subject in subjects:
+            sflip_parc_file_from = op.join(recon_dir, subject, 'sflip_parc.npy')
+            sflip_parc_file_to = op.join(recon_dir, 'sflip_data', subject + '_sflip_parc.npy')
+
+            os.system('cp -f {} {}'.format(sflip_parc_file_from, sflip_parc_file_to))
+
+            sflip_parc_files.append(sflip_parc_file_to)

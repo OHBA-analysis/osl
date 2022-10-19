@@ -15,7 +15,7 @@ from shutil import copy
 import numpy as np
 
 from . import raw_report
-from ..source_recon import rhino, parcellation
+from ..source_recon import rhino, parcellation, sign_flipping
 
 
 def gen_html_data(config, src_dir, subject, reportdir, logger=None):
@@ -38,6 +38,7 @@ def gen_html_data(config, src_dir, subject, reportdir, logger=None):
     reportdir = Path(reportdir)
 
     # Make directory for plots contained in the report
+    os.makedirs(reportdir, exist_ok=True)
     os.makedirs(reportdir / subject, exist_ok=True)
 
     # Data to include in the report
@@ -73,6 +74,18 @@ def gen_html_data(config, src_dir, subject, reportdir, logger=None):
         # Parcellation plots
         data["plt_parc"] = plot_parcellation(
             data["beamform_and_parcellate"]["parcellation_file"], reportdir, subject
+        )
+
+    if "fix_sign_ambiguity" in data:
+        # sflip info
+        sflip_info_filepath = src_dir / subject / "rhino/sflip_info.pkl"
+        sflip_info = pickle.load(open(sflip_info_filepath, "rb"))
+
+        data["sflip"] = {"metrics": np.around(sflip_info["metrics"], decimals=3)}
+
+        # sflip plots
+        data["plt_sflip"] = plot_sign_flipping(
+            sflip_info, reportdir, subject
         )
 
     # Save data that will be used to create html page
@@ -118,6 +131,7 @@ def gen_html_page(reportdir):
     # Create panels
     panels = []
     panel_template = raw_report.load_template('src_panel')
+
     for i in range(total):
         panels.append(panel_template.render(data=data[i]))
 
@@ -155,3 +169,16 @@ def plot_parcellation(parcellation_file, reportdir, subject):
     output_file = reportdir / subject / "parc.png"
     parcellation.plot_parcellation(parcellation_file, output_file=output_file)
     return f"{subject}/parc.png"
+
+def plot_sign_flipping(sflip_info, reportdir, subject):
+    """Plots sign flipping."""
+    output_file = reportdir / subject / "sflip.png"
+
+    sign_flipping.plot_sign_flipping(
+        sflip_info['cov'],
+        sflip_info['template_cov'],
+        sflip_info['n_embeddings'],
+        sflip_info['flips'],
+        output_file)
+
+    return f"{subject}/sflip.png"

@@ -18,7 +18,7 @@ must also conform to this.
 import logging
 import os.path as op
 from pathlib import Path
-from glob import glob
+import pickle
 
 import numpy as np
 
@@ -583,7 +583,13 @@ def fix_sign_ambiguity(
     # Apply flips to the parcellated data
     sign_flipping.apply_flips(src_dir, subject, flips, logger)
 
-    # Plot a summary figure describing the sign flipping solution
-    sign_flipping.plot_sign_flipping(
-        src_dir, subject, cov, template_cov, n_embeddings, flips, metrics
-    )
+    sflip_info = {}
+    sflip_info['cov'] = cov
+    sflip_info['template_cov'] = template_cov
+    sflip_info['n_embeddings'] = n_embeddings
+    sflip_info['flips'] = flips
+    sflip_info['metrics'] = metrics
+
+    # Save sflip info data that will e.g. later be used to create plots
+    with open(src_dir / subject / 'rhino/sflip_info.pkl', 'wb') as outfile:
+        pickle.dump(sflip_info, outfile)
