@@ -327,7 +327,7 @@ def plot_channel_time_series(raw, savebase=None, exclude_badsegs=False):
             # set bad segs to mean
             for aa in raw.annotations:
                 if "bad_segment" in aa["description"]:
-                    time_inds = np.where((raw.times >= aa["onset"]) & (raw.times <= (aa["onset"] + aa["duration"])))[0]
+                    time_inds = np.where((raw.times >= aa["onset"]-raw.first_time) & (raw.times <= (aa["onset"] + aa["duration"] - raw.first_time)))[0]
                     ss[time_inds] = np.mean(ss)
 
         ss = uniform_filter1d(ss, int(raw.info['sfreq']))
