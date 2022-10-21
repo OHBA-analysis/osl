@@ -112,16 +112,19 @@ def detect_badsegments(raw, segment_len=1000, significance_level=0.05, picks="gr
     return raw
 
 
-def detect_badchannels(raw, picks="grad"):
+def detect_badchannels(raw, picks="grad", significance_level=0.05):
     """Set bad channels in MNE object."""
+
+    gesd_args = {'alpha': significance_level}
+
     bdinds = sails.utils.detect_artefacts(
-        raw.get_data(picks=picks), 0, reject_mode="dim", ret_mode="bad_inds"
+        raw.get_data(picks=picks), 0, reject_mode="dim", ret_mode="bad_inds", gesd_args=gesd_args
     )
 
     if (picks == "mag") or (picks == "grad"):
-        chinds = mne.pick_types(raw.info, meg=picks)
+        chinds = mne.pick_types(raw.info, meg=picks, exclude=[])
     elif picks == "meg":
-        chinds = mne.pick_types(raw.info, meg=True)
+        chinds = mne.pick_types(raw.info, meg=True, exclude=[])
     elif picks == "eeg":
         chinds = mne.pick_types(raw.info, eeg=True, exclude=[])
     ch_names = np.array(raw.ch_names)[chinds]
