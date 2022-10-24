@@ -29,7 +29,7 @@ def convert_notts(notts_opm_mat_file, smri_file, tsv_file, fif_file, smri_fixed_
     sform_std_fixed = correct_mri(smri_file, smri_fixed_file)
 
     # Note that later in this function, we will also apply this sform to
-    # the sensor coordinates.
+    # the sensor coordinates and orientations.
     # This is because, with the OPM Notts data, coregistration on the sensor coordinations 
     # has already been carried out, and so the sensor coordinates need to stay matching 
     # the coordinates used in the MRI
@@ -46,7 +46,7 @@ def convert_notts(notts_opm_mat_file, smri_file, tsv_file, fif_file, smri_fixed_
 
     #import pdb; pdb.set_trace()
         
-    # Need to undo orginal sform on sensor locs and then apply new sform
+    # Need to undo orginal sform on sensor locs and oris and then apply new sform
     smri = nib.load(smri_file)
     overall_xform = sform_std_fixed @ np.linalg.pinv(smri.header.get_sform())
     
@@ -55,6 +55,7 @@ def convert_notts(notts_opm_mat_file, smri_file, tsv_file, fif_file, smri_fixed_
     
     # Note sensor_locs are in metres, overall_xform_trans is in mm
     sensor_locs = apply_trans(overall_xform_trans, sensor_locs.T*1000).T/1000
+    sensor_oris = apply_trans(overall_xform_trans, sensor_oris.T*1000).T/1000
 
     # -------------------------------------------------------------
     # %% Create fif file from mat file and chan_info
