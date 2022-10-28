@@ -745,10 +745,6 @@ def run_proc_chain(
     now = strftime("%Y-%m-%d %H:%M:%S", localtime())
     logger.info("{0} : Processing Complete".format(now))
 
-    outname = outbase.format(
-        run_id=run_id.replace("_raw", ""), ftype="preproc_raw", fext="fif"
-    )
-
     if fif_outname is not None:
         logger.info("Output file is {}".format(fif_outname))
 
