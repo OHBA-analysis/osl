@@ -10,33 +10,26 @@ Includes preprocessing, beamforming and parcellation.
 
 import os
 import os.path as op
-from os import makedirs
 
-import mne
-import yaml
 import numpy as np
 import pandas as pd
 
-from osl import rhino
-from osl import report
-from osl import parcellation
 from osl import preprocessing
-
+from osl import source_recon
 
 subjects_dir = "/Users/woolrich/homedir/vols_data/ukmp"
-subjects_to_do = [1, 2]
+subjects_to_do = np.arange(75)+1
+subjects_to_do = np.arange(2)+1
 
 task = "resteyesopen"
-freq_range = (1, 45)
-rank = {"mag": 125}
-chantypes = ["mag"]
 
 subjects = []
 ds_files = []
 preproc_fif_files = []
 smri_files = []
-pos_files = []
-recon_dirs = []
+
+recon_dir = op.join(subjects_dir, 'recon')
+POS_FILE = subjects_dir + "/{0}/meg/{0}_headshape.pos"
 
 # input files
 for sub in subjects_to_do:
@@ -58,20 +51,12 @@ for sub in subjects_to_do:
                 subject + "_task-" + task + "_meg_preproc_raw.fif",
             )
         )
-        pos_files.append(
-            op.join(subjects_dir, subject, "meg", subject + "_headshape.pos")
-        )
-        smri_files.append(smri_file)
-        recon_dirs.append(op.join(subjects_dir, subject, "meg"))
 
-run_preproc = False
-run_preproc_report = False
-run_compute_surfaces = False
-run_coreg = False
-run_forward_model = False
-run_source_recon_parcellate = True
-run_orth = True
-run_extract_parcel_timeseries = True
+        smri_files.append(smri_file)
+
+run_preproc = True
+run_beamform_and_parcellate = False
+run_fix_sign_ambiguity = False
 
 # parcellation to use
 parcellation_fname = "fmri_d100_parcellation_with_PCC_reduced_2mm_ss5mm_ds8mm.nii.gz"
@@ -80,13 +65,25 @@ parcellation_fname = "fmri_d100_parcellation_with_PCC_reduced_2mm_ss5mm_ds8mm.ni
 gridstep = 7  # mm
 
 if run_preproc:
+
+    # Note that with CTF mne.pick_types will return:
+    # ~274 axial grads (as magnetometers) if {picks: 'mag', ref_meg: False}
+    # ~28 reference axial grads if {picks: 'grad'}
+
     config = """
-        preproc:
-        - resample: {sfreq: 250, n_jobs: 6}            
-        - filter:   {l_freq: 1, h_freq: 100}
-        #- bad_segments: {segment_len: 800, picks: 'meg'}
-        #- bad_channels: {picks: 'meg'}
+     preproc:
+        - resample:     {sfreq: 250}
+        - filter:       {l_freq: 0.5, h_freq: 100, method: 'iir', iir_params: {order: 5, ftype: butter}}
+        - crop:         {tmin: 10, tmax: 300}           
+        - set_channel_types: {EEG057: eog, EEG058: eog, EEG059: ecg}
+        - bad_channels: {picks: 'mag', ref_meg: False, significance_level: 0.1}
+        - bad_channels: {picks: 'grad', significance_level: 0.4}
+        - bad_segments: {segment_len: 600, picks: 'mag', ref_meg: False, significance_level: 0.1}
     """
+
+    #         - crop:         {tmin: 20, tmax: 280}
+    #- bad_channels: {picks: 'meg', significance_level: 0.4}
+    #- bad_segments: {segment_len: 600, picks: 'meg', significance_level: 0.1}
 
     # Process a single file, this outputs fif_file
     dataset = preprocessing.run_proc_batch(
@@ -101,245 +98,156 @@ if run_preproc:
             )
         )
 
-if run_preproc_report:
-    preproc_dir = op.join(subjects_dir, "preproc_report")
-    makedirs(preproc_dir, exist_ok=True)
-    report.gen_report(preproc_fif_files, outdir=preproc_dir)
+# -------------------------------------------------------------
+# %% Coreg and Source recon and Parcellate
 
-if run_compute_surfaces:
-    for subject, smri_file in zip(subjects, smri_files):
-        print("Compute surfaces for subject", subject)
+def save_polhemus_from_pos(src_dir, subject, preproc_file, smri_file, logger):
+    """Saves fiducials/headshape from a pos file."""
 
-        rhino.compute_surfaces(
-            smri_file, subjects_dir, subject, include_nose=True, cleanup_files=True
-        )
+    # Load pos file
+    pos_file = POS_FILE.format(subject)
+    logger.info(f"Saving polhemus from {pos_file}")
 
-    if False:
-        rhino.surfaces_display(subjects_dir, subjects[0])
+    #  Get coreg filenames
+    filenames = source_recon.rhino.get_coreg_filenames(src_dir, subject)
 
-if run_coreg:
-    # Setup polhemus points
-    polhemus_nasion_files = []
-    polhemus_rpa_files = []
-    polhemus_lpa_files = []
-    polhemus_headshape_files = []
+    # Load in txt file, these values are in cm in polhemus space:
+    num_headshape_pnts = int(pd.read_csv(pos_file, header=None).to_numpy()[0])
+    data = pd.read_csv(pos_file, header=None, skiprows=[0], delim_whitespace=True)
 
-    for pos_file, subject in zip(pos_files, subjects):
-        # setup polhemus files
-        polhemus_nasion_file = op.join(subjects_dir, subject, "polhemus_nasion.txt")
-        polhemus_rpa_file = op.join(subjects_dir, subject, "polhemus_rpa.txt")
-        polhemus_lpa_file = op.join(subjects_dir, subject, "polhemus_lpa.txt")
-        polhemus_headshape_file = op.join(
-            subjects_dir, subject, "polhemus_headshape.txt"
-        )
+    # RHINO is going to work with distances in mm
+    # So convert to mm from cm, note that these are in polhemus space
+    data.iloc[:, 1:4] = data.iloc[:, 1:4] * 10
 
-        # Load in txt file, these values are in cm in polhemus space:
-        num_headshape_pnts = int(pd.read_csv(pos_file, header=None).to_numpy()[0])
-        data = pd.read_csv(pos_file, header=None, skiprows=[0], delim_whitespace=True)
+    # Polhemus fiducial points in polhemus space
+    polhemus_nasion = (
+        data[data.iloc[:, 0].str.match("nasion")]
+            .iloc[0, 1:4].to_numpy().astype("float64").T
+    )
+    polhemus_rpa = (
+        data[data.iloc[:, 0].str.match("right")]
+            .iloc[0, 1:4].to_numpy().astype("float64").T
+    )
+    polhemus_lpa = (
+        data[data.iloc[:, 0].str.match("left")]
+            .iloc[0, 1:4].to_numpy().astype("float64").T
+    )
 
-        # RHINO is going to work with distances in mm
-        # So convert to mm from cm, note that these are in polhemus space
-        data.iloc[:, 1:4] = data.iloc[:, 1:4] * 10
+    # Polhemus headshape points in polhemus space in mm
+    polhemus_headshape = (
+        data[0:num_headshape_pnts]
+            .iloc[:, 1:4].to_numpy().astype("float64").T
+    )
 
-        # Polhemus fiducial points in polhemus space
-        polhemus_nasion_polhemus = (
-            data[data.iloc[:, 0].str.match("nasion")]
-            .iloc[0, 1:4]
-            .to_numpy()
-            .astype("float64")
-            .T
-        )
-        polhemus_rpa_polhemus = (
-            data[data.iloc[:, 0].str.match("right")]
-            .iloc[0, 1:4]
-            .to_numpy()
-            .astype("float64")
-            .T
-        )
-        polhemus_lpa_polhemus = (
-            data[data.iloc[:, 0].str.match("left")]
-            .iloc[0, 1:4]
-            .to_numpy()
-            .astype("float64")
-            .T
-        )
+    # Save
+    np.savetxt(filenames["polhemus_nasion_file"], polhemus_nasion)
+    np.savetxt(filenames["polhemus_rpa_file"], polhemus_rpa)
+    np.savetxt(filenames["polhemus_lpa_file"], polhemus_lpa)
+    np.savetxt(filenames["polhemus_headshape_file"], polhemus_headshape)
 
-        # Polhemus headshape points in polhemus space in mm
-        polhemus_headshape_polhemus = (
-            data[0:num_headshape_pnts].iloc[:, 1:4].to_numpy().T
-        )
+if run_beamform_and_parcellate:
 
-        np.savetxt(polhemus_nasion_file, polhemus_nasion_polhemus)
-        np.savetxt(polhemus_rpa_file, polhemus_rpa_polhemus)
-        np.savetxt(polhemus_lpa_file, polhemus_lpa_polhemus)
-        np.savetxt(polhemus_headshape_file, polhemus_headshape_polhemus)
+    # Settings
+    config = """
+        source_recon:
+        - save_polhemus_from_pos: {}
+        - coregister:
+            include_nose: true
+            use_nose: true
+            use_headshape: true
+            model: Single Layer
+        - beamform_and_parcellate:
+            freq_range: [1, 45]
+            chantypes: mag
+            rank: {mag: 120}
+            parcellation_file: fmri_d100_parcellation_with_PCC_reduced_2mm_ss5mm_ds8mm.nii.gz
+            method: spatial_basis
+            orthogonalisation: symmetric
+    """
 
-        polhemus_nasion_files.append(polhemus_nasion_file)
-        polhemus_lpa_files.append(polhemus_lpa_file)
-        polhemus_rpa_files.append(polhemus_rpa_file)
-        polhemus_headshape_files.append(polhemus_headshape_file)
+    source_recon.run_src_batch(
+        config,
+        src_dir=recon_dir,
+        subjects=subjects,
+        preproc_files=preproc_fif_files,
+        smri_files=smri_files,
+        extra_funcs=[save_polhemus_from_pos],
+    )
 
-    for (
-        subject,
-        preproc_fif_file,
-        polhemus_headshape_file,
-        polhemus_nasion_file,
-        polhemus_rpa_file,
-        polhemus_lpa_file,
-    ) in zip(
-        subjects,
-        preproc_fif_files,
-        polhemus_headshape_files,
-        polhemus_nasion_files,
-        polhemus_rpa_files,
-        polhemus_lpa_files,
-    ):
-        print("Coreg for subject {}".format(subject))
 
-        rhino.coreg(
-            preproc_fif_file,
-            subjects_dir,
-            subject,
-            polhemus_headshape_file,
-            polhemus_nasion_file,
-            polhemus_rpa_file,
-            polhemus_lpa_file,
-            use_headshape=True,
-        )
+if False:
 
-    # Purple dots are the polhemus derived fiducials
-    # Yellow diamonds are the sMRI derived fiducials
-    # Position of sMRI derived fiducials are the ones that are refined if
-    # useheadshape=True was used for rhino.coreg
+    # to just run surfaces for subject 0:
+    source_recon.rhino.compute_surfaces(
+        smri_files[0],
+        recon_dir,
+        subjects[0],
+        overwrite=True
+    )
 
-    if False:
-        rhino.coreg_display(
-            subjects_dir,
-            subjects[0],
-            plot_type="surf",
-            display_outskin_with_nose=True,
-            display_sensors=True,
-        )
+    # to view surfaces for subject 0:
+    source_recon.rhino.surfaces_display(recon_dir, subjects[3])
 
-if run_forward_model:
-    for subject in subjects:
-        print("Forward model for subject", subject)
+    # to just run coreg for subject 0:
+    source_recon.rhino.coreg(
+        preproc_fif_files[0],
+        recon_dir,
+        subjects[0],
+        already_coregistered=True
+    )
 
-        rhino.forward_model(
-            subjects_dir, subject, model="Single Layer", gridstep=gridstep, mindist=4.0
-        )
+    # to view coreg result for subject 0:
+    source_recon.rhino.coreg_display(recon_dir, subjects[0],
+                                     plot_type='surf')
 
-    if False:
-        rhino.bem_display(
-            subjects_dir,
-            subjects[0],
-            plot_type="surf",
-            display_outskin_with_nose=False,
-            display_sensors=True,
-        )
+if False:
+    # -------------------------------------------------------------
+    # %% Take a look at leadfields
 
-if run_source_recon_parcellate:
+    # load forward solution
+    fwd_fname = rhino.get_coreg_filenames(subjects_dir, subject)['forward_model_file']
+    fwd = mne.read_forward_solution(fwd_fname)
 
-    def lcmv_beamformer(subjects_dir, subject, fif_file, freq_range):
-        raw = mne.io.read_raw_fif(fif_file)
+    leadfield = fwd['sol']['data']
+    print("Leadfield size : %d sensors x %d dipoles" % leadfield.shape)
 
-        # Use MEG sensors
-        raw.pick(chantypes)
-        raw.load_data()
-        raw.filter(
-            l_freq=freq_range[0],
-            h_freq=freq_range[1],
-            method="iir",
-            iir_params={"order": 5, "btype": "bandpass", "ftype": "butter"},
-        )
-        data_cov = mne.compute_raw_covariance(raw, method="empirical")
+# -------------------------------------------------------------
+# %% Sign flip
 
-        fwd_fname = rhino.get_coreg_filenames(subjects_dir, subject)[
-            "forward_model_file"
-        ]
-        fwd = mne.read_forward_solution(fwd_fname)
+if run_fix_sign_ambiguity:
+    # Find a good template subject to align other subjects to
+    template = source_recon.find_template_subject(
+        recon_dir, subjects, n_embeddings=15, standardize=True
+    )
 
-        # make LCMV filter
-        filters = rhino.make_lcmv(
-            subjects_dir,
-            subject,
-            raw,
-            chantypes,
-            reg=0,
-            pick_ori="max-power-pre-weight-norm",
-            weight_norm="nai",
-            rank=rank,
-            reduce_rank=True,
-            verbose=True,
-        )
+    # Settings for batch processing
+    config = f"""
+        source_recon:
+        - fix_sign_ambiguity:
+            template: {template}
+            n_embeddings: 13
+            standardize: True
+            n_init: 3
+            n_iter: 2500
+            max_flips: 20
+    """
 
-        stc = mne.beamformer.apply_lcmv_raw(raw, filters)
+    # Do the sign flipping
+    source_recon.run_src_batch(config, recon_dir, subjects, report_name='sflip_report')
 
-        return stc
+    if True:
+        # copy sf files to a single directory (makes it easier to copy minimal files to, e.g. BMRC, for downstream analysis)
+        os.makedirs(op.join(recon_dir, 'sflip_data'), exist_ok=True)
 
-    parc = parcellation.Parcellation(parcellation_fname)
-    for subject, preproc_fif_file, recon_dir in zip(
-        subjects, preproc_fif_files, recon_dirs
-    ):
-        print("Source recon and parcellation for subject", subject)
+        sflip_parc_files = []
+        for subject in subjects:
+            sflip_parc_file_from = op.join(recon_dir, subject, 'sflip_parc.npy')
+            sflip_parc_file_to = op.join(recon_dir, 'sflip_data', subject + '_sflip_parc.npy')
 
-        # load forward solution
-        # stc is source space time series (in head/polhemus space)
-        stc = lcmv_beamformer(subjects_dir, subject, preproc_fif_file, freq_range)
+            os.system('cp -f {} {}'.format(sflip_parc_file_from, sflip_parc_file_to))
 
-        # Convert stc from head/polhemus space to standard brain grid in MNI space
-        (
-            recon_timeseries_mni,
-            reference_brain_fname,
-            recon_coords_mni,
-            _,
-        ) = rhino.transform_recon_timeseries(
-            subjects_dir, subject, recon_timeseries=stc.data, reference_brain="mni"
-        )
+            sflip_parc_files.append(sflip_parc_file_to)
 
-        # Apply MNI space parcellation to voxelwise data (voxels x tpts) contained in recon_timeseries_mni
-        # Resulting parc.parcel_timeseries will be (parcels x tpts)
-        parc.parcellate(recon_timeseries_mni, recon_coords_mni, method="spatial_basis")
 
-        makedirs(recon_dir, exist_ok=True)
-        parc.save_parcel_timeseries(op.join(recon_dir, "parcel_timeseries.hd5"))
 
-if run_orth:
-    parc = parcellation.Parcellation(parcellation_fname)
-    for recon_dir in recon_dirs:
-        parc.load_parcel_timeseries(op.join(recon_dir, "parcel_timeseries.hd5"))
-        # parcel_timeseries['data'] is nparcels x ntpts
-        parc.symmetric_orthogonalise(maintain_magnitudes=True)
-        parc.save_parcel_timeseries(op.join(recon_dir, "parcel_timeseries_orth.hd5"))
 
-if run_extract_parcel_timeseries:
-    print("Extract parcel timeseries")
-
-    parc = parcellation.Parcellation(parcellation_fname)
-    makedirs(op.join(subjects_dir, "parcel_timeseries"), exist_ok=True)
-
-    for subject, recon_dir in zip(subjects, recon_dirs):
-        parc.load_parcel_timeseries(op.join(recon_dir, "parcel_timeseries_orth.hd5"))
-
-        nparcels = parc.parcel_timeseries["data"].shape[0]
-        hilb = np.zeros(parc.parcel_timeseries["data"].shape)
-        for idx in range(nparcels):
-            hilb[idx, :] = mne.filter._my_hilbert(
-                parc.parcel_timeseries["data"][idx, :], None, True
-            )
-
-        np.save(
-            op.join(
-                subjects_dir,
-                "parcel_timeseries",
-                subject + "_ts_hilb_task-" + task + ".npy",
-            ),
-            hilb.T.astype(np.float32),
-        )
-
-        np.save(
-            op.join(
-                subjects_dir, "parcel_timeseries", subject + "_ts_task-" + task + ".npy"
-            ),
-            parc.parcel_timeseries["data"].T.astype(np.float32),
-        )

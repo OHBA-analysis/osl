@@ -78,7 +78,7 @@ def get_header_id(raw):
     return raw.filenames[0].split('/')[-1].strip('.fif')
 
 
-def gen_html_data(raw, outdir, ica=None, logger=None):
+def gen_html_data(raw, outdir, ica=None, preproc_fif_filename=None, logger=None):
     """Generate HTML web-report for an MNE data object.
 
     Parameters
@@ -89,12 +89,15 @@ def gen_html_data(raw, outdir, ica=None, logger=None):
         Directory to write HTML data and plots to.
     ica : mne.preprocessing.ICA
         ICA object.
+    preproc_fif_filename : str
+        Filename of file output by preprocessing
     logger : logging.getLogger
         Logger.
     """
 
     data = {}
     data['filename'] = raw.filenames[0]
+    data['preproc_fif_filename'] = preproc_fif_filename
     data['fif_id'] = get_header_id(raw)
 
     # Scan info
@@ -164,11 +167,11 @@ def gen_html_data(raw, outdir, ica=None, logger=None):
     savebase = str(outdir / '{0}.png')
     
     # Generate plots for the report
-    data['plt_temporalsumsq'] = plot_channel_time_series(raw, savebase, exclude_badsegs=False)
-    data['plt_temporalsumsq_exclude_badsegs'] = plot_channel_time_series(raw, savebase, exclude_badsegs=True)
+    data['plt_temporalsumsq'] = plot_channel_time_series(raw, savebase, exclude_bads=False)
+    data['plt_temporalsumsq_exclude_bads'] = plot_channel_time_series(raw, savebase, exclude_bads=True)
     data['plt_badchans'] = plot_sensors(raw, savebase)
-    data['plt_channeldev'] = plot_channel_dists(raw, savebase, exclude_badchans=False)
-    data['plt_channeldev_exclude_badchans'] = plot_channel_dists(raw, savebase, exclude_badchans=True)
+    data['plt_channeldev'] = plot_channel_dists(raw, savebase, exclude_bads=False)
+    data['plt_channeldev_exclude_bads'] = plot_channel_dists(raw, savebase, exclude_bads=True)
     data['plt_spectra'], data['plt_zoomspectra'] = plot_spectra(raw, savebase)
     data['plt_digitisation'] = plot_digitisation_2d(raw, savebase)
     data['plt_artefacts_eog'] = plot_eog_summary(raw, savebase)
@@ -292,16 +295,38 @@ def plot_flowchart(raw, savebase=None):
     filebase = savebase.parent.name + "/" + savebase.name
     return filebase.format('flowchart')
 
-def plot_channel_time_series(raw, savebase=None, exclude_badsegs=False):
+def plot_channel_time_series(raw, savebase=None, exclude_bads=False):
     """Plots sum-square time courses."""
 
-    # Raw data
-    channel_types = {
-        'mag': mne.pick_types(raw.info, meg='mag'),
-        'grad': mne.pick_types(raw.info, meg='grad'),
-        'eeg': mne.pick_types(raw.info, eeg=True),
-        'csd': mne.pick_types(raw.info, csd=True),
-    }
+    if exclude_bads:
+        # excludes bad channels and bad segments
+        exclude = 'bads'
+    else:
+        # includes bad channels and bad segments
+        exclude = []
+
+    is_ctf = raw.info["dev_ctf_t"] is not None
+
+    if is_ctf:
+
+        # Note that with CTF mne.pick_types will return:
+        # ~274 axial grads (as magnetometers) if {picks: 'mag', ref_meg: False}
+        # ~28 reference axial grads if {picks: 'grad'}
+
+        channel_types = {
+            'Axial Grads (chtype=''mag'')': mne.pick_types(raw.info, meg='mag', ref_meg=False, exclude=exclude),
+            'Ref Axial Grad (chtype=''ref_meg'')': mne.pick_types(raw.info, meg='grad', exclude=exclude),
+            'EEG': mne.pick_types(raw.info, eeg=True),
+            'CSD': mne.pick_types(raw.info, csd=True),
+        }
+    else:
+        channel_types = {
+            'Magnetometers': mne.pick_types(raw.info, meg='mag', exclude=exclude),
+            'Gradiometers': mne.pick_types(raw.info, meg='grad', exclude=exclude),
+            'EEG': mne.pick_types(raw.info, eeg=True),
+            'CSD': mne.pick_types(raw.info, csd=True),
+        }
+
     t = raw.times
     x = raw.get_data()
 
@@ -323,7 +348,7 @@ def plot_channel_time_series(raw, savebase=None, exclude_badsegs=False):
         if len(chan_inds) == 0:
             continue
         ss = np.sum(x[chan_inds] ** 2, axis=0)
-        if exclude_badsegs:
+        if exclude_bads:
             # set bad segs to mean
             for aa in raw.annotations:
                 if "bad_segment" in aa["description"]:
@@ -351,8 +376,8 @@ def plot_channel_time_series(raw, savebase=None, exclude_badsegs=False):
     # Save
     if savebase is not None:
         plt.tight_layout()
-        if exclude_badsegs:
-            plot_name = 'temporal_sumsq_exclude_badsegs'
+        if exclude_bads:
+            plot_name = 'temporal_sumsq_exclude_bads'
         else:
             plot_name = 'temporal_sumsq'
         figname = savebase.format(plot_name)
@@ -368,6 +393,7 @@ def plot_channel_time_series(raw, savebase=None, exclude_badsegs=False):
 def plot_sensors(raw, savebase=None):
     """Plots sensors with bad channels highlighted."""
     # plot channel types seperately for neuromag306 (3 coils in same location)
+
     if 3012 in np.unique([i['coil_type'] for i in raw.info['chs']]):
         with open(str(Path(__file__).parent.parent) + "/utils/neuromag306_info.yml", 'r') as f:
             channels = yaml.safe_load(f)
@@ -395,23 +421,40 @@ def plot_sensors(raw, savebase=None):
     return filebase.format('bad_chans')
 
 
-def plot_channel_dists(raw, savebase=None, exclude_badchans=True):
+def plot_channel_dists(raw, savebase=None, exclude_bads=True):
     """Plot distributions of temporal standard deviation."""
 
-    if exclude_badchans:
+    if exclude_bads:
+        # excludes bad channels and bad segments
         exclude = 'bads'
+        reject_by_annotation = 'omit'
     else:
+        # includes bad channels and bad segments
         exclude = []
+        reject_by_annotation = None
 
-    # Raw data
-    channel_types = {
-        'Magnetometers': mne.pick_types(raw.info, meg='mag', exclude=exclude),
-        'Gradiometers': mne.pick_types(raw.info, meg='grad', exclude=exclude),
-        'EEG': mne.pick_types(raw.info, eeg=True),
-        'CSD': mne.pick_types(raw.info, csd=True),
-    }
+    is_ctf = raw.info["dev_ctf_t"] is not None
 
-    x = raw.get_data(reject_by_annotation='omit')
+    if is_ctf:
+
+        # Note that with CTF mne.pick_types will return:
+        # ~274 axial grads (as magnetometers) if {picks: 'mag', ref_meg: False}
+        # ~28 reference axial grads if {picks: 'grad'}
+        channel_types = {
+            'Axial Grads (chtype=''mag'')': mne.pick_types(raw.info, meg='mag', ref_meg=False, exclude=exclude),
+            'Ref Axial Grad (chtype=''ref_meg'')': mne.pick_types(raw.info, meg='grad', exclude=exclude),
+            'EEG': mne.pick_types(raw.info, eeg=True, exclude=exclude),
+            'CSD': mne.pick_types(raw.info, csd=True, exclude=exclude),
+        }
+    else:
+        channel_types = {
+            'Magnetometers': mne.pick_types(raw.info, meg='mag', exclude=exclude),
+            'Gradiometers': mne.pick_types(raw.info, meg='grad', exclude=exclude),
+            'EEG': mne.pick_types(raw.info, eeg=True, exclude=exclude),
+            'CSD': mne.pick_types(raw.info, csd=True, exclude=exclude),
+        }
+
+    x = raw.get_data(reject_by_annotation=reject_by_annotation)
 
     # Number of subplots, i.e. the number of different channel types in the fif file
     ncols = 0
@@ -438,9 +481,11 @@ def plot_channel_dists(raw, savebase=None, exclude_badchans=True):
         ax[row].set_title(name)
         row += 1
 
-    if exclude_badchans:
-        plot_name = 'channel_dev_exclude_badchans'
+    if exclude_bads:
+        # excludes bad channels and bad segments
+        plot_name = 'channel_dev_exclude_bads'
     else:
+        # includes bad channels and bad segments
         plot_name = 'channel_dev'
 
     # Save
@@ -459,9 +504,48 @@ def plot_channel_dists(raw, savebase=None, exclude_badchans=True):
 def plot_spectra(raw, savebase=None):
     """Plot power spectra for each sensor modality."""
 
-    # Plot spectra
-    fig = raw.plot_psd(show=False, verbose=0)
-    fig.set_size_inches(8, 7)
+    is_ctf = raw.info["dev_ctf_t"] is not None
+
+    if is_ctf:
+        # Note that with CTF mne.pick_types will return:
+        # ~274 axial grads (as magnetometers) if {picks: 'mag', ref_meg: False}
+        # ~28 reference axial grads if {picks: 'grad'}
+
+        channel_types = {
+            'Axial Grad (chtype=''mag'')': mne.pick_types(raw.info, meg='mag', ref_meg=False, exclude='bads'),
+            'EEG': mne.pick_types(raw.info, eeg=True, exclude='bads'),
+        }
+    else:
+        channel_types = {
+            'Magnetometers': mne.pick_types(raw.info, meg='mag', exclude='bads'),
+            'Gradiometers': mne.pick_types(raw.info, meg='grad', exclude='bads'),
+            'EEG': mne.pick_types(raw.info, eeg=True, exclude='bads'),
+        }
+
+    # Number of subplots, i.e. the number of different channel types in the fif file
+    nrows = 0
+    for _, c in channel_types.items():
+        if len(c) > 0:
+            nrows += 1
+
+    if nrows == 0:
+        return None
+
+    fig, ax = plt.subplots(nrows=nrows, ncols=1, figsize=(8, 7))
+    if nrows == 1:
+        ax = [ax]
+    row = 0
+
+    for name, chan_inds in channel_types.items():
+        if len(chan_inds) == 0:
+            continue
+
+        # Plot spectra
+        raw.plot_psd(show=False, picks=chan_inds, ax=ax[row], verbose=0)
+
+        ax[row].set_title(name, fontsize=12)
+
+        row += 1
 
     # Save full spectra
     if savebase is not None:
@@ -469,9 +553,22 @@ def plot_spectra(raw, savebase=None):
         fig.savefig(figname, dpi=150, transparent=True)
         plt.close(fig)
 
-    # Plot zoomed in spectra
-    fig = raw.plot_psd(show=False, fmin=1, fmax=48, verbose=0)
-    fig.set_size_inches(8, 7)
+    # Make plots
+    fig, ax = plt.subplots(nrows=nrows, ncols=1, figsize=(8, 7))
+    if nrows == 1:
+        ax = [ax]
+    row = 0
+
+    for name, chan_inds in channel_types.items():
+        if len(chan_inds) == 0:
+            continue
+
+        # Plot zoomed in spectra
+        raw.plot_psd(show=False, picks=chan_inds, ax=ax[row], fmin=1, fmax=48, verbose=0)
+
+        ax[row].set_title(name, fontsize=12)
+
+        row += 1
 
     # Save zoomed in spectra
     if savebase is not None:

@@ -336,15 +336,21 @@ def write_dataset(dataset, outbase, run_id, overwrite=False):
         ID for the output file.
     overwrite : bool
         Should we overwrite if the file already exists?
+
+    Output
+    ------
+    fif_outname : str
+        The saved fif file name
     """
-    outname = outbase.format(
+
+    fif_outname = outbase.format(
         run_id=run_id.replace("_raw", ""), ftype="preproc_raw", fext="fif"
     )
-    if Path(outname).exists() and not overwrite:
+    if Path(fif_outname).exists() and not overwrite:
         raise ValueError(
-            "{} already exists. Please delete or do use overwrite=True.".format(outname)
+            "{} already exists. Please delete or do use overwrite=True.".format(fif_outname)
         )
-    dataset["raw"].save(outname, overwrite=overwrite)
+    dataset["raw"].save(fif_outname, overwrite=overwrite)
 
     if dataset["events"] is not None:
         outname = outbase.format(run_id=run_id, ftype="events", fext="npy")
@@ -362,6 +368,7 @@ def write_dataset(dataset, outbase, run_id, overwrite=False):
         outname = outbase.format(run_id=run_id, ftype="ica", fext="fif")
         dataset["ica"].save(outname, overwrite=overwrite)
 
+    return fif_outname
 
 def read_dataset(fif):
     """Reads fif/npy/yml files associated with a dataset.
@@ -698,8 +705,9 @@ def run_proc_chain(
         # Add preprocessing info to dataset dict
         dataset = append_preproc_info(dataset, config)
 
+        fif_outname = None
         if outdir is not None:
-            write_dataset(dataset, outbase, run_id, overwrite=overwrite)
+            fif_outname = write_dataset(dataset, outbase, run_id, overwrite=overwrite)
 
     except Exception as e:
         # Preprocessing failed
@@ -737,13 +745,16 @@ def run_proc_chain(
     now = strftime("%Y-%m-%d %H:%M:%S", localtime())
     logger.info("{0} : Processing Complete".format(now))
 
+    if fif_outname is not None:
+        logger.info("Output file is {}".format(fif_outname))
+
     # Generate report data
     if gen_report:
         from ..report import gen_html_data, gen_html_page  # avoids circular import
         logger.info("{0} : Generating Report".format(now))
         report_data_dir = validate_outdir(reportdir / run_id)
         gen_html_data(
-            dataset["raw"], report_data_dir, ica=dataset["ica"], logger=logger
+            dataset["raw"], report_data_dir, ica=dataset["ica"], preproc_fif_filename=fif_outname, logger=logger
         )
         gen_html_page(reportdir)
 
@@ -777,8 +788,8 @@ def run_proc_batch(
     config : str or dict
         Preprocessing config.
     files : str or list or mne.Raw
-        Can be a list of Raw objects or a list of filenames or a path to a
-        textfile list of filenames.
+        Can be a list of Raw objects or a list of filenames (or .ds dir names if CTF data)
+        or a path to a textfile list of filenames (or .ds dir names if CTF data).
     outdir : str
         Output directory. If processing multiple files, they can
         be put in unique sub directories by including {x:0} at 
@@ -819,7 +830,7 @@ def run_proc_batch(
         # Use the current working directory
         outdir = os.getcwd()
     if '{' in outdir and '}' in outdir:
-        # validate the parrent outdir - later do so for each subdirectory
+        # validate the parent outdir - later do so for each subdirectory
         tmpoutdir = validate_outdir(outdir.split('{')[0])
         logsdir = validate_outdir(logsdir or tmpoutdir / "logs")
         reportdir = validate_outdir(reportdir or tmpoutdir / "report")
@@ -879,6 +890,7 @@ def run_proc_batch(
 
     # Loop through input files to generate arguments for run_proc_chain
     args = []
+
     for infile, outname in zip(infiles, outnames):
         args.append((config, infile, outname))
 

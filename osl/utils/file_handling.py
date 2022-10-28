@@ -21,44 +21,62 @@ def process_file_inputs(inputs):
 
     The argument, inputs, can be...
     1) string path to unicode file
-    2) string path to file or regular-expression matching files
-    3) list of string paths to files
-    4) list of tuples with path to file and output name pairs
-    5) list of MNE objects
+    2) string path to dir (e.g. if CTF .ds dir)
+    3) string path to file or regular-expression matching files
+    4) list of string paths to files
+    5) list of string paths to dirs (e.g. if CTF .ds dirs)
+    6) list of tuples with path to file and output name pairs
+    7) list of MNE objects
     """
+
     infiles = []
     outnames = []
     check_paths = True
 
     if isinstance(inputs, pathlib.PosixPath):
         inputs = str(inputs)
+
+    process_list = True
+
     if isinstance(inputs, str):
-        try:
-            # Check if path to unicode file...
-            open(inputs, 'r')
-            infiles, outnames = _load_unicode_inputs(inputs)
-        except (UnicodeDecodeError, FileNotFoundError, IndexError):
-            # ...else we have a single path or glob expression
-            infiles = glob.glob(inputs)
-            outnames = [find_run_id(f) for f in infiles]
-    elif isinstance(inputs, (list, tuple)):
-        if len(inputs) == 0:
-            raise ValueError("inputs is an empty list!")
-        if isinstance(inputs[0], pathlib.PosixPath):
-            inputs = [str(i) for i in inputs]
-        if isinstance(inputs[0], str):
-            # We have a list of paths
-            infiles = [sanitise_filepath(f) for f in inputs]
-            outnames = [find_run_id(f) for f in infiles]
-        elif isinstance(inputs[0], (list, tuple)):
-            # We have a list containing files and output names
-            for row in inputs:
-                infiles.append(sanitise_filepath(row[0]))
-                outnames.append(row[1])
-        elif isinstance(inputs[0], mne.io.fiff.raw.Raw):
-            # We have a list of MNE objects
-            infiles = infiles
-            check_paths = False
+
+        # Check if str is a directory path
+        if os.path.isdir(inputs):
+            # it is a single dir str, put it in a list
+            inputs = list([inputs])
+        else:
+            # assume str is meant to be a file path
+            process_list = False
+            try:
+                # Check if path to unicode file...
+                open(inputs, 'r')
+                infiles, outnames = _load_unicode_inputs(inputs)
+            except (UnicodeDecodeError, FileNotFoundError, IndexError):
+                # ...else we have a single path or glob expression
+                infiles = glob.glob(inputs)
+                outnames = [find_run_id(f) for f in infiles]
+
+    if process_list:
+        if isinstance(inputs, (list, tuple)):
+            if len(inputs) == 0:
+                raise ValueError("inputs is an empty list!")
+            if isinstance(inputs[0], pathlib.PosixPath):
+                inputs = [str(i) for i in inputs]
+            if isinstance(inputs[0], str):
+                # We have a list of paths
+                infiles = [sanitise_filepath(f) for f in inputs]
+                outnames = [find_run_id(f) for f in infiles]
+            elif isinstance(inputs[0], (list, tuple)):
+                # We have a list containing files and output names
+                for row in inputs:
+                    infiles.append(sanitise_filepath(row[0]))
+                    outnames.append(row[1])
+            elif isinstance(inputs[0], mne.io.fiff.raw.Raw):
+                # We have a list of MNE objects
+                infiles = infiles
+                check_paths = False
+        else:
+            raise ValueError("Input type is invalid")
 
     # Check that files actually exist if we've been passed filenames rather
     # than objects

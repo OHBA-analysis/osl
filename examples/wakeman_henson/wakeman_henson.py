@@ -29,15 +29,13 @@ import osl
 from osl.source_recon import rhino, beamforming
 
 base_dir = "/ohba/pi/mwoolrich/datasets/WakemanHenson/ds117"
-in_fif_file = op.join(base_dir, "sub001/MEG/run_02_sss.fif")
 out_dir = "./wakehen_glm"
-smri_file = op.join(base_dir, "sub001/anatomy/highres001.nii.gz")
 
-if False:
-    base_dir = "/Users/woolrich/homedir/vols_data/WakeHen"
-    in_fif_file = op.join(base_dir, 'raw/sub001/MEG/run_02_sss.fif')
-    out_dir = "/Users/woolrich/homedir/vols_data/wakehen_glm"
-    smri_file = op.join(base_dir, "structurals/highres001.nii.gz")
+#base_dir = "/Users/woolrich/homedir/vols_data/WakeHen"
+#out_dir = op.join(base_dir, "wakehen_glm")
+
+in_fif_file = op.join(base_dir, "sub001/MEG/run_02_sss.fif")
+smri_file = op.join(base_dir, "sub001/anatomy/highres001.nii.gz")
 
 subj_id = Path(in_fif_file).stem + "_{ftype}.{ext}"
 
@@ -91,14 +89,19 @@ config = """
     preproc:
       - find_events:       {min_duration: 0.005}
       - set_channel_types: {EEG062: eog, EEG062: eog, EEG063: ecg}
-      - filter:            {l_freq: 1.1, h_freq: 175}
+      - filter:            {l_freq: 1.1, h_freq: 100}
       - notch_filter:      {freqs: 50 100 150}
       - resample:          {sfreq: 150}
       - filter:            {l_freq: 1, h_freq: 30, method: iir, iir_params: {order: 5, btype: bandpass, ftype: butter}}
+      - bad_channels: {picks: 'mag', significance_level: 0.1}
+      - bad_channels: {picks: 'grad', significance_level: 0.1}
+      - bad_segments: {segment_len: 600, picks: 'mag', significance_level: 0.1}      
+      - bad_segments: {segment_len: 600, picks: 'grad', significance_level: 0.1}      
+      
 """
 
 # Run preprocessing
-osl.preprocessing.run_proc_chain(
+osl.preprocessing.run_proc_batch(
     config, in_fif_file, outdir=preproc_dir, overwrite=True
 )
 
