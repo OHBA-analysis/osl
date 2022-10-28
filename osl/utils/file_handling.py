@@ -36,6 +36,8 @@ def process_file_inputs(inputs):
     if isinstance(inputs, pathlib.PosixPath):
         inputs = str(inputs)
 
+    process_list = True
+
     if isinstance(inputs, str):
 
         # Check if str is a directory path
@@ -44,6 +46,7 @@ def process_file_inputs(inputs):
             inputs = list([inputs])
         else:
             # assume str is meant to be a file path
+            process_list = False
             try:
                 # Check if path to unicode file...
                 open(inputs, 'r')
@@ -53,26 +56,27 @@ def process_file_inputs(inputs):
                 infiles = glob.glob(inputs)
                 outnames = [find_run_id(f) for f in infiles]
 
-    elif isinstance(inputs, (list, tuple)):
-        if len(inputs) == 0:
-            raise ValueError("inputs is an empty list!")
-        if isinstance(inputs[0], pathlib.PosixPath):
-            inputs = [str(i) for i in inputs]
-        if isinstance(inputs[0], str):
-            # We have a list of paths
-            infiles = [sanitise_filepath(f) for f in inputs]
-            outnames = [find_run_id(f) for f in infiles]
-        elif isinstance(inputs[0], (list, tuple)):
-            # We have a list containing files and output names
-            for row in inputs:
-                infiles.append(sanitise_filepath(row[0]))
-                outnames.append(row[1])
-        elif isinstance(inputs[0], mne.io.fiff.raw.Raw):
-            # We have a list of MNE objects
-            infiles = infiles
-            check_paths = False
-    else:
-        raise ValueError("Input type is invalid")
+    if process_list:
+        if isinstance(inputs, (list, tuple)):
+            if len(inputs) == 0:
+                raise ValueError("inputs is an empty list!")
+            if isinstance(inputs[0], pathlib.PosixPath):
+                inputs = [str(i) for i in inputs]
+            if isinstance(inputs[0], str):
+                # We have a list of paths
+                infiles = [sanitise_filepath(f) for f in inputs]
+                outnames = [find_run_id(f) for f in infiles]
+            elif isinstance(inputs[0], (list, tuple)):
+                # We have a list containing files and output names
+                for row in inputs:
+                    infiles.append(sanitise_filepath(row[0]))
+                    outnames.append(row[1])
+            elif isinstance(inputs[0], mne.io.fiff.raw.Raw):
+                # We have a list of MNE objects
+                infiles = infiles
+                check_paths = False
+        else:
+            raise ValueError("Input type is invalid")
 
     # Check that files actually exist if we've been passed filenames rather
     # than objects
