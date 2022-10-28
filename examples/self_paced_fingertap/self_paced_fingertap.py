@@ -50,11 +50,14 @@ if run_preproc:
     config = """
         preproc:
         - resample: {sfreq: 150, n_jobs: 6}    
-        #- filter: {l_freq: 13, h_freq: 30}
+        - filter:       {l_freq: 0.5, h_freq: 40, method: 'iir', iir_params: {order: 5, ftype: butter}}
+        - bad_channels: {picks: 'mag', ref_meg: False, significance_level: 0.1}
+        - bad_channels: {picks: 'grad', significance_level: 0.4}
+        - bad_segments: {segment_len: 600, picks: 'mag', ref_meg: False, significance_level: 0.1}
     """
 
     # Process a single file, this outputs fif_file
-    dataset = osl.preprocessing.run_proc_chain(
+    osl.preprocessing.run_proc_batch(
         config, ds_file, outdir=op.join(subjects_dir, subject), overwrite=True
     )
 

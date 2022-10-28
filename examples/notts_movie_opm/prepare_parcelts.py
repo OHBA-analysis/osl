@@ -23,11 +23,11 @@ sessions_to_do = np.arange(0, 2)
 subj_sess_2exclude = np.zeros([10, 2]).astype(bool)
 
 #subj_sess_2exclude = np.ones([10, 2]).astype(bool)
-#subj_sess_2exclude[4:, :] = False
+#subj_sess_2exclude[0, 0] = False
 
-run_convert = False
-run_preproc = False
-run_beamform_and_parcellate = False
+run_convert = True
+run_preproc = True
+run_beamform_and_parcellate = True
 run_fix_sign_ambiguity = True
 
 # parcellation to use
@@ -116,8 +116,8 @@ if run_preproc:
     preproc:
         - crop:         {tmin: 20}
         - resample:     {sfreq: 150, n_jobs: 6}            
-        - filter:       {l_freq: 4, h_freq: 40}
-        - bad_channels: {picks: 'meg'}        
+        - filter:       {l_freq: 4, h_freq: 40, method: 'iir', iir_params: {order: 5, ftype: butter}}
+        - bad_channels: {picks: 'meg', significance_level: 0.4}        
         - bad_segments: {segment_len: 200, picks: 'meg', significance_level: 0.1}
         - bad_segments: {segment_len: 400, picks: 'meg', significance_level: 0.1}
         - bad_segments: {segment_len: 600, picks: 'meg', significance_level: 0.1}
@@ -138,17 +138,6 @@ if run_preproc:
         ))
 
 if False:
-    # to just run coreg for subject 0:
-    source_recon.rhino.coreg(
-        preproc_fif_files[0],
-        recon_dir,
-        subjects[0],
-        already_coregistered=True
-    )
-
-    # to view coreg result for subject 0:
-    source_recon.rhino.coreg_display(recon_dir, subjects[2],
-                                     plot_type='surf')
 
     # to just run surfaces for subject 0:
     source_recon.rhino.compute_surfaces(
@@ -161,6 +150,17 @@ if False:
     # to view surfaces for subject 0:
     source_recon.rhino.surfaces_display(recon_dir, subjects[3])
 
+    # to just run coreg for subject 0:
+    source_recon.rhino.coreg(
+        preproc_fif_files[0],
+        recon_dir,
+        subjects[0],
+        already_coregistered=True
+    )
+
+    # to view coreg result for subject 0:
+    source_recon.rhino.coreg_display(recon_dir, subjects[0],
+                                     plot_type='surf')
 # -------------------------------------------------------------
 # %% Coreg and Source recon and Parcellate
 

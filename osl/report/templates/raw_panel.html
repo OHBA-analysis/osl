@@ -24,6 +24,9 @@
     <div class="tabpage" style='width: 100%' id={{ data.fif_id }}_info>
         <div>
             <b>Original file:</b> {{ data.filename }}</br>
+            {% if data.preproc_fif_filename != None %}
+                <b>Preprocessed file:</b> {{ data.preproc_fif_filename }}</br>
+            {% endif %}
             <b>Project name:</b> {{ data.projname }}</br>
             <b>Experimenter:</b> {{ data.experimenter }}</br>
             <b>Data acquired:</b> {{ data.meas_date }}</br>
@@ -57,8 +60,8 @@
             <img src="{{ data.plt_temporalsumsq }}" alt="" style='max-width: 100%'/>
         </div>
         <div style="width: 100%">
-            <h4>Variance Across Sensors Excluding Bad Segs</h4>
-            <img src="{{ data.plt_temporalsumsq_exclude_badsegs }}" alt="" style='max-width: 100%'/>
+            <h4>Variance Across Sensors Excluding Bad Chans and Segs</h4>
+            <img src="{{ data.plt_temporalsumsq_exclude_bads }}" alt="" style='max-width: 100%'/>
         </div>
         {% if data.plt_artefacts_eog is not none %}
             <div style="width: 100%">
@@ -80,8 +83,8 @@
             <img src="{{ data.plt_channeldev }}" alt="" style='max-width: 100%'/>
         </div>
         <div style="width: 75%; margin:0 auto">
-            <h4>Distribution of Per-Sensor Variance Excluding Bad Chans</h4>
-            <img src="{{ data.plt_channeldev_exclude_badchans }}" alt="" style='max-width: 100%'/>
+            <h4>Distribution of Per-Sensor Variance Excluding Bad Chans and Segs</h4>
+            <img src="{{ data.plt_channeldev_exclude_bads }}" alt="" style='max-width: 100%'/>
         </div>
         <div style="width: 100%">
             <h4>Bad channels</h4>
@@ -96,11 +99,11 @@
         <div style="width: 100%; display: table">
             <div style="display: table-row; height: 100px;">
                 <div class='figbox'>
-                    <h4>Full Power Spectra</h4>
+                    <h4>Full Power Spectra Excluding Bad Chans and Segs</h4>
                     <img src="{{ data.plt_spectra }}" alt="" style='max-width: 100%'/>
                 </div>
                 <div class='figbox'>
-                    <h4>1-48Hz Power Spectra</h4>
+                    <h4>1-48Hz Power Spectra Excluding Bad Chans and Segs</h4>
                     <img src="{{ data.plt_zoomspectra }}" alt="", style='max-width: 100%'/>
                 </div>
             </div>

@@ -61,19 +61,32 @@ def detect_maxfilt_zeros(raw):
         return None
 
 
-def detect_badsegments(raw, segment_len=1000, significance_level=0.05, picks="grad", mode=None, detect_zeros=True):
-    """Set bad segments in MNE object."""
+def detect_badsegments(raw, segment_len=1000, significance_level=0.05, picks="grad", ref_meg='auto', mode=None, detect_zeros=True):
+    """Set bad segments in MNE object.
+    Note that with CTF data, mne.pick_types will return:
+    ~274 axial grads (as magnetometers) if {picks: 'mag', ref_meg: False}
+    ~28 reference axial grads if {picks: 'grad'}
+    """
+
+    gesd_args = {'alpha': significance_level}
+
+    if (picks == "mag") or (picks == "grad"):
+        chinds = mne.pick_types(raw.info, meg=picks, ref_meg=ref_meg, exclude='bads')
+    elif picks == "meg":
+        chinds = mne.pick_types(raw.info, meg=True, ref_meg=ref_meg, exclude='bads')
+    elif picks == "eeg":
+        chinds = mne.pick_types(raw.info, eeg=True, ref_meg=ref_meg, exclude='bads')
+
     if mode is None:
         if detect_zeros:
             bdinds_maxfilt = detect_maxfilt_zeros(raw)
         else:
             bdinds_maxfilt = None
-        XX = raw.get_data(picks=picks)
+        XX = raw.get_data(picks=chinds)
     elif mode == "diff":
         bdinds_maxfilt = None
-        XX = np.diff(raw.get_data(picks=picks), axis=1)
+        XX = np.diff(raw.get_data(picks=chinds), axis=1)
 
-    gesd_args = {'alpha': significance_level}
     bdinds_std = sails.utils.detect_artefacts(
         XX, 1, reject_mode="segments", segment_len=segment_len, ret_mode="bad_inds", gesd_args = gesd_args
     )
@@ -112,29 +125,34 @@ def detect_badsegments(raw, segment_len=1000, significance_level=0.05, picks="gr
     return raw
 
 
-def detect_badchannels(raw, picks="grad", significance_level=0.05):
-    """Set bad channels in MNE object."""
+def detect_badchannels(raw, picks="grad", ref_meg="auto", significance_level=0.05):
+    """Set bad channels in MNE object.
+    Note that with CTF data, mne.pick_types will return:
+    ~274 axial grads (as magnetometers) if {picks: 'mag', ref_meg: False}
+    ~28 reference axial grads if {picks: 'grad'}
+    """
 
     gesd_args = {'alpha': significance_level}
 
-    bdinds = sails.utils.detect_artefacts(
-        raw.get_data(picks=picks), 0, reject_mode="dim", ret_mode="bad_inds", gesd_args=gesd_args
-    )
-
     if (picks == "mag") or (picks == "grad"):
-        chinds = mne.pick_types(raw.info, meg=picks, exclude=[])
+        chinds = mne.pick_types(raw.info, meg=picks, ref_meg=ref_meg, exclude='bads')
     elif picks == "meg":
-        chinds = mne.pick_types(raw.info, meg=True, exclude=[])
+        chinds = mne.pick_types(raw.info, meg=True, ref_meg=ref_meg, exclude='bads')
     elif picks == "eeg":
-        chinds = mne.pick_types(raw.info, eeg=True, exclude=[])
+        chinds = mne.pick_types(raw.info, eeg=True, ref_meg=ref_meg, exclude='bads')
     ch_names = np.array(raw.ch_names)[chinds]
+
+    bdinds = sails.utils.detect_artefacts(
+        raw.get_data(picks=chinds), 0, reject_mode="dim", ret_mode="bad_inds", gesd_args=gesd_args
+    )
 
     s = "Modality {0} - {1}/{2} channels rejected     ({3:02f}%)"
     pc = (bdinds.sum() / len(bdinds)) * 100
     logger.info(s.format(picks, bdinds.sum(), len(bdinds), pc))
 
+    # concatenate newly found bads to existing bads
     if np.any(bdinds):
-        raw.info["bads"] = list(ch_names[np.where(bdinds)[0]])
+        raw.info["bads"].extend(list(ch_names[np.where(bdinds)[0]]))
 
     return raw
 
@@ -151,6 +169,13 @@ def run_osl_bad_segments(dataset, userargs, logfile=None):
 
 
 def run_osl_bad_channels(dataset, userargs, logfile=None):
+
+    """
+    Note that with CTF data, mne.pick_types will return:
+    ~274 axial grads (as magnetometers) if {picks: 'mag', ref_meg: False}
+    ~28 reference axial grads if {picks: 'grad'}
+    """
+
     target = userargs.pop("target", "raw")
     logger.info("OSL Stage - {0} : {1}".format(target, "detect_badchannels"))
     logger.info("userargs: {0}".format(str(userargs)))
