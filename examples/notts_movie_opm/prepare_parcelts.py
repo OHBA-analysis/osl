@@ -13,6 +13,7 @@ import numpy as np
 
 from osl import preprocessing
 from osl import source_recon
+import matplotlib.pyplot as plt
 
 import yaml
 

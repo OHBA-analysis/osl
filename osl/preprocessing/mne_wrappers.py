@@ -341,11 +341,13 @@ def run_mne_ica_raw(dataset, userargs):
     target = userargs.pop("target", "raw")
     logger.info("MNE Stage - {0}".format("mne.preprocessing.ICA"))
     logger.info("userargs: {0}".format(str(userargs)))
-
+    
     # MNE recommends applying a high pass filter at 1 Hz before calculating
-    # the ICA:
+    # the ICA (make this adjustable by user):
     # https://mne.tools/stable/auto_tutorials/preprocessing/40_artifact_correction_ica.html#filtering-to-remove-slow-drifts
-    filt_raw = dataset["raw"].copy().filter(l_freq=1, h_freq=None)
+    l_freq = userargs.pop("l_freq", 1)
+    h_freq = userargs.pop("h_freq", None)
+    filt_raw = dataset["raw"].copy().filter(l_freq=l_freq, h_freq=h_freq)
 
     # NOTE: **userargs doesn't work because 'picks' is in there
     ica = mne.preprocessing.ICA(n_components=userargs["n_components"])
