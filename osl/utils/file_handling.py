@@ -21,10 +21,10 @@ def process_file_inputs(inputs):
 
     The argument, inputs, can be...
     1) string path to unicode file
-    2) string path to dir (if ctf .ds dir)
+    2) string path to dir (e.g. if CTF .ds dir)
     3) string path to file or regular-expression matching files
     4) list of string paths to files
-    5) list of string paths to dirs (if ctf .ds dirs)
+    5) list of string paths to dirs (e.g. if CTF .ds dirs)
     6) list of tuples with path to file and output name pairs
     7) list of MNE objects
     """
@@ -36,11 +36,24 @@ def process_file_inputs(inputs):
     if isinstance(inputs, pathlib.PosixPath):
         inputs = str(inputs)
 
-    # is it a single str, if it is then put it in a list
     if isinstance(inputs, str):
-        inputs = list([inputs])
 
-    if isinstance(inputs, (list, tuple)):
+        # Check if str is a directory path
+        if os.path.isdir(inputs):
+            # it is a single dir str, put it in a list
+            inputs = list([inputs])
+        else:
+            # assume str is meant to be a file path
+            try:
+                # Check if path to unicode file...
+                open(inputs, 'r')
+                infiles, outnames = _load_unicode_inputs(inputs)
+            except (UnicodeDecodeError, FileNotFoundError, IndexError):
+                # ...else we have a single path or glob expression
+                infiles = glob.glob(inputs)
+                outnames = [find_run_id(f) for f in infiles]
+
+    elif isinstance(inputs, (list, tuple)):
         if len(inputs) == 0:
             raise ValueError("inputs is an empty list!")
         if isinstance(inputs[0], pathlib.PosixPath):
