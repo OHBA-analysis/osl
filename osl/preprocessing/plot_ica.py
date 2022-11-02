@@ -372,19 +372,16 @@ def _init_browser(backend, **kwargs):  # OSL ADDITION IN ORDER TO USE OSL'S FIGU
 class osl_MNEBrowseFigure(MNEBrowseFigure):
     """Interactive figure with scrollbars, for data browsing."""
 
-    def __init__(self, inst, figsize, ica=None, xlabel="Time (s)", **kwargs):
+    def __init__(self, inst, figsize, ica=None,
+                 xlabel='Time (s)', **kwargs):
         from matplotlib.colors import to_rgba_array
-        from matplotlib.ticker import (
-            FixedLocator,
-            FixedFormatter,
-            FuncFormatter,
-            NullFormatter,
-        )
         from matplotlib.patches import Rectangle
-        from matplotlib.widgets import Button
+        from matplotlib.ticker import (FixedFormatter, FixedLocator,
+                                       FuncFormatter, NullFormatter)
         from matplotlib.transforms import blended_transform_factory
-        from mpl_toolkits.axes_grid1.axes_size import Fixed
+        from matplotlib.widgets import Button
         from mpl_toolkits.axes_grid1.axes_divider import make_axes_locatable
+        from mpl_toolkits.axes_grid1.axes_size import Fixed
 
         # # OSL IMPORTS
         from mne import BaseEpochs
@@ -475,7 +472,11 @@ class osl_MNEBrowseFigure(MNEBrowseFigure):
         # this only gets shown in zen mode
         self.mne.zen_xlabel = ax_main.set_xlabel(xlabel)
         self.mne.zen_xlabel.set_visible(not self.mne.scrollbars_visible)
-
+        
+        # make sure background color of the axis is set
+        if 'bgcolor' in kwargs:
+            ax_main.set_facecolor(kwargs['bgcolor'])
+        
         # SCROLLBARS
         ax_hscroll = div.append_axes(
             position="bottom", size=Fixed(scroll_width), pad=Fixed(hscroll_dist)
@@ -491,16 +492,11 @@ class osl_MNEBrowseFigure(MNEBrowseFigure):
             epoch_nums = self.mne.inst.selection
             for ix, _ in enumerate(epoch_nums):
                 start = self.mne.boundary_times[ix]
-                width = np.diff(self.mne.boundary_times[ix : ix + 2])[0]
+                width = np.diff(self.mne.boundary_times[:2])[0]
                 ax_hscroll.add_patch(
                     Rectangle(
-                        (start, 0),
-                        width,
-                        1,
-                        color="none",
-                        zorder=self.mne.zorder["patch"],
-                    )
-                )
+                        (start, 0), width, 1, color="none",
+                        zorder=self.mne.zorder["patch"]))
             # both axes, major ticks: gridlines
             for _ax in (ax_main, ax_hscroll):
                 _ax.xaxis.set_major_locator(FixedLocator(self.mne.boundary_times[1:-1]))
@@ -674,12 +670,16 @@ class osl_MNEBrowseFigure(MNEBrowseFigure):
         picks = self.mne.picks
         ch_names = self.mne.ch_names[picks]
         ch_types = self.mne.ch_types[picks]
+        offset_ixs = (picks
+                      if self.mne.butterfly and self.mne.ch_selections is None
+                      else slice(None))
+        offsets = self.mne.trace_offsets[offset_ixs]
         bad_bool = np.in1d(ch_names, self.mne.info["bads"])
         # OSL ADDITION
         bad_int = []
         for i in range(len(ch_names)):
             if ch_names[i] in self.mne.info["bads"]:
-                if ch_names[i] in list(self.mne.ica.labels_.keys()):
+                if [i] in list(self.mne.ica.labels_.values()):
                     bad_int.append(
                         self.mne.bad_labels_list.index(
                             self.mne.ica.labels_[ch_names[i]]
@@ -689,8 +689,10 @@ class osl_MNEBrowseFigure(MNEBrowseFigure):
                 else:
                     bad_int.append(0)
             else:
-                if ch_names[i] in list(self.mne.ica.labels_.keys()):  # remove entry
-                    del self.mne.ica.labels_[ch_names[i]]
+                if [i] in list(self.mne.ica.labels_.values()):  # remove entry
+                    whichkeys = [list(self.mne.ica.labels_.keys())[k] for k in np.where([i in ii for ii in list(self.mne.ica.labels_.values())])[0]]
+                    for k in whichkeys:
+                        self.mne.ica.labels_[k] = list(np.setdiff1d(self.mne.ica.labels_[k], i))
                 bad_int.append(np.nan)
 
         # colors
@@ -890,7 +892,7 @@ class osl_MNEBrowseFigure(MNEBrowseFigure):
                         show=True,
                         outlines="head",
                         contours=0,
-                        image_interp="bilinear",
+                        image_interp="cubic",
                         res=64,
                         sensors=False,
                         allow_ref_meg=False,
@@ -955,8 +957,9 @@ class osl_MNEBrowseFigure(MNEBrowseFigure):
         else:
             last_time = self.mne.inst.times[-1]
         # scroll up/down
-        if key in ("down", "up"):
-            direction = -1 if key == "up" else 1
+        if key in ('down', 'up', 'shift+down', 'shift+up'):
+            key = key.split('+')[-1]
+            direction = -1 if key == 'up' else 1
             # butterfly case
             if self.mne.butterfly:
                 return
@@ -969,14 +972,13 @@ class osl_MNEBrowseFigure(MNEBrowseFigure):
                 selections_dict = self.mne.ch_selections
                 penult = current_idx < (len(labels) - 1)
                 pre_penult = current_idx < (len(labels) - 2)
-                has_custom = selections_dict.get("Custom", None) is not None
-                def_custom = len(selections_dict.get("Custom", list()))
-                up_ok = key == "up" and current_idx > 0
-                down_ok = key == "down" and (
-                    pre_penult
-                    or (penult and not has_custom)
-                    or (penult and has_custom and def_custom)
-                )
+                has_custom = selections_dict.get('Custom', None) is not None
+                def_custom = len(selections_dict.get('Custom', list()))
+                up_ok = key == 'up' and current_idx > 0
+                down_ok = key == 'down' and (
+                        pre_penult or
+                        (penult and not has_custom) or
+                        (penult and has_custom and def_custom))
                 if up_ok or down_ok:
                     buttons.set_active(current_idx + direction)
             # normal case
@@ -1061,6 +1063,8 @@ class osl_MNEBrowseFigure(MNEBrowseFigure):
             self._toggle_epoch_histogram()
         elif key == "j" and len(self.mne.projs):  # SSP window
             self._toggle_proj_fig()
+        elif key == 'J' and len(self.mne.projs):
+            self._toggle_proj_checkbox(event, toggle_all=True)
         elif key == "p":  # toggle draggable annotations
             self._toggle_draggable_annotations(event)
             if self.mne.fig_annotation is not None:
@@ -1079,15 +1083,23 @@ class osl_MNEBrowseFigure(MNEBrowseFigure):
         # OSL ADDITION: labeling artifact type of bad components
         elif str(key).isnumeric() and (
             int(key) in range(len(self.mne.bad_labels_list) + 1)
-        ):
+        ): # TODO: Fix this!
             if len(self.mne.info["bads"]) > 0:
                 last_bad_component = self.mne.info["bads"][-1]
                 # save bad component label in dict.
-                self.mne.ica.labels_[last_bad_component] = self.mne.bad_labels_list[
-                    int(key) - 1
-                ]  # TODO: use the labels_ convention used by MNE
+                all_labels = list(self.mne.ica.labels_.keys())
+                tmp_label = self.mne.bad_labels_list[
+                    int(key) - 1]
+                if tmp_label == 'eog':
+                    tmp_label = tmp_label + '/3/manual'
+                else:
+                    tmp_label = tmp_label + '/manual'
+                if tmp_label in self.mne.ica.labels_:
+                    self.mne.ica.labels_[tmp_label].append(last_bad_component)
+                else:
+                    self.mne.ica.labels_[tmp_label] = [last_bad_component]
                 print(
-                    f'Component {last_bad_component} labeled as "{self.mne.bad_labels_list[int(key) - 1]}"'
+                    f'Component {last_bad_component} labeled as "{tmp_label}"'
                 )
                 self._draw_traces()  # This makes sure the traces are given the corresponding color right away
         else:  # check for close key / fullscreen toggle
