@@ -929,14 +929,21 @@ class osl_MNEBrowseFigure(MNEBrowseFigure):
                 self.mne.ica._ica_names.index(ch) for ch in self.mne.info["bads"]
             ]
             # OSL ADDITION: remove bad component labels that were reversed to good component
-            tmp = list(self.mne.ica.labels_.keys())[:]
+            tmp = list(self.mne.ica.labels_.values())[:]
             for ch in tmp:
-                if ch not in self.mne.info["bads"]:
-                    del self.mne.ica.labels_[ch]
+                if ch not in self.mne.ica.exclude:
+                    # find in which label it has
+                    allix = np.where(list(self.mne.ica.labels_.values()) == ch)
+                    for ix in allix:
+                        self.mne.ica.labels_[list(self.mne.ica.labels_.keys())[ix]] = \
+                            np.setdiff1d(self.mne.ica.labels_[list(self.mne.ica.labels_.keys())[ix]], ch)
             # label bad components without a manual label as "unknown"
-            for ch in self.mne.info["bads"]:
-                if ch not in self.mne.ica.labels_:
-                    self.mne.ica.labels_[ch] = "unknown"
+            for ch in self.mne.ica.exclude:
+                if ch not in self.mne.ica.labels_.values():
+                    if "unknown" not in self.mne.ica.labels_:
+                        self.mne.ica.labels_["unknown"] = [ch]
+                    else:
+                        self.mne.ica.labels_["unknown"].append(ch)
         # write window size to config
         size = ",".join(self.get_size_inches().astype(str))
         set_config("MNE_BROWSE_RAW_SIZE", size, set_env=False)
@@ -1084,8 +1091,8 @@ class osl_MNEBrowseFigure(MNEBrowseFigure):
         elif str(key).isnumeric() and (
             int(key) in range(len(self.mne.bad_labels_list) + 1)
         ): # TODO: Fix this!
-            if len(self.mne.info["bads"]) > 0:
-                last_bad_component = self.mne.info["bads"][-1]
+            if len(self.mne.ica.exclude) > 0:
+                last_bad_component = self.mne.ica.exclude[-1]
                 # save bad component label in dict.
                 all_labels = list(self.mne.ica.labels_.keys())
                 tmp_label = self.mne.bad_labels_list[
