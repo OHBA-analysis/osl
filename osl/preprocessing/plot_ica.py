@@ -3,6 +3,7 @@
 """
 
 # Authors: Mats van Es <mats.vanes@psych.ox.ac.uk>
+import matplotlib.pyplot as plt
 
 
 def plot_ica(
@@ -235,6 +236,16 @@ def _plot_sources(
     # misc
     bad_color = "lightgray"
     title = "ICA components" if title is None else title
+    
+    # OSL ADDITION
+    # define some colors for bad component labels
+    import matplotlib.colors as mcolors
+
+    c = list(mcolors.TABLEAU_COLORS.keys())
+    idx = [c.index(i) for i in c if "red" in i]
+    for i in idx:
+        del c[i]
+    c = c[: len(bad_labels_list) + 1]  # keep as many as required.
 
     params = dict(
         inst=inst_array,
@@ -273,6 +284,7 @@ def _plot_sources(
         # colors
         ch_color_bad=bad_color,
         ch_color_dict=color,
+        bad_label_colors=c,
         # display
         butterfly=False,
         clipping=None,
@@ -294,17 +306,6 @@ def _plot_sources(
 
     fig = _get_browser(**params)
 
-    # OSL ADDITION
-    # define some colors for bad component labels
-    import matplotlib.colors as mcolors
-
-    c = list(mcolors.TABLEAU_COLORS.keys())
-    idx = [c.index(i) for i in c if "red" in i]
-    for i in idx:
-        del c[i]
-    c = c[: len(bad_labels_list) + 1]  # keep as many as required.
-    fig.mne.bad_label_colors = c
-
     fig._update_picks()
 
     # update data, and plot
@@ -317,7 +318,7 @@ def _plot_sources(
         fig._setup_annotation_colors()
         fig._update_annotation_segments()
         fig._draw_annotations()
-        fig._alt_title()  # OSL ADDITION
+        #fig._alt_title()  # OSL ADDITION
 
     plt_show(show, block=block)
     return fig
@@ -402,8 +403,8 @@ class osl_MNEBrowseFigure(MNEBrowseFigure):
 
         # MAIN AXES: default sizes (inches)
         # XXX simpler with constrained_layout? (when it's no longer "beta")
-        l_margin = 1.0
-        r_margin = 0.1
+        l_margin = 0.8#1.0
+        r_margin = 1.0#0.1
         b_margin = 0.45
         t_margin = 0.35
         scroll_width = 0.25
@@ -476,7 +477,13 @@ class osl_MNEBrowseFigure(MNEBrowseFigure):
         # make sure background color of the axis is set
         if 'bgcolor' in kwargs:
             ax_main.set_facecolor(kwargs['bgcolor'])
-        
+
+        # OSL ADDITION: GET POSITIONS FOR BAD LABELS LIST
+        self.mne.bad_labels_xpos = 1 - self._inch_to_rel(r_margin + 0.35)
+        self.mne.bad_labels_ypos = []
+        for i in range(len(self.mne.bad_labels_list)+2):
+            self.mne.bad_labels_ypos.append(1 - self._inch_to_rel(t_margin + 0.5 + 0.3*(i+1), horiz=False))
+
         # SCROLLBARS
         ax_hscroll = div.append_axes(
             position="bottom", size=Fixed(scroll_width), pad=Fixed(hscroll_dist)
@@ -654,7 +661,6 @@ class osl_MNEBrowseFigure(MNEBrowseFigure):
         )
 
     def _draw_traces(self):
-        print('REDRAWING')
         """Draw (or redraw) the channel data."""
         from matplotlib.colors import to_rgba_array
         from matplotlib.patches import Rectangle
@@ -681,18 +687,18 @@ class osl_MNEBrowseFigure(MNEBrowseFigure):
         for ch in [self.mne.ica._ica_names[ii] for ii in picks]:
             i = self.mne.ica._ica_names.index(ch)
             if ch in self.mne.info["bads"]:
-                if i in np.concatenate(list(self.mne.ica.labels_.values())):
+                if len(list(self.mne.ica.labels_.values())) > 0 and i in np.concatenate(list(self.mne.ica.labels_.values())):
                     i = int(i)
                     ix = np.where([i in self.mne.ica.labels_[k] for k in self.mne.ica.labels_.keys()])[0][0]
                     lbl = list(self.mne.ica.labels_.keys())[ix].split('/')[0]
                     if lbl == 'unknown':
                         bad_int.append(0)
                     else:
-                        bad_int.append(self.mne.bad_labels_list.index(lbl) + 2)
+                        bad_int.append(self.mne.bad_labels_list.index(lbl) + 1)
                 else:
                     bad_int.append(0)
             else:
-                if i in np.concatenate(list(self.mne.ica.labels_.values())):  # remove entry
+                if len(list(self.mne.ica.labels_.values())) > 0 and i in np.concatenate(list(self.mne.ica.labels_.values())):  # remove entry
                     i = int(i)
                     whichkeys = [list(self.mne.ica.labels_.keys())[k] for k in np.where([i in self.mne.ica.labels_[k] for k in self.mne.ica.labels_.keys()])[0]]
                     for k in whichkeys:
@@ -855,9 +861,20 @@ class osl_MNEBrowseFigure(MNEBrowseFigure):
             self.get_axes()[1 : n_topos * n_chtype + 1], (n_chtype, n_topos)
         )
         self.plot_topos(self.mne.ica, ax_topo, self.mne.picks)
-
+        
+        # OSL ADDITION: ADD BAD LABELS
+        for i in range(len(self.mne.bad_labels_list)+2):
+            if i == 0:
+                plt.figtext(self.mne.bad_labels_xpos, self.mne.bad_labels_ypos[i], "bad component \ntype:", fontweight='bold')
+            elif i == 1:
+                plt.figtext(self.mne.bad_labels_xpos, self.mne.bad_labels_ypos[i], "unknown",
+                            color=self.mne.ch_color_bad, fontweight='semibold')
+            else:
+                plt.figtext(self.mne.bad_labels_xpos, self.mne.bad_labels_ypos[i], f'{i-1}: ' + self.mne.bad_labels_list[i - 2],
+                            color=self.mne.bad_label_colors[i - 2], fontweight='semibold')
+        
         # OSL ADDITION: ADD CUSTOM TITLE
-        self._alt_title()
+        #self._alt_title()
 
     def plot_topos(self, ica, ax_topo, picks):  # OSL ADDITION FOR TOPOS
         import numpy as np
@@ -909,7 +926,6 @@ class osl_MNEBrowseFigure(MNEBrowseFigure):
                     ax_topo[i, j].set_title('')
 
     def _keypress(self, event):
-        print(event.key)
         from mne.viz.utils import _events_off
         import numpy as np
 
@@ -1050,12 +1066,10 @@ class osl_MNEBrowseFigure(MNEBrowseFigure):
         ):  # TODO: Fix this!
             if len(self.mne.info["bads"]) > 0:
                 last_bad_component = self.mne.ica._ica_names.index(self.mne.info["bads"][-1])
-                print(last_bad_component)
-                print(self.mne.info["bads"])
                 all_labels = list(self.mne.ica.labels_.keys())
 
                 # first remove from a the key it was in before, if applicable:
-                if last_bad_component in list(self.mne.ica.labels_.values())[0]:
+                if len(list(self.mne.ica.labels_.values())) > 0 and last_bad_component in list(self.mne.ica.labels_.values())[0]:
                     ix = \
                     np.where([last_bad_component in self.mne.ica.labels_[k] for k in self.mne.ica.labels_.keys()])[0]
                     for ixx in ix:
@@ -1083,9 +1097,8 @@ class osl_MNEBrowseFigure(MNEBrowseFigure):
             super()._keypress(event)
 
 
-    def _close(
-        self, event
-    ):  # OSL VERSION - SIMILAR TO OLD MNE VERSION TODO: Check if we need to adopt this
+    def _close(self, event):
+        # OSL VERSION - SIMILAR TO OLD MNE VERSION TODO: Check if we need to adopt this
         """Handle close events (via keypress or window [x])."""
         from matplotlib.pyplot import close
         from mne.utils import logger, set_config
@@ -1100,6 +1113,7 @@ class osl_MNEBrowseFigure(MNEBrowseFigure):
         if self.mne.instance_type in ("raw", "epochs"):
             self.mne.inst.info["bads"] = self.mne.info["bads"]
             logger.info(f"Channels marked as bad: {self.mne.info['bads'] or 'none'}")
+
         # OSL ADDITION
         # ICA excludes
         elif self.mne.instance_type == "ica":
@@ -1108,6 +1122,11 @@ class osl_MNEBrowseFigure(MNEBrowseFigure):
             ]
             # OSL ADDITION: remove bad component labels that were reversed to good component
             tmp = list(self.mne.ica.labels_.values())[:]
+            try:
+                tmp = np.concatenate(tmp)
+            except:
+                tmp = []
+
             for ch in tmp:
                 if ch not in self.mne.ica.exclude:
                     # find in which label it has
@@ -1115,14 +1134,39 @@ class osl_MNEBrowseFigure(MNEBrowseFigure):
                     for ix in allix:
                         self.mne.ica.labels_[list(self.mne.ica.labels_.keys())[ix]] = \
                             np.setdiff1d(self.mne.ica.labels_[list(self.mne.ica.labels_.keys())[ix]], ch)
+
             # label bad components without a manual label as "unknown"
             for ch in self.mne.ica.exclude:
-                if ch not in self.mne.ica.labels_.values():
+                tmp = list(self.mne.ica.labels_.values())
+                if len(tmp)==0:
+                    tmp = []
+                else:
+                    tmp = np.concatenate(tmp)
+                if ch not in tmp:
                     if "unknown" not in self.mne.ica.labels_:
                         self.mne.ica.labels_["unknown"] = []
                     self.mne.ica.labels_["unknown"].append(ch)
                     if type(self.mne.ica.labels_["unknown"]) is np.ndarray:
                         self.mne.ica.labels_["unknown"] = self.mne.ica.labels_["unknown"].tolist()
+
+            # Add to labels_ a generic eog/ecg field
+            if len(list(self.mne.ica.labels_.keys())) > 0:
+                for k in list(self.mne.ica.labels_.keys()):
+                    if 'ecg' in k.lower() and k.lower()!='ecg':
+                        if 'ecg' not in self.mne.ica.labels_:
+                            self.mne.ica.labels_["ecg"] = []
+                        self.mne.ica.labels_["ecg"].append(self.mne.ica.labels_[k])
+                        self.mne.ica.labels_["ecg"] = np.concatenate(self.mne.ica.labels_["ecg"])
+                        if type(self.mne.ica.labels_["ecg"]) is np.ndarray:
+                            self.mne.ica.labels_["ecg"] = self.mne.ica.labels_["ecg"].tolist()
+                    elif 'eog' in k.lower() and k.lower()!='eog':
+                        if 'eog' not in self.mne.ica.labels_:
+                            self.mne.ica.labels_["eog"] = []
+                        self.mne.ica.labels_["eog"].append(self.mne.ica.labels_[k])
+                        self.mne.ica.labels_["eog"] = np.concatenate(self.mne.ica.labels_["eog"])
+                        if type(self.mne.ica.labels_["eog"]) is np.ndarray:
+                            self.mne.ica.labels_["eog"] = self.mne.ica.labels_["eog"].tolist()
+
         # write window size to config
         size = ",".join(self.get_size_inches().astype(str))
         set_config("MNE_BROWSE_RAW_SIZE", size, set_env=False)
@@ -1155,6 +1199,7 @@ class osl_MNEBrowseFigure(MNEBrowseFigure):
                     va="baseline",
                     color="red",
                 )
+                #self.mne.annotation_texts.append(text)
             elif i == len(self.mne.bad_labels_list) + 1:
                 text = self.mne.ax_main.annotate(
                     "unknown",
@@ -1176,7 +1221,7 @@ class osl_MNEBrowseFigure(MNEBrowseFigure):
                     color=self.mne.bad_label_colors[i],
                 )
 
-            self.mne.annotation_texts.append(text)
+            #self.mne.annotation_texts.append(text)
 
 
 # TODO: OSL IMPLEMENT PLOT_ICA FOR EVOKED DATA
