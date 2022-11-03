@@ -125,6 +125,7 @@ def coreg(
     use_nose,
     use_headshape,
     already_coregistered=False,
+    allow_smri_scaling=False,
 ):
     """Wrapper for full coregistration: compute_surfaces, coreg and forward_model.
 
@@ -146,6 +147,13 @@ def coreg(
         Should we use the headshape points in the coregistration?
     already_coregistered : bool
         Indicates that the data is already coregistered.
+    allow_smri_scaling : bool
+        Indicates if we are to allow scaling of the sMRI, such that the sMRI-derived fids are
+        scaled in size to better match the polhemus-derived fids.
+        This assumes that we trust the size (e.g. in mm) of the polhemus-derived fids,
+        but not the size of the sMRI-derived fids.
+        E.g. this might be the case if we do not trust the size (e.g. in mm) of the sMRI,
+        or if we are using a template sMRI that has not come from this subject.
     """
     # Run coregistration
     rhino.coreg(
@@ -155,6 +163,7 @@ def coreg(
         use_headshape=use_headshape,
         use_nose=use_nose,
         already_coregistered=already_coregistered,
+        allow_smri_scaling=allow_smri_scaling,
         logger=logger,
     )
 
@@ -206,6 +215,7 @@ def coregister(
     model,
     overwrite=False,
     already_coregistered=False,
+    allow_smri_scaling=False,
     eeg=False,
 ):
     """Wrapper for full coregistration: compute_surfaces, coreg and forward_model.
@@ -235,6 +245,13 @@ def coregister(
         options have already been run
     already_coregistered : bool
         Indicates that the data is already coregistered.
+    allow_smri_scaling : bool
+        Indicates if we are to allow scaling of the sMRI, such that the sMRI-derived fids are
+        scaled in size to better match the polhemus-derived fids.
+        This assumes that we trust the size (e.g. in mm) of the polhemus-derived fids,
+        but not the size of the sMRI-derived fids.
+        E.g. this might be the case if we do not trust the size (e.g. in mm) of the sMRI,
+        or if we are using a template sMRI that has not come from this subject.
     eeg : bool
         Are we using EEG channels in the source reconstruction?
     """
@@ -256,6 +273,7 @@ def coregister(
         use_headshape=use_headshape,
         use_nose=use_nose,
         already_coregistered=already_coregistered,
+        allow_smri_scaling=allow_smri_scaling,
         logger=logger,
     )
 

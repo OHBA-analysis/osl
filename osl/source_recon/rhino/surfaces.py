@@ -53,24 +53,20 @@ def get_surfaces_filenames(subjects_dir, subject):
     filenames = {
         "basedir": basedir,
         "smri_file": op.join(basedir, "smri.nii.gz"),
-        "mni2mri_flirt_file": op.join(basedir, "mni2mri_flirt.txt"),
+        "mni2mri_flirt_xform_file": op.join(basedir, "mni2mri_flirt_xform_file.txt"),
         "mni_mri_t_file": op.join(basedir, "mni_mri-trans.fif"),
-        "bet_smri_basefile": op.join(basedir, "bet_smri"),
+
+        "bet_outskin_mesh_vtk_file": op.join(basedir, "outskin_mesh.vtk"), # BET output
+        "bet_inskull_mesh_vtk_file": op.join(basedir, "inskull_mesh.vtk"), # BET output
+        "bet_outskull_mesh_vtk_file": op.join(basedir, "outskull_mesh.vtk"), # BET output
+
         "bet_outskin_mesh_file": op.join(basedir, "outskin_mesh.nii.gz"),
-        "bet_outskin_mesh_vtk_file": op.join(basedir, "outskin_mesh.vtk"),
-        "bet_outskin_surf_file": op.join(basedir, "outskin_surf.surf"),
         "bet_outskin_plus_nose_mesh_file": op.join(
             basedir, "outskin_plus_nose_mesh.nii.gz"
         ),
-        "bet_outskin_plus_nose_surf_file": op.join(
-            basedir, "outskin_plus_nose_surf.surf"
-        ),
         "bet_inskull_mesh_file": op.join(basedir, "inskull_mesh.nii.gz"),
-        "bet_inskull_mesh_vtk_file": op.join(basedir, "inskull_mesh.vtk"),
-        "bet_inskull_surf_file": op.join(basedir, "inskull_surf.surf"),
         "bet_outskull_mesh_file": op.join(basedir, "outskull_mesh.nii.gz"),
-        "bet_outskull_mesh_vtk_file": op.join(basedir, "outskull_mesh.vtk"),
-        "bet_outskull_surf_file": op.join(basedir, "outskull_surf.surf"),
+
         "std_brain": op.join(
             os.environ["FSLDIR"],
             "data",
@@ -122,8 +118,8 @@ def compute_surfaces(
         - bet_outskull_mesh_file is actually the inner skull surface
         - bet_outskin_mesh_file is the outer skin/scalp surface
     5) Refine scalp outline, adding nose to scalp surface (optional)
-    6) Output surfaces in sMRI (native) space and the transform from sMRI
-       space to MNI
+    6) Output the transform from sMRI space to MNI
+    7) Output surfaces in sMRI space
 
     Parameters
     ----------
@@ -338,25 +334,24 @@ please check output of:\n fslorient -orient {}".format(filenames["smri_file"])
         )
     )
 
-    # Calculate overall transform, flirt_mri2mni_xform_file, from smri to MNI
-    flirt_mri2mni_xform_file = op.join(
-        filenames["basedir"], "flirt_mri2mni_xform.txt"
+    # Calculate overall flirt transform, from mri to MNI
+    mri2mni_flirt_xform_file = op.join(
+        filenames["basedir"], "flirt_mri2mni_flirt_xform.txt"
     )
     rhino_utils.system_call(
         "convert_xfm -omat {} -concat {} {}".format(
-            flirt_mri2mni_xform_file,
+            mri2mni_flirt_xform_file,
             flirt_mniaxes2mni_file,
             flirt_mri2mniaxes_xform_file,
         )
     )
 
-    # and calculate its inverse, flirt_mni2mri_xform_file, from MNI to smri
-    flirt_mni2mri_xform_file = op.join(
-        filenames["basedir"], "flirt_mni2mri_xform_file.txt"
-    )
+    # and also calculate its inverse, from MNI to mri
+    mni2mri_flirt_xform_file = filenames['mni2mri_flirt_xform_file']
+
     rhino_utils.system_call(
         "convert_xfm -omat {}  -inverse {}".format(
-            flirt_mni2mri_xform_file, flirt_mri2mni_xform_file
+            mni2mri_flirt_xform_file, mri2mni_flirt_xform_file
         )
     )
 
@@ -366,7 +361,7 @@ please check output of:\n fslorient -orient {}".format(filenames["smri_file"])
         "flirt -in {} -ref {} -applyxfm -init {} -out {}".format(
             filenames["smri_file"],
             filenames["std_brain"],
-            flirt_mri2mni_xform_file,
+            mri2mni_flirt_xform_file,
             flirt_smri_mni_file,
         )
     )
@@ -438,7 +433,7 @@ please check output of:\n fslorient -orient {}".format(filenames["smri_file"])
         "convert_xfm -omat {} -concat {} {}".format(
             flirt_mri2mnibigfov_xform_file,
             flirt_mni2mnibigfov_xform_file,
-            flirt_mri2mni_xform_file,
+            mri2mni_flirt_xform_file,
         )
     )
 
@@ -595,40 +590,26 @@ please check output of:\n fslorient -orient {}".format(filenames["smri_file"])
     )
 
     # -------------------------------------------------------------------------
-    # 6) Output surfaces in sMRI (native) space and the transform from sMRI
-    #    space to MNI
+    # 6) Output the transform from sMRI space to MNI
 
-    # Move BET surface to native sMRI space. They are currently in MNI space
+    flirt_mni2mri = np.loadtxt(mni2mri_flirt_xform_file)
 
-    flirt_mni2mri = np.loadtxt(flirt_mni2mri_xform_file)
-
-    xform_mni2mri = rhino_utils._get_xform_from_flirt_xform(
+    xform_mni2mri = rhino_utils._get_mne_xform_from_flirt_xform(
         flirt_mni2mri, filenames["std_brain"], filenames["smri_file"]
     )
 
     mni_mri_t = Transform("mni_tal", "mri", xform_mni2mri)
     write_trans(filenames["mni_mri_t_file"], mni_mri_t, overwrite=True)
 
-    # Transform betsurf mask/mesh output from MNI to sMRI space
-    for mesh_name in {"outskin_mesh", "inskull_mesh", "outskull_mesh"}:
-        # xform mask
-        rhino_utils.system_call(
-            "flirt -interp nearestneighbour -in {} -ref {} -applyxfm -init {} -out {}".format(
-                op.join(filenames["basedir"], "flirt_" + mesh_name + ".nii.gz"),
-                filenames["smri_file"],
-                flirt_mni2mri_xform_file,
-                op.join(filenames["basedir"], mesh_name),
-            )
-        )
+    # -------------------------------------------------------------------------
+    # 7) Output surfaces in sMRI(native) space
 
-        # xform vtk mesh
-        rhino_utils._transform_vtk_mesh(
-            op.join(filenames["basedir"], "flirt_" + mesh_name + ".vtk"),
-            op.join(filenames["basedir"], "flirt_" + mesh_name + ".nii.gz"),
-            op.join(filenames["basedir"], mesh_name + ".vtk"),
-            op.join(filenames["basedir"], mesh_name + ".nii.gz"),
-            filenames["mni_mri_t_file"],
-        )
+    # Transform betsurf output mask/mesh output from MNI to sMRI space
+    rhino_utils._transform_bet_surfaces(mni2mri_flirt_xform_file,
+                                        filenames["mni_mri_t_file"],
+                                        filenames,
+                                        filenames["smri_file"],
+                                        )
 
     # -------------------------------------------------------------------------
     # Write a file to indicate RHINO has been run
@@ -640,10 +621,6 @@ please check output of:\n fslorient -orient {}".format(filenames["smri_file"])
 
     # -------------------------------------------------------------------------
     # Clean up
-
-    rhino_utils.system_call(
-        "cp -f {} {}".format(flirt_mni2mri_xform_file, filenames["mni2mri_flirt_file"])
-    )
 
     if cleanup_files:
         # CLEAN UP FILES ON DISK
@@ -675,6 +652,7 @@ def surfaces_display(subjects_dir, subject):
     bet_outskull_mesh_file is the inner skull surface, due to the naming
     conventions used by BET
     """
+
 
     filenames = get_surfaces_filenames(subjects_dir, subject)
 
