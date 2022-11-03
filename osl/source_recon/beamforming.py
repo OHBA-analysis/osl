@@ -269,12 +269,12 @@ def get_recon_timeseries(subjects_dir, subject, coord_mni, recon_timeseries_head
 
     # convert coords_head from head to mri space to get index of reconstructed
     # coordinate nearest to coord_mni
-    head_mri_t = rhino_utils.read_trans(coreg_filenames["head_mri_t_file"])
-    recon_coords_mri = rhino_utils.xform_points(
-        head_mri_t["trans"], recon_coords_head.T
+    head_scaledmri_t = rhino_utils.read_trans(coreg_filenames["head_scaledmri_t_file"])
+    recon_coords_scaledmri = rhino_utils.xform_points(
+        head_scaledmri_t["trans"], recon_coords_head.T
     ).T
 
-    recon_index, d = rhino_utils._closest_node(coord_mri.T, recon_coords_mri)
+    recon_index, d = rhino_utils._closest_node(coord_mri.T, recon_coords_scaledmri)
 
     recon_timeseries = np.abs(recon_timeseries_head[recon_index, :]).T
 
@@ -313,7 +313,12 @@ def transform_recon_timeseries(
     reference_brain : string
         'mni' indicates that the reference_brain is the stdbrain in MNI space
         'mri' indicates that the reference_brain is the subject's sMRI in
-        native/mri space.
+            the scaled native/mri space. "
+        'unscaled_mri' indicates that the reference_brain is the subject's sMRI in
+            unscaled native/mri space.
+        Note that Scaled/unscaled relates to the allow_smri_scaling option in coreg.
+        If allow_scaling was False, then the unscaled MRI will be the same as the scaled.
+        MRI.
 
     Returns
     -------
@@ -357,11 +362,13 @@ def transform_recon_timeseries(
         # reference is mni stdbrain
 
         # convert recon_coords_head from head to mni space
+        # head_mri_t_file xform is to unscaled MRI
         head_mri_t = rhino_utils.read_trans(coreg_filenames["head_mri_t_file"])
         recon_coords_mri = rhino_utils.xform_points(
             head_mri_t["trans"], recon_coords_head.T
         ).T
 
+        # mni_mri_t_file xform is to unscaled MRI
         mni_mri_t = rhino_utils.read_trans(surfaces_filenames["mni_mri_t_file"])
         recon_coords_out = rhino_utils.xform_points(
             np.linalg.inv(mni_mri_t["trans"]), recon_coords_mri.T
@@ -377,8 +384,8 @@ def transform_recon_timeseries(
             "MNI152_T1_{}mm_brain.nii.gz".format(spatial_resolution),
         )
 
-    elif reference_brain == "mri":
-        # reference is smri
+    elif reference_brain == "unscaled_mri":
+        # reference is unscaled smri
 
         # convert recon_coords_head from head to mri space
         head_mri_t = rhino_utils.read_trans(coreg_filenames["head_mri_t_file"])
@@ -393,8 +400,24 @@ def transform_recon_timeseries(
             ".nii.gz", "_{}mm.nii.gz".format(spatial_resolution)
         )
 
+    elif reference_brain == "mri":
+        # reference is scaled smri
+
+        # convert recon_coords_head from head to mri space
+        head_scaledmri_t = rhino_utils.read_trans(coreg_filenames["head_scaledmri_t_file"])
+        recon_coords_out = rhino_utils.xform_points(
+            head_scaledmri_t["trans"], recon_coords_head.T
+        ).T
+
+        reference_brain = coreg_filenames["smri_file"]
+
+        # Sample reference_brain to the desired resolution
+        reference_brain_resampled = reference_brain.replace(
+            ".nii.gz", "_{}mm.nii.gz".format(spatial_resolution)
+        )
+
     else:
-        ValueError("Invalid out_space, should be mni or mri")
+        ValueError("Invalid out_space, should be mni or mri or scaledmri")
 
     # -------------------------------------------------------------------------
     # get coordinates from reference brain at resolution spatial_resolution

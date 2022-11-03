@@ -254,7 +254,7 @@ def _binary_majority3d(img):
     return imgout
 
 
-def rigid_transform_3D(B, A):
+def rigid_transform_3D(B, A, compute_scaling = False):
     """Calculate affine transform from points in A to point in B.
 
     Parameters
@@ -264,10 +264,15 @@ def rigid_transform_3D(B, A):
     B : numpy.ndarray
         3 x num_points. Set of points to register to
 
+    compute_scaling : bool
+        Do we compute a scaling on top of rotation and translation?
+
     Returns
     -------
     xform : numpy.ndarray
-        Calculated affine transform
+        Calculated affine transform, does not include scaling
+    scaling_xform : numpy.ndarray
+        Calculated scaling transform (a diagonal 4x4 matrix), does not include rotation or translation
 
     see http://nghiaho.com/?page_id=671
     """
@@ -300,6 +305,7 @@ def rigid_transform_3D(B, A):
     # if linalg.matrix_rank(H) < 3:
     #    raise ValueError("rank of H = {}, expecting 3".format(linalg.matrix_rank(H)))
 
+
     # find rotation
     U, S, Vt = np.linalg.svd(H)
     R = Vt.T @ U.T
@@ -310,14 +316,26 @@ def rigid_transform_3D(B, A):
         Vt[2, :] *= -1
         R = Vt.T @ U.T
 
-    t = -R @ centroid_A + centroid_B
+    scaling_xform = np.eye(4)
+
+    if compute_scaling:
+        # Bm = C @ R @ Am + error
+        # where C = c I is a scalar scaling
+        RAm = R @ Am
+        U2, S2, V2t = np.linalg.svd( Bm @ np.linalg.pinv(RAm) )
+
+        # take average of eigenvalues, accounting for the rank
+        S2 = np.identity(3)*np.mean(S2[S2 > 1e-9])
+
+        scaling_xform[0:3, 0:3] = S2
+
+    t = - R @ centroid_A + centroid_B
 
     xform = np.eye(4)
     xform[0:3, 0:3] = R
     xform[0:3, -1] = np.reshape(t, (1, -1))
 
-    return xform
-
+    return xform, scaling_xform
 
 def xform_points(xform, pnts):
     """Applies homogenous linear transformation to an array of 3D coordinates.
@@ -622,7 +640,7 @@ def rhino_icp(
 
 def _get_vtk_mesh_native(vtk_mesh_file, nii_mesh_file):
     """
-    Returns mesh rrs in native space in mm and the meash tris for the passed
+    Returns mesh rrs in native space in mm and the mesh tris for the passed
     in vtk_mesh_file
 
     nii_mesh_file needs to be the corresponding niftii file from bet
@@ -636,7 +654,7 @@ def _get_vtk_mesh_native(vtk_mesh_file, nii_mesh_file):
     # these will be in voxel index space
     rrs_flirtcoords = data.iloc[4: num_rrs + 4, 0:3].to_numpy().astype(np.float64)
 
-    # move to from flirtcoords mm to mri mm (native) space
+    # move from flirtcoords mm to mri mm (native) space
     xform_flirtcoords2nii = _get_flirtcoords2native_xform(nii_mesh_file)
     rrs_nii = xform_points(xform_flirtcoords2nii, rrs_flirtcoords.T).T
 
@@ -711,7 +729,10 @@ def _transform_vtk_mesh(
 
     xform_flirtcoords2native_out = _get_flirtcoords2native_xform(nii_mesh_file_out)
 
-    xform = read_trans(xform_file)["trans"]
+    if isinstance(xform_file, str):
+        xform = read_trans(xform_file)["trans"]
+    else:
+        xform = xform_file
 
     overall_xform = np.linalg.inv(xform_flirtcoords2native_out) @ xform
 
@@ -728,9 +749,9 @@ def _transform_vtk_mesh(
     data.to_csv(out_vtk_file, sep=" ", index=False)
 
 
-def _get_xform_from_flirt_xform(flirt_xform, nii_mesh_file_in, nii_mesh_file_out):
+def _get_mne_xform_from_flirt_xform(flirt_xform, nii_mesh_file_in, nii_mesh_file_out):
     """
-    Get mm coordinates to mm coordinates xform using a known flirt xform
+    Returns a mm coordinates to mm coordinates MNE xform that corresponds to the passed in flirt xform
 
     Note that we need to do this as flirt xforms include an extra xform
     based on the voxel dimensions (see _get_flirtcoords2native_xform )
@@ -971,28 +992,28 @@ def save_or_show_renderer(renderer, filename):
             renderer.figure.plotter.save_graphic(filename)
 
 
-def _create_surface_meshes(surfaces_filenames, xform_mri_voxel2mri):
+def _create_freesurfer_meshes_from_bet_surfaces(filenames, xform_mri_voxel2mri):
 
-    # Create sMRI-derived surfaces in native/mri space in mm,
+    # Create sMRI-derived freesurfer surfaces in native/mri space in mm,
     # for use by forward modelling
 
-    create_freesurfer_mesh(infile=surfaces_filenames['bet_inskull_mesh_vtk_file'],
-                                       surf_outfile=surfaces_filenames['bet_inskull_surf_file'],
-                                       nii_mesh_file=surfaces_filenames['bet_inskull_mesh_file'],
+    _create_freesurfer_mesh_from_bet_surface(infile=filenames['bet_inskull_mesh_vtk_file'],
+                                       surf_outfile=filenames['bet_inskull_surf_file'],
+                                       nii_mesh_file=filenames['bet_inskull_mesh_file'],
                                        xform_mri_voxel2mri=xform_mri_voxel2mri)
 
-    create_freesurfer_mesh(infile=surfaces_filenames['bet_outskull_mesh_vtk_file'],
-                                       surf_outfile=surfaces_filenames['bet_outskull_surf_file'],
-                                       nii_mesh_file=surfaces_filenames['bet_outskull_mesh_file'],
+    _create_freesurfer_mesh_from_bet_surface(infile=filenames['bet_outskull_mesh_vtk_file'],
+                                       surf_outfile=filenames['bet_outskull_surf_file'],
+                                       nii_mesh_file=filenames['bet_outskull_mesh_file'],
                                        xform_mri_voxel2mri=xform_mri_voxel2mri)
 
-    create_freesurfer_mesh(infile=surfaces_filenames['bet_outskin_mesh_vtk_file'],
-                                       surf_outfile=surfaces_filenames['bet_outskin_surf_file'],
-                                       nii_mesh_file=surfaces_filenames['bet_outskin_mesh_file'],
+    _create_freesurfer_mesh_from_bet_surface(infile=filenames['bet_outskin_mesh_vtk_file'],
+                                       surf_outfile=filenames['bet_outskin_surf_file'],
+                                       nii_mesh_file=filenames['bet_outskin_mesh_file'],
                                        xform_mri_voxel2mri=xform_mri_voxel2mri)
 
 
-def create_freesurfer_mesh(
+def _create_freesurfer_mesh_from_bet_surface(
     infile, surf_outfile, xform_mri_voxel2mri, nii_mesh_file=None
 ):
     """Creates surface mesh in .surf format and in native mri space in mm
@@ -1004,7 +1025,7 @@ def create_freesurfer_mesh(
     Either:
         1) .nii.gz file containing zero's for background and one's for surface
         2) .vtk file generated by bet_surf (in which case the path to the
-        strutural MRI, smri_file, must be included as an input)
+        structural MRI, smri_file, must be included as an input)
     surf_outfile : string
         Path to the .surf file generated, containing the surface
         mesh in mm
@@ -1076,3 +1097,28 @@ def create_freesurfer_mesh(
 
     else:
         raise ValueError("Invalid infile. Needs to be a .nii.gz or .vtk file")
+
+
+
+def _transform_bet_surfaces(flirt_xform_file, mne_xform_file, filenames, smri_file):
+
+    # Transform betsurf mask/mesh using passed in flirt transform and mne transform
+    for mesh_name in {"outskin_mesh", "inskull_mesh", "outskull_mesh"}:
+        # xform mask
+        system_call(
+            "flirt -interp nearestneighbour -in {} -ref {} -applyxfm -init {} -out {}".format(
+            op.join(filenames["basedir"], "flirt_" + mesh_name + ".nii.gz"),
+            smri_file,
+            flirt_xform_file,
+            op.join(filenames["basedir"], mesh_name),
+            )
+        )
+
+        # xform vtk mesh
+        _transform_vtk_mesh(
+            op.join(filenames["basedir"], "flirt_" + mesh_name + ".vtk"),
+            op.join(filenames["basedir"], "flirt_" + mesh_name + ".nii.gz"),
+            op.join(filenames["basedir"], mesh_name + ".vtk"),
+            op.join(filenames["basedir"], mesh_name + ".nii.gz"),
+            mne_xform_file,
+        )

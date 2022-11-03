@@ -31,18 +31,21 @@ pos_file = op.join(subjects_dir, subject, "JH_Motorcon.pos")
 smri_file = (
     "/Users/woolrich/homedir/vols_data/ukmp/sub-not002/anat/sub-not002_T1w.nii.gz"
 )
+smri_file = (
+    "/Users/woolrich/oslpy/osl/single_subj_T1.nii"
+)
 
-run_sensorspace = False  # if false then do source space
-
+run_sensorspace_glm = False
 run_preproc = True
 run_compute_surfaces = True
 run_coreg = True
 run_forward_model = True
+run_sourcespace_glm = True
 
 rank = {"mag": 125}
 chantypes = ["mag"]
 
-gridstep = 8  # mm
+gridstep = 7  # mm
 
 # -------------
 # Preprocessing
@@ -158,7 +161,7 @@ def glm_fast(data, design_matrix, contrasts):
         tstat.append(cope[cc] / np.sqrt(varcope))
     return tstat, cope
 
-if run_sensorspace:
+if run_sensorspace_glm:
 
     # ----------------------
     # Do GLM in sensor space
@@ -200,115 +203,125 @@ if run_sensorspace:
         clb = fig.colorbar(im, cax=cbar_ax)
         clb.ax.set_title("tstat", fontsize=10)  # title on top of colorbar
 
-else:
 
-    # --------------------------------------------------------------------------
-    # Get polhemus fids and headshape points into required file format for rhino
-    # i.e. in polhemus space in mm
 
-    # setup filenames
-    polhemus_nasion_file = op.join(subjects_dir, subject, "rhino/coreg/polhemus_nasion.txt")
-    polhemus_rpa_file = op.join(subjects_dir, subject, "rhino/coreg/polhemus_rpa.txt")
-    polhemus_lpa_file = op.join(subjects_dir, subject, "rhino/coreg/polhemus_lpa.txt")
-    polhemus_headshape_file = op.join(subjects_dir, subject, "rhino/coreg/polhemus_headshape.txt")
+# --------------------------------------------------------------------------
+# Get polhemus fids and headshape points into required file format for rhino
+# i.e. in polhemus space in mm
 
-    # Load in txt file, these values are in cm in polhemus space:
-    num_headshape_pnts = int(pd.read_csv(pos_file, header=None).to_numpy()[0])
-    data = pd.read_csv(pos_file, header=None, skiprows=[0], delim_whitespace=True)
+# setup filenames
+polhemus_nasion_file = rhino.get_coreg_filenames(subjects_dir, subject)['polhemus_nasion_file']
+polhemus_rpa_file = rhino.get_coreg_filenames(subjects_dir, subject)['polhemus_rpa_file']
+polhemus_lpa_file = rhino.get_coreg_filenames(subjects_dir, subject)['polhemus_lpa_file']
+polhemus_headshape_file = rhino.get_coreg_filenames(subjects_dir, subject)['polhemus_headshape_file']
 
-    # RHINO is going to work with distances in mm
-    # So convert to mm from cm, note that these are in polhemus space
-    data.iloc[:, 1:4] = data.iloc[:, 1:4] * 10
+# Load in txt file, these values are in cm in polhemus space:
+num_headshape_pnts = int(pd.read_csv(pos_file, header=None).to_numpy()[0])
+data = pd.read_csv(pos_file, header=None, skiprows=[0], delim_whitespace=True)
 
-    # Polhemus fiducial points in polhemus space
-    polhemus_nasion_polhemus = (
-        data[data.iloc[:, 0].str.match("nasion")]
-        .iloc[0, 1:4]
-        .to_numpy()
-        .astype("float64")
-        .T
+# RHINO is going to work with distances in mm
+# So convert to mm from cm, note that these are in polhemus space
+data.iloc[:, 1:4] = data.iloc[:, 1:4] * 10
+
+# Polhemus fiducial points in polhemus space
+polhemus_nasion_polhemus = (
+    data[data.iloc[:, 0].str.match("nasion")]
+    .iloc[0, 1:4]
+    .to_numpy()
+    .astype("float64")
+    .T
+)
+polhemus_rpa_polhemus = (
+    data[data.iloc[:, 0].str.match("right")]
+    .iloc[0, 1:4]
+    .to_numpy()
+    .astype("float64")
+    .T
+)
+polhemus_lpa_polhemus = (
+    data[data.iloc[:, 0].str.match("left")]
+    .iloc[0, 1:4]
+    .to_numpy()
+    .astype("float64")
+    .T
+)
+
+# Polhemus headshape points in polhemus space in mm
+polhemus_headshape_polhemus = data[0:num_headshape_pnts].iloc[:, 1:4].to_numpy().T
+
+np.savetxt(polhemus_nasion_file, polhemus_nasion_polhemus)
+np.savetxt(polhemus_rpa_file, polhemus_rpa_polhemus)
+np.savetxt(polhemus_lpa_file, polhemus_lpa_polhemus)
+np.savetxt(polhemus_headshape_file, polhemus_headshape_polhemus)
+
+# --------------------------------------
+# Compute surfaces, coreg, forward model
+if run_compute_surfaces:
+    rhino.compute_surfaces(
+        smri_file, subjects_dir, subject, include_nose=True, cleanup_files=True
     )
-    polhemus_rpa_polhemus = (
-        data[data.iloc[:, 0].str.match("right")]
-        .iloc[0, 1:4]
-        .to_numpy()
-        .astype("float64")
-        .T
-    )
-    polhemus_lpa_polhemus = (
-        data[data.iloc[:, 0].str.match("left")]
-        .iloc[0, 1:4]
-        .to_numpy()
-        .astype("float64")
-        .T
-    )
 
-    # Polhemus headshape points in polhemus space in mm
-    polhemus_headshape_polhemus = data[0:num_headshape_pnts].iloc[:, 1:4].to_numpy().T
-
-    np.savetxt(polhemus_nasion_file, polhemus_nasion_polhemus)
-    np.savetxt(polhemus_rpa_file, polhemus_rpa_polhemus)
-    np.savetxt(polhemus_lpa_file, polhemus_lpa_polhemus)
-    np.savetxt(polhemus_headshape_file, polhemus_headshape_polhemus)
-
-    # --------------------------------------
-    # Compute surfaces, coreg, forward model
-    if run_compute_surfaces:
-        rhino.compute_surfaces(
-            smri_file, subjects_dir, subject, include_nose=True, cleanup_files=False
-        )
-
+    if False:
         rhino.surfaces_display(subjects_dir, subject)
 
-    if run_coreg:
-        # call rhino
-        rhino.coreg(
-            fif_file,
-            subjects_dir,
-            subject,
-            use_headshape=True
-        )
+if run_coreg:
+    # call rhino
+    rhino.coreg(
+        fif_file,
+        subjects_dir,
+        subject,
+        use_nose=False,
+        use_headshape=False,
+        allow_smri_scaling=False
+    )
 
-        # Purple dots are the polhemus derived fiducials
-        # Yellow diamonds are the sMRI derived fiducials
-        # Position of sMRI derived fiducials are the ones that are refined if
-        # useheadshape=True was used for rhino.coreg
+    # Circles are the polhemus derived fiducials
+    # Diamonds are the sMRI derived fiducials
+    # Position of sMRI derived fiducials are the ones that are refined if
+    # useheadshape=True was used for rhino.coreg
+
+    if False:
         rhino.coreg_display(
             subjects_dir,
             subject,
             plot_type="surf",
-            display_outskin_with_nose=True,
+            display_outskin=True,
+            display_outskin_with_nose=False,
             display_sensors=True,
-            display_sensor_oris=True
+            display_sensor_oris=True,
+            display_fiducials=True,
+            display_headshape_pnts=True,
         )
 
-    #  Forward modelling
-    if run_forward_model:
-        rhino.forward_model(
-            subjects_dir, subject, model="Single Layer", gridstep=gridstep, mindist=4.0
+#  Forward modelling
+if run_forward_model:
+    rhino.forward_model(
+        subjects_dir, subject, model="Single Layer", gridstep=gridstep, mindist=4.0
+    )
+
+    if False:
+        rhino.bem_display(
+            subjects_dir,
+            subject,
+            plot_type="surf",
+            display_outskin_with_nose=False,
+            display_sensors=True,
         )
 
-        if False:
-            rhino.bem_display(
-                subjects_dir,
-                subject,
-                plot_type="surf",
-                display_outskin_with_nose=False,
-                display_sensors=True,
-            )
+        # -------------------------
+        # Take a look at leadfields
 
-    # -------------------------
-    # Take a look at leadfields
+        # We can explore the content of fwd to access the numpy array that contains
+        # the gain matrix
 
-    # We can explore the content of fwd to access the numpy array that contains
-    # the gain matrix
+        # load forward solution
+        fwd_fname = rhino.get_coreg_filenames(subjects_dir, subject)["forward_model_file"]
+        fwd = mne.read_forward_solution(fwd_fname)
 
-    # load forward solution
-    fwd_fname = rhino.get_coreg_filenames(subjects_dir, subject)["forward_model_file"]
-    fwd = mne.read_forward_solution(fwd_fname)
+        leadfield = fwd["sol"]["data"]
+        print("Leadfield size : %d sensors x %d dipoles" % leadfield.shape)
 
-    leadfield = fwd["sol"]["data"]
-    print("Leadfield size : %d sensors x %d dipoles" % leadfield.shape)
+if run_sourcespace_glm:
 
     # ------------
     # Source recon
@@ -341,53 +354,6 @@ else:
 
     # stc is source space time series (in head/polhemus space)
     stc = mne.beamformer.apply_lcmv_raw(hilb_raw, filters)
-
-    if False:
-        # debugging code
-
-        # use in conjuction with run_wakeman_henson, and
-        # these line inserted at line 61 in spm-bemforming-toolbox/bf_inverse_lcmv_multicov.m
-        #   tmp = readNPY('/Users/woolrich/homedir/vols_data/mne/self_paced_fingertap/subject1/leadfield2save.npy');
-        #   S.L{1692} = tmp;
-
-        chanind = 97
-        raw.info["ch_names"][chanind]
-        plt.figure()
-        plt.plot(raw.get_data()[chanind, 999:1200])
-        plt.plot(np.abs(hilb_raw.get_data()[97, 999:1200]))
-        plt.title("sensor {}".format(raw.info["ch_names"][chanind]))
-
-        stc = mne.beamformer.apply_lcmv_raw(raw, filters, max_ori_out="signed")
-        (
-            recon_timeseries_mni,
-            reference_brain_fname,
-            recon_coords_mni,
-            recon_indices,
-        ) = rhino.transform_recon_timeseries(
-            subjects_dir, subject, recon_timeseries=stc.data, reference_brain="mni"
-        )
-        vox = rhino.utils._closest_node((-40, -25, 56), recon_coords_mni.T)[0]
-
-        plt.figure()
-        print(recon_coords_mni[:, vox])  # 2541
-        plt.plot(recon_timeseries_mni[vox, 999:1200])
-        print(int(recon_indices[vox]))
-        plt.title("vox {}".format(vox))
-
-        leadfield = fwd["sol"]["data"]
-        plt.figure()
-        plt.plot(np.reshape(leadfield, [273, -1, 3])[:, int(recon_indices[vox]), 0])
-        plt.plot(np.reshape(leadfield, [273, -1, 3])[:, int(recon_indices[vox]), 1])
-        plt.plot(np.reshape(leadfield, [273, -1, 3])[:, int(recon_indices[vox]), 2])
-
-        leadfield2save = np.zeros([leadfield.shape[0], 3])
-        for ii in range(3):
-            leadfield2save[:, ii] = np.reshape(leadfield, [273, -1, 3])[
-                :, int(recon_indices[vox]), ii
-            ]
-        np.save(op.join(subjects_dir, subject, "leadfield2save"), leadfield2save)
-
-        np.save(op.join(subjects_dir, subject, "data_cov"), data_cov.data)
 
     # ------------------------------------------------------------
     # Fit GLM to hilbert envelope in source space contained in stc
@@ -432,3 +398,6 @@ else:
     )
 
     rhino.fsleyes_overlay(stdbrain_mask_fname, out_nii_fname)
+
+    # if reference_brain is "mri"
+    # rhino.fsleyes_overlay('/Users/woolrich/homedir/vols_data/self_paced_fingertap/subject1/rhino/coreg/scaled_smri.nii.gz', out_nii_fname)

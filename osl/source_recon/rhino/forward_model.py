@@ -27,7 +27,6 @@ from mne.surface import read_surface, write_surface
 from mne.source_space import _make_volume_source_space, _complete_vol_src
 
 from osl.source_recon.rhino import get_coreg_filenames
-from osl.source_recon.rhino.surfaces import get_surfaces_filenames
 from osl.utils.logger import log_or_print
 
 
@@ -171,8 +170,8 @@ def make_fwd_solution(
 
     fif_file = get_coreg_filenames(subjects_dir, subject)["fif_file"]
 
-    # Note, forward model is done in Head space:
-    head_mri_trans_file = get_coreg_filenames(subjects_dir, subject)["head_mri_t_file"]
+    # Note, forward model is done in head space:
+    head_scaledmri_trans_file = get_coreg_filenames(subjects_dir, subject)["head_scaledmri_t_file"]
 
     # Src should be in MRI space. Let's just check that is the
     # case
@@ -181,10 +180,10 @@ def make_fwd_solution(
 
     # We need the transformation from MRI to HEAD coordinates
     # (or vice versa)
-    if isinstance(head_mri_trans_file, str):
-        head_mri_t = read_trans(head_mri_trans_file)
+    if isinstance(head_scaledmri_trans_file, str):
+        head_mri_t = read_trans(head_scaledmri_trans_file)
     else:
-        head_mri_t = head_mri_trans_file
+        head_mri_t = head_scaledmri_trans_file
 
     # RHINO does everything in mm, so need to convert it to metres which is
     # what MNE expects.
@@ -264,11 +263,11 @@ def setup_volume_source_space(
     This is a RHINO specific version of mne.setup_volume_source_space, which
     can handle smri's that are niftii files. This specifically
     uses the inner skull surface in:
-        get_surfaces_filenames(subjects_dir, subject)['bet_inskull_surf_file']
+        get_coreg_filenames(subjects_dir, subject)['bet_inskull_surf_file']
     to define the source space grid.
 
     This will also copy the:
-        get_surfaces_filenames(subjects_dir, subject)['bet_inskull_surf_file']
+        get_coreg_filenames(subjects_dir, subject)['bet_inskull_surf_file']
     file to:
         subjects_dir/subject/bem/inner_skull.surf
     since this is where mne expects to find it when mne.make_bem_model
@@ -281,7 +280,7 @@ def setup_volume_source_space(
 
     pos = int(gridstep)
 
-    surfaces_filenames = get_surfaces_filenames(subjects_dir, subject)
+    coreg_filenames = get_coreg_filenames(subjects_dir, subject)
 
     # -------------------------------------------------------------------------
     # Move the surfaces to where MNE expects to find them for the
@@ -314,9 +313,11 @@ def setup_volume_source_space(
     # of the skull, see the "single-shell Boundary Element Model (BEM)" bit at:
     # https://imaging.mrc-cbu.cam.ac.uk/meg/SpmForwardModels
     #
-    # To be continued... need to get in touch with mne folks perhaps?
+    # To be continued... ?
 
-    verts, tris = read_surface(surfaces_filenames["bet_inskull_surf_file"])
+
+    # Note that the coreg surf files are in scaled MRI space
+    verts, tris = read_surface(coreg_filenames["bet_inskull_surf_file"])
     tris = tris.astype(int)
     write_surface(
         op.join(bem_dir_name, "inner_skull.surf"),
@@ -327,18 +328,7 @@ def setup_volume_source_space(
     )
     log_or_print("Using bet_inskull_surf_file for single shell surface", logger)
 
-    #verts, tris = read_surface(surfaces_filenames["bet_outskull_surf_file"])
-    #tris = tris.astype(int)
-    #write_surface(
-    #    op.join(bem_dir_name, "inner_skull.surf"),
-    #    verts,
-    #    tris,
-    #    file_format="freesurfer",
-    #    overwrite=True,
-    #)
-    #print("Using bet_outskull_surf_file for single shell surface")
-
-    verts, tris = read_surface(surfaces_filenames["bet_outskull_surf_file"])
+    verts, tris = read_surface(coreg_filenames["bet_outskull_surf_file"])
     tris = tris.astype(int)
     write_surface(
         op.join(bem_dir_name, "outer_skull.surf"),
@@ -348,7 +338,7 @@ def setup_volume_source_space(
         overwrite=True,
     )
 
-    verts, tris = read_surface(surfaces_filenames["bet_outskin_surf_file"])
+    verts, tris = read_surface(coreg_filenames["bet_outskin_surf_file"])
     tris = tris.astype(int)
     write_surface(
         op.join(bem_dir_name, "outer_skin.surf"),
@@ -378,7 +368,7 @@ def setup_volume_source_space(
         )
         return out
 
-    vol_info = get_mri_info_from_nii(surfaces_filenames["smri_file"])
+    vol_info = get_mri_info_from_nii(coreg_filenames["smri_file"])
 
     surf = read_surface(surface, return_dict=True)[-1]
 
@@ -391,7 +381,7 @@ def setup_volume_source_space(
         pos,
         exclude,
         mindist,
-        surfaces_filenames["smri_file"],
+        coreg_filenames["smri_file"],
         None,
         vol_info=vol_info,
         single_volume=False,
