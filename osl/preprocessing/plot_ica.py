@@ -318,7 +318,6 @@ def _plot_sources(
         fig._setup_annotation_colors()
         fig._update_annotation_segments()
         fig._draw_annotations()
-        #fig._alt_title()  # OSL ADDITION
 
     plt_show(show, block=block)
     return fig
@@ -872,9 +871,7 @@ class osl_MNEBrowseFigure(MNEBrowseFigure):
             else:
                 plt.figtext(self.mne.bad_labels_xpos, self.mne.bad_labels_ypos[i], f'{i-1}: ' + self.mne.bad_labels_list[i - 2],
                             color=self.mne.bad_label_colors[i - 2], fontweight='semibold')
-        
-        # OSL ADDITION: ADD CUSTOM TITLE
-        #self._alt_title()
+
 
     def plot_topos(self, ica, ax_topo, picks):  # OSL ADDITION FOR TOPOS
         import numpy as np
@@ -1174,54 +1171,6 @@ class osl_MNEBrowseFigure(MNEBrowseFigure):
         while len(self.mne.child_figs):
             fig = self.mne.child_figs[-1]
             close(fig)
-
-
-
-    def _alt_title(self):
-        import numpy as np
-
-        self.mne.ax_main.texts.clear()
-        x = np.arange(
-            self.mne.ax_main.get_xlim()[0],
-            self.mne.ax_main.get_xlim()[1],
-            (self.mne.ax_main.get_xlim()[1] - self.mne.ax_main.get_xlim()[0])
-            / (len(self.mne.bad_labels_list) + 2),
-        )
-        for i in range(len(self.mne.bad_labels_list) + 2):
-            y = self.mne.ax_main.get_ylim()[1]
-            if i == 0:
-                text = self.mne.ax_main.annotate(
-                    "bad_segments",
-                    (x[i], y),
-                    xytext=(0, 9),
-                    textcoords="offset points",
-                    ha="center",
-                    va="baseline",
-                    color="red",
-                )
-                #self.mne.annotation_texts.append(text)
-            elif i == len(self.mne.bad_labels_list) + 1:
-                text = self.mne.ax_main.annotate(
-                    "unknown",
-                    (x[i], y),
-                    xytext=(0, 9),
-                    textcoords="offset points",
-                    ha="center",
-                    va="baseline",
-                    color="gray",
-                )
-            else:
-                text = self.mne.ax_main.annotate(
-                    f"{i}: {self.mne.bad_labels_list[i-1]}",
-                    (x[i], y),
-                    xytext=(0, 9),
-                    textcoords="offset points",
-                    ha="center",
-                    va="baseline",
-                    color=self.mne.bad_label_colors[i],
-                )
-
-            #self.mne.annotation_texts.append(text)
 
 
 # TODO: OSL IMPLEMENT PLOT_ICA FOR EVOKED DATA
