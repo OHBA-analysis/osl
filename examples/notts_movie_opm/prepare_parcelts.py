@@ -159,9 +159,9 @@ if False:
         already_coregistered=True
     )
 
-    # to view coreg result for subject 0:
-    source_recon.rhino.coreg_display(recon_dir, subjects[0],
-                                     plot_type='surf')
+# to view coreg result for subject 0:
+source_recon.rhino.coreg_display(recon_dir, subjects[0],
+                                 plot_type='surf')
 # -------------------------------------------------------------
 # %% Coreg and Source recon and Parcellate
 

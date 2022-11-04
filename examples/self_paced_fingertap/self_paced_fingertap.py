@@ -36,11 +36,11 @@ smri_file = (
 )
 
 run_sensorspace_glm = False
-run_preproc = True
-run_compute_surfaces = True
-run_coreg = True
-run_forward_model = True
-run_sourcespace_glm = True
+run_preproc = False
+run_compute_surfaces = False
+run_coreg = False
+run_forward_model = False
+run_sourcespace_glm = False
 
 rank = {"mag": 125}
 chantypes = ["mag"]
@@ -272,7 +272,7 @@ if run_coreg:
         subject,
         use_nose=False,
         use_headshape=False,
-        allow_smri_scaling=False
+        allow_smri_scaling=True
     )
 
     # Circles are the polhemus derived fiducials
@@ -280,18 +280,18 @@ if run_coreg:
     # Position of sMRI derived fiducials are the ones that are refined if
     # useheadshape=True was used for rhino.coreg
 
-    if False:
-        rhino.coreg_display(
-            subjects_dir,
-            subject,
-            plot_type="surf",
-            display_outskin=True,
-            display_outskin_with_nose=False,
-            display_sensors=True,
-            display_sensor_oris=True,
-            display_fiducials=True,
-            display_headshape_pnts=True,
-        )
+if True:
+    rhino.coreg_display(
+        subjects_dir,
+        subject,
+        plot_type="surf",
+        display_outskin=True,
+        display_outskin_with_nose=False,
+        display_sensors=True,
+        display_sensor_oris=True,
+        display_fiducials=True,
+        display_headshape_pnts=True,
+    )
 
 #  Forward modelling
 if run_forward_model:

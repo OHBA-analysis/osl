@@ -253,15 +253,25 @@ def coreg(
         # This means that dev_head_t is identity and that dev_mri_t is identity.
 
         # write native (mri) voxel index to native (mri) transform
-        xform_nativeindex2native = rhino_utils._get_sform(surfaces_filenames['bet_outskin_mesh_file'])['trans']
-        mrivoxel_scaledmri_t = Transform('mri_voxel', 'mri', np.copy(xform_nativeindex2native))
+        xform_nativeindex2scalednative = rhino_utils._get_sform(surfaces_filenames['bet_outskin_mesh_file'])['trans']
+        mrivoxel_scaledmri_t = Transform('mri_voxel', 'mri', np.copy(xform_nativeindex2scalednative))
         write_trans(filenames['mrivoxel_scaledmri_t_file'], mrivoxel_scaledmri_t, overwrite=True)
 
         # head_mri-trans.fif for scaled MRI
-        head_scaledmri_t = Transform('head', 'mri', np.identity(4))
-        write_trans(filenames['head_scaledmri_t_file'], head_scaledmri_t, overwrite=True)
-        write_trans(filenames['head_mri_t_file'], head_scaledmri_t, overwrite=True)
+        head_mri_t = Transform('head', 'mri', np.identity(4))
+        write_trans(filenames['head_mri_t_file'], head_mri_t, overwrite=True)
+        write_trans(filenames['head_scaledmri_t_file'], head_mri_t, overwrite=True)
 
+        # copy meshes to coreg dir from surfaces dir
+        for file_name in {"smri_file",
+                          "bet_outskin_mesh_file",
+                          "bet_outskin_plus_nose_mesh_file",
+                          "bet_inskull_mesh_file",
+                          "bet_outskull_mesh_file",
+                          "bet_outskin_mesh_vtk_file",
+                          "bet_inskull_mesh_vtk_file",
+                          "bet_outskull_mesh_vtk_file"}:
+            copyfile(surfaces_filenames[file_name], filenames[file_name])
     else:
 
         # run full coreg
@@ -741,7 +751,7 @@ def coreg_display(
             # Polhemus-derived headshape points
             if polhemus_headshape_meg is not None and len(polhemus_headshape_meg.T) > 0:
                 polhemus_headshape_megt = polhemus_headshape_meg.T
-                color, scale, alpha = (0, 0.7, 0.7), 0.007, 1
+                color, scale, alpha = "red", 0.007, 1
                 renderer.sphere(
                     center=polhemus_headshape_megt,
                     color=color,
@@ -756,7 +766,7 @@ def coreg_display(
 
             # MRI-derived nasion, rpa, lpa
             if smri_nasion_meg is not None and len(smri_nasion_meg.T) > 0:
-                color, scale, alpha = (1, 1, 0), 0.09, 1
+                color, scale, alpha = "yellow", 0.09, 1
                 for data in [smri_nasion_meg.T, smri_rpa_meg.T, smri_lpa_meg.T]:
                     transform = np.eye(4)
                     transform[:3, :3] = mri_trans["trans"][:3, :3] * scale * 1000
@@ -781,7 +791,7 @@ def coreg_display(
 
             # Polhemus-derived nasion, rpa, lpa
             if polhemus_nasion_meg is not None and len(polhemus_nasion_meg.T) > 0:
-                color, scale, alpha = (1, 0, 1), 0.012, 1.5
+                color, scale, alpha = "pink", 0.012, 1.5
                 for data in [polhemus_nasion_meg.T, polhemus_rpa_meg.T, polhemus_lpa_meg.T]:
                     renderer.sphere(
                         center=data,
@@ -805,7 +815,7 @@ def coreg_display(
         if display_sensor_oris:
 
             if len(meg_rrs) > 0:
-                color, scale = (0., 0.25, 0.5), 10
+                color, scale = (0., 0.25, 0.5), 15
                 renderer.quiver3d(x=meg_sensor_locs[:, 0], y=meg_sensor_locs[:, 1], z=meg_sensor_locs[:, 2],
                       u=meg_sensor_oris[:, 0], v=meg_sensor_oris[:, 1], w=meg_sensor_oris[:, 2],
                       color=color, mode='arrow', scale=scale, backface_culling=False)
@@ -829,7 +839,7 @@ def coreg_display(
             surf_smri = dict(rr=coords_meg, tris=faces)
 
             renderer.surface(
-                surface=surf_smri, color=(1, 0.8, 1), opacity=0.4, backface_culling=False
+                surface=surf_smri, color=(0, 0.7, 0.7), opacity=0.4, backface_culling=False
             )
 
         renderer.set_camera(
@@ -852,7 +862,7 @@ def coreg_display(
         )
         # Move from native voxel indices to native space coordinates (in mm)
         smri_headshape_native = rhino_utils.xform_points(
-            mrivoxel_mri_t["trans"], smri_headshape_nativeindex
+            mrivoxel_scaledmri_t["trans"], smri_headshape_nativeindex
         )
         # Move to MEG (device) space
         smri_headshape_meg = rhino_utils.xform_points(
@@ -880,16 +890,16 @@ def coreg_display(
             if len(meg_rrs) > 0:
                 ax.quiver(meg_sensor_locs[:, 0], meg_sensor_locs[:, 1], meg_sensor_locs[:, 2],
                       meg_sensor_oris[:, 0], meg_sensor_oris[:, 1], meg_sensor_oris[:, 2],
-                      arrow_length_ratio=.2)
+                      arrow_length_ratio=.3, length=1.5)
 
         if display_outskin or display_outskin_with_nose:
-            color, scale, alpha, marker = (0.5, 0.5, 0.5), 1, 0.2, "."
+            color, scale, alpha, marker = (0, 0.7, 0.7), 4, 0.3, "o"
             if len(smri_headshape_meg) > 0:
                 smri_headshape_megt = smri_headshape_meg
                 ax.scatter(
-                    smri_headshape_megt[0, 0:-1:20],
-                    smri_headshape_megt[1, 0:-1:20],
-                    smri_headshape_megt[2, 0:-1:20],
+                    smri_headshape_megt[0, 0:-1:10],
+                    smri_headshape_megt[1, 0:-1:10],
+                    smri_headshape_megt[2, 0:-1:10],
                     color=color,
                     marker=marker,
                     s=scale,
@@ -897,7 +907,7 @@ def coreg_display(
                 )
 
         if display_headshape_pnts:
-            color, scale, alpha, marker = (0, 0.7, 0.7), 10, 0.7, "o"
+            color, scale, alpha, marker = "red", 8, 0.7, "o"
             if polhemus_headshape_meg is not None and len(polhemus_headshape_meg) > 0:
                 polhemus_headshape_megt = polhemus_headshape_meg
                 ax.scatter(
@@ -931,7 +941,7 @@ def coreg_display(
                 print("There are no structural MRI derived fiducials to plot")
 
             if polhemus_nasion_meg is not None and len(polhemus_nasion_meg) > 0:
-                color, scale, alpha, marker = (1, 0, 1), 400, 1, "."
+                color, scale, alpha, marker = (1, 0.5, 0.7), 400, 1, "."
                 for data in (polhemus_nasion_meg, polhemus_rpa_meg, polhemus_lpa_meg):
                     datat = data
                     ax.scatter(
