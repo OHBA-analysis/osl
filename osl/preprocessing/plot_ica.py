@@ -3,6 +3,7 @@
 """
 
 # Authors: Mats van Es <mats.vanes@psych.ox.ac.uk>
+import matplotlib.pyplot as plt
 
 
 def plot_ica(
@@ -235,6 +236,16 @@ def _plot_sources(
     # misc
     bad_color = "lightgray"
     title = "ICA components" if title is None else title
+    
+    # OSL ADDITION
+    # define some colors for bad component labels
+    import matplotlib.colors as mcolors
+
+    c = list(mcolors.TABLEAU_COLORS.keys())
+    idx = [c.index(i) for i in c if "red" in i]
+    for i in idx:
+        del c[i]
+    c = c[: len(bad_labels_list) + 1]  # keep as many as required.
 
     params = dict(
         inst=inst_array,
@@ -273,6 +284,7 @@ def _plot_sources(
         # colors
         ch_color_bad=bad_color,
         ch_color_dict=color,
+        bad_label_colors=c,
         # display
         butterfly=False,
         clipping=None,
@@ -294,17 +306,6 @@ def _plot_sources(
 
     fig = _get_browser(**params)
 
-    # OSL ADDITION
-    # define some colors for bad component labels
-    import matplotlib.colors as mcolors
-
-    c = list(mcolors.TABLEAU_COLORS.keys())
-    idx = [c.index(i) for i in c if "red" in i]
-    for i in idx:
-        del c[i]
-    c = c[: len(bad_labels_list) + 1]  # keep as many as required.
-    fig.mne.bad_label_colors = c
-
     fig._update_picks()
 
     # update data, and plot
@@ -317,7 +318,6 @@ def _plot_sources(
         fig._setup_annotation_colors()
         fig._update_annotation_segments()
         fig._draw_annotations()
-        fig._alt_title()  # OSL ADDITION
 
     plt_show(show, block=block)
     return fig
@@ -372,19 +372,16 @@ def _init_browser(backend, **kwargs):  # OSL ADDITION IN ORDER TO USE OSL'S FIGU
 class osl_MNEBrowseFigure(MNEBrowseFigure):
     """Interactive figure with scrollbars, for data browsing."""
 
-    def __init__(self, inst, figsize, ica=None, xlabel="Time (s)", **kwargs):
+    def __init__(self, inst, figsize, ica=None,
+                 xlabel='Time (s)', **kwargs):
         from matplotlib.colors import to_rgba_array
-        from matplotlib.ticker import (
-            FixedLocator,
-            FixedFormatter,
-            FuncFormatter,
-            NullFormatter,
-        )
         from matplotlib.patches import Rectangle
-        from matplotlib.widgets import Button
+        from matplotlib.ticker import (FixedFormatter, FixedLocator,
+                                       FuncFormatter, NullFormatter)
         from matplotlib.transforms import blended_transform_factory
-        from mpl_toolkits.axes_grid1.axes_size import Fixed
+        from matplotlib.widgets import Button
         from mpl_toolkits.axes_grid1.axes_divider import make_axes_locatable
+        from mpl_toolkits.axes_grid1.axes_size import Fixed
 
         # # OSL IMPORTS
         from mne import BaseEpochs
@@ -405,8 +402,8 @@ class osl_MNEBrowseFigure(MNEBrowseFigure):
 
         # MAIN AXES: default sizes (inches)
         # XXX simpler with constrained_layout? (when it's no longer "beta")
-        l_margin = 1.0
-        r_margin = 0.1
+        l_margin = 0.8#1.0
+        r_margin = 1.0#0.1
         b_margin = 0.45
         t_margin = 0.35
         scroll_width = 0.25
@@ -475,6 +472,16 @@ class osl_MNEBrowseFigure(MNEBrowseFigure):
         # this only gets shown in zen mode
         self.mne.zen_xlabel = ax_main.set_xlabel(xlabel)
         self.mne.zen_xlabel.set_visible(not self.mne.scrollbars_visible)
+        
+        # make sure background color of the axis is set
+        if 'bgcolor' in kwargs:
+            ax_main.set_facecolor(kwargs['bgcolor'])
+
+        # OSL ADDITION: GET POSITIONS FOR BAD LABELS LIST
+        self.mne.bad_labels_xpos = 1 - self._inch_to_rel(r_margin + 0.35)
+        self.mne.bad_labels_ypos = []
+        for i in range(len(self.mne.bad_labels_list)+2):
+            self.mne.bad_labels_ypos.append(1 - self._inch_to_rel(t_margin + 0.5 + 0.3*(i+1), horiz=False))
 
         # SCROLLBARS
         ax_hscroll = div.append_axes(
@@ -491,16 +498,11 @@ class osl_MNEBrowseFigure(MNEBrowseFigure):
             epoch_nums = self.mne.inst.selection
             for ix, _ in enumerate(epoch_nums):
                 start = self.mne.boundary_times[ix]
-                width = np.diff(self.mne.boundary_times[ix : ix + 2])[0]
+                width = np.diff(self.mne.boundary_times[:2])[0]
                 ax_hscroll.add_patch(
                     Rectangle(
-                        (start, 0),
-                        width,
-                        1,
-                        color="none",
-                        zorder=self.mne.zorder["patch"],
-                    )
-                )
+                        (start, 0), width, 1, color="none",
+                        zorder=self.mne.zorder["patch"]))
             # both axes, major ticks: gridlines
             for _ax in (ax_main, ax_hscroll):
                 _ax.xaxis.set_major_locator(FixedLocator(self.mne.boundary_times[1:-1]))
@@ -674,23 +676,32 @@ class osl_MNEBrowseFigure(MNEBrowseFigure):
         picks = self.mne.picks
         ch_names = self.mne.ch_names[picks]
         ch_types = self.mne.ch_types[picks]
+        offset_ixs = (picks
+                      if self.mne.butterfly and self.mne.ch_selections is None
+                      else slice(None))
+        offsets = self.mne.trace_offsets[offset_ixs]
         bad_bool = np.in1d(ch_names, self.mne.info["bads"])
         # OSL ADDITION
         bad_int = []
-        for i in range(len(ch_names)):
-            if ch_names[i] in self.mne.info["bads"]:
-                if ch_names[i] in list(self.mne.ica.labels_.keys()):
-                    bad_int.append(
-                        self.mne.bad_labels_list.index(
-                            self.mne.ica.labels_[ch_names[i]]
-                        )
-                        + 2
-                    )
+        for ch in [self.mne.ica._ica_names[ii] for ii in picks]:
+            i = self.mne.ica._ica_names.index(ch)
+            if ch in self.mne.info["bads"]:
+                if len(list(self.mne.ica.labels_.values())) > 0 and i in np.concatenate(list(self.mne.ica.labels_.values())):
+                    i = int(i)
+                    ix = np.where([i in self.mne.ica.labels_[k] for k in self.mne.ica.labels_.keys()])[0][0]
+                    lbl = list(self.mne.ica.labels_.keys())[ix].split('/')[0]
+                    if lbl == 'unknown':
+                        bad_int.append(0)
+                    else:
+                        bad_int.append(self.mne.bad_labels_list.index(lbl) + 1)
                 else:
                     bad_int.append(0)
             else:
-                if ch_names[i] in list(self.mne.ica.labels_.keys()):  # remove entry
-                    del self.mne.ica.labels_[ch_names[i]]
+                if len(list(self.mne.ica.labels_.values())) > 0 and i in np.concatenate(list(self.mne.ica.labels_.values())):  # remove entry
+                    i = int(i)
+                    whichkeys = [list(self.mne.ica.labels_.keys())[k] for k in np.where([i in self.mne.ica.labels_[k] for k in self.mne.ica.labels_.keys()])[0]]
+                    for k in whichkeys:
+                        self.mne.ica.labels_[k] = list(np.setdiff1d(self.mne.ica.labels_[k], i))
                 bad_int.append(np.nan)
 
         # colors
@@ -699,12 +710,7 @@ class osl_MNEBrowseFigure(MNEBrowseFigure):
             self.mne.ch_color_bad
         ] + self.mne.bad_label_colors  # OSL ADDITION: match colors to specific artifact labels
         ch_colors = to_rgba_array(
-            [
-                c[_bad] if _bad is not np.nan else _color
-                for _bad, _color in zip(bad_int, good_ch_colors)
-            ]
-        )
-
+            [c[_bad] if _bad is not np.nan else _color for _bad, _color in zip(bad_int, good_ch_colors)])
         self.mne.ch_colors = np.array(good_ch_colors)  # use for unmarking bads
         labels = self.mne.ax_main.yaxis.get_ticklabels()
         if self.mne.butterfly:
@@ -854,9 +860,18 @@ class osl_MNEBrowseFigure(MNEBrowseFigure):
             self.get_axes()[1 : n_topos * n_chtype + 1], (n_chtype, n_topos)
         )
         self.plot_topos(self.mne.ica, ax_topo, self.mne.picks)
+        
+        # OSL ADDITION: ADD BAD LABELS
+        for i in range(len(self.mne.bad_labels_list)+2):
+            if i == 0:
+                plt.figtext(self.mne.bad_labels_xpos, self.mne.bad_labels_ypos[i], "bad component \ntype:", fontweight='bold')
+            elif i == 1:
+                plt.figtext(self.mne.bad_labels_xpos, self.mne.bad_labels_ypos[i], "unknown",
+                            color=self.mne.ch_color_bad, fontweight='semibold')
+            else:
+                plt.figtext(self.mne.bad_labels_xpos, self.mne.bad_labels_ypos[i], f'{i-1}: ' + self.mne.bad_labels_list[i - 2],
+                            color=self.mne.bad_label_colors[i - 2], fontweight='semibold')
 
-        # OSL ADDITION: ADD CUSTOM TITLE
-        self._alt_title()
 
     def plot_topos(self, ica, ax_topo, picks):  # OSL ADDITION FOR TOPOS
         import numpy as np
@@ -890,7 +905,7 @@ class osl_MNEBrowseFigure(MNEBrowseFigure):
                         show=True,
                         outlines="head",
                         contours=0,
-                        image_interp="bilinear",
+                        image_interp="cubic",
                         res=64,
                         sensors=False,
                         allow_ref_meg=False,
@@ -901,47 +916,11 @@ class osl_MNEBrowseFigure(MNEBrowseFigure):
                     ax_topo[i, j].clear()
                     ax_topo[i, j].set_xticks([])
                     ax_topo[i, j].set_yticks([])
-            ax_topo[i, 0].set_title(f"{chtype[i]}")
 
-    def _close(
-        self, event
-    ):  # OSL VERSION - SIMILAR TO OLD MNE VERSION TODO: Check if we need to adopt this
-        """Handle close events (via keypress or window [x])."""
-        from matplotlib.pyplot import close
-        from mne.utils import logger, set_config
-        import numpy as np
-
-        # write out bad epochs (after converting epoch numbers to indices)
-        if self.mne.instance_type == "epochs":
-            bad_ixs = np.in1d(self.mne.inst.selection, self.mne.bad_epochs).nonzero()[0]
-            self.mne.inst.drop(bad_ixs)
-        # write bad channels back to instance (don't do this for proj;
-        # proj checkboxes are for viz only and shouldn't modify the instance)
-        if self.mne.instance_type in ("raw", "epochs"):
-            self.mne.inst.info["bads"] = self.mne.info["bads"]
-            logger.info(f"Channels marked as bad: {self.mne.info['bads'] or 'none'}")
-        # OSL ADDITION
-        # ICA excludes
-        elif self.mne.instance_type == "ica":
-            self.mne.ica.exclude = [
-                self.mne.ica._ica_names.index(ch) for ch in self.mne.info["bads"]
-            ]
-            # OSL ADDITION: remove bad component labels that were reversed to good component
-            tmp = list(self.mne.ica.labels_.keys())[:]
-            for ch in tmp:
-                if ch not in self.mne.info["bads"]:
-                    del self.mne.ica.labels_[ch]
-            # label bad components without a manual label as "unknown"
-            for ch in self.mne.info["bads"]:
-                if ch not in self.mne.ica.labels_:
-                    self.mne.ica.labels_[ch] = "unknown"
-        # write window size to config
-        size = ",".join(self.get_size_inches().astype(str))
-        set_config("MNE_BROWSE_RAW_SIZE", size, set_env=False)
-        # Clean up child figures (don't pop(), child figs remove themselves)
-        while len(self.mne.child_figs):
-            fig = self.mne.child_figs[-1]
-            close(fig)
+                if j==0:
+                    ax_topo[i, j].set_title(f"{chtype[i]}")
+                else:
+                    ax_topo[i, j].set_title('')
 
     def _keypress(self, event):
         from mne.viz.utils import _events_off
@@ -955,8 +934,9 @@ class osl_MNEBrowseFigure(MNEBrowseFigure):
         else:
             last_time = self.mne.inst.times[-1]
         # scroll up/down
-        if key in ("down", "up"):
-            direction = -1 if key == "up" else 1
+        if key in ('down', 'up', 'shift+down', 'shift+up'):
+            key = key.split('+')[-1]
+            direction = -1 if key == 'up' else 1
             # butterfly case
             if self.mne.butterfly:
                 return
@@ -969,14 +949,13 @@ class osl_MNEBrowseFigure(MNEBrowseFigure):
                 selections_dict = self.mne.ch_selections
                 penult = current_idx < (len(labels) - 1)
                 pre_penult = current_idx < (len(labels) - 2)
-                has_custom = selections_dict.get("Custom", None) is not None
-                def_custom = len(selections_dict.get("Custom", list()))
-                up_ok = key == "up" and current_idx > 0
-                down_ok = key == "down" and (
-                    pre_penult
-                    or (penult and not has_custom)
-                    or (penult and has_custom and def_custom)
-                )
+                has_custom = selections_dict.get('Custom', None) is not None
+                def_custom = len(selections_dict.get('Custom', list()))
+                up_ok = key == 'up' and current_idx > 0
+                down_ok = key == 'down' and (
+                        pre_penult or
+                        (penult and not has_custom) or
+                        (penult and has_custom and def_custom))
                 if up_ok or down_ok:
                     buttons.set_active(current_idx + direction)
             # normal case
@@ -1008,9 +987,9 @@ class osl_MNEBrowseFigure(MNEBrowseFigure):
             self._redraw(update_data=False)
         # change number of visible channels
         elif (
-            key in ("pageup", "pagedown")
-            and self.mne.fig_selection is None
-            and not self.mne.butterfly
+                key in ("pageup", "pagedown")
+                and self.mne.fig_selection is None
+                and not self.mne.butterfly
         ):
             new_n_ch = n_channels + (1 if key == "pageup" else -1)
             self.mne.n_channels = np.clip(new_n_ch, 1, len(self.mne.ch_order))
@@ -1061,6 +1040,8 @@ class osl_MNEBrowseFigure(MNEBrowseFigure):
             self._toggle_epoch_histogram()
         elif key == "j" and len(self.mne.projs):  # SSP window
             self._toggle_proj_fig()
+        elif key == 'J' and len(self.mne.projs):
+            self._toggle_proj_checkbox(event, toggle_all=True)
         elif key == "p":  # toggle draggable annotations
             self._toggle_draggable_annotations(event)
             if self.mne.fig_annotation is not None:
@@ -1078,65 +1059,118 @@ class osl_MNEBrowseFigure(MNEBrowseFigure):
             self._toggle_time_format()
         # OSL ADDITION: labeling artifact type of bad components
         elif str(key).isnumeric() and (
-            int(key) in range(len(self.mne.bad_labels_list) + 1)
-        ):
+                int(key) in range(len(self.mne.bad_labels_list) + 1)
+        ):  # TODO: Fix this!
             if len(self.mne.info["bads"]) > 0:
-                last_bad_component = self.mne.info["bads"][-1]
-                # save bad component label in dict.
-                self.mne.ica.labels_[last_bad_component] = self.mne.bad_labels_list[
-                    int(key) - 1
-                ]  # TODO: use the labels_ convention used by MNE
+                last_bad_component = self.mne.ica._ica_names.index(self.mne.info["bads"][-1])
+                all_labels = list(self.mne.ica.labels_.keys())
+
+                # first remove from a the key it was in before, if applicable:
+                if len(list(self.mne.ica.labels_.values())) > 0 and last_bad_component in list(self.mne.ica.labels_.values())[0]:
+                    ix = \
+                    np.where([last_bad_component in self.mne.ica.labels_[k] for k in self.mne.ica.labels_.keys()])[0]
+                    for ixx in ix:
+                        lbl = all_labels[ix]
+                        self.mne.ica.labels_[lbl] = np.setdiff1d(self.mne.ica.labels_[lbl], last_bad_component)
+
+                # create label based on label list and put it into MNE style
+                tmp_label = self.mne.bad_labels_list[
+                    int(key) - 1]
+                if tmp_label == 'eog':
+                    tmp_label = tmp_label + '/3/manual'
+                else:
+                    tmp_label = tmp_label + '/manual'
+
+                # save bad component label in corresponding dict.
+                if tmp_label in self.mne.ica.labels_ and len(self.mne.ica.labels_[tmp_label]) > 0:
+                    self.mne.ica.labels_[tmp_label].append(last_bad_component)
+                else:
+                    self.mne.ica.labels_[tmp_label] = [last_bad_component]
                 print(
-                    f'Component {last_bad_component} labeled as "{self.mne.bad_labels_list[int(key) - 1]}"'
+                    f'Component {last_bad_component} labeled as "{tmp_label}"'
                 )
-                self._draw_traces()  # This makes sure the traces are given the corresponding color right away
+            self._draw_traces()  # This makes sure the traces are given the corresponding color right away
         else:  # check for close key / fullscreen toggle
             super()._keypress(event)
 
-    def _alt_title(self):
+
+    def _close(self, event):
+        # OSL VERSION - SIMILAR TO OLD MNE VERSION TODO: Check if we need to adopt this
+        """Handle close events (via keypress or window [x])."""
+        from matplotlib.pyplot import close
+        from mne.utils import logger, set_config
         import numpy as np
 
-        self.mne.ax_main.texts.clear()
-        x = np.arange(
-            self.mne.ax_main.get_xlim()[0],
-            self.mne.ax_main.get_xlim()[1],
-            (self.mne.ax_main.get_xlim()[1] - self.mne.ax_main.get_xlim()[0])
-            / (len(self.mne.bad_labels_list) + 2),
-        )
-        for i in range(len(self.mne.bad_labels_list) + 2):
-            y = self.mne.ax_main.get_ylim()[1]
-            if i == 0:
-                text = self.mne.ax_main.annotate(
-                    "bad_segments",
-                    (x[i], y),
-                    xytext=(0, 9),
-                    textcoords="offset points",
-                    ha="center",
-                    va="baseline",
-                    color="red",
-                )
-            elif i == len(self.mne.bad_labels_list) + 1:
-                text = self.mne.ax_main.annotate(
-                    "unknown",
-                    (x[i], y),
-                    xytext=(0, 9),
-                    textcoords="offset points",
-                    ha="center",
-                    va="baseline",
-                    color="gray",
-                )
-            else:
-                text = self.mne.ax_main.annotate(
-                    f"{i}: {self.mne.bad_labels_list[i-1]}",
-                    (x[i], y),
-                    xytext=(0, 9),
-                    textcoords="offset points",
-                    ha="center",
-                    va="baseline",
-                    color=self.mne.bad_label_colors[i],
-                )
+        # write out bad epochs (after converting epoch numbers to indices)
+        if self.mne.instance_type == "epochs":
+            bad_ixs = np.in1d(self.mne.inst.selection, self.mne.bad_epochs).nonzero()[0]
+            self.mne.inst.drop(bad_ixs)
+        # write bad channels back to instance (don't do this for proj;
+        # proj checkboxes are for viz only and shouldn't modify the instance)
+        if self.mne.instance_type in ("raw", "epochs"):
+            self.mne.inst.info["bads"] = self.mne.info["bads"]
+            logger.info(f"Channels marked as bad: {self.mne.info['bads'] or 'none'}")
 
-            self.mne.annotation_texts.append(text)
+        # OSL ADDITION
+        # ICA excludes
+        elif self.mne.instance_type == "ica":
+            self.mne.ica.exclude = [
+                self.mne.ica._ica_names.index(ch) for ch in self.mne.info["bads"]
+            ]
+            # OSL ADDITION: remove bad component labels that were reversed to good component
+            tmp = list(self.mne.ica.labels_.values())[:]
+            try:
+                tmp = np.concatenate(tmp)
+            except:
+                tmp = []
+
+            for ch in tmp:
+                if ch not in self.mne.ica.exclude:
+                    # find in which label it has
+                    allix = np.where(list(self.mne.ica.labels_.values()) == ch)
+                    for ix in allix:
+                        self.mne.ica.labels_[list(self.mne.ica.labels_.keys())[ix]] = \
+                            np.setdiff1d(self.mne.ica.labels_[list(self.mne.ica.labels_.keys())[ix]], ch)
+
+            # label bad components without a manual label as "unknown"
+            for ch in self.mne.ica.exclude:
+                tmp = list(self.mne.ica.labels_.values())
+                if len(tmp)==0:
+                    tmp = []
+                else:
+                    tmp = np.concatenate(tmp)
+                if ch not in tmp:
+                    if "unknown" not in self.mne.ica.labels_:
+                        self.mne.ica.labels_["unknown"] = []
+                    self.mne.ica.labels_["unknown"].append(ch)
+                    if type(self.mne.ica.labels_["unknown"]) is np.ndarray:
+                        self.mne.ica.labels_["unknown"] = self.mne.ica.labels_["unknown"].tolist()
+
+            # Add to labels_ a generic eog/ecg field
+            if len(list(self.mne.ica.labels_.keys())) > 0:
+                for k in list(self.mne.ica.labels_.keys()):
+                    if 'ecg' in k.lower() and k.lower()!='ecg':
+                        if 'ecg' not in self.mne.ica.labels_:
+                            self.mne.ica.labels_["ecg"] = []
+                        self.mne.ica.labels_["ecg"].append(self.mne.ica.labels_[k])
+                        self.mne.ica.labels_["ecg"] = np.concatenate(self.mne.ica.labels_["ecg"])
+                        if type(self.mne.ica.labels_["ecg"]) is np.ndarray:
+                            self.mne.ica.labels_["ecg"] = self.mne.ica.labels_["ecg"].tolist()
+                    elif 'eog' in k.lower() and k.lower()!='eog':
+                        if 'eog' not in self.mne.ica.labels_:
+                            self.mne.ica.labels_["eog"] = []
+                        self.mne.ica.labels_["eog"].append(self.mne.ica.labels_[k])
+                        self.mne.ica.labels_["eog"] = np.concatenate(self.mne.ica.labels_["eog"])
+                        if type(self.mne.ica.labels_["eog"]) is np.ndarray:
+                            self.mne.ica.labels_["eog"] = self.mne.ica.labels_["eog"].tolist()
+
+        # write window size to config
+        size = ",".join(self.get_size_inches().astype(str))
+        set_config("MNE_BROWSE_RAW_SIZE", size, set_env=False)
+        # Clean up child figures (don't pop(), child figs remove themselves)
+        while len(self.mne.child_figs):
+            fig = self.mne.child_figs[-1]
+            close(fig)
 
 
 # TODO: OSL IMPLEMENT PLOT_ICA FOR EVOKED DATA
