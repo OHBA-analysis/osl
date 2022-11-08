@@ -22,7 +22,7 @@ FSL_DIR = "/home/cgohil/local/fsl"
 
 # Files
 SMRI_FILE = ANAT_DIR + "/{0}/anat/{0}_T1w.nii"
-PREPROC_FILE = PREPROC_DIR + "/{0}_ses-rest_task-rest_meg_preproc_raw.fif"
+PREPROC_FILE = PREPROC_DIR + "{0}_ses-rest_task-rest_meg/{0}_ses-rest_task-rest_meg_preproc_raw.fif"
 
 # Settings
 config = """

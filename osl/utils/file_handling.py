@@ -188,7 +188,7 @@ def get_rawdir(files):
     return rawfile.parent
 
 
-def add_subdir(file, outdir):
+def add_subdir(file, outdir, run_id):
     if not type(outdir) == str:
         outdir = str(outdir)
     if '{' in outdir and '}' in outdir:
@@ -202,6 +202,8 @@ def add_subdir(file, outdir):
             raise ValueError(
                     "Please make sure the subdirectory structure is present in the input file(s)"
                     )
+    else:
+        outdir = f"{outdir}/{run_id}"
     return outdir
 
 

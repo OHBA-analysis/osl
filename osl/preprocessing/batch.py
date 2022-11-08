@@ -602,6 +602,13 @@ def run_proc_chain(
         return a flag indicating whether preprocessing was successful.
     """
 
+    # Generate a run ID
+    if outname is None:
+        run_id = find_run_id(infile)
+    else:
+        run_id = os.path.splitext(outname)[0]
+    name_base = "{run_id}_{ftype}.{fext}"
+
     if not ret_dataset:
         # Let's make sure we have an output directory
         outdir = outdir or os.getcwd()
@@ -612,9 +619,9 @@ def run_proc_chain(
         # Generate a report by default, this is overriden if the user passes
         # gen_report=False
         gen_report = True if gen_report is None else gen_report
-
+        
         # Create output directories if they don't exist
-        outdir = add_subdir(infile, outdir)
+        outdir = add_subdir(infile, outdir, run_id)
         outdir = validate_outdir(outdir)
         logsdir = validate_outdir(logsdir or outdir / "logs")
         reportdir = validate_outdir(reportdir or outdir / "report")
@@ -632,13 +639,6 @@ def run_proc_chain(
         # Allow the user to create a log if they pass logsdir
         if logsdir is not None:
             logsdir = validate_outdir(logsdir)
-
-    # Generate a run ID
-    if outname is None:
-        run_id = find_run_id(infile)
-    else:
-        run_id = os.path.splitext(outname)[0]
-    name_base = "{run_id}_{ftype}.{fext}"
 
     # Create output filename
     if outdir is not None:
@@ -829,15 +829,11 @@ def run_proc_batch(
     if outdir is None:
         # Use the current working directory
         outdir = os.getcwd()
-    if '{' in outdir and '}' in outdir:
-        # validate the parent outdir - later do so for each subdirectory
-        tmpoutdir = validate_outdir(outdir.split('{')[0])
-        logsdir = validate_outdir(logsdir or tmpoutdir / "logs")
-        reportdir = validate_outdir(reportdir or tmpoutdir / "report")
-    else:
-        outdir = validate_outdir(outdir)
-        logsdir = validate_outdir(logsdir or outdir / "logs")
-        reportdir = validate_outdir(reportdir or outdir / "report")
+
+    # Validate the parent outdir - later do so for each subdirectory
+    tmpoutdir = validate_outdir(outdir.split('{')[0])
+    logsdir = validate_outdir(logsdir or tmpoutdir / "logs")
+    reportdir = validate_outdir(reportdir or tmpoutdir / "report")
 
     # Initialise Loggers
     mne.set_log_level(mneverbose)
