@@ -15,7 +15,7 @@ SRC_DIR = "/ohba/pi/knobre/cgohil/covid/src"
 
 # Files
 SMRI_FILE = RAW_DIR + "/{0}/anat/{0}_T1w.nii"
-PREPROC_FILE = PREPROC_DIR + "/{0}_task-restEO_preproc_raw.fif"
+PREPROC_FILE = PREPROC_DIR + "/{0}_task-restEO/{0}_task-restEO_preproc_raw.fif"
 
 # Subjects to do
 SUBJECTS = ["sub-004", "sub-005"]
