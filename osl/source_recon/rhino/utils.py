@@ -963,7 +963,7 @@ def recon_timeseries2niftii(
     return out_nii_fname, reference_brain_fname
 
 
-def save_or_show_renderer(renderer, filename):
+def save_or_show_renderer(renderer, filename, logger=None):
     """Save or show a renderer.
 
     Parameters
@@ -973,6 +973,8 @@ def save_or_show_renderer(renderer, filename):
     filename : str
         Filename to save display to (as an interactive html).
         Must have extension .html. If None we display the renderer.
+    logger : logging.getLogger
+        Logger
     """
     if filename is None:
         renderer.show()
@@ -985,7 +987,7 @@ def save_or_show_renderer(renderer, filename):
                 + " ".join(allowed_extensions)
             )
 
-        print("Saving", filename)
+        log_or_print(f"saving {filename}", logger)
         if ext == ".html":
             renderer.figure.plotter.export_html(filename)
         elif ext in allowed_extensions:

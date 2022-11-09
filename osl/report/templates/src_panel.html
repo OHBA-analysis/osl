@@ -15,9 +15,6 @@
             <button class="button1" onclick="openTab(event, '{{ data.fif_id }}_beamforming', this.id)" style="border-top-style: solid">Beamforming</button>
             <button class="button1" onclick="openTab(event, '{{ data.fif_id }}_parcellation', this.id)" style="border-top-style: solid">Parcellation</button>
         {% endif %}
-        {% if data.fix_sign_ambiguity is defined %}
-            <button class="button1" onclick="openTab(event, '{{ data.fif_id }}_sflip', this.id)" style="border-top-style: solid">Sign Flipping</button>
-        {% endif %}
     </div>
   </div>
 
@@ -27,47 +24,35 @@
         <div class="tabpage" style='width: 100%' id={{ data.fif_id }}_coregistration>
             <h3>Coregistration</h3>
             <iframe data-src="{{ data.plt_coreg }}" width="525" height="525" id="{{ data.fif_id}}_coregistration_iframe"></iframe>
+            <div>
+                Red dots are headshape points.</br>
+                Green blob is the scalp extracted from the structural MRI.</br>
+                Yellow diamonds are fiducials extracted from the structural MRI.</br>
+                Pink dots are polhemus fiducials.</br></br>
+                <b>We want the headshape points to lie on/near th scalp and the fiducials to align.</b></br></br>
+                Click and drag to rotate and scroll to zoom.
+            </div>
         </div>
     {% endif %}
 
-    {% if data.beamform_and_parcellate is defined %}
+    {% if data.beamform is defined or data.beamform_and_parcellate is defined %}
         <div class="tabpage" style='width: 100%; display: none' id={{ data.fif_id }}_beamforming>
             <h3>Beamforming</h3>
             <div>
-                <b>Bandpass filtering:</b> {{ data.beamform_and_parcellate.freq_range[0] }}-{{ data.beamform_and_parcellate.freq_range[1]}} Hz</br>
-                <b>Channel types:</b> {{ data.beamform_and_parcellate.chantypes }}</br>
-                <b>Rank:</b> {{ data.beamform_and_parcellate.rank }}</br></br>
+                LCMV Filter
             </div>
             <div style="width: 70%; margin: auto">
                 <img src="{{ data.plt_filter_cov }}" alt="" style='max-width: 100%'/>
                 <img src="{{ data.plt_filter_svd }}" alt="" style='max-width: 100%'/>
             </div>
         </div>
-        <div class="tabpage" style='width: 100%; display: none' id={{ data.fif_id }}_parcellation>
-            <h3>Parcellation</h3>
-            <div>
-                <b>Parcellated data file:</b> {{ data.filepath }}</br></br>
-                <b>Parcellation file:</b> {{ data.beamform_and_parcellate.parcellation_file }}</br>
-                <b>Method:</b> {{ data.beamform_and_parcellate.method }}</br>
-                <b>Orthogonalisation:</b> {{ data.beamform_and_parcellate.orthogonalisation }}</br></br>
-                <b>Number of parcels:</b> {{ data.n_parcels }}</br>
-                <b>Number of samples:</b> {{ data.n_samples }}</br></br>
-            </div>
-            <div style="width: 70%; margin: auto">
-                <img src="{{ data.plt_parc }}" alt="" style='max-width: 100%'/>
-            </div>
-        </div>
     {% endif %}
 
-    {% if data.sflip is defined %}
-        <div class="tabpage" style='width: 100%; display: none' id={{ data.fif_id }}_sflip>
-            <h3>Sign Flipping</h3>
-            <div>
-                <b>Metric before:</b> {{ data.sflip.metrics[0] }}</br>
-                <b>Metric after:</b> {{ data.sflip.metrics[-1] }} (higher is better)</br></br>
-            </div>
+    {% if data.beamform_and_parcellate is defined %}
+        <div class="tabpage" style='width: 100%; display: none' id={{ data.fif_id }}_parcellation>
+            <h3>Parcellation</h3>
             <div style="width: 70%; margin: auto">
-                <img src="{{ data.plt_sflip }}" alt="" style='max-width: 100%'/>
+                <img src="{{ data.plt_parc_corr }}" alt="" style='max-width: 100%'/>
             </div>
         </div>
     {% endif %}
@@ -96,9 +81,6 @@ function openTab(event, figTag, button) {
     }
     if (figTag.includes('parcellation')) {
         currentButton = 2;
-    }
-    if (figTag.includes('sflip')) {
-        currentButton = 3;
     }
 }
 

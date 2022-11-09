@@ -102,7 +102,6 @@ def run_src_chain(
     verbose="INFO",
     mneverbose="WARNING",
     extra_funcs=None,
-    report_name='report'
 ):
     """Source reconstruction.
 
@@ -124,8 +123,6 @@ def run_src_chain(
         Level of MNE verbose.
     extra_funcs : list of functions
         Custom functions.
-    report_name : str
-        Report dir name
 
     Returns
     -------
@@ -137,7 +134,7 @@ def run_src_chain(
     # Directories
     src_dir = validate_outdir(src_dir)
     logsdir = validate_outdir(src_dir / "logs")
-    reportdir = validate_outdir(src_dir / report_name)
+    reportdir = validate_outdir(src_dir / "report")
 
     # Get run ID
     if preproc_file is None:
@@ -163,19 +160,13 @@ def run_src_chain(
     if not isinstance(config, dict):
         config = load_config(config)
 
+    # Validation
     doing_coreg = (
         any(["coregister" in method for method in config["source_recon"]]) or
         any(["compute_surfaces" in method for method in config["source_recon"]]) or
         any(["coreg" in method for method in config["source_recon"]]) or
         any(["forward_model" in method for method in config["source_recon"]])
     )
-
-    # Note that beamform_and_parcellate is in osl.source_recon.wrappers
-    doing_bf_parc = any(
-        ["beamform_and_parcellate" in method for method in config["source_recon"]]
-    )
-
-    # Validation
     if doing_coreg and smri_file is None:
         raise ValueError("smri_file must be passed if we're doing coregistration.")
 
@@ -232,7 +223,6 @@ def run_src_batch(
     mneverbose="WARNING",
     extra_funcs=None,
     dask_client=False,
-    report_name="report"
 ):
     """Batch source reconstruction.
 
@@ -256,8 +246,6 @@ def run_src_batch(
         Custom functions.
     dask_client : bool
         Are we using a dask client?
-    report_name : str
-        Report dir name
 
     Returns
     -------
@@ -269,7 +257,7 @@ def run_src_batch(
     # Directories
     src_dir = validate_outdir(src_dir)
     logsdir = validate_outdir(src_dir / "logs")
-    reportdir = validate_outdir(src_dir / report_name)
+    reportdir = validate_outdir(src_dir / "report")
 
     # Initialise Loggers
     mne.set_log_level(mneverbose)
@@ -311,7 +299,6 @@ def run_src_batch(
         verbose=verbose,
         mneverbose=mneverbose,
         extra_funcs=extra_funcs,
-        report_name=report_name,
     )
 
     # Loop through input files to generate arguments for run_coreg_chain

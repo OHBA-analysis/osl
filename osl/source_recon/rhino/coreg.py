@@ -10,6 +10,7 @@
 import warnings
 import os
 import os.path as op
+from pathlib import Path
 from shutil import copyfile
 
 import numpy as np
@@ -534,6 +535,7 @@ def coreg_display(
     display_fiducials=True,
     display_headshape_pnts=True,
     filename=None,
+    logger=None,
 ):
     """Display coregistration.
 
@@ -574,6 +576,8 @@ def coreg_display(
     filename : str
         Filename to save display to (as an interactive html).
         Must have extension .html.
+    logger : logging.getLogger
+        Logger.
     """
 
     # Note the jargon used varies for xforms and coord spaces:
@@ -725,7 +729,7 @@ def coreg_display(
             offset += len(meg_rrs[-1])
 
         if len(meg_rrs) == 0:
-            print('MEG sensors not found. Cannot plot MEG locations.')
+            log_or_print('MEG sensors not found. Cannot plot MEG locations.', logger)
         else:
             meg_rrs = apply_trans(meg_trans, np.concatenate(meg_rrs, axis=0))
             meg_sensor_locs = apply_trans(meg_trans, np.concatenate(meg_sensor_locs, axis=0))
@@ -760,7 +764,7 @@ def coreg_display(
                     backface_culling=True,
                 )
             else:
-                print("There are no headshape points to display")
+                log_or_print("There are no headshape points to display", logger)
 
         if display_fiducials:
 
@@ -787,7 +791,7 @@ def coreg_display(
                         solid_transform=transform,
                     )
             else:
-                print("There are no MRI derived fiducials to display")
+                log_or_print("There are no MRI derived fiducials to display", logger)
 
             # Polhemus-derived nasion, rpa, lpa
             if polhemus_nasion_meg is not None and len(polhemus_nasion_meg.T) > 0:
@@ -801,7 +805,7 @@ def coreg_display(
                         backface_culling=True,
                     )
             else:
-                print("There are no polhemus derived fiducials to display")
+                log_or_print("There are no polhemus derived fiducials to display", logger)
 
         if display_sensors:
             # Sensors
@@ -847,7 +851,7 @@ def coreg_display(
         )
 
         # Save or show
-        rhino_utils.save_or_show_renderer(renderer, filename)
+        rhino_utils.save_or_show_renderer(renderer, filename, logger)
 
     # -------------------------------------------------------------------------
     elif plot_type == "scatter":
@@ -920,7 +924,7 @@ def coreg_display(
                     alpha=alpha,
                 )
             else:
-                print("There are no headshape points to plot")
+                log_or_print("There are no headshape points to plot", logger)
 
         if display_fiducials:
 
@@ -938,7 +942,7 @@ def coreg_display(
                         alpha=alpha,
                     )
             else:
-                print("There are no structural MRI derived fiducials to plot")
+                log_or_print("There are no structural MRI derived fiducials to plot", logger)
 
             if polhemus_nasion_meg is not None and len(polhemus_nasion_meg) > 0:
                 color, scale, alpha, marker = (1, 0.5, 0.7), 400, 1, "."
@@ -954,11 +958,12 @@ def coreg_display(
                         alpha=alpha,
                     )
             else:
-                print("There are no polhemus derived fiducials to plot")
+                log_or_print("There are no polhemus derived fiducials to plot", logger)
 
         if filename is None:
             plt.show()
         else:
+            log_or_print(f"saving {filename}", logger)
             plt.savefig(filename)
             plt.close()
     else:
@@ -975,6 +980,7 @@ def bem_display(
     display_outskin_with_nose=True,
     display_sensors=False,
     filename=None,
+    logger=None,
 ):
     """Displays the coregistered RHINO scalp surface and inner skull surface.
 
@@ -997,6 +1003,8 @@ def bem_display(
     filename : str
         Filename to save display to (as an interactive html).
         Must have extension .html.
+    logger : logging.getLogger
+        Logger.
     """
 
     # Note the jargon used varies for xforms and coord spaces:
@@ -1035,8 +1043,11 @@ def bem_display(
         outskin_surf_file = bet_outskin_surf_file
 
     fwd_fname = filenames["forward_model_file"]
-    forward = read_forward_solution(fwd_fname)
-    src = forward["src"]
+    if Path(fwd_fname).exists():
+        forward = read_forward_solution(fwd_fname)
+        src = forward["src"]
+    else:
+        src = None
 
     # -------------------------------------------------------------------------
     # Setup xforms
@@ -1084,7 +1095,7 @@ def bem_display(
             meg_tris.append(tris + offset)
             offset += len(meg_rrs[-1])
         if len(meg_rrs) == 0:
-            print("MEG sensors not found. Cannot plot MEG locations.")
+            log_or_print("MEG sensors not found. Cannot plot MEG locations.", logger)
         else:
             meg_rrs = apply_trans(meg_trans, np.concatenate(meg_rrs, axis=0))
             meg_tris = np.concatenate(meg_tris, axis=0)
@@ -1102,7 +1113,7 @@ def bem_display(
         # Move from head space to MEG (device) space
         src_pnts = rhino_utils.xform_points(head_trans["trans"], src_pnts.T).T
 
-        print("Number of dipoles={}".format(src_pnts.shape[0]))
+        log_or_print("BEM surface: number of dipoles = {}".format(src_pnts.shape[0]), logger)
 
     # -------------------------------------------------------------------------
     # Do plots
@@ -1178,7 +1189,7 @@ def bem_display(
         )
 
         # Save or show
-        rhino_utils.save_or_show_renderer(renderer, filename)
+        rhino_utils.save_or_show_renderer(renderer, filename, logger)
 
     # -------------------------------------------------------------------------
     elif plot_type == "scatter":
@@ -1278,6 +1289,7 @@ def bem_display(
         if filename is None:
             plt.show()
         else:
+            log_or_print(f"saving {filename}", logger)
             plt.savefig(filename)
             plt.close()
     else:

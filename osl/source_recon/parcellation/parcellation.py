@@ -13,9 +13,11 @@ from pathlib import Path
 
 import numpy as np
 import nibabel as nib
+import matplotlib.pyplot as plt
 import scipy.sparse.linalg
 from scipy.spatial import KDTree
 from nilearn.plotting import plot_markers
+from mpl_toolkits.axes_grid1 import make_axes_locatable
 
 import osl.source_recon.rhino.utils as rhino_utils
 from osl.utils import soft_import
@@ -27,7 +29,7 @@ class Parcellation:
         if isinstance(file, Parcellation):
             self.__dict__.update(file.__dict__)
             return
-        self.file = self.find_file(file)
+        self.file = find_file(file)
         self.parcellation = nib.load(self.file)
         self.dims = self.parcellation.shape[:3]
         self.n_parcels = self.parcellation.shape[3]
@@ -35,15 +37,6 @@ class Parcellation:
 
     def __repr__(self):
         return f"{self.__class__.__name__}({repr(self.file)})"
-
-    def find_file(self, filename):
-        if not op.exists(filename):
-            files_dir = str(Path(__file__).parent) + "/files/"
-            if op.exists(files_dir + filename):
-                filename = files_dir + filename
-            else:
-                raise FileNotFoundError(filename)
-        return filename
 
     def data(self):
         return self.parcellation.get_fdata()
@@ -209,6 +202,16 @@ class Parcellation:
         _save_parcel_timeseries(self.parcel_timeseries, fname)
 
 
+def find_file(filename):
+    if not op.exists(filename):
+        files_dir = str(Path(__file__).parent) + "/files/"
+        if op.exists(files_dir + filename):
+            filename = files_dir + filename
+        else:
+            raise FileNotFoundError(filename)
+    return filename
+
+
 def plot_parcellation(parcellation, **kwargs):
     parcellation = Parcellation(parcellation)
     return plot_markers(
@@ -218,6 +221,22 @@ def plot_parcellation(parcellation, **kwargs):
         node_cmap="binary_r",
         **kwargs,
     )
+
+
+def plot_correlation(parc_ts, filename, logger=None):
+    corr = np.corrcoef(parc_ts)
+    np.fill_diagonal(corr, 0)
+    fig, ax = plt.subplots()
+    divider = make_axes_locatable(ax)
+    cax = divider.append_axes('right', size='5%', pad=0.05)
+    im = ax.imshow(corr)
+    ax.set_title("Correlation")
+    ax.set_xlabel("Parcel")
+    ax.set_ylabel("Parcel")
+    fig.colorbar(im, cax=cax, orientation='vertical')
+    log_or_print(f"saving {filename}", logger)
+    fig.savefig(filename)
+    plt.close(fig)
 
 
 def _resample_parcellation(
@@ -274,7 +293,6 @@ def _resample_parcellation(
     parcellation_asmatrix = np.zeros((voxel_coords.shape[1], nparcels))
 
     for parcel_index in range(nparcels):
-
         parcellation_coords, parcellation_vals = rhino_utils.niimask2mmpointcloud(
             parcellation_resampled, parcel_index
         )
@@ -285,15 +303,17 @@ def _resample_parcellation(
         # the corresponding parcel value to
         for ind in range(voxel_coords.shape[1]):
             distance, index = kdtree.query(voxel_coords[:, ind])
+
             # Exclude from parcel any voxel_coords that are further than gridstep
             # away from the best matching parcellation_coords
             if distance < gridstep:
                 parcellation_asmatrix[ind, parcel_index] = parcellation_vals[index]
+
     return parcellation_asmatrix
 
 
 def _get_parcel_timeseries(
-    voxel_timeseries, parcellation_asmatrix, method="spatialbasis"
+    voxel_timeseries, parcellation_asmatrix, method="spatial_basis"
 ):
     """Calculate parcel timeseries
 

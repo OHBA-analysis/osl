@@ -11,6 +11,7 @@ import os
 import os.path as op
 
 import numpy as np
+import matplotlib.pyplot as plt
 import mne
 from mne import (
     read_forward_solution,
@@ -198,6 +199,7 @@ def make_lcmv(
         fig_svd.savefig(
             op.join(subjects_dir, subject, "rhino", "filter_svd.png"), dpi=150
         )
+        plt.close("all")
 
     log_or_print("*** OSL MAKE LCMV COMPLETE ***", logger)
 
