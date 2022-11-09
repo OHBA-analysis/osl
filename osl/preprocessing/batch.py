@@ -752,9 +752,13 @@ def run_proc_chain(
     if gen_report:
         from ..report import gen_html_data, gen_html_page  # avoids circular import
         logger.info("{0} : Generating Report".format(now))
-        report_data_dir = validate_outdir(reportdir / run_id)
+        report_data_dir = validate_outdir(reportdir / Path(fif_outname).stem)
         gen_html_data(
-            dataset["raw"], report_data_dir, ica=dataset["ica"], preproc_fif_filename=fif_outname, logger=logger
+            dataset["raw"],
+            report_data_dir,
+            ica=dataset["ica"],
+            preproc_fif_filename=fif_outname,
+            logger=logger,
         )
         gen_html_page(reportdir)
 
