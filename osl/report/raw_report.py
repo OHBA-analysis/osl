@@ -167,6 +167,7 @@ def gen_html_data(raw, outdir, ica=None, preproc_fif_filename=None, logger=None)
     savebase = str(outdir / '{0}.png')
     
     # Generate plots for the report
+    data["plt_config"] = plot_flowchart(raw, savebase)
     data['plt_temporalsumsq'] = plot_channel_time_series(raw, savebase, exclude_bads=False)
     data['plt_temporalsumsq_exclude_bads'] = plot_channel_time_series(raw, savebase, exclude_bads=True)
     data['plt_badchans'] = plot_sensors(raw, savebase)
@@ -241,6 +242,66 @@ def gen_html_page(outdir):
 
     # Write the output file
     outpath = pathlib.Path(outdir) / 'subject_report.html'
+    with open(outpath, 'w') as f:
+        f.write(page)
+
+    return True
+
+
+def gen_html_summary(reportdir):
+    """Generate an HTML summary from a report directory.
+
+    Parameters
+    ----------
+    reportdir : str
+        Directory to generate HTML summary report with.
+    """
+    reportdir = Path(reportdir)
+
+    # Subdirectories which contains plots for each fif file
+    subdirs = sorted(
+        [d.stem for d in Path(reportdir).iterdir() if d.is_dir()]
+    )
+
+    # Load HTML data
+    subject_data = []
+    for subdir in subdirs:
+        subdir = Path(subdir)
+        # Just generate the html page with the successful runs
+        try:
+            subject_data.append(
+                pickle.load(open(reportdir / subdir / "data.pkl", "rb"))
+            )
+        except:
+            pass
+
+    total = len(subject_data)
+    if total == 0:
+        return False
+
+    # Data used in the summary report
+    data = {}
+    data["total"] = total
+
+    # Create plots
+    data["plt_config"] = subject_data[0]["plt_config"]
+
+    # Create panel
+    panel_template = load_template('raw_summary_panel')
+    panel = panel_template.render(data=data)
+
+    # List of filenames
+    filenames = ""
+    for i in range(total):
+        filename = Path(subject_data[i]["filename"]).name
+        filenames += "{0}. {1}<br>".format(i + 1, filename)
+
+    # Render the full page
+    page_template = load_template('summary_report')
+    page = page_template.render(panel=panel, filenames=filenames)
+
+    # Write the output file
+    outpath = Path(reportdir) / 'summary_report.html'
     with open(outpath, 'w') as f:
         f.write(page)
 
