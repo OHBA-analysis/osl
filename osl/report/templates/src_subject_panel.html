@@ -8,11 +8,13 @@
 
   <div class="flex-child" style="flex: 1">
     <div class="tab" style="display: grid">
-        {% if data.coregister is defined %}
+        {% if data.coreg %}
             <button class="button1" onclick="openTab(event, '{{ data.fif_id }}_coregistration', this.id)" style="border-top-style: solid">Coregistration</button>
         {% endif %}
-        {% if data.beamform_and_parcellate is defined %}
+        {% if data.beamform or data.beamform_and_parcellate %}
             <button class="button1" onclick="openTab(event, '{{ data.fif_id }}_beamforming', this.id)" style="border-top-style: solid">Beamforming</button>
+        {% endif %}
+        {% if data.beamform_and_parcellate %}
             <button class="button1" onclick="openTab(event, '{{ data.fif_id }}_parcellation', this.id)" style="border-top-style: solid">Parcellation</button>
         {% endif %}
     </div>
@@ -20,7 +22,7 @@
 
   <div class="flex-child" style="flex: 5; padding-left: 25px">
 
-    {% if data.coregister is defined %}
+    {% if data.coreg %}
         <div class="tabpage" style='width: 100%' id={{ data.fif_id }}_coregistration>
             <h3>Coregistration</h3>
             <iframe data-src="{{ data.plt_coreg }}" width="525" height="525" id="{{ data.fif_id}}_coregistration_iframe"></iframe>
@@ -35,7 +37,7 @@
         </div>
     {% endif %}
 
-    {% if data.beamform is defined or data.beamform_and_parcellate is defined %}
+    {% if data.beamform or data.beamform_and_parcellate %}
         <div class="tabpage" style='width: 100%; display: none' id={{ data.fif_id }}_beamforming>
             <h3>Beamforming</h3>
             <div>
@@ -48,7 +50,7 @@
         </div>
     {% endif %}
 
-    {% if data.beamform_and_parcellate is defined %}
+    {% if data.beamform_and_parcellate %}
         <div class="tabpage" style='width: 100%; display: none' id={{ data.fif_id }}_parcellation>
             <h3>Parcellation</h3>
             <div style="width: 70%; margin: auto">

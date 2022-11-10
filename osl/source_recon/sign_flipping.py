@@ -45,7 +45,7 @@ def find_flips(cov, template_cov, n_embeddings, n_init, n_iter, max_flips, logge
         to flip a channels.
     metrics : numpy.ndarray
         Evaluation metric (correlation between covariance matrices) as a function
-        of iterations. Shape is (n_iter,).
+        of iterations. Shape is (n_iter + 1,).
     """
     if logger is not None:
         log_or_print("find_flips", logger)
@@ -68,8 +68,8 @@ def find_flips(cov, template_cov, n_embeddings, n_init, n_iter, max_flips, logge
         # Reset the flips and calculate the evaluation metric before sign flipping
         flips = np.ones(n_channels)
         metric = covariance_matrix_correlation(cov, template_cov, n_embeddings)
-        metrics.append(metric)
         if n == 0:
+            metrics.append(metric)
             log_or_print(f"init {n}, unflipped metric: {metric}", logger)
 
         # Randomly permute the sign of different channels and calculate the metric

@@ -492,19 +492,11 @@ def plot_preproc_flowchart(
     stage_str = "$\\bf{{{0}}}$ {1}"
 
     ax.arrow(
-        0.5,
-        1,
-        0.0,
-        -1,
-        fc="k",
-        ec="k",
-        head_width=0.045,
-        head_length=0.035,
-        length_includes_head=True,
+        0.5, 1, 0.0, -1, fc="k", ec="k", head_width=0.045,
+        head_length=0.035, length_includes_head=True,
     )
 
     for idx, stage in enumerate(stages):
-
         method, userargs = next(iter(stage.items()))
 
         method = method.replace("_", "\_")

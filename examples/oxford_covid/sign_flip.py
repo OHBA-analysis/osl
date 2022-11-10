@@ -32,7 +32,7 @@ config = f"""
         n_embeddings: 15
         standardize: True
         n_init: 3
-        n_iter: 2500
+        n_iter: 500
         max_flips: 20
 """
 

@@ -202,7 +202,6 @@ def coreg(
         but not the size of the sMRI-derived fids.
         E.g. this might be the case if we do not trust the size (e.g. in mm) of the sMRI,
         or if we are using a template sMRI that has not come from this subject.
-
     logger : logging.getLogger
         Logger.
     """
@@ -524,6 +523,67 @@ def coreg(
     log_or_print('*** OSL RHINO COREGISTRATION COMPLETE ***', logger)
 
 
+def coreg_metrics(subjects_dir, subject):
+    """Calculate metrics that summarise the coregistration.
+
+    Parameters
+    ----------
+    subjects_dir : string
+        Directory containing RHINO subject directories.
+    subject : string
+        Subject name directory containing RHINO files.
+
+    Returns
+    -------
+    fiducial_distances : np.ndarray
+        Distance in cm between the polhemus and sMRI fiducials.
+        Order is nasion, lpa, rpa.
+    """
+    coreg_filenames = get_coreg_filenames(subjects_dir, subject)
+    smri_nasion_file = coreg_filenames["smri_nasion_file"]
+    smri_rpa_file = coreg_filenames["smri_rpa_file"]
+    smri_lpa_file = coreg_filenames["smri_lpa_file"]
+    polhemus_nasion_file = coreg_filenames["polhemus_nasion_file"]
+    polhemus_rpa_file = coreg_filenames["polhemus_rpa_file"]
+    polhemus_lpa_file = coreg_filenames["polhemus_lpa_file"]
+    fif_file = coreg_filenames["fif_file"]
+
+    info = read_info(fif_file)
+    dev_head_t, _ = _get_trans(info["dev_head_t"], "meg", "head")
+    dev_head_t["trans"][0:3, -1] = dev_head_t["trans"][0:3, -1] * 1000
+    head_trans = invert_transform(dev_head_t)
+
+    # Load polhemus fidcials, these are in mm
+    if op.isfile(polhemus_nasion_file):
+        polhemus_nasion = np.loadtxt(polhemus_nasion_file)
+        polhemus_nasion_meg = rhino_utils.xform_points(head_trans["trans"], polhemus_nasion)
+    if op.isfile(polhemus_rpa_file):
+        polhemus_rpa = np.loadtxt(polhemus_rpa_file)
+        polhemus_rpa_meg = rhino_utils.xform_points(head_trans["trans"], polhemus_rpa)
+    if op.isfile(polhemus_lpa_file):
+        polhemus_lpa = np.loadtxt(polhemus_lpa_file)
+        polhemus_lpa_meg = rhino_utils.xform_points(head_trans["trans"], polhemus_lpa)
+
+    # Load sMRI derived fids, these are in mm in polhemus/head space
+    if op.isfile(smri_nasion_file):
+        smri_nasion_polhemus = np.loadtxt(smri_nasion_file)
+        smri_nasion_meg = rhino_utils.xform_points(head_trans["trans"], smri_nasion_polhemus)
+    if op.isfile(smri_rpa_file):
+        smri_rpa_polhemus = np.loadtxt(smri_rpa_file)
+        smri_rpa_meg = rhino_utils.xform_points(head_trans["trans"], smri_rpa_polhemus)
+    if op.isfile(smri_lpa_file):
+        smri_lpa_polhemus = np.loadtxt(smri_lpa_file)
+        smri_lpa_meg = rhino_utils.xform_points(head_trans["trans"], smri_lpa_polhemus)
+
+    # Distance between polhemus and sMRI fiducials in cm
+    nasion_distance = np.sqrt(np.sum((polhemus_nasion_meg - smri_nasion_meg) ** 2))
+    lpa_distance = np.sqrt(np.sum((polhemus_lpa_meg - smri_lpa_meg) ** 2))
+    rpa_distance = np.sqrt(np.sum((polhemus_rpa_meg - smri_rpa_meg) ** 2))
+    distances = np.array([nasion_distance, lpa_distance, rpa_distance]) * 1e-1
+
+    return distances
+
+
 def coreg_display(
     subjects_dir,
     subject,
@@ -657,12 +717,14 @@ def coreg_display(
         if op.isfile(polhemus_rpa_file):
             # Load, these are in mm
             polhemus_rpa = np.loadtxt(polhemus_rpa_file)
+            # Move to MEG (device) space
             polhemus_rpa_meg = rhino_utils.xform_points(head_trans["trans"], polhemus_rpa)
 
         polhemus_lpa_meg = None
         if op.isfile(polhemus_lpa_file):
             # Load, these are in mm
             polhemus_lpa = np.loadtxt(polhemus_lpa_file)
+            # Move to MEG (device) space
             polhemus_lpa_meg = rhino_utils.xform_points(head_trans["trans"], polhemus_lpa)
 
         # Load sMRI derived fids, these are in mm in polhemus/head space

@@ -316,8 +316,11 @@ def run_src_batch(
 
     logger.info("Processed {0}/{1} files successfully".format(np.sum(flags), len(flags)))
 
-    # Generate HTML report
-    if src_report.gen_html_page(reportdir):
+    # Generate individual subject HTML report
+    src_report.gen_html_page(reportdir)
+
+    # Generate a summary report
+    if src_report.gen_html_summary(reportdir):
         logger.info("******************************" + "*" * len(str(reportdir)))
         logger.info(f"* REMEMBER TO CHECK REPORT: {reportdir} *")
         logger.info("******************************" + "*" * len(str(reportdir)))

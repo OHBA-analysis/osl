@@ -319,6 +319,9 @@ def coregister(
         logger=logger,
     )
 
+    # Calculate metrics
+    fid_err = rhino.coreg_metrics(subjects_dir=src_dir, subject=subject)
+
     # Save plots
     rhino.coreg_display(
         subjects_dir=src_dir,
@@ -353,6 +356,7 @@ def coregister(
             "forward_model": True,
             "model": model,
             "eeg": eeg,
+            "fid_err": fid_err,
             "coreg_plot": f"{src_dir}/{subject}/rhino/coreg.html",
         }
     )
@@ -725,6 +729,7 @@ def fix_sign_ambiguity(
             "n_init": n_init,
             "n_iter": n_iter,
             "max_flips": max_flips,
+            "metrics": metrics,
         }
     )
 
