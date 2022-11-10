@@ -566,12 +566,10 @@ def plot_spectra(raw, savebase=None):
     """Plot power spectra for each sensor modality."""
 
     is_ctf = raw.info["dev_ctf_t"] is not None
-
     if is_ctf:
         # Note that with CTF mne.pick_types will return:
         # ~274 axial grads (as magnetometers) if {picks: 'mag', ref_meg: False}
         # ~28 reference axial grads if {picks: 'grad'}
-
         channel_types = {
             'Axial Grad (chtype=''mag'')': mne.pick_types(raw.info, meg='mag', ref_meg=False, exclude='bads'),
             'EEG': mne.pick_types(raw.info, eeg=True, exclude='bads'),
@@ -585,7 +583,7 @@ def plot_spectra(raw, savebase=None):
 
     # Number of subplots, i.e. the number of different channel types in the fif file
     nrows = 0
-    for _, c in channel_types.items():
+    for _, c in sorted(channel_types.items()):
         if len(c) > 0:
             nrows += 1
 
@@ -597,12 +595,18 @@ def plot_spectra(raw, savebase=None):
         ax = [ax]
     row = 0
 
-    for name, chan_inds in channel_types.items():
+    for name, chan_inds in sorted(channel_types.items()):
         if len(chan_inds) == 0:
             continue
 
         # Plot spectra
-        raw.plot_psd(show=False, picks=chan_inds, ax=ax[row], verbose=0)
+        raw.plot_psd(
+            show=False,
+            picks=chan_inds,
+            ax=ax[row],
+            n_fft=int(raw.info['sfreq']*2),
+            verbose=0,
+        )
 
         ax[row].set_title(name, fontsize=12)
 
@@ -620,12 +624,20 @@ def plot_spectra(raw, savebase=None):
         ax = [ax]
     row = 0
 
-    for name, chan_inds in channel_types.items():
+    for name, chan_inds in sorted(channel_types.items()):
         if len(chan_inds) == 0:
             continue
 
         # Plot zoomed in spectra
-        raw.plot_psd(show=False, picks=chan_inds, ax=ax[row], fmin=1, fmax=48, verbose=0)
+        raw.plot_psd(
+            show=False,
+            picks=chan_inds,
+            ax=ax[row],
+            fmin=1,
+            fmax=48,
+            n_fft=int(raw.info['sfreq']*2),
+            verbose=0,
+        )
 
         ax[row].set_title(name, fontsize=12)
 
