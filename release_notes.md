@@ -5,6 +5,16 @@ Information about managing releases of OSL
 General Workflow
 ----------------
 
+We are going to prepare release vX.Y.Z - for a real release this should contain three numerical values indicating the new version number. eg v0.1.2 or v3.4.7.
+
+The third digit should be incremented for trivial changes and bugfixes that don't affect the API
+The second digit should be incremented for moderate changes, could include some API changes
+The first digit should be incremented for major changes and additions that shift things a lot and may not be backwards compatible
+
+The lower digits reset to zero if a higher digit increments, for example a moderate update to v0.2.4 could become v0.3.0.
+
+Replace vX.Y.Z with the correct release version from here on out!!
+
 ##### 0 - Ensure relevant branches are merged to main
 
 Have a look at the current work-in-progress, is there something that should be included in a new release?
@@ -12,16 +22,16 @@ Have a look at the current work-in-progress, is there something that should be i
 
 ##### 1 - Create a branch and pull request for the release
 
-This can be done as normal using your favourite method. Give both a helpful name like 'release-v0.1.0' etc
+This can be done as normal using your favourite method. Give both a helpful name like 'release-vX.Y.Z etc
 
-MAKE SURE THAT YOU CREAT THE BRANCH FROM THE CURRENT MAIN BRANCH - NOT A SUBBRANCH, this is easily done in a rush.
+Make sure that you create the release branch from the current main branch - not a subbranch, this is easily done in a rush.
 
-'''
+```
 git checkout main
 git remote update
 git pull
-git checkout -b release-v0.1.0
-'''
+git checkout -b release-vX.Y.Z
+```
 
 ##### 2 - Make sure the tests pass
 
@@ -52,8 +62,8 @@ Next, start a python session, import osl and check osl.__version__ - this should
 Use git to tag the current branch state with an informative message (that must match the correct version number....) and push it to github.
 
 ```
-git tag -a v0.1.0 -m "bump to v0.1.0"
-git push origin v0.1.0
+git tag -a vX.Y.Z -m "bump to vX.Y.Z"
+git push origin vX.Y.Z
 ```
 
 ##### 6 - Update version numbers to include 'dev'
