@@ -167,6 +167,7 @@ def gen_html_data(raw, outdir, ica=None, preproc_fif_filename=None, logger=None)
     savebase = str(outdir / '{0}.png')
     
     # Generate plots for the report
+    data["plt_config"] = plot_flowchart(raw, savebase)
     data['plt_temporalsumsq'] = plot_channel_time_series(raw, savebase, exclude_bads=False)
     data['plt_temporalsumsq_exclude_bads'] = plot_channel_time_series(raw, savebase, exclude_bads=True)
     data['plt_badchans'] = plot_sensors(raw, savebase)
@@ -225,7 +226,7 @@ def gen_html_page(outdir):
 
     # Create panels
     panels = []
-    panel_template = load_template('raw_panel')
+    panel_template = load_template('raw_subject_panel')
     for i in range(total):
         panels.append(panel_template.render(data=data[i]))
 
@@ -236,11 +237,71 @@ def gen_html_page(outdir):
         filenames += "{0}. {1}<br>".format(i + 1, filename)
 
     # Render the full page
-    page_template = load_template('report')
+    page_template = load_template('subject_report')
     page = page_template.render(panels=panels, filenames=filenames)
 
     # Write the output file
-    outpath = pathlib.Path(outdir) / 'report.html'
+    outpath = pathlib.Path(outdir) / 'subject_report.html'
+    with open(outpath, 'w') as f:
+        f.write(page)
+
+    return True
+
+
+def gen_html_summary(reportdir):
+    """Generate an HTML summary from a report directory.
+
+    Parameters
+    ----------
+    reportdir : str
+        Directory to generate HTML summary report with.
+    """
+    reportdir = Path(reportdir)
+
+    # Subdirectories which contains plots for each fif file
+    subdirs = sorted(
+        [d.stem for d in Path(reportdir).iterdir() if d.is_dir()]
+    )
+
+    # Load HTML data
+    subject_data = []
+    for subdir in subdirs:
+        subdir = Path(subdir)
+        # Just generate the html page with the successful runs
+        try:
+            subject_data.append(
+                pickle.load(open(reportdir / subdir / "data.pkl", "rb"))
+            )
+        except:
+            pass
+
+    total = len(subject_data)
+    if total == 0:
+        return False
+
+    # Data used in the summary report
+    data = {}
+    data["total"] = total
+
+    # Create plots
+    data["plt_config"] = subject_data[0]["plt_config"]
+
+    # Create panel
+    panel_template = load_template('raw_summary_panel')
+    panel = panel_template.render(data=data)
+
+    # List of filenames
+    filenames = ""
+    for i in range(total):
+        filename = Path(subject_data[i]["filename"]).name
+        filenames += "{0}. {1}<br>".format(i + 1, filename)
+
+    # Render the full page
+    page_template = load_template('summary_report')
+    page = page_template.render(panel=panel, filenames=filenames)
+
+    # Write the output file
+    outpath = Path(reportdir) / 'summary_report.html'
     with open(outpath, 'w') as f:
         f.write(page)
 
@@ -505,12 +566,10 @@ def plot_spectra(raw, savebase=None):
     """Plot power spectra for each sensor modality."""
 
     is_ctf = raw.info["dev_ctf_t"] is not None
-
     if is_ctf:
         # Note that with CTF mne.pick_types will return:
         # ~274 axial grads (as magnetometers) if {picks: 'mag', ref_meg: False}
         # ~28 reference axial grads if {picks: 'grad'}
-
         channel_types = {
             'Axial Grad (chtype=''mag'')': mne.pick_types(raw.info, meg='mag', ref_meg=False, exclude='bads'),
             'EEG': mne.pick_types(raw.info, eeg=True, exclude='bads'),
@@ -524,7 +583,7 @@ def plot_spectra(raw, savebase=None):
 
     # Number of subplots, i.e. the number of different channel types in the fif file
     nrows = 0
-    for _, c in channel_types.items():
+    for _, c in sorted(channel_types.items()):
         if len(c) > 0:
             nrows += 1
 
@@ -536,12 +595,18 @@ def plot_spectra(raw, savebase=None):
         ax = [ax]
     row = 0
 
-    for name, chan_inds in channel_types.items():
+    for name, chan_inds in sorted(channel_types.items()):
         if len(chan_inds) == 0:
             continue
 
         # Plot spectra
-        raw.plot_psd(show=False, picks=chan_inds, ax=ax[row], verbose=0)
+        raw.plot_psd(
+            show=False,
+            picks=chan_inds,
+            ax=ax[row],
+            n_fft=int(raw.info['sfreq']*2),
+            verbose=0,
+        )
 
         ax[row].set_title(name, fontsize=12)
 
@@ -559,12 +624,20 @@ def plot_spectra(raw, savebase=None):
         ax = [ax]
     row = 0
 
-    for name, chan_inds in channel_types.items():
+    for name, chan_inds in sorted(channel_types.items()):
         if len(chan_inds) == 0:
             continue
 
         # Plot zoomed in spectra
-        raw.plot_psd(show=False, picks=chan_inds, ax=ax[row], fmin=1, fmax=48, verbose=0)
+        raw.plot_psd(
+            show=False,
+            picks=chan_inds,
+            ax=ax[row],
+            fmin=1,
+            fmax=48,
+            n_fft=int(raw.info['sfreq']*2),
+            verbose=0,
+        )
 
         ax[row].set_title(name, fontsize=12)
 

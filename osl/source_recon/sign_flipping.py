@@ -10,8 +10,6 @@ import os.path as op
 from pathlib import Path
 
 import numpy as np
-import matplotlib.pyplot as plt
-from mpl_toolkits.axes_grid1 import make_axes_locatable
 from tqdm import trange
 
 from osl.utils.logger import log_or_print
@@ -47,7 +45,7 @@ def find_flips(cov, template_cov, n_embeddings, n_init, n_iter, max_flips, logge
         to flip a channels.
     metrics : numpy.ndarray
         Evaluation metric (correlation between covariance matrices) as a function
-        of iterations. Shape is (n_iter,).
+        of iterations. Shape is (n_iter + 1,).
     """
     if logger is not None:
         log_or_print("find_flips", logger)
@@ -70,8 +68,8 @@ def find_flips(cov, template_cov, n_embeddings, n_init, n_iter, max_flips, logge
         # Reset the flips and calculate the evaluation metric before sign flipping
         flips = np.ones(n_channels)
         metric = covariance_matrix_correlation(cov, template_cov, n_embeddings)
-        metrics.append(metric)
         if n == 0:
+            metrics.append(metric)
             log_or_print(f"init {n}, unflipped metric: {metric}", logger)
 
         # Randomly permute the sign of different channels and calculate the metric
@@ -297,68 +295,6 @@ def apply_flips(src_dir, subject, flips, logger=None):
     log_or_print(f"saving: {outfile}", logger)
     np.save(outfile, flipped_data)
 
-
-def plot_sign_flipping(
-    cov, template_cov, n_embeddings, flips, plot_filename
-):
-    """Plots the results of a sign flipping
-
-    Parameters
-    ----------
-    cov : numpy.ndarray
-        Covariance matrix of time-delay embedded and standardized data (e.g. from one session/subject)
-        Shape must be (n_channels*n_embeddings, n_channels*n_embeddings).
-    template_cov : numpy.ndarray
-        Template covariance matrix of time-delay embedded and standardized data (e.g. from template session/subject)
-        Shape must be (n_channels*n_embeddings, n_channels*n_embeddings).
-    n_embeddings : int
-        Number of time delay embeddings used.
-    flips : numpy.ndarray
-        Vector of 1s and -1s indicating whether or not to flip
-        a channels. Shape must be (n_channels,).
-    metrics : numpy.ndarray
-        Metrics calculated during sign flipping.
-    plot_filename : basestring
-        Filepath to save plots to
-    """
-
-    # Create a figure
-    fig, ax = plt.subplots(nrows=1, ncols=2, figsize=(6, 3))
-
-    # Plot the covariance of the template subject
-    # (We zero the diagonal elements we're ignoring)
-    i, j = np.triu_indices(cov.shape[-1], k=n_embeddings)
-    template_cov_ = np.zeros([cov.shape[-1], cov.shape[-1]])
-    template_cov_[i, j] = template_cov[i, j]
-    template_cov_[j, i] = template_cov[j, i]
-    vmin = template_cov_.min()
-    vmax = template_cov_.max()
-
-    im = ax[0].imshow(template_cov_, vmin=vmin, vmax=vmax)
-    ax[0].set_title("Template covariance")
-
-    divider = make_axes_locatable(ax[0])
-    cax = divider.append_axes("right", size="5%", pad=0.05)
-    fig.colorbar(im, cax=cax, orientation="vertical")
-
-    # Plot the covariance
-    cov = apply_flips_to_covariance(cov, flips, n_embeddings)
-    i, j = np.triu_indices(cov.shape[-1], k=n_embeddings)
-    cov_ = np.zeros([cov.shape[-1], cov.shape[-1]])
-    cov_[i, j] = cov[i, j]
-    cov_[j, i] = cov[j, i]
-
-    im = ax[1].imshow(cov_, vmin=vmin, vmax=vmax)
-    ax[1].set_title("Flipped subject covariance")
-
-    divider = make_axes_locatable(ax[1])
-    cax = divider.append_axes("right", size="5%", pad=0.05)
-    fig.colorbar(im, cax=cax, orientation="vertical")
-
-    # Save plot
-    plt.tight_layout()
-    fig.savefig(plot_filename)
-    fig.clf()
 
 def time_embed(x, n_embeddings):
     """Performs time-delay embedding.

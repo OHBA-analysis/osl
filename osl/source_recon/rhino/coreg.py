@@ -10,6 +10,7 @@
 import warnings
 import os
 import os.path as op
+from pathlib import Path
 from shutil import copyfile
 
 import numpy as np
@@ -201,7 +202,6 @@ def coreg(
         but not the size of the sMRI-derived fids.
         E.g. this might be the case if we do not trust the size (e.g. in mm) of the sMRI,
         or if we are using a template sMRI that has not come from this subject.
-
     logger : logging.getLogger
         Logger.
     """
@@ -523,6 +523,67 @@ def coreg(
     log_or_print('*** OSL RHINO COREGISTRATION COMPLETE ***', logger)
 
 
+def coreg_metrics(subjects_dir, subject):
+    """Calculate metrics that summarise the coregistration.
+
+    Parameters
+    ----------
+    subjects_dir : string
+        Directory containing RHINO subject directories.
+    subject : string
+        Subject name directory containing RHINO files.
+
+    Returns
+    -------
+    fiducial_distances : np.ndarray
+        Distance in cm between the polhemus and sMRI fiducials.
+        Order is nasion, lpa, rpa.
+    """
+    coreg_filenames = get_coreg_filenames(subjects_dir, subject)
+    smri_nasion_file = coreg_filenames["smri_nasion_file"]
+    smri_rpa_file = coreg_filenames["smri_rpa_file"]
+    smri_lpa_file = coreg_filenames["smri_lpa_file"]
+    polhemus_nasion_file = coreg_filenames["polhemus_nasion_file"]
+    polhemus_rpa_file = coreg_filenames["polhemus_rpa_file"]
+    polhemus_lpa_file = coreg_filenames["polhemus_lpa_file"]
+    fif_file = coreg_filenames["fif_file"]
+
+    info = read_info(fif_file)
+    dev_head_t, _ = _get_trans(info["dev_head_t"], "meg", "head")
+    dev_head_t["trans"][0:3, -1] = dev_head_t["trans"][0:3, -1] * 1000
+    head_trans = invert_transform(dev_head_t)
+
+    # Load polhemus fidcials, these are in mm
+    if op.isfile(polhemus_nasion_file):
+        polhemus_nasion = np.loadtxt(polhemus_nasion_file)
+        polhemus_nasion_meg = rhino_utils.xform_points(head_trans["trans"], polhemus_nasion)
+    if op.isfile(polhemus_rpa_file):
+        polhemus_rpa = np.loadtxt(polhemus_rpa_file)
+        polhemus_rpa_meg = rhino_utils.xform_points(head_trans["trans"], polhemus_rpa)
+    if op.isfile(polhemus_lpa_file):
+        polhemus_lpa = np.loadtxt(polhemus_lpa_file)
+        polhemus_lpa_meg = rhino_utils.xform_points(head_trans["trans"], polhemus_lpa)
+
+    # Load sMRI derived fids, these are in mm in polhemus/head space
+    if op.isfile(smri_nasion_file):
+        smri_nasion_polhemus = np.loadtxt(smri_nasion_file)
+        smri_nasion_meg = rhino_utils.xform_points(head_trans["trans"], smri_nasion_polhemus)
+    if op.isfile(smri_rpa_file):
+        smri_rpa_polhemus = np.loadtxt(smri_rpa_file)
+        smri_rpa_meg = rhino_utils.xform_points(head_trans["trans"], smri_rpa_polhemus)
+    if op.isfile(smri_lpa_file):
+        smri_lpa_polhemus = np.loadtxt(smri_lpa_file)
+        smri_lpa_meg = rhino_utils.xform_points(head_trans["trans"], smri_lpa_polhemus)
+
+    # Distance between polhemus and sMRI fiducials in cm
+    nasion_distance = np.sqrt(np.sum((polhemus_nasion_meg - smri_nasion_meg) ** 2))
+    lpa_distance = np.sqrt(np.sum((polhemus_lpa_meg - smri_lpa_meg) ** 2))
+    rpa_distance = np.sqrt(np.sum((polhemus_rpa_meg - smri_rpa_meg) ** 2))
+    distances = np.array([nasion_distance, lpa_distance, rpa_distance]) * 1e-1
+
+    return distances
+
+
 def coreg_display(
     subjects_dir,
     subject,
@@ -534,6 +595,7 @@ def coreg_display(
     display_fiducials=True,
     display_headshape_pnts=True,
     filename=None,
+    logger=None,
 ):
     """Display coregistration.
 
@@ -574,6 +636,8 @@ def coreg_display(
     filename : str
         Filename to save display to (as an interactive html).
         Must have extension .html.
+    logger : logging.getLogger
+        Logger.
     """
 
     # Note the jargon used varies for xforms and coord spaces:
@@ -653,12 +717,14 @@ def coreg_display(
         if op.isfile(polhemus_rpa_file):
             # Load, these are in mm
             polhemus_rpa = np.loadtxt(polhemus_rpa_file)
+            # Move to MEG (device) space
             polhemus_rpa_meg = rhino_utils.xform_points(head_trans["trans"], polhemus_rpa)
 
         polhemus_lpa_meg = None
         if op.isfile(polhemus_lpa_file):
             # Load, these are in mm
             polhemus_lpa = np.loadtxt(polhemus_lpa_file)
+            # Move to MEG (device) space
             polhemus_lpa_meg = rhino_utils.xform_points(head_trans["trans"], polhemus_lpa)
 
         # Load sMRI derived fids, these are in mm in polhemus/head space
@@ -725,7 +791,7 @@ def coreg_display(
             offset += len(meg_rrs[-1])
 
         if len(meg_rrs) == 0:
-            print('MEG sensors not found. Cannot plot MEG locations.')
+            log_or_print('MEG sensors not found. Cannot plot MEG locations.', logger)
         else:
             meg_rrs = apply_trans(meg_trans, np.concatenate(meg_rrs, axis=0))
             meg_sensor_locs = apply_trans(meg_trans, np.concatenate(meg_sensor_locs, axis=0))
@@ -760,7 +826,7 @@ def coreg_display(
                     backface_culling=True,
                 )
             else:
-                print("There are no headshape points to display")
+                log_or_print("There are no headshape points to display", logger)
 
         if display_fiducials:
 
@@ -787,7 +853,7 @@ def coreg_display(
                         solid_transform=transform,
                     )
             else:
-                print("There are no MRI derived fiducials to display")
+                log_or_print("There are no MRI derived fiducials to display", logger)
 
             # Polhemus-derived nasion, rpa, lpa
             if polhemus_nasion_meg is not None and len(polhemus_nasion_meg.T) > 0:
@@ -801,7 +867,7 @@ def coreg_display(
                         backface_culling=True,
                     )
             else:
-                print("There are no polhemus derived fiducials to display")
+                log_or_print("There are no polhemus derived fiducials to display", logger)
 
         if display_sensors:
             # Sensors
@@ -847,7 +913,7 @@ def coreg_display(
         )
 
         # Save or show
-        rhino_utils.save_or_show_renderer(renderer, filename)
+        rhino_utils.save_or_show_renderer(renderer, filename, logger)
 
     # -------------------------------------------------------------------------
     elif plot_type == "scatter":
@@ -920,7 +986,7 @@ def coreg_display(
                     alpha=alpha,
                 )
             else:
-                print("There are no headshape points to plot")
+                log_or_print("There are no headshape points to plot", logger)
 
         if display_fiducials:
 
@@ -938,7 +1004,7 @@ def coreg_display(
                         alpha=alpha,
                     )
             else:
-                print("There are no structural MRI derived fiducials to plot")
+                log_or_print("There are no structural MRI derived fiducials to plot", logger)
 
             if polhemus_nasion_meg is not None and len(polhemus_nasion_meg) > 0:
                 color, scale, alpha, marker = (1, 0.5, 0.7), 400, 1, "."
@@ -954,11 +1020,12 @@ def coreg_display(
                         alpha=alpha,
                     )
             else:
-                print("There are no polhemus derived fiducials to plot")
+                log_or_print("There are no polhemus derived fiducials to plot", logger)
 
         if filename is None:
             plt.show()
         else:
+            log_or_print(f"saving {filename}", logger)
             plt.savefig(filename)
             plt.close()
     else:
@@ -975,6 +1042,7 @@ def bem_display(
     display_outskin_with_nose=True,
     display_sensors=False,
     filename=None,
+    logger=None,
 ):
     """Displays the coregistered RHINO scalp surface and inner skull surface.
 
@@ -997,6 +1065,8 @@ def bem_display(
     filename : str
         Filename to save display to (as an interactive html).
         Must have extension .html.
+    logger : logging.getLogger
+        Logger.
     """
 
     # Note the jargon used varies for xforms and coord spaces:
@@ -1035,8 +1105,11 @@ def bem_display(
         outskin_surf_file = bet_outskin_surf_file
 
     fwd_fname = filenames["forward_model_file"]
-    forward = read_forward_solution(fwd_fname)
-    src = forward["src"]
+    if Path(fwd_fname).exists():
+        forward = read_forward_solution(fwd_fname)
+        src = forward["src"]
+    else:
+        src = None
 
     # -------------------------------------------------------------------------
     # Setup xforms
@@ -1084,7 +1157,7 @@ def bem_display(
             meg_tris.append(tris + offset)
             offset += len(meg_rrs[-1])
         if len(meg_rrs) == 0:
-            print("MEG sensors not found. Cannot plot MEG locations.")
+            log_or_print("MEG sensors not found. Cannot plot MEG locations.", logger)
         else:
             meg_rrs = apply_trans(meg_trans, np.concatenate(meg_rrs, axis=0))
             meg_tris = np.concatenate(meg_tris, axis=0)
@@ -1102,7 +1175,7 @@ def bem_display(
         # Move from head space to MEG (device) space
         src_pnts = rhino_utils.xform_points(head_trans["trans"], src_pnts.T).T
 
-        print("Number of dipoles={}".format(src_pnts.shape[0]))
+        log_or_print("BEM surface: number of dipoles = {}".format(src_pnts.shape[0]), logger)
 
     # -------------------------------------------------------------------------
     # Do plots
@@ -1178,7 +1251,7 @@ def bem_display(
         )
 
         # Save or show
-        rhino_utils.save_or_show_renderer(renderer, filename)
+        rhino_utils.save_or_show_renderer(renderer, filename, logger)
 
     # -------------------------------------------------------------------------
     elif plot_type == "scatter":
@@ -1278,6 +1351,7 @@ def bem_display(
         if filename is None:
             plt.show()
         else:
+            log_or_print(f"saving {filename}", logger)
             plt.savefig(filename)
             plt.close()
     else:

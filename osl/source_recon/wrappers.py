@@ -23,7 +23,7 @@ import pickle
 import numpy as np
 
 from . import rhino, beamforming, parcellation, sign_flipping
-from ..utils import validate_outdir
+from ..report import src_report
 
 
 logger = logging.getLogger(__name__)
@@ -115,6 +115,15 @@ def compute_surfaces(
         logger=logger,
     )
 
+    # Save info for the report
+    src_report.add_to_data(
+        f"{src_dir}/{subject}/report_data.pkl",
+        {
+            "compute_surfaces": True,
+            "include_nose": include_nose,
+        }
+    )
+
 
 def coreg(
     src_dir,
@@ -148,8 +157,8 @@ def coreg(
     already_coregistered : bool
         Indicates that the data is already coregistered.
     allow_smri_scaling : bool
-        Indicates if we are to allow scaling of the sMRI, such that the sMRI-derived fids are
-        scaled in size to better match the polhemus-derived fids.
+        Indicates if we are to allow scaling of the sMRI, such that the sMRI-derived fids
+        are scaled in size to better match the polhemus-derived fids.
         This assumes that we trust the size (e.g. in mm) of the polhemus-derived fids,
         but not the size of the sMRI-derived fids.
         E.g. this might be the case if we do not trust the size (e.g. in mm) of the sMRI,
@@ -165,6 +174,28 @@ def coreg(
         already_coregistered=already_coregistered,
         allow_smri_scaling=allow_smri_scaling,
         logger=logger,
+    )
+
+    # Save plots
+    rhino.coreg_display(
+        subjects_dir=src_dir,
+        subject=subject,
+        display_outskin_with_nose=False,
+        filename=f"{src_dir}/{subject}/rhino/coreg.html",
+        logger=logger,
+    )
+    
+    # Save info for the report
+    src_report.add_to_data(
+        f"{src_dir}/{subject}/report_data.pkl",
+        {
+            "coreg": True,
+            "use_headshape": use_headshape,
+            "use_nose": use_nose,
+            "already_coregistered": already_coregistered,
+            "allow_smri_scaling": allow_smri_scaling,
+            "coreg_plot": f"{src_dir}/{subject}/rhino/coreg.html",
+        }
     )
 
 
@@ -202,6 +233,17 @@ def forward_model(
         eeg=eeg,
         logger=logger,
     )
+
+    # Save info for the report
+    src_report.add_to_data(
+        f"{src_dir}/{subject}/report_data.pkl",
+        {
+            "forward_model": True,
+            "model": model,
+            "eeg": eeg,
+        }
+    )
+
 
 def coregister(
     src_dir,
@@ -246,8 +288,8 @@ def coregister(
     already_coregistered : bool
         Indicates that the data is already coregistered.
     allow_smri_scaling : bool
-        Indicates if we are to allow scaling of the sMRI, such that the sMRI-derived fids are
-        scaled in size to better match the polhemus-derived fids.
+        Indicates if we are to allow scaling of the sMRI, such that the sMRI-derived fids
+        are scaled in size to better match the polhemus-derived fids.
         This assumes that we trust the size (e.g. in mm) of the polhemus-derived fids,
         but not the size of the sMRI-derived fids.
         E.g. this might be the case if we do not trust the size (e.g. in mm) of the sMRI,
@@ -277,6 +319,18 @@ def coregister(
         logger=logger,
     )
 
+    # Calculate metrics
+    fid_err = rhino.coreg_metrics(subjects_dir=src_dir, subject=subject)
+
+    # Save plots
+    rhino.coreg_display(
+        subjects_dir=src_dir,
+        subject=subject,
+        display_outskin_with_nose=False,
+        filename=f"{src_dir}/{subject}/rhino/coreg.html",
+        logger=logger,
+    )
+
     # Compute forward model
     rhino.forward_model(
         subjects_dir=src_dir,
@@ -284,6 +338,27 @@ def coregister(
         model=model,
         eeg=eeg,
         logger=logger,
+    )
+
+    # Save info for the report
+    src_report.add_to_data(
+        f"{src_dir}/{subject}/report_data.pkl",
+        {
+            "coregister": True,
+            "compute_surfaces": True,
+            "coreg": True,
+            "forward_model": True,
+            "include_nose": include_nose,
+            "use_nose": use_nose,
+            "use_headshape": use_headshape,
+            "already_coregistered": already_coregistered,
+            "allow_smri_scaling": allow_smri_scaling,
+            "forward_model": True,
+            "model": model,
+            "eeg": eeg,
+            "fid_err": fid_err,
+            "coreg_plot": f"{src_dir}/{subject}/rhino/coreg.html",
+        }
     )
 
 
@@ -365,6 +440,19 @@ def beamform(
         subjects_dir=src_dir,
         subject=subject,
         recon_timeseries=src_data.data,
+    )
+
+    # Save info for the report
+    src_report.add_to_data(
+        f"{src_dir}/{subject}/report_data.pkl",
+        {
+            "beamform": True,
+            "chantypes": chantypes,
+            "rank": rank,
+            "freq_range": freq_range,
+            "filter_cov_plot": f"{src_dir}/{subject}/rhino/filter_cov.png",
+            "filter_svd_plot": f"{src_dir}/{subject}/rhino/filter_svd.png",
+        }
     )
 
 
@@ -479,6 +567,35 @@ def beamform_and_parcellate(
     parc_data_file = src_dir / subject / "rhino/parc.npy"
     logger.info(f"saving {parc_data_file}")
     np.save(parc_data_file, parcel_ts.T)
+
+    # Save plots
+    parcellation.plot_correlation(
+        parcel_ts,
+        filename=f"{src_dir}/{subject}/rhino/parc_corr.png",
+        logger=logger,
+    )
+
+    # Save info for the report
+    src_report.add_to_data(
+        f"{src_dir}/{subject}/report_data.pkl",
+        {
+            "beamform_and_parcellate": True,
+            "beamform": True,
+            "parcellate": True,
+            "chantypes": chantypes,
+            "rank": rank,
+            "freq_range": freq_range,
+            "filter_cov_plot": f"{src_dir}/{subject}/rhino/filter_cov.png",
+            "filter_svd_plot": f"{src_dir}/{subject}/rhino/filter_svd.png",
+            "parcellation_file": parcellation_file,
+            "method": method,
+            "orthogonalisation": orthogonalisation,
+            "parc_data_file": str(parc_data_file),
+            "n_samples": parcel_ts.shape[1],
+            "n_parcels": parcel_ts.shape[0],
+            "parc_corr_plot": f"{src_dir}/{subject}/rhino/parc_corr.png",
+        }
+    )
 
 
 # ------------------------------------------------------------------
@@ -601,13 +718,18 @@ def fix_sign_ambiguity(
     # Apply flips to the parcellated data
     sign_flipping.apply_flips(src_dir, subject, flips, logger)
 
-    sflip_info = {}
-    sflip_info['cov'] = cov
-    sflip_info['template_cov'] = template_cov
-    sflip_info['n_embeddings'] = n_embeddings
-    sflip_info['flips'] = flips
-    sflip_info['metrics'] = metrics
+    # Save info for the report
+    src_report.add_to_data(
+        f"{src_dir}/{subject}/report_data.pkl",
+        {
+            "fix_sign_ambiguity": True,
+            "template": template,
+            "n_embeddings": n_embeddings,
+            "standardize": standardize,
+            "n_init": n_init,
+            "n_iter": n_iter,
+            "max_flips": max_flips,
+            "metrics": metrics,
+        }
+    )
 
-    # Save sflip info data that will e.g. later be used to create plots
-    with open(src_dir / subject / 'rhino/sflip_info.pkl', 'wb') as outfile:
-        pickle.dump(sflip_info, outfile)

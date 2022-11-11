@@ -1,0 +1,44 @@
+<div style='max-width: 90%; margin: auto; margin-bottom: 40px; background: #f6f6f6; box-shadow: 10px 10px 5px grey; padding: 25px 25px 25px 0px;'>
+  <div class="flex-container" style="display: flex">
+
+  <div class="flex-child" style="flex: 1">
+    <div class="tab" style="display: grid">
+        <button class="button1" onclick="openTab(event, 'config', this.id)" style="border-top-style: solid">Config</button>
+        <button class="button1" onclick="openTab(event, 'channels', this.id)" style="border-top-style: solid">Channels</button>
+    </div>
+  </div>
+
+  <div class="flex-child" style="flex: 5; padding-left: 25px">
+
+    <div class="tabpage" style='width: 100%' id='config'>
+        <h3>Config</h3>
+        <img src="{{ data.plt_config }}" alt="" style='max-width: 60%'/>
+    </div>
+
+    <div class="tabpage" style='width: 100%' id='channels'>
+        <h3>Channels</h3>
+    </div>
+
+    </div>
+  </div>
+</div>
+
+<script>
+
+function openTab(event, figTag, button) {
+    // Get all elements with class="tabpage" and hide them
+    tabpage = document.getElementsByClassName("tabpage");
+    for (i = 0; i < tabpage.length; i++) {
+        tabpage[i].style.display = "none";
+    }
+    // Show the current tab
+    document.getElementById(figTag).style.display = "block";
+    if (figTag.includes('config')) {
+        currentButton = 0;
+    }
+    if (figTag.includes('channels')) {
+        currentButton = 1;
+    }
+}
+
+</script>
