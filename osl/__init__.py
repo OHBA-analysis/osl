@@ -34,3 +34,6 @@ from . import source_recon  # noqa: F401, F403
 # --------------------------------------------------------
 osl_logger = logging.getLogger(__name__)
 osl_logger.debug('osl main init complete')
+
+# --------------------------------------------------------
+__version__ = '0.2.dev0'
