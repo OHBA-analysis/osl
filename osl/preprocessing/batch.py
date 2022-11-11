@@ -492,19 +492,11 @@ def plot_preproc_flowchart(
     stage_str = "$\\bf{{{0}}}$ {1}"
 
     ax.arrow(
-        0.5,
-        1,
-        0.0,
-        -1,
-        fc="k",
-        ec="k",
-        head_width=0.045,
-        head_length=0.035,
-        length_includes_head=True,
+        0.5, 1, 0.0, -1, fc="k", ec="k", head_width=0.045,
+        head_length=0.035, length_includes_head=True,
     )
 
     for idx, stage in enumerate(stages):
-
         method, userargs = next(iter(stage.items()))
 
         method = method.replace("_", "\_")
@@ -752,9 +744,13 @@ def run_proc_chain(
     if gen_report:
         from ..report import gen_html_data, gen_html_page  # avoids circular import
         logger.info("{0} : Generating Report".format(now))
-        report_data_dir = validate_outdir(reportdir / run_id)
+        report_data_dir = validate_outdir(reportdir / Path(fif_outname).stem)
         gen_html_data(
-            dataset["raw"], report_data_dir, ica=dataset["ica"], preproc_fif_filename=fif_outname, logger=logger
+            dataset["raw"],
+            report_data_dir,
+            ica=dataset["ica"],
+            preproc_fif_filename=fif_outname,
+            logger=logger,
         )
         gen_html_page(reportdir)
 
@@ -905,7 +901,8 @@ def run_proc_batch(
     # Generate a report
     if gen_report and len(infiles) > 0:
         from ..report import raw_report # avoids circular import
-        if raw_report.gen_html_page(reportdir):
+        raw_report.gen_html_page(reportdir)
+        if raw_report.gen_html_summary(reportdir):
             logger.info("******************************" + "*" * len(str(reportdir)))
             logger.info(f"* REMEMBER TO CHECK REPORT: {reportdir} *")
             logger.info("******************************" + "*" * len(str(reportdir)))

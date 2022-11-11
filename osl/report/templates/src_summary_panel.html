@@ -1,0 +1,78 @@
+<div style='max-width: 90%; margin: auto; margin-bottom: 40px; background: #f6f6f6; box-shadow: 10px 10px 5px grey; padding: 25px 25px 25px 0px;'>
+  <div class="flex-container" style="display: flex">
+
+  <div class="flex-child" style="flex: 1">
+    <div class="tab" style="display: grid">
+        <button class="button1" onclick="openTab(event, 'config', this.id)" style="border-top-style: solid">Config</button>
+        {% if data.coreg %}
+            <button class="button1" onclick="openTab(event, 'coregistration', this.id)" style="border-top-style: solid">Coregistration</button>
+        {% endif %}
+        {% if data.beamform_and_parcellate %}
+            <button class="button1" onclick="openTab(event, 'parcellation', this.id)" style="border-top-style: solid">Parcellation</button>
+        {% endif %}
+        {% if data.fix_sign_ambiguity %}
+            <button class="button1" onclick="openTab(event, 'sign_flipping', this.id)" style="border-top-style: solid">Sign Flipping</button>
+        {% endif %}
+    </div>
+  </div>
+
+  <div class="flex-child" style="flex: 5; padding-left: 25px">
+
+    <div class="tabpage" style='width: 100%' id='config'>
+        <h3>Config</h3>
+        <img src="{{ data.plt_config }}" alt="" style='max-width: 60%'/>
+    </div>
+
+    {% if data.coreg %}
+        <div class="tabpage" style='width: 100%' id='coregistration'>
+            <h3>Coregistration</h3>
+            Distance between polhemus and structural MRI fiducials in cm.</br></br>
+            {{ data.coreg_table }}
+        </div>
+    {% endif %}
+
+    {% if data.beamform_and_parcellate %}
+        <div class="tabpage" style='width: 100%; display: none' id='parcellation'>
+            <h3>Parcellation</h3>
+            {{ data.parcellation_file }}
+            <img src="{{ data.plt_parc }}" alt="" style='max-width: 100%'/>
+        </div>
+    {% endif %}
+
+    {% if data.fix_sign_ambiguity %}
+        <div class="tabpage" style='width: 100%; display: none' id='sign_flipping'>
+            <h3>Sign Flipping</h3>
+            <b>Template subject</b>: {{ data.template }}</br></br>
+            <img src="{{ data.plt_sflip }}" alt="" style='max-width: 100%'/>
+        </div>
+    {% endif %}
+
+    </div>
+  </div>
+</div>
+
+<script>
+
+function openTab(event, figTag, button) {
+    // Get all elements with class="tabpage" and hide them
+    tabpage = document.getElementsByClassName("tabpage");
+    for (i = 0; i < tabpage.length; i++) {
+        tabpage[i].style.display = "none";
+    }
+    // Show the current tab
+    document.getElementById(figTag).style.display = "block";
+    if (figTag.includes('config')) {
+        currentButton = 0;
+    }
+    if (figTag.includes('coregistration')) {
+        currentButton = 1;
+    }
+    if (figTag.includes('parcellation')) {
+        currentButton = 2;
+    }
+    if (figTag.includes('sign_flipping')) {
+        currentButton = 3;
+    }
+}
+
+</script>
