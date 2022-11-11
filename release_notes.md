@@ -44,7 +44,7 @@ fails - though nothing should at this stage....
 
 ##### 3 - Increment the version numbers in across the codebase
 
-Verson numbers are included in a number of files - these ALL need to be updated, though only one or two are absolutely critical. setup.py and osl/__init__.py are vital and must match or someone is going to get very confused later on. I'd strongly recommend running `git grep version` to search for other possibles.
+Verson numbers are included in a number of files - these ALL need to be updated, though only one or two are absolutely critical. `setup.py` and `osl/__init__.py` are vital and must match or someone is going to get very confused later on. I'd strongly recommend running `git grep version` to search for other possibles.
 
 
 ##### 4 - Run a local build and make sure you get the right versions.
@@ -75,15 +75,36 @@ Follow instructions here to publish the release on github
 
 https://docs.github.com/en/repositories/releasing-projects-on-github/managing-releases-in-a-repository
 
+##### 7 - Push release to PyPi.org
 
-##### 7 - Update version numbers to include 'dev'
+Create a build/wheel for the tagged version by running
+
+```
+python setup.py sdist
+python setup.py bdist_wheel --universal
+```
+
+and upload to PyPi.org using twine, ensure you have your username and password to hand.
+
+```
+twine upload --skip-existing dist/*
+```
+
+##### 8 - TEST EVERYTHING!
+
+Ask your friends and family to install the released pacakge and let you know if there are any problems. Fix any that come up and repeat steps 1 to 8 with a new version number.
+
+Do not delete broken package releases, make any fixes in a new 'trivial' update.
+
+
+##### 9 - Update version numbers to include 'dev'
 
 The same versions you incremented in step 3 should be updated to increment once mor and include 'dev' at the end, this means we will be able to distinguish the tagged/fixed version from future work-in-progress. If we don't do this, then updates to main will have the same version even though they are likely to significantly differ from the release.
 
 If we just did a minor update and released v0.3.0, we would make the development version v0.4.dev0.
 
-##### 8 - Merge the branch into main
+If we did a trivial update and released v0.1.2, we would still fix the development version to the next minor release v0.2.dev0. Don't bother incrementing the trivial versions.
 
-And wait for someone to point out which mistake you made. Fix it and then repeat steps 1 to 8 with an appropriate new version number.
+##### 10 - Merge the branch into main
 
-
+And wait for someone to point out which mistake you made. Fix it and then repeat steps 1 to 10 with an appropriate new version number.
