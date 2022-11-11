@@ -101,7 +101,7 @@ Do not delete broken package releases, make any fixes in a new 'trivial' update.
 
 The same versions you incremented in step 3 should be updated to increment once mor and include 'dev' at the end, this means we will be able to distinguish the tagged/fixed version from future work-in-progress. If we don't do this, then updates to main will have the same version even though they are likely to significantly differ from the release.
 
-If we just did a minor update and released v0.3.0, we would make the development version v0.4.dev0.
+If we just did a minor update and released v0.3.0, we would make the development version v0.4.dev0. If we did a trivial update and released v0.1.2, we would make the development version v0.1.dev3. I don't know why dev isn't at the very end (https://peps.python.org/pep-0440/)
 
 ##### 10 - Merge the branch into main
 
