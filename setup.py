@@ -18,6 +18,7 @@ setup(name=name,
       packages=['osl', 'osl.report', 'osl.maxfilter',
                 'osl.preprocessing', 'osl.utils', 'osl.utils.spmio',
                 'osl.source_recon'],
+
       zip_safe=False,
       entry_points={
           'console_scripts': [
