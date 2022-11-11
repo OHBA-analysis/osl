@@ -57,6 +57,7 @@ The final line of output should say 'Successfully installed' and include osl wit
 
 Next, start a python session, import osl and check osl.__version__ - this should show the correct version number, it it is incorrect then check the version in `osl/__init__.py`
 
+
 ##### 5 - tag a new version
 
 Use git to tag the current branch state with an informative message (that must match the correct version number....) and push it to github.
@@ -66,13 +67,20 @@ git tag -a vX.Y.Z -m "bump to vX.Y.Z"
 git push origin vX.Y.Z
 ```
 
-##### 6 - Update version numbers to include 'dev'
+##### 6 - Create release on github
+
+Follow instructions here to publish the release on github
+
+https://docs.github.com/en/repositories/releasing-projects-on-github/managing-releases-in-a-repository
+
+
+##### 7 - Update version numbers to include 'dev'
 
 The same versions you incremented in step 3 should be updated to include 'dev' at the end, this means we will be able to distinguish the tagged/fixed version from future work-in-progress. If we don't do this, then updates to main will have the same version even though they are likely to significantly differ from the release.
 
 
-##### 7 - Merge the branch into main
+##### 8 - Merge the branch into main
 
-And wait for someone to point out which mistake you made. Fix it and then repeat steps 1 to 7.
+And wait for someone to point out which mistake you made. Fix it and then repeat steps 1 to 8 with an appropriate new version number.
 
 
