@@ -44,7 +44,7 @@ fails - though nothing should at this stage....
 
 ##### 3 - Increment the version numbers in across the codebase
 
-Verson numbers are included in a number of files - these ALL need to be updated, though only one or two are absolutely critical. setup.py and osl/__init__.py are vital and must match or someone is going to get very confused later on. I'd strongly recommend running `git grep version` to search for other possibles.
+Verson numbers are included in a number of files - these ALL need to be updated, though only one or two are absolutely critical. `setup.py` and `osl/__init__.py` are vital and must match or someone is going to get very confused later on. I'd strongly recommend running `git grep version` to search for other possibles.
 
 
 ##### 4 - Run a local build and make sure you get the right versions.
