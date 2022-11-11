@@ -8,10 +8,12 @@ General Workflow
 We are going to prepare release vX.Y.Z - for a real release this should contain three numerical values indicating the new version number. eg v0.1.2 or v3.4.7.
 
 The third digit should be incremented for trivial changes and bugfixes that don't affect the API
-The second digit should be incremented for moderate changes, could include some API changes
+The second digit should be incremented for minor changes, could include some API changes
 The first digit should be incremented for major changes and additions that shift things a lot and may not be backwards compatible
 
 The lower digits reset to zero if a higher digit increments, for example a moderate update to v0.2.4 could become v0.3.0.
+
+The codebase release versions may contain 'dev' in them - please ignore this for the release itself, this is to distinguish code installed from source with formal releases during debugging, you'll add this back in step 7.
 
 Replace vX.Y.Z with the correct release version from here on out!!
 
@@ -76,8 +78,9 @@ https://docs.github.com/en/repositories/releasing-projects-on-github/managing-re
 
 ##### 7 - Update version numbers to include 'dev'
 
-The same versions you incremented in step 3 should be updated to include 'dev' at the end, this means we will be able to distinguish the tagged/fixed version from future work-in-progress. If we don't do this, then updates to main will have the same version even though they are likely to significantly differ from the release.
+The same versions you incremented in step 3 should be updated to increment once mor and include 'dev' at the end, this means we will be able to distinguish the tagged/fixed version from future work-in-progress. If we don't do this, then updates to main will have the same version even though they are likely to significantly differ from the release.
 
+If we just did a minor update and released v0.3.0, we would make the development version v0.4.dev0.
 
 ##### 8 - Merge the branch into main
 

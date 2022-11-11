@@ -11,7 +11,7 @@ dev_reqs = ['setuptools>=41.0.1', 'pytest', 'pytest-cov', 'coverage', 'flake8']
 name = 'osl'
 
 setup(name=name,
-      version='0.1.0',
+      version='0.2.dev0',
       description='OHBA Software Library',
       author='OHBA Analysis Group',
       license='MIT',
