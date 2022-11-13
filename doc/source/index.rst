@@ -13,6 +13,7 @@ Hello here we are then
    :caption: Contents:
 
    install
+   api
    build_tutorials/index
 
 
