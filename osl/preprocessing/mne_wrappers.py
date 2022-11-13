@@ -63,6 +63,41 @@ def run_mne_notch_filter(dataset, userargs):
 
 
 def run_mne_pick(dataset, userargs):
+    """OSL-Batch wrapper for 'raw.pick'.
+
+    This function calls :py:meth:`mne.io.Raw.pick <mne.io.BaseRaw.pick>` on
+    the raw object in dataset. Additional arguments on the MNE function can be
+    specified as a dictonary.
+
+    Parameters
+    ----------
+    dataset : dict
+        Dictionary containing at least an MNE object with the key 'raw'
+    userargs : dict
+        Dictionary of additional arguments to be passed to mne.io.Raw.pick
+
+    Returns
+    -------
+    dict
+        Input dictionary containing MNE objects that have been modified in place.
+
+    Notes
+    -----
+    In MNE-Batch, an example call would look like
+
+    >>> preproc:
+    >>>  - pick: {picks: 'meg'}
+
+    By default, the :py:meth:`mne.io.Raw.pick <mne.io.BaseRaw.pick>` will be
+    called on `dataset['raw']`, you can specify another options by specifying
+    `target` in userargs. For example:
+
+    >>> preproc:
+    >>>  - pick: {picks: 'meg', target: 'epochs'}
+
+    Then the function or method will be called on `dataset['epochs']`
+
+    """
     target = userargs.pop("target", "raw")
     logger.info("MNE Stage - {0}.{1}".format(target, "pick"))
     logger.info("userargs: {0}".format(str(userargs)))
