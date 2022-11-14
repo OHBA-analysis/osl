@@ -1,0 +1,28 @@
+cff-version: 0.1.1
+message: "If you use this software, please cite it as below."
+title: "OHBA Software Library in Python (OSL)"
+version: 0.1.1
+date-released: "2022-11-14"
+commit: 46aff022171862d1ea582c4c1dcb77ead6459a53
+doi: 10.5281/zenodo.6875060
+keywords:
+  - MEG
+  - magnetoencephalography
+  - EEG
+  - electroencephalography
+  - electrophysiology
+  - neuroimaging
+  - data analysis
+authors:
+  - family-names: Quinn
+    given-names: Andrew J.
+    orcid: https://orcid.org/0000-0003-2267-9897
+  - family-names: van Es
+    given-names: Mats W.J.
+    orcid: https://orcid.org/0000-0002-7133-509X
+  - family-names: Gohil
+    given-names: Chetan
+    orcid: https://orcid.org/0000-0002-0888-1207
+  - family-names: Woolrich
+    given-names: Mark W.
+    orcid: https://orcid.org/0000-0001-8460-8854
