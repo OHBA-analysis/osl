@@ -39,7 +39,7 @@ raw.plot(n_channels=30)
 
 #%%
 
-bad_annotations, flat_channels = mne.preprocessing.annotate_amplitude(raw, flat=1e-10, picks='meg')
+bad_annotations, flat_channels = mne.preprocessing.annotate_amplitude(raw, flat=1e-30, picks='meg')
 
 raw.set_annotations(bad_annotations)
 raw.info['bads'].extend(flat_channels)
