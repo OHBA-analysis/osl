@@ -23,7 +23,6 @@ pytest-cov
 coverage
 flake8
 
-yaml~=0.2.5
 glmtools~=0.1.2
 h5py~=3.6.0
 anamnesis~=1.0.3
