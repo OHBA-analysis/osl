@@ -31,15 +31,15 @@ config = """
         model: Single Layer
     - beamform_and_parcellate:
         freq_range: [1, 45]
-        chantypes: meg
+        chantypes: [mag, grad]
         rank: {meg: 60}
         parcellation_file: fmri_d100_parcellation_with_PCC_reduced_2mm_ss5mm_ds8mm.nii.gz
         method: spatial_basis
         orthogonalisation: symmetric
 """
 
-# Setup FSL
-source_recon.setup_fsl("/home/cgohil/local/fsl")
+# Setup FSL (this is the directory on hbaws that contains FSL)
+source_recon.setup_fsl("/opt/ohba/fsl/6.0.5")
 
 # Get paths to files
 smri_files = []
