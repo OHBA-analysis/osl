@@ -17,7 +17,7 @@ distributed
 parse
 opencv-python
 pythreejs
-sphinx==4.0.2
+sphinx
 numpydoc
 sphinx_gallery
 pydata-sphinx-theme
