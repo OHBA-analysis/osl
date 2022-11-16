@@ -4,16 +4,86 @@
 
 # Authors: Andrew Quinn <a.quinn@bham.ac.uk>
 #          Mats van Es <mats.vanes@psych.ox.ac.uk>
+#          Chetan Gohil <chetan.gohil@psych.ox.ac.uk>
 
 import os
 import mne
 import sys
+import ast
 import argparse
 import tempfile
 import numpy as np
-from ..utils import validate_outdir, add_subdir
+from ..utils import validate_outdir, add_subdir, process_file_inputs
 
 
+parser = argparse.ArgumentParser(description='Batch run Maxfilter on some fif files.')
+parser.add_argument('files', type=str,
+                    help='plain text file containing full paths to files to be processed')
+parser.add_argument('outdir', type=str,
+                    help='Path to output directory to save data in')
+
+parser.add_argument('--maxpath', type=str, default='/neuro/bin/util/maxfilter-2.2',
+                    help='Path to maxfilter command to use')
+
+parser.add_argument('--mode', type=str, default='standard',
+                    help="Running mode for maxfilter. Either 'standard' or 'multistage'")
+
+parser.add_argument('--headpos', action='store_true',
+                    help='Output additional head movement parameter file')
+parser.add_argument('--movecomp', action='store_true',
+                    help='Apply movement compensation')
+parser.add_argument('--movecompinter', action='store_true',
+                    help='Apply movement compensation on data with intermittent HPI')
+parser.add_argument('--autobad', action='store_true',
+                    help='Apply automatic bad channel detection')
+parser.add_argument('--autobad_dur', type=int, default=None,
+                    help='Set autobad on with a specific duration')
+parser.add_argument('--bad', nargs='+',
+                    help='Set specific channels to bad')
+parser.add_argument('--badlimit', type=int, default=None,
+                    help='Set upper limit for number of bad channels to be removed')
+parser.add_argument('--trans', type=str, default=None,
+                    help='Transforms the data to the head position in defined file')
+
+parser.add_argument('--origin', nargs='+',
+                    help='Set specific sphere origin')
+parser.add_argument('--frame', type=str, default=None,
+                    help='Set device/dead co-ordinate frame')
+parser.add_argument('--force', action='store_true',
+                    help='Ignore program warnings')
+
+parser.add_argument('--tsss', action='store_true',
+                    help='Apply temporal extension of maxfilter')
+parser.add_argument('--st', type=float, default=10,
+                    help='Data buffer length for TSSS processing')
+parser.add_argument('--corr', type=float, default=0.98,
+                    help='Subspace correlation limit for TSSS processing')
+
+parser.add_argument('--inorder', type=int, default=None,
+                    help='Set the order of the inside expansion')
+parser.add_argument('--outorder', type=int, default=None,
+                    help='Set the order of the outside expansion')
+
+parser.add_argument('--hpie', type=int, default=None,
+                    help="sets the error limit for hpi coil fitting (def 5 mm)")
+parser.add_argument('--hpig', type=float, default=None,
+                    help="ets the g-value limit (goodness-of-fit) for hpi coil fitting (def 0.98))")
+
+parser.add_argument('--scanner', type=str, default=None,
+                    help="Set CTC and Cal for the OHBA scanner the dataset was collected with \
+                          (VectorView, VectorView2 or Neo). This overrides the --ctc and --cal options.")
+parser.add_argument('--ctc', type=str, default=None,
+                    help='Specify cross-talk calibration file')
+parser.add_argument('--cal', type=str, default=None,
+                    help='Specify fine-calibration file')
+
+parser.add_argument('--overwrite', action='store_true',
+                    help="Overwrite previous output files if they're in the way")
+parser.add_argument('--dryrun', action='store_true',
+                    help="Don't actually run anything, just print commands that would have been run")
+
+
+# ----------------------------------------------------------
 
 def _add_headpos(cmd, args, outfif):
     """Estimates and stores head position parameters but does not transform data"""
@@ -304,7 +374,6 @@ def run_maxfilter(infif, outfif, args, logfile_tag=''):
 
 # -------------------------------------------------
 
-
 def run_multistage_maxfilter(infif, outbase, args):
     """
     https://imaging.mrc-cbu.cam.ac.uk/meg/Maxfilter
@@ -479,108 +548,65 @@ def run_cbu_3stage_maxfilter(infif, outbase, args):
 
 # -------------------------------------------------
 
+def run_maxfilter_batch(files, outdir, args=None):
+    """Batch Maxfiltering.
 
-def main(argv=None):
-    if argv is None:
-        argv = sys.argv[1:]
+    Example use:
+    run_maxfilter_batch(files="/path/to/fif", outdir="/path/to/outdir",
+    args="--maxpath /neuro/bin/util/maxfilter --scanner Neo --tsss --mode
+    multistage --headpos --movecomp")
 
-    parser = argparse.ArgumentParser(description='Batch run Maxfilter on some fif files.')
-    parser.add_argument('files', type=str,
-                        help='plain text file containing full paths to files to be processed')
-    parser.add_argument('outdir', type=str,
-                        help='Path to output directory to save data in')
+    Parameters
+    ----------
+    files : str or list of str
+        Path(s) to raw fif files to maxfilter.
+    outdir : str
+        Path to directory to save output to.
+    args : str
+        List of additional optional arguments to pass to osl_maxfilter.
+        If a string is passed it it split input a list (delimited by spaces).
+        E.g. args="--maxpath /neuro/bin/util/maxfilter"
+        is equivalent to args=["--maxpath", "/neuro/bin/util/maxfilter"].
+    """
 
-    parser.add_argument('--maxpath', type=str, default='/neuro/bin/util/maxfilter-2.2',
-                        help='Path to maxfilter command to use')
-
-    parser.add_argument('--mode', type=str, default='standard',
-                        help="Running mode for maxfilter. Either 'standard' or 'multistage'")
-
-    parser.add_argument('--headpos', action='store_true',
-                        help='Output additional head movement parameter file')
-    parser.add_argument('--movecomp', action='store_true',
-                        help='Apply movement compensation')
-    parser.add_argument('--movecompinter', action='store_true',
-                        help='Apply movement compensation on data with intermittent HPI')
-    parser.add_argument('--autobad', action='store_true',
-                        help='Apply automatic bad channel detection')
-    parser.add_argument('--autobad_dur', type=int, default=None,
-                        help='Set autobad on with a specific duration')
-    parser.add_argument('--bad', nargs='+',
-                        help='Set specific channels to bad')
-    parser.add_argument('--badlimit', type=int, default=None,
-                        help='Set upper limit for number of bad channels to be removed')
-    parser.add_argument('--trans', type=str, default=None,
-                        help='Transforms the data to the head position in defined file')
-
-    parser.add_argument('--origin', nargs='+',
-                        help='Set specific sphere origin')
-    parser.add_argument('--frame', type=str, default=None,
-                        help='Set device/dead co-ordinate frame')
-    parser.add_argument('--force', action='store_true',
-                        help='Ignore program warnings')
-
-    parser.add_argument('--tsss', action='store_true',
-                        help='Apply temporal extension of maxfilter')
-    parser.add_argument('--st', type=float, default=10,
-                        help='Data buffer length for TSSS processing')
-    parser.add_argument('--corr', type=float, default=0.98,
-                        help='Subspace correlation limit for TSSS processing')
-
-    parser.add_argument('--inorder', type=int, default=None,
-                        help='Set the order of the inside expansion')
-    parser.add_argument('--outorder', type=int, default=None,
-                        help='Set the order of the outside expansion')
-
-    parser.add_argument('--hpie', type=int, default=None,
-                        help="sets the error limit for hpi coil fitting (def 5 mm)")
-    parser.add_argument('--hpig', type=float, default=None,
-                        help="ets the g-value limit (goodness-of-fit) for hpi coil fitting (def 0.98))")
-
-    parser.add_argument('--scanner', type=str, default=None,
-                        help="Set CTC and Cal for the OHBA scanner the dataset was collected with \
-                              (VectorView, VectorView2 or Neo). This overrides the --ctc and --cal options.")
-    parser.add_argument('--ctc', type=str, default=None,
-                        help='Specify cross-talk calibration file')
-    parser.add_argument('--cal', type=str, default=None,
-                        help='Specify fine-calibration file')
-
-    parser.add_argument('--overwrite', action='store_true',
-                        help="Overwrite previous output files if they're in the way")
-    parser.add_argument('--dryrun', action='store_true',
-                        help="Don't actually run anything, just print commands that would have been run")
+    if args is None:
+        args = []
+    if isinstance(args, str):
+        args = args.split(" ")
+    argv = [files] + [outdir] + args
 
     args = parser.parse_args(argv)
+    args = vars(args)
+
+    if '[' in args['files']:
+        args['files'] = ast.literal_eval(args['files'])
+
+    print('\n\nOSL Maxfilter')
+    print('-------------\n')
     print(args)
+    print()
 
-    # -------------------------------------------------
-
-    print('\n\nOSL Maxfilter\n\n')
-
-    with open(args.files, 'r') as f:
-        infifs = f.readlines()
-    infifs = [fif.strip('\n') for fif in infifs]
-
+    infifs, _, _ = process_file_inputs(args['files'])
     good_fifs = [1 for ii in range(len(infifs))]
     for idx, fif in enumerate(infifs):
         if os.path.isfile(fif) is False:
             good_fifs[idx] = 0
             print('File not found: {0}'.format(fif))
 
-    if args.trans is not None:
-        if os.path.isfile(args.trans) is False:
-            sys.exit('Trans file not found ({0})'.format(args.trans))
+    if args['trans'] is not None:
+        if os.path.isfile(args['trans']) is False:
+            sys.exit('Trans file not found ({0})'.format(args['trans']))
 
     print('Processing {0} files'.format(sum(good_fifs)))
-    if args.outdir == 'adjacent':
+    if args['outdir'] == 'adjacent':
         print('Outputs will be saved alongside inputs\n\n')
     else:
-        if '{' in args.outdir and '}' in args.outdir:
+        if '{' in args['outdir'] and '}' in args['outdir']:
             # validate the parrent outdir - later do so for each subdirectory
-            _ = validate_outdir(args.outdir.split('{')[0])
+            _ = validate_outdir(args['outdir'].split('{')[0])
         else:
-            args.outdir = validate_outdir(args.outdir)
-        print('Outputs saving to: {0}\n\n'.format(args.outdir))
+            args['outdir'] = validate_outdir(args['outdir'])
+        print('Outputs saving to: {0}\n\n'.format(args['outdir']))
 
     # -------------------------------------------------
 
@@ -599,40 +625,48 @@ def main(argv=None):
         outname = os.path.split(fif)[1]
 
         # Outputfile is output dir + output name
-        if args.outdir == 'adjacent':
+        if args['outdir'] == 'adjacent':
             outfif = fif[:-4]
         else:
-            outdir = add_subdir(fif, args.outdir)
+            outdir = add_subdir(fif, args['outdir'])
             outdir = validate_outdir(outdir)
             outfif = os.path.join(outdir, outname)[:-4]
 
         # Skip run if the output exists and we don't want to overwrite
-        if os.path.isfile(outfif) and (args.overwrite is False):
+        if os.path.isfile(outfif) and (args['overwrite'] is False):
             print('Existing output found, skipping run ({0})'.format(fif))
             continue
 
         # Delete previous output if it output exists and we do want to overwrite
-        if os.path.isfile(outfif) and args.overwrite:
+        if os.path.isfile(outfif) and args['overwrite']:
             print('Deleting previous output: {0}'.format(outfif))
             os.remove(outfif)
 
-        if args.mode == 'standard':
-            flag = '_tsss' if args.tsss else '_sss'
+        if args['mode'] == 'standard':
+            flag = '_tsss' if args['tsss'] else '_sss'
             outfif = outfif + '_.fif'
-            outfif, outlog = run_maxfilter(infifs[idx], outfif, vars(args))
-        elif args.mode == 'multistage':
+            outfif, outlog = run_maxfilter(infifs[idx], outfif, args)
+        elif args['mode'] == 'multistage':
             outbase = outfif + '_{0}'
-            run_multistage_maxfilter(infifs[idx], outbase, vars(args))
-        elif args.mode == 'cbu':
+            run_multistage_maxfilter(infifs[idx], outbase, args)
+        elif args['mode'] == 'cbu':
             outbase = outfif + '_{0}'
-            run_cbu_3stage_maxfilter(infifs[idx], outbase, vars(args))
+            run_cbu_3stage_maxfilter(infifs[idx], outbase, args)
 
     print('\nProcessing complete. OHBA-and-out.\n')
 
 
+# -------------------------------------------------
+
+def main(argv=None):
+    if argv is None:
+        argv = sys.argv[1:]
+
+    run_maxfilter_batch(argv[0], argv[1], argv[2:])
+
+
 # ----------------------------------------------------------
 # Main user function
-
 
 if __name__ == '__main__':
 
