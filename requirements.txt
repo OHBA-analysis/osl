@@ -23,5 +23,6 @@ sphinx_gallery
 pydata-sphinx-theme
 setuptools>=41.0.1
 pytest
-pytest-covcoverage
+pytest-cov
+coverage
 flake8
