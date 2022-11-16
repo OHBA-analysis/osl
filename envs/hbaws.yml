@@ -1,4 +1,4 @@
-name: osl-nd
+name: osl
 channels:
   - conda-forge/label/vtk_dev
   - conda-forge
