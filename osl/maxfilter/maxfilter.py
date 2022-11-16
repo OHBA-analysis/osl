@@ -280,9 +280,7 @@ def run_maxfilter(infif, outfif, args, logfile_tag=''):
     else:
         outdir = args['outdir']
     stdlog = outfif.replace('.fif', '{0}.log'.format(logfile_tag))
-    stdlog = os.path.join(outdir, stdlog)
     errlog = outfif.replace('.fif', '{0}_err.log'.format(logfile_tag))
-    errlog = os.path.join(outdir, errlog)
 
     # Set tee to capture both stdout and stderr into separate files
     # https://stackoverflow.com/a/692407
@@ -485,7 +483,6 @@ def run_cbu_3stage_maxfilter(infif, outbase, args):
 def main(argv=None):
     if argv is None:
         argv = sys.argv[1:]
-    print(argv)
 
     parser = argparse.ArgumentParser(description='Batch run Maxfilter on some fif files.')
     parser.add_argument('files', type=str,
@@ -558,7 +555,7 @@ def main(argv=None):
 
     # -------------------------------------------------
 
-    print('\n\nOHBA-Maxfilter\n\n')
+    print('\n\nOSL Maxfilter\n\n')
 
     with open(args.files, 'r') as f:
         infifs = f.readlines()
