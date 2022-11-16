@@ -289,6 +289,7 @@ def transform_recon_timeseries(
     recon_timeseries,
     spatial_resolution=None,
     reference_brain="mni",
+    logger=None,
 ):
     """Spatially resamples a (ndipoles x ntpts) array of reconstructed time
     courses (in head/polhemus space) to dipoles on the brain grid of the
@@ -321,6 +322,8 @@ def transform_recon_timeseries(
         Note that Scaled/unscaled relates to the allow_smri_scaling option in coreg.
         If allow_scaling was False, then the unscaled MRI will be the same as the scaled.
         MRI.
+    logger : logging.getLogger
+        Logger.
 
     Returns
     -------
@@ -359,6 +362,7 @@ def transform_recon_timeseries(
         spatial_resolution = int(np.round(np.min(store[np.where(store > 0)]) * 1000))
 
     spatial_resolution = int(spatial_resolution)
+    log_or_print(f"spatial_resolution = {spatial_resolution} mm", logger)
 
     if reference_brain == "mni":
         # reference is mni stdbrain

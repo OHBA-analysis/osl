@@ -372,9 +372,11 @@ def beamform(
     preproc_file,
     smri_file,
     logger,
+    freq_range,
     chantypes,
     rank,
-    freq_range,
+    spatial_resolution=None,
+    reference_brain="mni",
 ):
     """Wrapper function for beamforming.
 
@@ -390,13 +392,27 @@ def beamform(
         Path to the T1 weighted structural MRI file to use in source reconstruction.
     logger : logging.getLogger
         Logger.
+    freq_range : list
+        Lower and upper band to bandpass filter before beamforming. If None,
+        no filtering is done.
     chantypes : list of str
         Channel types to use in beamforming.
     rank : dict
         Keys should be the channel types and the value should be the rank to use.
-    freq_range : list
-        Lower and upper band to bandpass filter before beamforming. If None,
-        no filtering is done.
+    spatial_resolution : int
+        Resolution for beamforming to use for the reference brain in mm
+        (must be an integer, or will be cast to nearest int)
+        If None, then the gridstep used in coreg_filenames['forward_model_file']
+        is used.
+    reference_brain : string
+        'mni' indicates that the reference_brain is the stdbrain in MNI space
+        'mri' indicates that the reference_brain is the subject's sMRI in
+            the scaled native/mri space. "
+        'unscaled_mri' indicates that the reference_brain is the subject's sMRI in
+            unscaled native/mri space.
+        Note that Scaled/unscaled relates to the allow_smri_scaling option in coreg.
+        If allow_scaling was False, then the unscaled MRI will be the same as the scaled.
+        MRI.
     """
     from ..preprocessing import import_data
 
@@ -440,7 +456,14 @@ def beamform(
         subjects_dir=src_dir,
         subject=subject,
         recon_timeseries=src_data.data,
+        spatial_resolution=spatial_resolution,
+        reference_brain=reference_brain,
     )
+
+    # Save beamformed data
+    bf_data_file = src_dir / subject / "rhino/bf.npy"
+    logger.info(f"saving {bf_data_file}")
+    np.save(bf_data_file, src_ts_mni.T)
 
     # Save info for the report
     src_report.add_to_data(
@@ -468,6 +491,9 @@ def beamform_and_parcellate(
     parcellation_file,
     method,
     orthogonalisation,
+    spatial_resolution=None,
+    reference_brain="mni",
+    save_bf_data=False,
 ):
     """Wrapper function for beamforming and parcellation.
 
@@ -496,6 +522,22 @@ def beamform_and_parcellate(
         Method to use in the parcellation.
     orthogonalisation : bool
         Should we do orthogonalisation?
+    spatial_resolution : int
+        Resolution for beamforming to use for the reference brain in mm
+        (must be an integer, or will be cast to nearest int)
+        If None, then the gridstep used in coreg_filenames['forward_model_file']
+        is used.
+    reference_brain : string
+        'mni' indicates that the reference_brain is the stdbrain in MNI space
+        'mri' indicates that the reference_brain is the subject's sMRI in
+            the scaled native/mri space. "
+        'unscaled_mri' indicates that the reference_brain is the subject's sMRI in
+            unscaled native/mri space.
+        Note that Scaled/unscaled relates to the allow_smri_scaling option in coreg.
+        If allow_scaling was False, then the unscaled MRI will be the same as the scaled.
+        MRI.
+    save_bf_data : bool
+        Should we save the beamformed data?
     """
     from ..preprocessing import import_data
 
@@ -539,7 +581,16 @@ def beamform_and_parcellate(
         subjects_dir=src_dir,
         subject=subject,
         recon_timeseries=src_data.data,
+        spatial_resolution=spatial_resolution,
+        reference_brain=reference_brain,
+        logger=logger,
     )
+
+    if save_bf_data:
+        # Save beamformed data
+        bf_data_file = src_dir / subject / "rhino/bf.npy"
+        logger.info(f"saving {bf_data_file}")
+        np.save(bf_data_file, src_ts_mni.T)
 
     # Parcellation
     logger.info("parcellation")
