@@ -1,5 +1,3 @@
-#!/usr/bin/env python
-
 """Functions and classes to handle parcellation.
 
 """

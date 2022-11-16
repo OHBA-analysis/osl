@@ -1,10 +1,8 @@
-#!/usr/bin/env python3
-# -*- coding: utf-8 -*-
-"""
-Created on Tue Nov  9 15:39:24 2021
+"""Utility function for handling OPM data.
 
-@author: woolrich
 """
+
+# Authors: Mark Woolrich <mark.woolrich@ohba.ox.ac.uk>
 
 import os.path
 from shutil import copyfile
