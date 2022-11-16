@@ -153,6 +153,31 @@ def _closest_node(node, nodes):
     return index, distance
 
 
+def _get_vol_info_from_nii(mri):
+    """Read volume info from an MRI file.
+
+    Parameters
+    ----------
+    mri : str
+        Path to MRI file.
+
+    Returns
+    -------
+    out : dict
+        Dictionary with keys 'mri_width', 'mri_height', 'mri_depth'
+        and 'mri_volume_name'.
+    """
+    dims = nib.load(mri).get_fdata().shape
+    out = dict(
+        mri_width=dims[0],
+        mri_height=dims[1],
+        mri_depth=dims[2],
+        mri_volume_name=mri,
+
+    )
+    return out
+
+
 def _get_sform(nii_file):
     """
     sform allows mapping from simple voxel index cordinates

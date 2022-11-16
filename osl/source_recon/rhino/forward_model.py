@@ -26,6 +26,7 @@ from mne.io.constants import FIFF
 from mne.surface import read_surface, write_surface
 from mne.source_space import _make_volume_source_space, _complete_vol_src
 
+import osl.source_recon.rhino.utils as rhino_utils
 from osl.source_recon.rhino import get_coreg_filenames
 from osl.utils.logger import log_or_print
 
@@ -357,18 +358,8 @@ def setup_volume_source_space(
     pos /= 1000.0  # convert pos to m from mm for MNE call
 
     # -------------------------------------------------------------------------
-    def get_mri_info_from_nii(mri):
-        out = dict()
-        dims = nib.load(mri).get_fdata().shape
-        out.update(
-            mri_width=dims[0],
-            mri_height=dims[1],
-            mri_depth=dims[1],
-            mri_volume_name=mri,
-        )
-        return out
 
-    vol_info = get_mri_info_from_nii(coreg_filenames["smri_file"])
+    vol_info = rhino_utils._get_vol_info_from_nii(coreg_filenames["smri_file"])
 
     surf = read_surface(surface, return_dict=True)[-1]
 
