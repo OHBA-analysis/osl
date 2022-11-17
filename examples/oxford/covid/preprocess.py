@@ -17,11 +17,11 @@ config = """
     - filter: {l_freq: 0.5, h_freq: 125, method: 'iir', iir_params: {order: 5, ftype: butter}}
     - notch_filter: {freqs: 50 100}
     - resample: {sfreq: 250}
-    - bad_channels: {picks: 'mag'}
-    - bad_channels: {picks: 'grad'}    
-    - bad_segments: {segment_len: 2000, picks: 'mag'}
-    - bad_segments: {segment_len: 2000, picks: 'grad'}
-    - ica_raw: {n_components: 20, picks: 'meg'}
+    - bad_channels: {picks: mag}
+    - bad_channels: {picks: grad}    
+    - bad_segments: {segment_len: 2000, picks: mag}
+    - bad_segments: {segment_len: 2000, picks: grad}
+    - ica_raw: {n_components: 20, picks: meg}
     - ica_autoreject: {apply: False}
 """
 
