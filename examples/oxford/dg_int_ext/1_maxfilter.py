@@ -7,7 +7,6 @@ Note: this script needs to be run on a computer with a MaxFilter license.
 
 from osl.maxfilter import run_maxfilter_batch
 
-
 input_files = [
     "/ohba/pi/knobre/dgresch/Internal_External/data/raw/meg/s01/InEx_s01_block_01.fif",
     "/ohba/pi/knobre/dgresch/Internal_External/data/raw/meg/s01/InEx_s01_block_02.fif",

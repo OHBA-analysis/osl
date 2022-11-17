@@ -222,6 +222,9 @@ def plot_parcellation(parcellation, **kwargs):
 
 
 def plot_correlation(parc_ts, filename, logger=None):
+    if parc_ts.ndim == 3:
+        shape = parc_ts.shape
+        parc_ts = parc_ts.reshape(shape[0], shape[1] * shape[2])
     corr = np.corrcoef(parc_ts)
     np.fill_diagonal(corr, 0)
     fig, ax = plt.subplots()

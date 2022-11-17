@@ -97,6 +97,7 @@ def run_src_chain(
     subject,
     preproc_file=None,
     smri_file=None,
+    epoch_file=None,
     verbose="INFO",
     mneverbose="WARNING",
     extra_funcs=None,
@@ -115,6 +116,8 @@ def run_src_chain(
         Preprocessed fif file.
     smri_file : str
         Structural MRI file.
+    epoch_file : str
+        Epoched fif file.
     verbose : str
         Level of verbose.
     mneverbose : str
@@ -182,7 +185,7 @@ def run_src_chain(
                         + "Please pass via extra_funcs "
                         + f"or use available functions: {avail_names}."
                     )
-            func(src_dir, subject, preproc_file, smri_file, logger, **userargs)
+            func(src_dir, subject, preproc_file, smri_file, epoch_file, logger, **userargs)
 
     except Exception as e:
         logger.critical("*********************************")
@@ -217,6 +220,7 @@ def run_src_batch(
     subjects,
     preproc_files=None,
     smri_files=None,
+    epoch_files=None,
     verbose="INFO",
     mneverbose="WARNING",
     extra_funcs=None,
@@ -236,6 +240,8 @@ def run_src_batch(
         Preprocessed fif files.
     smri_files : list of strs
         Structural MRI files.
+    epoch_files : str
+        Epoched fif file.
     verbose : str
         Level of verbose.
     mneverbose : str
@@ -291,6 +297,9 @@ def run_src_batch(
     if preproc_files is None:
         preproc_files = [None] * n_subjects
 
+    if epoch_files is None:
+        epoch_files = [None] * n_subjects
+
     # Create partial function with fixed options
     pool_func = partial(
         run_src_chain,
@@ -301,10 +310,10 @@ def run_src_batch(
 
     # Loop through input files to generate arguments for run_coreg_chain
     args = []
-    for subject, preproc_file, smri_file, in zip(
-        subjects, preproc_files, smri_files
+    for subject, preproc_file, smri_file, epoch_file, in zip(
+        subjects, preproc_files, smri_files, epoch_files,
     ):
-        args.append((config, src_dir, subject, preproc_file, smri_file))
+        args.append((config, src_dir, subject, preproc_file, smri_file, epoch_file))
 
     # Actually run the processes
     if dask_client:

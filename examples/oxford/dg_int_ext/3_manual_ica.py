@@ -1,4 +1,4 @@
-"""Examle script for manual ICA artefact rejection.
+"""Example script for manual ICA artefact rejection.
 
 """
 
@@ -6,7 +6,7 @@
 
 from osl import preprocessing
 
-
+# Setup paths to preprocessed data files
 preproc_dir = "/ohba/pi/knobre/cgohil/dg_int_ext/preproc"
 subjects = ["s01_block_01", "s01_block_02"]
 
@@ -15,28 +15,23 @@ preproc_files = []
 for subject in subjects:
     run_id = f"InEx_{subject}_tsss"
     run_ids.append(run_id)
-    preproc_files.append(
-        f"{preproc_dir}/{run_id}/{run_id}_preproc_raw.fif"
-    )
+    preproc_files.append(f"{preproc_dir}/{run_id}/{run_id}_preproc_raw.fif")
 
+# Manual ICA artefact rejection
 for preproc_file, run_id in zip(preproc_files, run_ids):
-    # Load raw fif, epochs, events and ICA
+
+    # Load preprocessed fif and ICA
     dataset = preprocessing.read_dataset(preproc_file)
     raw = dataset["raw"]
     ica = dataset["ica"]
-    epoch = dataset["epochs"]
 
     # Mark bad ICA components interactively
     preprocessing.plot_ica(ica, raw)
 
     # Apply ICA
     raw = ica.apply(raw)
-    epochs = ica.apply(epochs)
 
     # Save cleaned data
     dataset["raw"] = raw
-    dataset["epochs"] = epochs
     dataset["ica"] = ica
-    preprocessing.wrte_dataset(
-        dataset, preproc_dir, run_id, overwrite=True
-    )
+    preprocessing.wrte_dataset(dataset, preproc_dir, run_id, overwrite=True)
