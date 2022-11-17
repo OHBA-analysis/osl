@@ -1061,8 +1061,8 @@ class osl_MNEBrowseFigure(MNEBrowseFigure):
         # OSL ADDITION: labeling artifact type of bad components
         elif str(key).isnumeric() and (
                 int(key) in range(len(self.mne.bad_labels_list) + 1)
-        ):  # TODO: Fix this!
-            if len(self.mne.info["bads"]) > 0:
+        ):
+            if len(self.mne.info["bads"]) > 0 and self.mne.info["bads"][-1] in self.mne.ica._ica_names:
                 last_bad_component = self.mne.ica._ica_names.index(self.mne.info["bads"][-1])
                 all_labels = list(self.mne.ica.labels_.keys())
 
@@ -1115,6 +1115,12 @@ class osl_MNEBrowseFigure(MNEBrowseFigure):
         # OSL ADDITION
         # ICA excludes
         elif self.mne.instance_type == "ica":
+            # remove artefact channels from exclude (if present)
+            rm = []
+            for cnt, ch in enumerate(self.mne.info['bads']):
+                if ch not in self.mne.ica._ica_names:
+                    rm.append(cnt)
+            [self.mne.info['bads'].pop(i) for i in np.sort(rm)[::-1]]
             self.mne.ica.exclude = [
                 self.mne.ica._ica_names.index(ch) for ch in self.mne.info["bads"]
             ]
