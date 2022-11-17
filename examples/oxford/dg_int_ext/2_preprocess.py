@@ -35,6 +35,9 @@ config = """
     - resample: {sfreq: 250, npad: auto}
     - ica_raw: {n_components: 0.99, picks: meg}
     - ica_autoreject: {apply: False}
+    - epochs: {tmin: -0.25, tmax: 1, baseline: null}
+    - drop_bad_epochs: {picks: mag, metric: var}
+    - drop_bad_epochs: {picks: grad, metric: var}
 """
 
 inputs = []
