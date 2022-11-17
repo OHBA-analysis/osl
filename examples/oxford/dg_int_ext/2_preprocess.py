@@ -21,6 +21,12 @@ def crop_ends(dataset, userargs):
 
 
 config = """
+    meta: {event_codes: {int2int_TL:  101, int2int_TR:  102, int2int_BL:  103, int2int_BR:  104,
+                         ext2int_TL:  121, ext2int_TR:  122, ext2int_BL:  123, ext2int_BR:  124,
+                         int2none_TL: 141, int2none_TR: 142, int2none_BL: 143, int2none_BR: 144,
+                         ext2ext_TL:  111, ext2ext_TR:  112, ext2ext_BL:  113, ext2ext_BR:  114,
+                         int2ext_TL:  131, int2ext_TR:  132, int2ext_BL:  133, int2ext_BR:  134,
+                         ext2none_TL: 151, ext2none_TR: 152, ext2none_BL: 153, ext2none_BR: 154}}
     preproc:
     - find_events: {min_duration: 0.005}
     - crop_ends: {t: 10}
