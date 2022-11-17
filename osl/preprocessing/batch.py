@@ -927,20 +927,24 @@ def main(argv=None):
         help="plain text file containing full paths to files to be processed",
     )
     parser.add_argument(
-        "outdir", type=str, help="Path to output directory to save data in"
+        "--outdir",
+        type=str,
+        default=None,
+        help="Path to output directory to save data in",
     )
     parser.add_argument(
-        "logsdir", type=str, help="Path to logs directory"
+        "--logsdir", type=str, default=None, help="Path to logs directory"
     )
     parser.add_argument(
-        "reportdir", type=str, help="Path to report directory"
+        "--reportdir", type=str, default=None, help="Path to report directory"
     )
     parser.add_argument(
-        "gen_report", type=bool, help="Should we generate a report?"
+        "--gen_report", type=bool, default=True, help="Should we generate a report?"
     )
     parser.add_argument(
         "--overwrite",
         action="store_true",
+        default=False,
         help="Overwrite previous output files if they're in the way",
     )
     parser.add_argument(
@@ -954,6 +958,11 @@ def main(argv=None):
         type=str,
         default="WARNING",
         help="Set the logging level for MNE functions",
+    )
+    parser.add_argument(
+        "--strictrun",
+        action="store_true",
+        help="Will ask the user for confirmation before starting",
     )
 
     parser.usage = parser.format_help()

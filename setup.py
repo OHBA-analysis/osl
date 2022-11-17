@@ -57,9 +57,8 @@ setup(name=name,
       zip_safe=False,
       entry_points={
           'console_scripts': [
-              'osl_batch = osl.preprocessing.batch:main',
               'osl_maxfilter = osl.maxfilter.maxfilter:main',
-              'osl_report = osl.report.raw_report:main',
+              'osl_preproc = osl.preprocessing.batch:main',
           ]},
 
       packages=['osl', 'osl.report', 'osl.maxfilter',

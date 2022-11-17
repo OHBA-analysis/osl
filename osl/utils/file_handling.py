@@ -108,7 +108,7 @@ def sanitise_filepath(fname):
 def _load_unicode_inputs(fname):
     checked_files = []
     outnames = []
-    osl_logger.info("loading inputs from : {0}",format(fname))
+    osl_logger.info("loading inputs from : {0}".format(fname))
     for row in csv.reader(open(fname, 'r'), delimiter=","):
         infile = sanitise_filepath(row[0])
         checked_files.append(infile)

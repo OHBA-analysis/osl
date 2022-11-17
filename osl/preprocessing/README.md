@@ -84,28 +84,31 @@ vis.plot_joint()
 
 ## Command Line Example
 
-The command line function osl_batch is installed with the package. This is a command line interface to run_proc_batch
+The command line function osl_preproc is installed with the package. This is a command line interface to run_proc_batch
 
 ```
-usage: osl_batch config files [-h] [--outdir OUTDIR] [--overwrite] [--verbose VERBOSE] [--mneverbose MNEVERBOSE]
-
 Batch preprocess some fif files.
 
 positional arguments:
   config                yaml defining preproc
-  files                 plain text file containing full paths to files to be
-                        processed
+  files                 plain text file containing full paths to files to be processed
+  outdir                Path to output directory to save data in
 
 optional arguments:
-  -h, --help              Show this help message and exit
-  --outdir     OUTDIR     Path to output directory to save data in
-  --overwrite             Overwrite previous output files if they're in the way
-  --verbose    VERBOSE    Set the logging level for MNE python functions
-  --mneverbose MNEVERBOSE Set the logging level for MNE python functions
-
+  -h, --help            show this help message and exit
+  --logsdir LOGSDIR     Path to logs directory
+  --reportdir REPORTDIR
+                        Path to report directory
+  --gen_report GEN_REPORT
+                        Should we generate a report?
+  --overwrite           Overwrite previous output files if they're in the way
+  --verbose VERBOSE     Set the logging level for OSL functions
+  --mneverbose MNEVERBOSE
+                        Set the logging level for MNE functions
+  --strictrun           Will ask the user for confirmation before starting
 ```
 
-For example:
+osl_preproc takes at least 2 arguments: `config` and `files, the rest are optional. For example:
 ```
-osl_batch my_config.yml list_of_raw_files.txt --outdir /path/to/my/output_dir --overwrite
+osl_preproc my_config.yml list_of_raw_files.txt --outdir /path/to/my/output_dir --overwrite
 ```
