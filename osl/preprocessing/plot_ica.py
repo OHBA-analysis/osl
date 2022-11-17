@@ -682,8 +682,11 @@ class osl_MNEBrowseFigure(MNEBrowseFigure):
         offsets = self.mne.trace_offsets[offset_ixs]
         bad_bool = np.in1d(ch_names, self.mne.info["bads"])
         # OSL ADDITION
-        bad_int = []
-        for ch in [self.mne.ica._ica_names[ii] for ii in picks]:
+        bad_int = list(np.ones(len(picks))*-1)
+        tmppicks = [picks[k] for k in np.where([j<len(self.mne.ica._ica_names) for j in picks])[0]] # we don't want to do this for the artefact channels (e.g. EOC/ECG)
+        for cnt, ch in enumerate([self.mne.ica._ica_names[ii] for ii in tmppicks]):
+            print(cnt)
+            print(ch)
             i = self.mne.ica._ica_names.index(ch)
             if ch in self.mne.info["bads"]:
                 if len(list(self.mne.ica.labels_.values())) > 0 and i in np.concatenate(list(self.mne.ica.labels_.values())):
@@ -691,18 +694,18 @@ class osl_MNEBrowseFigure(MNEBrowseFigure):
                     ix = np.where([i in self.mne.ica.labels_[k] for k in self.mne.ica.labels_.keys()])[0][0]
                     lbl = list(self.mne.ica.labels_.keys())[ix].split('/')[0]
                     if lbl == 'unknown':
-                        bad_int.append(0)
+                        bad_int[cnt] = int(0)
                     else:
-                        bad_int.append(self.mne.bad_labels_list.index(lbl) + 1)
+                        bad_int[cnt] = int(self.mne.bad_labels_list.index(lbl) + 1)
                 else:
-                    bad_int.append(0)
+                    bad_int[cnt] = int(0)
             else:
                 if len(list(self.mne.ica.labels_.values())) > 0 and i in np.concatenate(list(self.mne.ica.labels_.values())):  # remove entry
                     i = int(i)
                     whichkeys = [list(self.mne.ica.labels_.keys())[k] for k in np.where([i in self.mne.ica.labels_[k] for k in self.mne.ica.labels_.keys()])[0]]
                     for k in whichkeys:
                         self.mne.ica.labels_[k] = list(np.setdiff1d(self.mne.ica.labels_[k], i))
-                bad_int.append(np.nan)
+                bad_int[cnt] = -1
 
         # colors
         good_ch_colors = [self.mne.ch_color_dict[_type] for _type in ch_types]
@@ -710,7 +713,8 @@ class osl_MNEBrowseFigure(MNEBrowseFigure):
             self.mne.ch_color_bad
         ] + self.mne.bad_label_colors  # OSL ADDITION: match colors to specific artifact labels
         ch_colors = to_rgba_array(
-            [c[_bad] if _bad is not np.nan else _color for _bad, _color in zip(bad_int, good_ch_colors)])
+            [c[_bad] if _bad >= 0 else _color for _bad, _color in zip(bad_int, good_ch_colors)])
+        print(ch_colors)
         self.mne.ch_colors = np.array(good_ch_colors)  # use for unmarking bads
         labels = self.mne.ax_main.yaxis.get_ticklabels()
         if self.mne.butterfly:
