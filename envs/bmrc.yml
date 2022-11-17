@@ -189,6 +189,7 @@ dependencies:
     - fslpy==3.10.0
     - fsspec==2022.8.2
     - glmtools==0.1.2
+    - h5io==0.1.7
     - heapdict==1.0.1
     - imagesize==1.4.1
     - ipycanvas==0.13.1

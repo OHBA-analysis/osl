@@ -377,6 +377,7 @@ def beamform(
     rank,
     spatial_resolution=None,
     reference_brain="mni",
+    save_bf_data=False,
 ):
     """Wrapper function for beamforming.
 
@@ -413,6 +414,8 @@ def beamform(
         Note that Scaled/unscaled relates to the allow_smri_scaling option in coreg.
         If allow_scaling was False, then the unscaled MRI will be the same as the scaled.
         MRI.
+    save_bf_data : bool
+        Should we save the beamformed data?
     """
     from ..preprocessing import import_data
 
@@ -449,6 +452,9 @@ def beamform(
         save_figs=True,
     )
 
+    # Save the beamforming filter
+    filters.save(src_dir / subject / "rhino/filters-lcmv.h5", overwrite=True)
+
     # Apply beamforming
     logger.info("beamforming.apply_lcmv_raw")
     src_data = beamforming.apply_lcmv_raw(preproc_data, filters)
@@ -460,10 +466,11 @@ def beamform(
         reference_brain=reference_brain,
     )
 
-    # Save beamformed data
-    bf_data_file = src_dir / subject / "rhino/bf.npy"
-    logger.info(f"saving {bf_data_file}")
-    np.save(bf_data_file, src_ts_mni.T)
+    if save_bf_data:
+        # Save beamformed data
+        bf_data_file = src_dir / subject / "rhino/bf.npy"
+        logger.info(f"saving {bf_data_file}")
+        np.save(bf_data_file, src_ts_mni.T)
 
     # Save info for the report
     src_report.add_to_data(
@@ -573,6 +580,9 @@ def beamform_and_parcellate(
         logger=logger,
         save_figs=True,
     )
+
+    # Save the beamforming filter
+    filters.save(src_dir / subject / "rhino/filters-lcmv.h5", overwrite=True)
 
     # Apply beamforming
     logger.info("beamforming.apply_lcmv_raw")
