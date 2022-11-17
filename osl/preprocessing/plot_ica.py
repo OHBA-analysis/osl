@@ -682,8 +682,9 @@ class osl_MNEBrowseFigure(MNEBrowseFigure):
         offsets = self.mne.trace_offsets[offset_ixs]
         bad_bool = np.in1d(ch_names, self.mne.info["bads"])
         # OSL ADDITION
-        bad_int = []
-        for ch in [self.mne.ica._ica_names[ii] for ii in picks]:
+        bad_int = list(np.ones(len(picks))*-1)
+        tmppicks = [picks[k] for k in np.where([j<len(self.mne.ica._ica_names) for j in picks])[0]] # we don't want to do this for the artefact channels (e.g. EOC/ECG)
+        for cnt, ch in enumerate([self.mne.ica._ica_names[ii] for ii in tmppicks]):
             i = self.mne.ica._ica_names.index(ch)
             if ch in self.mne.info["bads"]:
                 if len(list(self.mne.ica.labels_.values())) > 0 and i in np.concatenate(list(self.mne.ica.labels_.values())):
@@ -691,18 +692,18 @@ class osl_MNEBrowseFigure(MNEBrowseFigure):
                     ix = np.where([i in self.mne.ica.labels_[k] for k in self.mne.ica.labels_.keys()])[0][0]
                     lbl = list(self.mne.ica.labels_.keys())[ix].split('/')[0]
                     if lbl == 'unknown':
-                        bad_int.append(0)
+                        bad_int[cnt] = int(0)
                     else:
-                        bad_int.append(self.mne.bad_labels_list.index(lbl) + 1)
+                        bad_int[cnt] = int(self.mne.bad_labels_list.index(lbl) + 1)
                 else:
-                    bad_int.append(0)
+                    bad_int[cnt] = int(0)
             else:
                 if len(list(self.mne.ica.labels_.values())) > 0 and i in np.concatenate(list(self.mne.ica.labels_.values())):  # remove entry
                     i = int(i)
                     whichkeys = [list(self.mne.ica.labels_.keys())[k] for k in np.where([i in self.mne.ica.labels_[k] for k in self.mne.ica.labels_.keys()])[0]]
                     for k in whichkeys:
                         self.mne.ica.labels_[k] = list(np.setdiff1d(self.mne.ica.labels_[k], i))
-                bad_int.append(np.nan)
+                bad_int[cnt] = -1
 
         # colors
         good_ch_colors = [self.mne.ch_color_dict[_type] for _type in ch_types]
@@ -710,7 +711,7 @@ class osl_MNEBrowseFigure(MNEBrowseFigure):
             self.mne.ch_color_bad
         ] + self.mne.bad_label_colors  # OSL ADDITION: match colors to specific artifact labels
         ch_colors = to_rgba_array(
-            [c[_bad] if _bad is not np.nan else _color for _bad, _color in zip(bad_int, good_ch_colors)])
+            [c[_bad] if _bad >= 0 else _color for _bad, _color in zip(bad_int, good_ch_colors)])
         self.mne.ch_colors = np.array(good_ch_colors)  # use for unmarking bads
         labels = self.mne.ax_main.yaxis.get_ticklabels()
         if self.mne.butterfly:
@@ -1060,8 +1061,8 @@ class osl_MNEBrowseFigure(MNEBrowseFigure):
         # OSL ADDITION: labeling artifact type of bad components
         elif str(key).isnumeric() and (
                 int(key) in range(len(self.mne.bad_labels_list) + 1)
-        ):  # TODO: Fix this!
-            if len(self.mne.info["bads"]) > 0:
+        ):
+            if len(self.mne.info["bads"]) > 0 and self.mne.info["bads"][-1] in self.mne.ica._ica_names:
                 last_bad_component = self.mne.ica._ica_names.index(self.mne.info["bads"][-1])
                 all_labels = list(self.mne.ica.labels_.keys())
 
@@ -1114,6 +1115,12 @@ class osl_MNEBrowseFigure(MNEBrowseFigure):
         # OSL ADDITION
         # ICA excludes
         elif self.mne.instance_type == "ica":
+            # remove artefact channels from exclude (if present)
+            rm = []
+            for cnt, ch in enumerate(self.mne.info['bads']):
+                if ch not in self.mne.ica._ica_names:
+                    rm.append(cnt)
+            [self.mne.info['bads'].pop(i) for i in np.sort(rm)[::-1]]
             self.mne.ica.exclude = [
                 self.mne.ica._ica_names.index(ch) for ch in self.mne.info["bads"]
             ]
@@ -1152,18 +1159,20 @@ class osl_MNEBrowseFigure(MNEBrowseFigure):
                     if 'ecg' in k.lower() and k.lower()!='ecg':
                         if 'ecg' not in self.mne.ica.labels_:
                             self.mne.ica.labels_["ecg"] = []
-                        self.mne.ica.labels_["ecg"].append(self.mne.ica.labels_[k])
-                        self.mne.ica.labels_["ecg"] = np.concatenate(self.mne.ica.labels_["ecg"])
-                        if type(self.mne.ica.labels_["ecg"]) is np.ndarray:
-                            self.mne.ica.labels_["ecg"] = self.mne.ica.labels_["ecg"].tolist()
+                        tmp = self.mne.ica.labels_[k]
+                        if type(tmp) is list:
+                            tmp = tmp[0]
+                        self.mne.ica.labels_["ecg"].append(tmp)
                     elif 'eog' in k.lower() and k.lower()!='eog':
                         if 'eog' not in self.mne.ica.labels_:
                             self.mne.ica.labels_["eog"] = []
-                        self.mne.ica.labels_["eog"].append(self.mne.ica.labels_[k])
-                        self.mne.ica.labels_["eog"] = np.concatenate(self.mne.ica.labels_["eog"])
-                        if type(self.mne.ica.labels_["eog"]) is np.ndarray:
-                            self.mne.ica.labels_["eog"] = self.mne.ica.labels_["eog"].tolist()
-
+                        tmp = self.mne.ica.labels_[k]
+                        if type(tmp) is list:
+                            tmp = tmp[0]
+                        self.mne.ica.labels_["eog"].append(tmp)
+                self.mne.ica.labels_["ecg"] = np.unique(self.mne.ica.labels_["ecg"]).tolist()
+                self.mne.ica.labels_["eog"] = np.unique(self.mne.ica.labels_["eog"]).tolist()
+                
         # write window size to config
         size = ",".join(self.get_size_inches().astype(str))
         set_config("MNE_BROWSE_RAW_SIZE", size, set_env=False)
@@ -1171,6 +1180,14 @@ class osl_MNEBrowseFigure(MNEBrowseFigure):
         while len(self.mne.child_figs):
             fig = self.mne.child_figs[-1]
             close(fig)
+
+def flatten_recursive(lst):
+    """Flatten a list using recursion."""
+    for item in lst:
+        if isinstance(item, list):
+            yield from flatten_recursive(item)
+        else:
+            yield item
 
 
 # TODO: OSL IMPLEMENT PLOT_ICA FOR EVOKED DATA
