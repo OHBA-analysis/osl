@@ -600,6 +600,7 @@ def beamform_and_parcellate(
         voxel_timeseries=src_ts_mni,
         voxel_coords=src_coords_mni,
         method=method,
+        working_dir=src_dir / subject / "rhino",
         logger=logger,
     )
     parcel_ts = p.parcel_timeseries["data"]
