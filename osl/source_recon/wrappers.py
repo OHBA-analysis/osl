@@ -478,7 +478,8 @@ def beamform(
     )
 
     # Save the beamforming filter
-    filters.save(src_dir / subject / "rhino/filters-lcmv.h5", overwrite=True)
+    filters_file = src_dir / subject / "rhino/filters-lcmv.h5"
+    filters.save(filters_file, overwrite=True)
 
     # Apply beamforming
     logger.info("beamforming.apply_lcmv")
@@ -621,7 +622,8 @@ def beamform_and_parcellate(
     )
 
     # Save the beamforming filter
-    filters.save(src_dir / subject / "rhino/filters-lcmv.h5", overwrite=True)
+    filters_file = src_dir / subject / "rhino/filters-lcmv.h5"
+    filters.save(filters_file, overwrite=True)
 
     # Apply beamforming
     logger.info("beamforming.apply_lcmv")
