@@ -9,16 +9,16 @@ from osl import source_recon
 
 
 # Directories
-RAW_DIR = "/ohba/pi/knobre/datasets/covid/rawbids"
-PREPROC_DIR = "/ohba/pi/knobre/cgohil/covid/preproc"
-SRC_DIR = "/ohba/pi/knobre/cgohil/covid/src"
+raw_dir = "/ohba/pi/knobre/datasets/covid/rawbids"
+preproc_dir = "/ohba/pi/knobre/cgohil/covid/preproc"
+src_dir = "/ohba/pi/knobre/cgohil/covid/src"
 
 # Files
-SMRI_FILE = RAW_DIR + "/{0}/anat/{0}_T1w.nii"
-PREPROC_FILE = PREPROC_DIR + "/{0}_task-restEO/{0}_task-restEO_preproc_raw.fif"
+smri_file = raw_dir + "/{0}/anat/{0}_t1w.nii"
+preproc_file = preproc_dir + "/{0}_task-resteo/{0}_task-resteo_preproc_raw.fif"
 
 # Subjects to do
-SUBJECTS = ["sub-004", "sub-005"]
+subjects = ["sub-004", "sub-005"]
 
 # Settings
 config = """
@@ -44,15 +44,15 @@ source_recon.setup_fsl("/opt/ohba/fsl/6.0.5")
 # Get paths to files
 smri_files = []
 preproc_files = []
-for subject in SUBJECTS:
-    smri_files.append(SMRI_FILE.format(subject))
-    preproc_files.append(PREPROC_FILE.format(subject))
+for subject in subjects:
+    smri_files.append(smri_file.format(subject))
+    preproc_files.append(preproc_file.format(subject))
 
 # Source reconstruction
 source_recon.run_src_batch(
     config,
-    src_dir=SRC_DIR,
-    subjects=SUBJECTS,
+    src_dir=src_dir,
+    subjects=subjects,
     preproc_files=preproc_files,
     smri_files=smri_files,
 )

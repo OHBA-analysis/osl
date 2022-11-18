@@ -18,6 +18,7 @@ for subject in subjects:
     preproc_files.append(f"{preproc_dir}/{run_id}/{run_id}_preproc_raw.fif")
 
 # Setup IDs for each event type we want to epoch
+# In this script we will epoch trials related to a particular event type
 event_type = "internal_disp"
 
 if event_type == "external_disp":
@@ -49,7 +50,7 @@ elif event_type == "internal_disp":
 
 event_codes = dict(zip(keys, values))
 
-# Setting for epoching
+# Settings for epoching
 config = f"""
     meta:
       event_codes: {event_codes}

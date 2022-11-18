@@ -8,7 +8,6 @@ from osl import source_recon
 
 # Setup paths to epoched data files
 event_type = "external_disp"
-preproc_dir = "/ohba/pi/knobre/cgohil/dg_int_ext/preproc"
 epoch_dir = f"/ohba/pi/knobre/cgohil/dg_int_ext/epoch/{event_type}"
 subjects = ["s01_block_01", "s01_block_02"]
 
@@ -18,7 +17,7 @@ epoch_files = []
 for subject in subjects:
     run_id = f"InEx_{subject}_tsss"
     run_ids.append(run_id)
-    preproc_files.append(f"{preproc_dir}/{run_id}/{run_id}_preproc_raw.fif")
+    preproc_files.append(f"{epoch_dir}/{run_id}/{run_id}_preproc_raw.fif")
     epoch_files.append(f"{epoch_dir}/{run_id}_preproc_raw/{run_id}_preproc_raw_epo.fif")
 
 # Setup paths to structural MRI files

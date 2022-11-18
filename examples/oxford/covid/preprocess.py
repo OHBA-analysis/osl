@@ -6,10 +6,10 @@
 
 from osl import preprocessing
 
-RAW_FILE = "/ohba/pi/knobre/datasets/covid/rawbids/{0}/meg/{0}_task-restEO.fif"
-PREPROC_DIR = "/ohba/pi/knobre/cgohil/covid/preproc"
+raw_file = "/ohba/pi/knobre/datasets/covid/rawbids/{0}/meg/{0}_task-resteo.fif"
+preproc_dir = "/ohba/pi/knobre/cgohil/covid/preproc"
 
-SUBJECTS = ["sub-004", "sub-005"]
+subjects = ["sub-004", "sub-005"]
 
 # Settings
 config = """
@@ -27,13 +27,13 @@ config = """
 
 # Setup
 inputs = []
-for subject in SUBJECTS:
-    inputs.append(RAW_FILE.format(subject))
+for subject in subjects:
+    inputs.append(raw_file.format(subject))
 
 # Preprocess
 preprocessing.run_proc_batch(
     config,
     inputs,
-    outdir=PREPROC_DIR,
-    overwrite=True,
+    outdir=preproc_dir,
+    overwrite=true,
 )

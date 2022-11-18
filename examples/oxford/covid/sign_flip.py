@@ -10,12 +10,12 @@ from osl.source_recon import find_template_subject, run_src_batch
 
 
 # Source reconstruction directory
-SRC_DIR = "/ohba/pi/knobre/cgohil/covid/src"
+src_dir = "/ohba/pi/knobre/cgohil/covid/src"
 
 # Subjects to sign flip
 # We create a list by looking for subjects that have a rhino/parc.npy file
 subjects = []
-for path in sorted(glob(SRC_DIR + "/*/rhino/parc.npy")):
+for path in sorted(glob(src_dir + "/*/rhino/parc.npy")):
     subject = path.split("/")[-3]
     subjects.append(subject)
 
@@ -37,4 +37,4 @@ config = f"""
 """
 
 # Do the sign flipping
-run_src_batch(config, SRC_DIR, subjects)
+run_src_batch(config, src_dir, subjects)

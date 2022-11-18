@@ -6,6 +6,7 @@
 
 from osl import preprocessing
 
+# Settings for preprocessing
 config = """
     preproc:
     - notch_filter: {freqs: 50 100 150 200 250}
@@ -15,12 +16,15 @@ config = """
     - ica_autoreject: {apply: False}
 """
 
+# Setup paths to maxfiltered data files
 inputs = []
 for subject in ["s01_block_01", "s01_block_02"]:
     inputs.append(f"/ohba/pi/knobre/cgohil/dg_int_ext/maxfilter/InEx_{subject}_tsss.fif")
 
+# Directory to save the preprocessed data to
 preproc_dir = "/ohba/pi/knobre/cgohil/dg_int_ext/preproc"
 
+# Run batch preprocessing
 preprocessing.run_proc_batch(
     config,
     inputs,
