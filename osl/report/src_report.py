@@ -1,5 +1,3 @@
-#!/usr/bin/env python
-
 """Reporting tool for source reconstruction.
 
 """

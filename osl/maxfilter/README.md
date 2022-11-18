@@ -10,7 +10,7 @@ A python batch processing script for Maxfilter preprocessing of MEG files.
 
 ## Usage
 
-`ohba_maxfilter.py` requires at least 2 positional inputs to run. These are
+We can call `osl_maxfilter` via the command line (make sure you have activated the osl conda environment first). `osl_maxfilter` requires at least 2 positional inputs to run. These are
 
 ```
   files                 plain text file containing full paths to files to be
@@ -21,7 +21,7 @@ A python batch processing script for Maxfilter preprocessing of MEG files.
 For example:
 
 ```
-python ohba_maxfilter.py input_files.txt /path/to/my/output/dir/
+osl_maxfilter input_files.txt /path/to/my/output/dir/
 ```
 
 will run each fif file in `input_files.txt` through maxfilter with default options and store the outputs in `/path/to/my/output/dir/`
@@ -31,19 +31,19 @@ will run each fif file in `input_files.txt` through maxfilter with default optio
 Maxfilter processing can be customised using command line flags which are (mostly) mapped to the options in Maxfilter itself. For exmaple, we can specify that `autobad` be included by adding the `--autobad` command line flag.
 
 ```
-python ohba_maxfilter.py input_files.txt /path/to/my/output/dir/ --autobad
+osl_maxfilter input_files.txt /path/to/my/output/dir/ --autobad
 ```
 
 Similarly, we can include movement compensation and head-position computation by adding their respective options.
 
 ```
-python ohba_maxfilter.py input_files.txt /path/to/my/output/dir/ --autobad --movecomp --headpos
+osl_maxfilter input_files.txt /path/to/my/output/dir/ --autobad --movecomp --headpos
 ```
 
 Some options take additional arguments. Here we specify that temporal extension SSS should be applied with a 20 second data buffer (using `--tsss` and `-st 20`) and that two specific channels should be removed from the analysis (`--bads 1722 1723`).
 
 ```
-python ohba_maxfilter.py input_files.txt /path/to/my/output/dir/ --movecomp --headpos --tsss --st 20 --bads 1722 1723
+osl_maxfilter input_files.txt /path/to/my/output/dir/ --movecomp --headpos --tsss --st 20 --bads 1722 1723
 ```
 
 A [complete list of customisation options](#optional-arguments) is included at the bottom of this page.
@@ -55,7 +55,7 @@ The temporal extension can be turned on with the `--tsss` flag, the buffer lengt
 This example specifys a temporal extension with a twenty second buffer window and a correlation threshold of 0.9
 
 ```
-python ohba_maxfilter.py input_files.txt /path/to/my/output/dir/ --movecomp --headpos --tsss --st 20 --corr 0.9
+osl_maxfilter input_files.txt /path/to/my/output/dir/ --movecomp --headpos --tsss --st 20 --corr 0.9
 ```
 
 #### Position Translation
@@ -63,7 +63,7 @@ python ohba_maxfilter.py input_files.txt /path/to/my/output/dir/ --movecomp --he
 There are several ways to customised head position translation to align head position between two recordings. One option is to align both scans to the same pre-specified position. This is done by specifying `--trans` to default and providing a head origin co-ordinate. For example:
 
 ```
-python ohba_maxfilter.py input_files.txt /path/to/my/output/dir/ --trans default --origin 0 0 40 --frame head --force
+osl_maxfilter input_files.txt /path/to/my/output/dir/ --trans default --origin 0 0 40 --frame head --force
 ```
 
 Will move the point 0,0,40 in head space to the device origin and then align the device and head coordinate systems.
@@ -71,7 +71,7 @@ Will move the point 0,0,40 in head space to the device origin and then align the
 We can also align one scan to match the head position of a reference scan. This is done by specifying the path to a reference fif file in the `--trans` option. For example:
 
 ```
-python ohba_maxfilter.py input_files.txt /path/to/my/output/dir/ --trans /path/to/reference.fif
+osl_maxfilter input_files.txt /path/to/my/output/dir/ --trans /path/to/reference.fif
 ```
 
 Will align all files with the head position from the `/path/to/reference.fif` file.
@@ -139,4 +139,3 @@ optional arguments:
   --dryrun              Don't actually run anything, just print commands that
                         would have been run
 ```
-

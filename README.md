@@ -1,6 +1,5 @@
-OHBA Software Library (OSL) in Python
-=====================================
-Python version of https://github.com/OHBA-analysis/osl-core.
+OHBA Software Library (OSL)
+===========================
 
 Installation
 ------------
@@ -31,12 +30,12 @@ conda env create -f envs/hbaws.yml
 conda activate osl
 pip install -e .
 ```
-The hbaws environment comes with jupyter notebook already installed. If you'd like to spyder then you can install this with
+The hbaws environment comes with jupyter notebook already installed. If you'd like to use spyder then you can install this with
 ```
 conda activate osl
 pip install spyder==5.1.5
 ```
-Spyder version 5.1.5 is needed if you're using CentOS 7. If you are using a newer hbaws machine (one with Rocky linux) then you don't need to specify the version. Note, you might launch a version of spyder installed in your base conda environment. If so, you might have problems importing packages from osl. To fix this you can uninstall spyder from your base environment.
+Spyder version 5.1.5 is needed if you're using CentOS 7. If you are using a newer hbaws machine (one with Rocky linux) then you don't need to specify the version. Note, you might launch a version of spyder installed in your base conda environment even though you've activated the osl environment. If so, you might have problems importing packages from osl. To fix this you can uninstall spyder from your base environment.
 
 If you use the BMRC server, we recommend:
 ```

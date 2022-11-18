@@ -1,5 +1,3 @@
-#!/usr/bin/env python
-
 """Calculation of surfaces in RHINO.
 
 """
@@ -91,7 +89,7 @@ def compute_surfaces(
     subject,
     include_nose=True,
     cleanup_files=True,
-    overwrite=False,
+    recompute_surfaces=False,
     logger=None,
 ):
     """Compute surfaces.
@@ -145,7 +143,7 @@ def compute_surfaces(
         Requires the smri_file to have a FOV that includes the nose!
     cleanup_files : bool
         Specifies whether to cleanup intermediate files in the coreg dir.
-    overwrite: bool
+    recompute_surfaces : bool
         Specifies whether or not to run compute_surfaces, if the passed in
         options have already been run
     logger : logging.getLogger
@@ -162,7 +160,7 @@ def compute_surfaces(
 
     filenames = get_surfaces_filenames(subjects_dir, subject)
 
-    if not overwrite:
+    if not recompute_surfaces:
         # Check if surfaces have already been computed
         if Path(filenames["completed"]).exists():
             with open(filenames["completed"], "r") as file:

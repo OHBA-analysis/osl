@@ -1,5 +1,3 @@
-#!/usr/bin/python
-
 """Parcellation related functions and files.
 
 """

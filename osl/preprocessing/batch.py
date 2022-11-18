@@ -343,9 +343,14 @@ def write_dataset(dataset, outbase, run_id, overwrite=False):
         The saved fif file name
     """
 
-    fif_outname = outbase.format(
-        run_id=run_id.replace("_raw", ""), ftype="preproc_raw", fext="fif"
-    )
+    if "preproc_raw" in run_id:
+        fif_outname = outbase.format(
+            run_id=run_id.replace("_preproc_raw", ""), ftype="preproc_raw", fext="fif"
+        )
+    else:
+        fif_outname = outbase.format(
+            run_id=run_id.replace("_raw", ""), ftype="preproc_raw", fext="fif"
+        )
     if Path(fif_outname).exists() and not overwrite:
         raise ValueError(
             "{} already exists. Please delete or do use overwrite=True.".format(fif_outname)
@@ -927,20 +932,24 @@ def main(argv=None):
         help="plain text file containing full paths to files to be processed",
     )
     parser.add_argument(
-        "outdir", type=str, help="Path to output directory to save data in"
+        "--outdir",
+        type=str,
+        default=None,
+        help="Path to output directory to save data in",
     )
     parser.add_argument(
-        "logsdir", type=str, help="Path to logs directory"
+        "--logsdir", type=str, default=None, help="Path to logs directory"
     )
     parser.add_argument(
-        "reportdir", type=str, help="Path to report directory"
+        "--reportdir", type=str, default=None, help="Path to report directory"
     )
     parser.add_argument(
-        "gen_report", type=bool, help="Should we generate a report?"
+        "--gen_report", type=bool, default=True, help="Should we generate a report?"
     )
     parser.add_argument(
         "--overwrite",
         action="store_true",
+        default=False,
         help="Overwrite previous output files if they're in the way",
     )
     parser.add_argument(
@@ -954,6 +963,11 @@ def main(argv=None):
         type=str,
         default="WARNING",
         help="Set the logging level for MNE functions",
+    )
+    parser.add_argument(
+        "--strictrun",
+        action="store_true",
+        help="Will ask the user for confirmation before starting",
     )
 
     parser.usage = parser.format_help()

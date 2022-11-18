@@ -12,7 +12,7 @@ README = (HERE / "README.md").read_text()
 reqs = ['numpy', 'scipy', 'matplotlib', 'mne>=1.0.0', 'sklearn', 'fslpy',
         'sails', 'tabulate', 'pyyaml>=5.1', 'neurokit2', 'jinja2',
         'glmtools', 'numba', 'nilearn', 'dask', 'distributed', 'parse',
-        'opencv-python', 'pythreejs']
+        'opencv-python', 'pythreejs', 'h5io']
 doc_reqs = ['sphinx==4.0.2', 'numpydoc', 'sphinx_gallery', 'pydata-sphinx-theme']
 dev_reqs = ['setuptools>=41.0.1', 'pytest', 'pytest-cov', 'coverage', 'flake8']
 
@@ -57,9 +57,8 @@ setup(name=name,
       zip_safe=False,
       entry_points={
           'console_scripts': [
-              'osl_batch = osl.preprocessing.batch:main',
               'osl_maxfilter = osl.maxfilter.maxfilter:main',
-              'osl_report = osl.report.raw_report:main',
+              'osl_preproc = osl.preprocessing.batch:main',
           ]},
 
       packages=['osl', 'osl.report', 'osl.maxfilter',

@@ -1,6 +1,9 @@
-"""Source reconstruction for CamCAN.
+"""Example script for source reconstructing CamCAN in serial.
 
-This include coregistration, beamforming, parcellation and orthogonalisation.
+In this script, we source reconstruct each subject one at a time.
+
+Source reconstruction include coregistration, beamforming, parcellation and
+orthogonalisation.
 """
 
 # Authors: Chetan Gohil <chetan.gohil@psych.ox.ac.uk>
@@ -9,20 +12,18 @@ import numpy as np
 import pathlib
 import os.path as op
 from glob import glob
-from dask.distributed import Client
 
-from osl import source_recon, utils
-
+from osl import source_recon
 
 # Directories
-ANAT_DIR = "/ohba/pi/mwoolrich/datasets/CamCan_2021/cc700/mri/pipeline/release004/BIDS_20190411/anat"
-PREPROC_DIR = "/ohba/pi/mwoolrich/cgohil/camcan/preproc"
-SRC_DIR = "/ohba/pi/mwoolrich/cgohil/camcan/src"
-FSL_DIR = "/home/cgohil/local/fsl"
+anat_dir = "/ohba/pi/mwoolrich/datasets/CamCan_2021/cc700/mri/pipeline/release004/BIDS_20190411/anat"
+preproc_dir = "/ohba/pi/mwoolrich/cgohil/camcan/preproc"
+src_dir = "/ohba/pi/mwoolrich/cgohil/camcan/src"
+fsl_dir = "/home/cgohil/local/fsl"
 
 # Files
-SMRI_FILE = ANAT_DIR + "/{0}/anat/{0}_T1w.nii"
-PREPROC_FILE = PREPROC_DIR + "{0}_ses-rest_task-rest_meg/{0}_ses-rest_task-rest_meg_preproc_raw.fif"
+smri_file = anat_dir + "/{0}/anat/{0}_T1w.nii"
+preproc_file = preproc_dir + "{0}_ses-rest_task-rest_meg/{0}_ses-rest_task-rest_meg_preproc_raw.fif"
 
 # Settings
 config = """
@@ -42,7 +43,6 @@ config = """
         method: spatial_basis
         orthogonalisation: symmetric
 """
-
 
 def remove_headshape_points(src_dir, subject, preproc_file, smri_file, logger):
     """Removes headshape points near the nose."""
@@ -69,35 +69,27 @@ def remove_headshape_points(src_dir, subject, preproc_file, smri_file, logger):
     logger.info(f"overwritting {filenames['polhemus_headshape_file']}")
     np.savetxt(filenames["polhemus_headshape_file"], hs)
 
+# Setup FSL
+source_recon.setup_fsl(fsl_dir)
 
-if __name__ == "__main__":
-    utils.logger.set_up(level="INFO")
+# Get subjects
+subjects = []
+for subject in glob(preproc_dir + "/sub-*"):
+    subjects.append(pathlib.Path(subject).stem.split("_")[0])
 
-    # Setup FSL
-    source_recon.setup_fsl(FSL_DIR)
+# Setup files
+smri_files = []
+preproc_files = []
+for subject in subjects:
+    smri_files.append(smri_file.format(subject))
+    preproc_files.append(preproc_file.format(subject))
 
-    # Get subjects
-    subjects = []
-    for subject in glob(PREPROC_DIR + "/sub-*"):
-        subjects.append(pathlib.Path(subject).stem.split("_")[0])
-
-    # Setup files
-    smri_files = []
-    preproc_files = []
-    for subject in subjects:
-        smri_files.append(SMRI_FILE.format(subject))
-        preproc_files.append(PREPROC_FILE.format(subject))
-
-    # Setup parallel processing
-    client = Client(n_workers=2, threads_per_worker=1)
-
-    # Beamforming and parcellation
-    source_recon.run_src_batch(
-        config,
-        src_dir=SRC_DIR,
-        subjects=subjects,
-        preproc_files=preproc_files,
-        smri_files=smri_files,
-        extra_funcs=[remove_headshape_points],
-        dask_client=True,
-    )
+# Beamforming and parcellation
+source_recon.run_src_batch(
+    config,
+    src_dir=src_dir,
+    subjects=subjects,
+    preproc_files=preproc_files,
+    smri_files=smri_files,
+    extra_funcs=[remove_headshape_points],
+)

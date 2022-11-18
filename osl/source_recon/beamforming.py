@@ -1,5 +1,3 @@
-#!/usr/bin/env python
-
 """Beamforming.
 
 """
@@ -118,6 +116,8 @@ def make_lcmv(
     fwd_fname = rhino.get_coreg_filenames(subjects_dir, subject)["forward_model_file"]
     fwd = read_forward_solution(fwd_fname)
 
+    is_epoched = len(data.get_data().shape) == 3 and len(data) > 1
+
     if data_cov is None:
         # Note that if chantypes are meg, eeg; and meg includes mag, grad
         # then compute_covariance will project data separately for meg and eeg
@@ -134,7 +134,7 @@ def make_lcmv(
         # subspace and improve numerical stability. This is equivalent to what the
         # osl_normalise_sensor_data.m function in Matlab OSL is trying to do.
         # Note that in the output data_cov the scalings have been undone.
-        if isinstance(data, mne.Epochs):
+        if is_epoched:
             data_cov = compute_covariance(data, method="empirical", rank=rank)
         else:
             data_cov = compute_raw_covariance(data, method="empirical", rank=rank)
@@ -204,6 +204,15 @@ def make_lcmv(
     log_or_print("*** OSL MAKE LCMV COMPLETE ***", logger)
 
     return filters
+
+
+def apply_lcmv(data, filters, reject_by_annotations="omit"):
+    """Apply a LCMV filter to an MNE Raw or Epochs object."""
+    is_epoched = len(data.get_data().shape) == 3 and len(data) > 1
+    if is_epoched:
+        return mne.beamformer.apply_lcmv_epochs(data, filters)
+    else:
+        return apply_lcmv_raw(data, filters, reject_by_annotations)
 
 
 def apply_lcmv_raw(raw, filters, reject_by_annotations="omit"):
@@ -289,6 +298,7 @@ def transform_recon_timeseries(
     recon_timeseries,
     spatial_resolution=None,
     reference_brain="mni",
+    logger=None,
 ):
     """Spatially resamples a (ndipoles x ntpts) array of reconstructed time
     courses (in head/polhemus space) to dipoles on the brain grid of the
@@ -321,6 +331,8 @@ def transform_recon_timeseries(
         Note that Scaled/unscaled relates to the allow_smri_scaling option in coreg.
         If allow_scaling was False, then the unscaled MRI will be the same as the scaled.
         MRI.
+    logger : logging.getLogger
+        Logger.
 
     Returns
     -------
@@ -359,6 +371,7 @@ def transform_recon_timeseries(
         spatial_resolution = int(np.round(np.min(store[np.where(store > 0)]) * 1000))
 
     spatial_resolution = int(spatial_resolution)
+    log_or_print(f"spatial_resolution = {spatial_resolution} mm", logger)
 
     if reference_brain == "mni":
         # reference is mni stdbrain

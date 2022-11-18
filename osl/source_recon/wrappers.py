@@ -21,6 +21,7 @@ from pathlib import Path
 import pickle
 
 import numpy as np
+import mne
 
 from . import rhino, beamforming, parcellation, sign_flipping
 from ..report import src_report
@@ -38,6 +39,7 @@ def extract_fiducials_from_fif(
     subject,
     preproc_file,
     smri_file,
+    epoch_file,
     logger,
     **userargs,
 ):
@@ -53,6 +55,8 @@ def extract_fiducials_from_fif(
         Path to the preprocessed fif file.
     smri_file : str
         Path to the T1 weighted structural MRI file to use in source reconstruction.
+    epoch_file : str
+        Path to epoched preprocessed fif file.
     logger : logging.getLogger
         Logger.
     userargs : keyword arguments
@@ -81,9 +85,10 @@ def compute_surfaces(
     subject,
     preproc_file,
     smri_file,
+    epoch_file,
     logger,
     include_nose,
-    overwrite=False,
+    recompute_surfaces=False,
 ):
     """Wrapper for computing surfaces.
 
@@ -97,11 +102,13 @@ def compute_surfaces(
         Path to the preprocessed fif file.
     smri_file : str
         Path to the T1 weighted structural MRI file to use in source reconstruction.
+    epoch_file : str
+        Path to epoched preprocessed fif file.
     logger : logging.getLogger
         Logger.
     include_nose : bool
         Should we include the nose when we're extracting the surfaces?
-    overwrite: bool
+    recompute_surfaces : bool
         Specifies whether or not to run compute_surfaces, if the passed in
         options have already been run
     """
@@ -111,7 +118,7 @@ def compute_surfaces(
         subjects_dir=src_dir,
         subject=subject,
         include_nose=include_nose,
-        overwrite=overwrite,
+        recompute_surfaces=recompute_surfaces,
         logger=logger,
     )
 
@@ -130,6 +137,7 @@ def coreg(
     subject,
     preproc_file,
     smri_file,
+    epoch_file,
     logger,
     use_nose,
     use_headshape,
@@ -148,6 +156,8 @@ def coreg(
         Path to the preprocessed fif file.
     smri_file : str
         Path to the T1 weighted structural MRI file to use in source reconstruction.
+    epoch_file : str
+        Path to epoched preprocessed fif file.
     logger : logging.getLogger
         Logger.
     use_nose : bool
@@ -204,6 +214,7 @@ def forward_model(
     subject,
     preproc_file,
     smri_file,
+    epoch_file,
     logger,
     model,
     eeg=False,
@@ -220,6 +231,8 @@ def forward_model(
         Path to the preprocessed fif file.
     smri_file : str
         Path to the T1 weighted structural MRI file to use in source reconstruction.
+    epoch_file : str
+        Path to epoched preprocessed fif file.
     logger : logging.getLogger
         Logger.
     eeg : bool
@@ -250,12 +263,13 @@ def coregister(
     subject,
     preproc_file,
     smri_file,
+    epoch_file,
     logger,
     include_nose,
     use_nose,
     use_headshape,
     model,
-    overwrite=False,
+    recompute_surfaces=False,
     already_coregistered=False,
     allow_smri_scaling=False,
     eeg=False,
@@ -272,6 +286,8 @@ def coregister(
         Path to the preprocessed fif file.
     smri_file : str
         Path to the T1 weighted structural MRI file to use in source reconstruction.
+    epoch_file : str
+        Path to epoched preprocessed fif file.
     logger : logging.getLogger
         Logger.
     include_nose : bool
@@ -282,7 +298,7 @@ def coregister(
         Should we use the headshape points in the coregistration?
     model : str
         Forward model to use.
-    overwrite : bool
+    recompute_surfaces : bool
         Specifies whether or not to run compute_surfaces, if the passed in
         options have already been run
     already_coregistered : bool
@@ -303,7 +319,7 @@ def coregister(
         subjects_dir=src_dir,
         subject=subject,
         include_nose=include_nose,
-        overwrite=overwrite,
+        recompute_surfaces=recompute_surfaces,
         logger=logger,
     )
 
@@ -371,10 +387,14 @@ def beamform(
     subject,
     preproc_file,
     smri_file,
+    epoch_file,
     logger,
+    freq_range,
     chantypes,
     rank,
-    freq_range,
+    spatial_resolution=None,
+    reference_brain="mni",
+    save_bf_data=False,
 ):
     """Wrapper function for beamforming.
 
@@ -388,26 +408,50 @@ def beamform(
         Path to the preprocessed fif file.
     smri_file : str
         Path to the T1 weighted structural MRI file to use in source reconstruction.
+    epoch_file : str
+        Path to epoched preprocessed fif file.
     logger : logging.getLogger
         Logger.
+    freq_range : list
+        Lower and upper band to bandpass filter before beamforming. If None,
+        no filtering is done.
     chantypes : list of str
         Channel types to use in beamforming.
     rank : dict
         Keys should be the channel types and the value should be the rank to use.
-    freq_range : list
-        Lower and upper band to bandpass filter before beamforming. If None,
-        no filtering is done.
+    spatial_resolution : int
+        Resolution for beamforming to use for the reference brain in mm
+        (must be an integer, or will be cast to nearest int)
+        If None, then the gridstep used in coreg_filenames['forward_model_file']
+        is used.
+    reference_brain : string
+        'mni' indicates that the reference_brain is the stdbrain in MNI space
+        'mri' indicates that the reference_brain is the subject's sMRI in
+            the scaled native/mri space. "
+        'unscaled_mri' indicates that the reference_brain is the subject's sMRI in
+            unscaled native/mri space.
+        Note that Scaled/unscaled relates to the allow_smri_scaling option in coreg.
+        If allow_scaling was False, then the unscaled MRI will be the same as the scaled.
+        MRI.
+    save_bf_data : bool
+        Should we save the beamformed data?
     """
-    from ..preprocessing import import_data
+    logger.info("beamforming")
 
-    # Load preprocessed data
-    preproc_data = import_data(preproc_file)
-    preproc_data.pick(chantypes)
+    if epoch_file is not None:
+        logger.info("using epoched data")
+
+        # Load epoched data
+        data = mne.read_epochs(epoch_file, preload=True)
+    else:
+        # Load preprocessed data
+        data = mne.io.read_raw_fif(preproc_file, preload=True)
+    data.pick(chantypes)
 
     if freq_range is not None:
         # Bandpass filter
         logger.info("bandpass filtering: {}-{} Hz".format(freq_range[0], freq_range[1]))
-        preproc_data = preproc_data.filter(
+        data = data.filter(
             l_freq=freq_range[0],
             h_freq=freq_range[1],
             method="iir",
@@ -425,7 +469,7 @@ def beamform(
     filters = beamforming.make_lcmv(
         subjects_dir=src_dir,
         subject=subject,
-        data=preproc_data,
+        data=data,
         chantypes=chantypes,
         weight_norm="nai",
         rank=rank,
@@ -433,14 +477,31 @@ def beamform(
         save_figs=True,
     )
 
+    # Save the beamforming filter
+    filters_file = src_dir / subject / "rhino/filters-lcmv.h5"
+    filters.save(filters_file, overwrite=True)
+
     # Apply beamforming
-    logger.info("beamforming.apply_lcmv_raw")
-    src_data = beamforming.apply_lcmv_raw(preproc_data, filters)
-    src_ts_mni, _, src_coords_mni, _ = beamforming.transform_recon_timeseries(
+    logger.info("beamforming.apply_lcmv")
+    bf_data = beamforming.apply_lcmv(data, filters)
+    if epoch_file is not None:
+        bf_data = np.transpose([bf.data for bf in bf_data], axes=[1, 2, 0])
+    else:
+        bf_data = bf_data.data
+    bf_data_mni, _, _, _ = beamforming.transform_recon_timeseries(
         subjects_dir=src_dir,
         subject=subject,
-        recon_timeseries=src_data.data,
+        recon_timeseries=bf_data,
+        spatial_resolution=spatial_resolution,
+        reference_brain=reference_brain,
+        logger=logger,
     )
+
+    if save_bf_data:
+        # Save beamformed data
+        bf_data_file = src_dir / subject / "rhino/bf.npy"
+        logger.info(f"saving {bf_data_file}")
+        np.save(bf_data_file, bf_data_mni.T)
 
     # Save info for the report
     src_report.add_to_data(
@@ -461,6 +522,7 @@ def beamform_and_parcellate(
     subject,
     preproc_file,
     smri_file,
+    epoch_file,
     logger,
     chantypes,
     rank,
@@ -468,6 +530,9 @@ def beamform_and_parcellate(
     parcellation_file,
     method,
     orthogonalisation,
+    spatial_resolution=None,
+    reference_brain="mni",
+    save_bf_data=False,
 ):
     """Wrapper function for beamforming and parcellation.
 
@@ -481,6 +546,8 @@ def beamform_and_parcellate(
         Path to the preprocessed fif file.
     smri_file : str
         Path to the T1 weighted structural MRI file to use in source reconstruction.
+    epoch_file : str
+        Path to epoched preprocessed fif file.
     logger : logging.getLogger
         Logger.
     chantypes : list of str
@@ -496,17 +563,39 @@ def beamform_and_parcellate(
         Method to use in the parcellation.
     orthogonalisation : bool
         Should we do orthogonalisation?
+    spatial_resolution : int
+        Resolution for beamforming to use for the reference brain in mm
+        (must be an integer, or will be cast to nearest int)
+        If None, then the gridstep used in coreg_filenames['forward_model_file']
+        is used.
+    reference_brain : string
+        'mni' indicates that the reference_brain is the stdbrain in MNI space
+        'mri' indicates that the reference_brain is the subject's sMRI in
+            the scaled native/mri space. "
+        'unscaled_mri' indicates that the reference_brain is the subject's sMRI in
+            unscaled native/mri space.
+        Note that Scaled/unscaled relates to the allow_smri_scaling option in coreg.
+        If allow_scaling was False, then the unscaled MRI will be the same as the scaled.
+        MRI.
+    save_bf_data : bool
+        Should we save the beamformed data?
     """
-    from ..preprocessing import import_data
+    logger.info("beamform_and_parcellate")
 
-    # Load preprocessed data
-    preproc_data = import_data(preproc_file)
-    preproc_data.pick(chantypes)
+    if epoch_file is not None:
+        logger.info("using epoched data")
+
+        # Load epoched data
+        data = mne.read_epochs(epoch_file, preload=True)
+    else:
+        # Load preprocessed data
+        data = mne.io.read_raw_fif(preproc_file, preload=True)
+    data.pick(chantypes)
 
     if freq_range is not None:
         # Bandpass filter
         logger.info("bandpass filtering: {}-{} Hz".format(freq_range[0], freq_range[1]))
-        preproc_data = preproc_data.filter(
+        data = data.filter(
             l_freq=freq_range[0],
             h_freq=freq_range[1],
             method="iir",
@@ -524,7 +613,7 @@ def beamform_and_parcellate(
     filters = beamforming.make_lcmv(
         subjects_dir=src_dir,
         subject=subject,
-        data=preproc_data,
+        data=data,
         chantypes=chantypes,
         weight_norm="nai",
         rank=rank,
@@ -532,26 +621,44 @@ def beamform_and_parcellate(
         save_figs=True,
     )
 
+    # Save the beamforming filter
+    filters_file = src_dir / subject / "rhino/filters-lcmv.h5"
+    filters.save(filters_file, overwrite=True)
+
     # Apply beamforming
-    logger.info("beamforming.apply_lcmv_raw")
-    src_data = beamforming.apply_lcmv_raw(preproc_data, filters)
-    src_ts_mni, _, src_coords_mni, _ = beamforming.transform_recon_timeseries(
+    logger.info("beamforming.apply_lcmv")
+    bf_data = beamforming.apply_lcmv(data, filters)
+    if epoch_file is not None:
+        bf_data = np.transpose([bf.data for bf in bf_data], axes=[1, 2, 0])
+    else:
+        bf_data = bf_data.data
+    bf_data_mni, _, coords_mni, _ = beamforming.transform_recon_timeseries(
         subjects_dir=src_dir,
         subject=subject,
-        recon_timeseries=src_data.data,
+        recon_timeseries=bf_data,
+        spatial_resolution=spatial_resolution,
+        reference_brain=reference_brain,
+        logger=logger,
     )
+
+    if save_bf_data:
+        # Save beamformed data
+        bf_data_file = src_dir / subject / "rhino/bf.npy"
+        logger.info(f"saving {bf_data_file}")
+        np.save(bf_data_file, bf_data_mni.T)
 
     # Parcellation
     logger.info("parcellation")
     logger.info(parcellation_file)
     p = parcellation.Parcellation(parcellation_file)
     p.parcellate(
-        voxel_timeseries=src_ts_mni,
-        voxel_coords=src_coords_mni,
+        voxel_timeseries=bf_data_mni,
+        voxel_coords=coords_mni,
         method=method,
+        working_dir=src_dir / subject / "rhino",
         logger=logger,
     )
-    parcel_ts = p.parcel_timeseries["data"]
+    parcel_data = p.parcel_timeseries["data"]
 
     # Orthogonalisation
     if orthogonalisation not in [None, "symmetric"]:
@@ -559,23 +666,29 @@ def beamform_and_parcellate(
 
     if orthogonalisation == "symmetric":
         logger.info(f"{orthogonalisation} orthogonalisation")
-        parcel_ts = parcellation.symmetric_orthogonalise(
-            parcel_ts, maintain_magnitudes=True
+        parcel_data = parcellation.symmetric_orthogonalise(
+            parcel_data, maintain_magnitudes=True
         )
 
     # Save parcellated data
     parc_data_file = src_dir / subject / "rhino/parc.npy"
     logger.info(f"saving {parc_data_file}")
-    np.save(parc_data_file, parcel_ts.T)
+    np.save(parc_data_file, parcel_data.T)
 
     # Save plots
     parcellation.plot_correlation(
-        parcel_ts,
+        parcel_data,
         filename=f"{src_dir}/{subject}/rhino/parc_corr.png",
         logger=logger,
     )
 
     # Save info for the report
+    n_parcels = parcel_data.shape[0]
+    n_samples = parcel_data.shape[1]
+    if parcel_data.ndim == 3:
+        n_epochs = parcel_data.shape[2]
+    else:
+        n_epochs = None
     src_report.add_to_data(
         f"{src_dir}/{subject}/report_data.pkl",
         {
@@ -591,8 +704,9 @@ def beamform_and_parcellate(
             "method": method,
             "orthogonalisation": orthogonalisation,
             "parc_data_file": str(parc_data_file),
-            "n_samples": parcel_ts.shape[1],
-            "n_parcels": parcel_ts.shape[0],
+            "n_samples": n_samples,
+            "n_parcels": n_parcels,
+            "n_epochs": n_epochs,
             "parc_corr_plot": f"{src_dir}/{subject}/rhino/parc_corr.png",
         }
     )
@@ -659,6 +773,7 @@ def fix_sign_ambiguity(
     subject,
     preproc_file,
     smri_file,
+    epoch_file,
     logger,
     template,
     n_embeddings,
@@ -679,6 +794,8 @@ def fix_sign_ambiguity(
         Path to the preprocessed fif file.
     smri_file : str
         Path to the T1 weighted structural MRI file to use in source reconstruction.
+    epoch_file : str
+        Path to epoched preprocessed fif file.
     logger : logging.getLogger
         Logger.
     template : str

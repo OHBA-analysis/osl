@@ -108,7 +108,7 @@ def sanitise_filepath(fname):
 def _load_unicode_inputs(fname):
     checked_files = []
     outnames = []
-    osl_logger.info("loading inputs from : {0}",format(fname))
+    osl_logger.info("loading inputs from : {0}".format(fname))
     for row in csv.reader(open(fname, 'r'), delimiter=","):
         infile = sanitise_filepath(row[0])
         checked_files.append(infile)
@@ -188,7 +188,7 @@ def get_rawdir(files):
     return rawfile.parent
 
 
-def add_subdir(file, outdir, run_id):
+def add_subdir(file, outdir, run_id=None):
     if not type(outdir) == str:
         outdir = str(outdir)
     if '{' in outdir and '}' in outdir:
@@ -202,7 +202,7 @@ def add_subdir(file, outdir, run_id):
             raise ValueError(
                     "Please make sure the subdirectory structure is present in the input file(s)"
                     )
-    else:
+    elif run_id is not None:
         outdir = f"{outdir}/{run_id}"
     return outdir
 

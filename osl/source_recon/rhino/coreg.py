@@ -1,5 +1,3 @@
-#!/usr/bin/env python
-
 """Registration of Headshapes Including Nose in OSL (RHINO).
 
 """

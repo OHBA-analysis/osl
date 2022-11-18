@@ -1,5 +1,3 @@
-#!/usr/bin/env python
-
 """Reporting tool for preprocessing.
 
 """
@@ -1100,22 +1098,3 @@ def print_scan_summary(raw):
         pc = (mod_dur / full_dur) * 100
         s = 'Modality {0} - {1:02f}/{2} seconds rejected     ({3:02f}%)'
         print(s.format(modality, mod_dur, full_dur, pc))
-
-
-def main(argv=None):
-    if argv is None:
-        argv = sys.argv[1:]
-
-    parser = argparse.ArgumentParser(description='Run a quality control summary on data.')
-    parser.add_argument('files', type=str,
-                        help='plain text file containing full paths to files to be processed')
-    parser.add_argument('outdir', type=str, 
-                        help='Path to output directory to save data in')
-
-    args = parser.parse_args(argv)
-
-    gen_report_from_fif(args.files, args.outdir, args.preproc_config)
-
-
-if __name__ == '__main__':
-    main()

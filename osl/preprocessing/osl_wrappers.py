@@ -11,6 +11,7 @@ import mne
 import numpy as np
 import sails
 from os.path import exists
+from scipy import stats
 
 logger = logging.getLogger(__name__)
 
@@ -61,8 +62,18 @@ def detect_maxfilt_zeros(raw):
         return None
 
 
-def detect_badsegments(raw, segment_len=1000, significance_level=0.05, picks="grad", ref_meg='auto', mode=None, detect_zeros=True):
+def detect_badsegments(
+    raw,
+    picks,
+    segment_len=1000,
+    significance_level=0.05,
+    metric='std',
+    ref_meg='auto',
+    mode=None,
+    detect_zeros=True,
+):
     """Set bad segments in MNE object.
+
     Note that with CTF data, mne.pick_types will return:
     ~274 axial grads (as magnetometers) if {picks: 'mag', ref_meg: False}
     ~28 reference axial grads if {picks: 'grad'}
@@ -76,6 +87,8 @@ def detect_badsegments(raw, segment_len=1000, significance_level=0.05, picks="gr
         chinds = mne.pick_types(raw.info, meg=True, ref_meg=ref_meg, exclude='bads')
     elif picks == "eeg":
         chinds = mne.pick_types(raw.info, eeg=True, ref_meg=ref_meg, exclude='bads')
+    else:
+        raise ValueError("picks needs to be specified.")
 
     if mode is None:
         if detect_zeros:
@@ -87,10 +100,26 @@ def detect_badsegments(raw, segment_len=1000, significance_level=0.05, picks="gr
         bdinds_maxfilt = None
         XX = np.diff(raw.get_data(picks=chinds), axis=1)
 
-    bdinds_std = sails.utils.detect_artefacts(
-        XX, 1, reject_mode="segments", segment_len=segment_len, ret_mode="bad_inds", gesd_args = gesd_args
+    allowed_metrics = ["std", "var", "kurtosis"]
+    if metric not in allowed_metrics:
+        raise ValueError(f"metric {metric} unknown.")
+    if metric == "std":
+        metric_func = np.std
+    elif metric == "var":
+        metric_func = np.var
+    else:
+        metric_func = stats.kurtosis
+
+    bdinds = sails.utils.detect_artefacts(
+        XX,
+        axis=1,
+        reject_mode="segments",
+        metric_func=metric_func,
+        segment_len=segment_len,
+        ret_mode="bad_inds",
+        gesd_args=gesd_args,
     )
-    for count, bdinds in enumerate([bdinds_std, bdinds_maxfilt]):
+    for count, bdinds in enumerate([bdinds, bdinds_maxfilt]):
         if bdinds is None:
             continue
         if count==1:
@@ -125,8 +154,9 @@ def detect_badsegments(raw, segment_len=1000, significance_level=0.05, picks="gr
     return raw
 
 
-def detect_badchannels(raw, picks="grad", ref_meg="auto", significance_level=0.05):
+def detect_badchannels(raw, picks, ref_meg="auto", significance_level=0.05):
     """Set bad channels in MNE object.
+
     Note that with CTF data, mne.pick_types will return:
     ~274 axial grads (as magnetometers) if {picks: 'mag', ref_meg: False}
     ~28 reference axial grads if {picks: 'grad'}
@@ -140,10 +170,16 @@ def detect_badchannels(raw, picks="grad", ref_meg="auto", significance_level=0.0
         chinds = mne.pick_types(raw.info, meg=True, ref_meg=ref_meg, exclude='bads')
     elif picks == "eeg":
         chinds = mne.pick_types(raw.info, eeg=True, ref_meg=ref_meg, exclude='bads')
+    else:
+        raise ValueError("picks must be specified.")
     ch_names = np.array(raw.ch_names)[chinds]
 
     bdinds = sails.utils.detect_artefacts(
-        raw.get_data(picks=chinds), 0, reject_mode="dim", ret_mode="bad_inds", gesd_args=gesd_args
+        raw.get_data(picks=chinds),
+        0,
+        reject_mode="dim",
+        ret_mode="bad_inds",
+        gesd_args=gesd_args,
     )
 
     s = "Modality {0} - {1}/{2} channels rejected     ({3:02f}%)"
@@ -155,6 +191,78 @@ def detect_badchannels(raw, picks="grad", ref_meg="auto", significance_level=0.0
         raw.info["bads"].extend(list(ch_names[np.where(bdinds)[0]]))
 
     return raw
+
+
+def drop_bad_epochs(
+    epochs,
+    picks,
+    significance_level=0.05,
+    max_percentage=0.1,
+    outlier_side=0,
+    metric='std',
+    ref_meg='auto',
+    mode=None,
+):
+    """Drop bad epochs in MNE object.
+
+    Note that with CTF data, mne.pick_types will return:
+    ~274 axial grads (as magnetometers) if {picks: 'mag', ref_meg: False}
+    ~28 reference axial grads if {picks: 'grad'}
+    """
+
+    gesd_args = {
+        'alpha': significance_level,
+        'p_out': max_percentage,
+        'outlier_side': outlier_side,
+    }
+
+    if (picks == "mag") or (picks == "grad"):
+        chinds = mne.pick_types(
+            epochs.info, meg=picks, ref_meg=ref_meg, exclude='bads'
+        )
+    elif picks == "meg":
+        chinds = mne.pick_types(
+            epochs.info, meg=True, ref_meg=ref_meg, exclude='bads'
+        )
+    elif picks == "eeg":
+        chinds = mne.pick_types(
+            epochs.info, eeg=True, ref_meg=ref_meg, exclude='bads'
+        )
+    else:
+        raise ValueError("picks needs to be specified.")
+
+    if mode is None:
+        X = epochs.get_data(picks=chinds)
+    elif mode == "diff":
+        X = np.diff(epochs.get_data(picks=chinds), axis=-1)
+
+    # Get the function used to calculate the evaluation metric
+    allowed_metrics = ["std", "var", "kurtosis"]
+    if metric not in allowed_metrics:
+        raise ValueError(f"metric {metric} unknown.")
+    if metric == "std":
+        metric_func = np.std
+    elif metric == "var":
+        metric_func = np.var
+    else:
+        metric_func = stats.kurtosis
+
+    # Calculate the metric used to evaluate whether an epoch is bad
+    X = metric_func(X, axis=-1)
+
+    # Average over channels so we have a metric for each trial
+    X = np.mean(X, axis=1)
+
+    # Use gesd to find outliers
+    bad_epochs, _ = sails.utils.gesd(X, **gesd_args)
+    logger.info(
+        f"Modality {picks} - {np.sum(bad_epochs)}/{X.shape[0]} epochs rejected"
+    )
+
+    # Drop bad epochs
+    epochs.drop(bad_epochs)
+
+    return epochs
 
 
 # Wrapper functions
@@ -169,7 +277,6 @@ def run_osl_bad_segments(dataset, userargs, logfile=None):
 
 
 def run_osl_bad_channels(dataset, userargs, logfile=None):
-
     """
     Note that with CTF data, mne.pick_types will return:
     ~274 axial grads (as magnetometers) if {picks: 'mag', ref_meg: False}
@@ -180,6 +287,16 @@ def run_osl_bad_channels(dataset, userargs, logfile=None):
     logger.info("OSL Stage - {0} : {1}".format(target, "detect_badchannels"))
     logger.info("userargs: {0}".format(str(userargs)))
     dataset["raw"] = detect_badchannels(dataset["raw"], **userargs)
+    return dataset
+
+
+def run_osl_drop_bad_epochs(dataset, userargs, logfile=None):
+    target = userargs.pop("target", "raw")
+    logger.info("OSL Stage - {0} : {1}".format(target, "detect_bad_epochs"))
+    logger.info("userargs: {0}".format(str(userargs)))
+    if dataset["epochs"] is None:
+        logger.info("no epoch object found! skipping..")
+    dataset["epochs"] = drop_bad_epochs(dataset["epochs"], **userargs)
     return dataset
 
 
