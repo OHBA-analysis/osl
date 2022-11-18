@@ -34,4 +34,4 @@ for preproc_file, run_id in zip(preproc_files, run_ids):
     # Save cleaned data
     dataset["raw"] = raw
     dataset["ica"] = ica
-    preprocessing.wrte_dataset(dataset, preproc_dir, run_id, overwrite=True)
+    preprocessing.write_dataset(dataset, preproc_dir, run_id, overwrite=True)

@@ -1,5 +1,6 @@
 """Example script for source reconstructing epoched data.
 
+Note, the parcellated data is saved to: {src_dir}/*/{event_type}/rhino/parc.npy
 """
 
 # Authors: Chetan Gohil <chetan.gohil@psych.ox.ac.uk>
@@ -17,7 +18,7 @@ epoch_files = []
 for subject in subjects:
     run_id = f"InEx_{subject}_tsss"
     run_ids.append(run_id)
-    preproc_files.append(f"{epoch_dir}/{run_id}/{run_id}_preproc_raw.fif")
+    preproc_files.append(f"{epoch_dir}/{run_id}_preproc_raw/{run_id}_preproc_raw.fif")
     epoch_files.append(f"{epoch_dir}/{run_id}_preproc_raw/{run_id}_preproc_raw_epo.fif")
 
 # Setup paths to structural MRI files

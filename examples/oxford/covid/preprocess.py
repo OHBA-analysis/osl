@@ -6,7 +6,7 @@
 
 from osl import preprocessing
 
-raw_file = "/ohba/pi/knobre/datasets/covid/rawbids/{0}/meg/{0}_task-resteo.fif"
+raw_file = "/ohba/pi/knobre/datasets/covid/rawbids/{0}/meg/{0}_task-restEO.fif"
 preproc_dir = "/ohba/pi/knobre/cgohil/covid/preproc"
 
 subjects = ["sub-004", "sub-005"]

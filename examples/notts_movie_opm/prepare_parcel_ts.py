@@ -15,8 +15,6 @@ from osl import preprocessing
 from osl import source_recon
 import matplotlib.pyplot as plt
 
-import yaml
-
 from osl.utils import opm
 
 subjects_to_do = np.arange(0, 10)
@@ -109,11 +107,7 @@ smri_files = smri_fixed_files
 # %% Run preproc
 
 if run_preproc:
-
-    config_text = """
-    meta:
-      event_codes:
-
+    config = """
     preproc:
         - crop:         {tmin: 20}
         - resample:     {sfreq: 150, n_jobs: 6}            
@@ -123,10 +117,7 @@ if run_preproc:
         - bad_segments: {segment_len: 400, picks: 'meg', significance_level: 0.1}
         - bad_segments: {segment_len: 600, picks: 'meg', significance_level: 0.1}
         - bad_segments: {segment_len: 800, picks: 'meg', significance_level: 0.1}
-
     """
-
-    config = yaml.load(config_text, Loader=yaml.FullLoader)
 
     dataset = preprocessing.run_proc_batch(config, fif_files, outdir=subjects_dir, overwrite=True)
 
@@ -166,7 +157,6 @@ source_recon.rhino.coreg_display(recon_dir, subjects[0],
 # %% Coreg and Source recon and Parcellate
 
 if run_beamform_and_parcellate:
-    # Settings
     config = """
         source_recon:
         - coregister:
@@ -175,7 +165,6 @@ if run_beamform_and_parcellate:
             use_headshape: true
             model: Single Layer
             already_coregistered: true
-            overwrite: false
         - beamform_and_parcellate:
             freq_range: [4, 40]
             chantypes: mag

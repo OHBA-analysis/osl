@@ -88,7 +88,7 @@ def compute_surfaces(
     epoch_file,
     logger,
     include_nose,
-    overwrite=False,
+    recompute_surfaces=False,
 ):
     """Wrapper for computing surfaces.
 
@@ -108,7 +108,7 @@ def compute_surfaces(
         Logger.
     include_nose : bool
         Should we include the nose when we're extracting the surfaces?
-    overwrite: bool
+    recompute_surfaces : bool
         Specifies whether or not to run compute_surfaces, if the passed in
         options have already been run
     """
@@ -118,7 +118,7 @@ def compute_surfaces(
         subjects_dir=src_dir,
         subject=subject,
         include_nose=include_nose,
-        overwrite=overwrite,
+        recompute_surfaces=recompute_surfaces,
         logger=logger,
     )
 
@@ -269,7 +269,7 @@ def coregister(
     use_nose,
     use_headshape,
     model,
-    overwrite=False,
+    recompute_surfaces=False,
     already_coregistered=False,
     allow_smri_scaling=False,
     eeg=False,
@@ -298,7 +298,7 @@ def coregister(
         Should we use the headshape points in the coregistration?
     model : str
         Forward model to use.
-    overwrite : bool
+    recompute_surfaces : bool
         Specifies whether or not to run compute_surfaces, if the passed in
         options have already been run
     already_coregistered : bool
@@ -319,7 +319,7 @@ def coregister(
         subjects_dir=src_dir,
         subject=subject,
         include_nose=include_nose,
-        overwrite=overwrite,
+        recompute_surfaces=recompute_surfaces,
         logger=logger,
     )
 
