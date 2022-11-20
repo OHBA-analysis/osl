@@ -186,6 +186,9 @@ def coreg(
         logger=logger,
     )
 
+    # Calculate metrics
+    fid_err = rhino.coreg_metrics(subjects_dir=src_dir, subject=subject)
+
     # Save plots
     rhino.coreg_display(
         subjects_dir=src_dir,
@@ -204,6 +207,7 @@ def coreg(
             "use_nose": use_nose,
             "already_coregistered": already_coregistered,
             "allow_smri_scaling": allow_smri_scaling,
+            "fid_err": fid_err,
             "coreg_plot": f"{src_dir}/{subject}/rhino/coreg.html",
         }
     )
