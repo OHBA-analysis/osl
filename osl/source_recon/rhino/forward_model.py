@@ -170,7 +170,9 @@ def make_fwd_solution(
     fif_file = get_coreg_filenames(subjects_dir, subject)["fif_file"]
 
     # Note, forward model is done in head space:
-    head_scaledmri_trans_file = get_coreg_filenames(subjects_dir, subject)["head_scaledmri_t_file"]
+    head_scaledmri_trans_file = get_coreg_filenames(subjects_dir, subject)[
+        "head_scaledmri_t_file"
+    ]
 
     # Src should be in MRI space. Let's just check that is the
     # case
@@ -313,7 +315,6 @@ def setup_volume_source_space(
     # https://imaging.mrc-cbu.cam.ac.uk/meg/SpmForwardModels
     #
     # To be continued... ?
-
 
     # Note that the coreg surf files are in scaled MRI space
     verts, tris = read_surface(coreg_filenames["bet_inskull_surf_file"])

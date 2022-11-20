@@ -36,6 +36,7 @@ import osl.source_recon.rhino.utils as rhino_utils
 from osl.source_recon.rhino.surfaces import get_surfaces_filenames
 from osl.utils.logger import log_or_print
 
+
 def get_coreg_filenames(subjects_dir, subject):
     """
     Generates a dict of files generated and used by RHINO.
@@ -64,7 +65,9 @@ def get_coreg_filenames(subjects_dir, subject):
         "head_scaledmri_t_file": op.join(basedir, "head_scaledmri-trans.fif"),
         "head_mri_t_file": op.join(basedir, "head_mri-trans.fif"),
         "ctf_head_mri_t_file": op.join(basedir, "ctf_head_mri-trans.fif"),
-        "mrivoxel_scaledmri_t_file": op.join(basedir, "mrivoxel_scaledmri_t_file-trans.fif"),
+        "mrivoxel_scaledmri_t_file": op.join(
+            basedir, "mrivoxel_scaledmri_t_file-trans.fif"
+        ),
         "smri_nasion_file": op.join(basedir, "smri_nasion.txt"),
         "smri_rpa_file": op.join(basedir, "smri_rpa.txt"),
         "smri_lpa_file": op.join(basedir, "smri_lpa.txt"),
@@ -73,12 +76,10 @@ def get_coreg_filenames(subjects_dir, subject):
         "polhemus_lpa_file": op.join(basedir, "polhemus_lpa.txt"),
         "polhemus_headshape_file": op.join(basedir, "polhemus_headshape.txt"),
         "forward_model_file": op.join(basedir, "forward-fwd.fif"),
-
         # BET mesh output in native space
         "bet_outskin_mesh_vtk_file": op.join(basedir, "scaled_outskin_mesh.vtk"),
         "bet_inskull_mesh_vtk_file": op.join(basedir, "scaled_inskull_mesh.vtk"),
         "bet_outskull_mesh_vtk_file": op.join(basedir, "scaled_outskull_mesh.vtk"),
-
         # Freesurfer mesh in native space
         # - these are the ones shown in coreg_display() if doing surf plot
         # - these are also used by MNE forward modelling
@@ -88,7 +89,6 @@ def get_coreg_filenames(subjects_dir, subject):
         "bet_outskin_plus_nose_surf_file": op.join(
             basedir, "scaled_outskin_plus_nose_surf.surf"
         ),
-
         # BET output surface mask as nii in native space
         "bet_outskin_mesh_file": op.join(basedir, "scaled_outskin_mesh.nii.gz"),
         "bet_outskin_plus_nose_mesh_file": op.join(
@@ -96,7 +96,6 @@ def get_coreg_filenames(subjects_dir, subject):
         ),
         "bet_inskull_mesh_file": op.join(basedir, "scaled_inskull_mesh.nii.gz"),
         "bet_outskull_mesh_file": op.join(basedir, "scaled_outskull_mesh.nii.gz"),
-
         "std_brain": op.join(
             os.environ["FSLDIR"],
             "data",
@@ -116,7 +115,7 @@ def coreg(
     use_nose=True,
     use_dev_ctf_t=True,
     already_coregistered=False,
-    allow_smri_scaling = False,
+    allow_smri_scaling=False,
     logger=None,
 ):
     """Coregistration.
@@ -151,7 +150,8 @@ def coreg(
     in native sMRI space. Use these to estimate the affine xform from
     native sMRI space to polhemus (head) space.
     2b) We can also optionally learn the best scaling to add to this affine xform,
-    such that the sMRI-derived fids are scaled in size to better match the polhemus-derived fids.
+    such that the sMRI-derived fids are scaled in size to better match the
+    polhemus-derived fids.
     This assumes that we trust the size (e.g. in mm) of the polhemus-derived fids,
     but not the size of sMRI-derived fids. E.g. this might be the case if we do not
     trust the size (e.g. in mm) of the sMRI, or if we are using a template sMRI that
@@ -187,15 +187,15 @@ def coreg(
         is from a MEGIN scanner)
     already_coregistered : bool
         Indicates that the data is already coregistered.
-        Causes a simplified coreg to be run that assumes that device space, head space and mri space are
-        all the same space, and that the sensor locations and polhemus points (if there are any) are
-        already in that space.
+        Causes a simplified coreg to be run that assumes that device space, head space
+        and mri space are all the same space, and that the sensor locations and polhemus
+        points (if there are any) are already in that space.
         This means that dev_head_t is identity and that dev_mri_t is identity.
         This simplified coreg is needed to ensure that all the necessary coreg
         output files are created.
     allow_smri_scaling : bool
-        Indicates if we are to allow scaling of the sMRI, such that the sMRI-derived fids are
-        scaled in size to better match the polhemus-derived fids.
+        Indicates if we are to allow scaling of the sMRI, such that the sMRI-derived
+        fids are scaled in size to better match the polhemus-derived fids.
         This assumes that we trust the size (e.g. in mm) of the polhemus-derived fids,
         but not the size of the sMRI-derived fids.
         E.g. this might be the case if we do not trust the size (e.g. in mm) of the sMRI,
@@ -247,28 +247,37 @@ def coreg(
 
         # data is already coregistered.
         # Assumes that device space, head space and mri space are all the same space,
-        # and that the sensor locations and polhemus points (if there are any) are already in that space.
+        # and that the sensor locations and polhemus points (if there are any) are
+        # already in that space.
         # This means that dev_head_t is identity and that dev_mri_t is identity.
 
         # write native (mri) voxel index to native (mri) transform
-        xform_nativeindex2scalednative = rhino_utils._get_sform(surfaces_filenames['bet_outskin_mesh_file'])['trans']
-        mrivoxel_scaledmri_t = Transform('mri_voxel', 'mri', np.copy(xform_nativeindex2scalednative))
-        write_trans(filenames['mrivoxel_scaledmri_t_file'], mrivoxel_scaledmri_t, overwrite=True)
+        xform_nativeindex2scalednative = rhino_utils._get_sform(
+            surfaces_filenames["bet_outskin_mesh_file"]
+        )["trans"]
+        mrivoxel_scaledmri_t = Transform(
+            "mri_voxel", "mri", np.copy(xform_nativeindex2scalednative)
+        )
+        write_trans(
+            filenames["mrivoxel_scaledmri_t_file"], mrivoxel_scaledmri_t, overwrite=True
+        )
 
         # head_mri-trans.fif for scaled MRI
-        head_mri_t = Transform('head', 'mri', np.identity(4))
-        write_trans(filenames['head_mri_t_file'], head_mri_t, overwrite=True)
-        write_trans(filenames['head_scaledmri_t_file'], head_mri_t, overwrite=True)
+        head_mri_t = Transform("head", "mri", np.identity(4))
+        write_trans(filenames["head_mri_t_file"], head_mri_t, overwrite=True)
+        write_trans(filenames["head_scaledmri_t_file"], head_mri_t, overwrite=True)
 
         # copy meshes to coreg dir from surfaces dir
-        for file_name in {"smri_file",
-                          "bet_outskin_mesh_file",
-                          "bet_outskin_plus_nose_mesh_file",
-                          "bet_inskull_mesh_file",
-                          "bet_outskull_mesh_file",
-                          "bet_outskin_mesh_vtk_file",
-                          "bet_inskull_mesh_vtk_file",
-                          "bet_outskull_mesh_vtk_file"}:
+        for file_name in {
+            "smri_file",
+            "bet_outskin_mesh_file",
+            "bet_outskin_plus_nose_mesh_file",
+            "bet_inskull_mesh_file",
+            "bet_outskull_mesh_file",
+            "bet_outskin_mesh_vtk_file",
+            "bet_inskull_mesh_vtk_file",
+            "bet_outskull_mesh_vtk_file",
+        }:
             copyfile(surfaces_filenames[file_name], filenames[file_name])
     else:
 
@@ -281,7 +290,8 @@ def coreg(
                     logger,
                 )
                 log_or_print(
-                    "Please ensure that rhino.compute_surfaces was run with include_nose=True.",
+                    "Please ensure that rhino.compute_surfaces was run with "
+                    + "include_nose=True.",
                     logger,
                 )
                 log_or_print(
@@ -294,22 +304,23 @@ def coreg(
                     logger,
                 )
                 log_or_print(
-                    "Please ensure that the polhemus headshape points do not include the nose",
+                    "Please ensure that the polhemus headshape points do not include "
+                    + "the nose",
                     logger,
                 )
 
         # Load in the "polhemus-derived fiducial points"
         log_or_print(f"loading: {filenames['polhemus_headshape_file']}", logger)
-        polhemus_headshape = np.loadtxt(filenames["polhemus_headshape_file"])
+        polhemus_headshape_polhemus = np.loadtxt(filenames["polhemus_headshape_file"])
 
         log_or_print(f"loading: {filenames['polhemus_nasion_file']}", logger)
-        polhemus_nasion = np.loadtxt(filenames["polhemus_nasion_file"])
+        polhemus_nasion_polhemus = np.loadtxt(filenames["polhemus_nasion_file"])
 
         log_or_print(f"loading: {filenames['polhemus_rpa_file']}", logger)
-        polhemus_rpa = np.loadtxt(filenames["polhemus_rpa_file"])
+        polhemus_rpa_polhemus = np.loadtxt(filenames["polhemus_rpa_file"])
 
         log_or_print(f"loading: {filenames['polhemus_lpa_file']}", logger)
-        polhemus_lpa = np.loadtxt(filenames["polhemus_lpa_file"])
+        polhemus_lpa_polhemus = np.loadtxt(filenames["polhemus_lpa_file"])
 
         # Load in outskin_mesh_file to get the "sMRI-derived headshape points"
         if use_nose:
@@ -331,7 +342,9 @@ def coreg(
 
         # Apply this xform to the mni fids to get what we call the "sMRI-derived
         # fids" in native space
-        smri_nasion_native = rhino_utils.xform_points(mni_mri_t["trans"], mni_nasion_mni)
+        smri_nasion_native = rhino_utils.xform_points(
+            mni_mri_t["trans"], mni_nasion_mni
+        )
         smri_lpa_native = rhino_utils.xform_points(mni_mri_t["trans"], mni_lpa_mni)
         smri_rpa_native = rhino_utils.xform_points(mni_mri_t["trans"], mni_rpa_mni)
 
@@ -343,17 +356,18 @@ def coreg(
         # 2b) We can also optionally learn the best scaling to add to this affine xform,
         #     such that the sMRI-derived fids are scaled in size to better match the
         #     polhemus-derived fids.
-        #     This assumes that we trust the size (e.g. in mm) of the polhemus-derived fids,
-        #     but not the size of the sMRI-derived fids.
-        #     E.g. this might be the case if we do not trust the size (e.g. in mm) of the sMRI,
-        #     or if we are using a template sMRI that has not come from this subject.
+        #     This assumes that we trust the size (e.g. in mm) of the polhemus-derived
+        #     fids, but not the size of the sMRI-derived fids.
+        #     E.g. this might be the case if we do not trust the size (e.g. in mm) of
+        #     the sMRI, or if we are using a template sMRI that has not come from this
+        #     subject.
 
         # Note that smri_fid_native are the sMRI-derived fids in native space
         polhemus_fid_polhemus = np.concatenate(
             (
-                np.reshape(polhemus_nasion, [-1, 1]),
-                np.reshape(polhemus_rpa, [-1, 1]),
-                np.reshape(polhemus_lpa, [-1, 1]),
+                np.reshape(polhemus_nasion_polhemus, [-1, 1]),
+                np.reshape(polhemus_rpa_polhemus, [-1, 1]),
+                np.reshape(polhemus_lpa_polhemus, [-1, 1]),
             ),
             axis=1,
         )
@@ -368,7 +382,10 @@ def coreg(
 
         # Estimate the affine xform from native sMRI space to polhemus (head) space.
         # Optionally includes a scaling of the sMRI, captured by xform_native2scalednative
-        xform_scalednative2polhemus, xform_native2scalednative = rhino_utils.rigid_transform_3D(
+        (
+            xform_scalednative2polhemus,
+            xform_native2scalednative,
+        ) = rhino_utils.rigid_transform_3D(
             polhemus_fid_polhemus, smri_fid_native, compute_scaling=allow_smri_scaling
         )
 
@@ -380,24 +397,39 @@ def coreg(
         # - sMRI-derived fiducials
 
         # Scale sMRI and sMRI-derived mesh files by changing their sform
-        xform_nativeindex2native = rhino_utils._get_sform(surfaces_filenames["smri_file"])["trans"]
-        xform_nativeindex2scalednative = xform_native2scalednative @ xform_nativeindex2native
-        for file_name in {"smri_file",
-                          "bet_outskin_mesh_file",
-                          "bet_outskin_plus_nose_mesh_file",
-                          "bet_inskull_mesh_file",
-                          "bet_outskull_mesh_file"}:
+        xform_nativeindex2native = rhino_utils._get_sform(
+            surfaces_filenames["smri_file"]
+        )["trans"]
+        xform_nativeindex2scalednative = (
+            xform_native2scalednative @ xform_nativeindex2native
+        )
+        for file_name in {
+            "smri_file",
+            "bet_outskin_mesh_file",
+            "bet_outskin_plus_nose_mesh_file",
+            "bet_inskull_mesh_file",
+            "bet_outskull_mesh_file",
+        }:
             copyfile(surfaces_filenames[file_name], filenames[file_name])
-            rhino_utils.system_call('fslorient -setsform {} {}'.format(' '.join(map(str, xform_nativeindex2scalednative.flatten())), filenames[file_name]))
+            rhino_utils.system_call(
+                "fslorient -setsform {} {}".format(
+                    " ".join(map(str, xform_nativeindex2scalednative.flatten())),
+                    filenames[file_name],
+                )
+            )
 
         # Scale vtk meshes
         for mesh_fname, vtk_fname in zip(
-                {"bet_outskin_mesh_file",
+            {
+                "bet_outskin_mesh_file",
                 "bet_inskull_mesh_file",
-                "bet_outskull_mesh_file"},
-                {"bet_outskin_mesh_vtk_file",
-                 "bet_inskull_mesh_vtk_file",
-                 "bet_outskull_mesh_vtk_file"},
+                "bet_outskull_mesh_file",
+            },
+            {
+                "bet_outskin_mesh_vtk_file",
+                "bet_inskull_mesh_vtk_file",
+                "bet_outskull_mesh_vtk_file",
+            },
         ):
             rhino_utils._transform_vtk_mesh(
                 surfaces_filenames[vtk_fname],
@@ -417,10 +449,14 @@ def coreg(
         # 4) Now we can transform sMRI-derived headshape pnts into polhemus space:
 
         # get native (mri) voxel index to scaled native (mri) transform
-        xform_nativeindex2scalednative = rhino_utils._get_sform(outskin_mesh_file)["trans"]
+        xform_nativeindex2scalednative = rhino_utils._get_sform(outskin_mesh_file)[
+            "trans"
+        ]
 
         # put sMRI-derived headshape points into native space (in mm)
-        smri_headshape_nativeindex = rhino_utils.niimask2indexpointcloud(outskin_mesh_file)
+        smri_headshape_nativeindex = rhino_utils.niimask2indexpointcloud(
+            outskin_mesh_file
+        )
         smri_headshape_scalednative = rhino_utils.xform_points(
             xform_nativeindex2scalednative, smri_headshape_nativeindex
         )
@@ -446,12 +482,15 @@ def coreg(
             # Combined polhemus-derived headshape points and polhemus-derived fids,
             # with them both in polhemus space
             # These are the "source" points that will be moved around
-            polhemus_headshape_4icp = np.concatenate(
-                (polhemus_headshape, polhemus_fid_polhemus), axis=1
+            polhemus_headshape_polhemus_4icp = np.concatenate(
+                (polhemus_headshape_polhemus, polhemus_fid_polhemus), axis=1
             )
 
             xform_icp, err, e = rhino_utils.rhino_icp(
-                smri_headshape_polhemus, polhemus_headshape_4icp, 30, logger=logger
+                smri_headshape_polhemus,
+                polhemus_headshape_polhemus_4icp,
+                Ninits=30,
+                logger=logger
             )
 
         else:
@@ -459,7 +498,9 @@ def coreg(
             xform_icp = np.eye(4)
 
         # Create refined xforms using result from ICP
-        xform_scalednative2polhemus_refined = np.linalg.inv(xform_icp) @ xform_scalednative2polhemus
+        xform_scalednative2polhemus_refined = (
+            np.linalg.inv(xform_icp) @ xform_scalednative2polhemus
+        )
 
         # Put sMRI-derived fiducials into refined polhemus space
         smri_nasion_polhemus = rhino_utils.xform_points(
@@ -478,18 +519,24 @@ def coreg(
         # Save xforms in MNE format in mm
 
         # Save xform from head to mri for the scaled mri
-        xform_scalednative2polhemus_refined_copy = np.copy(xform_scalednative2polhemus_refined)
+        xform_scalednative2polhemus_refined_copy = np.copy(
+            xform_scalednative2polhemus_refined
+        )
         head_scaledmri_t = Transform(
             "head", "mri", np.linalg.inv(xform_scalednative2polhemus_refined_copy)
         )
-        write_trans(filenames["head_scaledmri_t_file"], head_scaledmri_t, overwrite=True)
+        write_trans(
+            filenames["head_scaledmri_t_file"], head_scaledmri_t, overwrite=True
+        )
 
-        # Save xform from head to mri for the unscaled mri, this is needed if we later want to map
-        # back into MNI space from head space following source recon, i.e. by combining this xform with
-        # surfaces_filenames['mni_mri_t_file']
-        xform_native2polhemus_refined = np.linalg.inv(xform_icp) @  \
-                                        xform_scalednative2polhemus @ \
-                                        xform_native2scalednative
+        # Save xform from head to mri for the unscaled mri, this is needed if we later
+        # want to map back into MNI space from head space following source recon, i.e.
+        # by combining this xform with surfaces_filenames['mni_mri_t_file']
+        xform_native2polhemus_refined = (
+            np.linalg.inv(xform_icp)
+            @ xform_scalednative2polhemus
+            @ xform_native2scalednative
+        )
         xform_native2polhemus_refined_copy = np.copy(xform_native2polhemus_refined)
         head_mri_t = Transform(
             "head", "mri", np.linalg.inv(xform_native2polhemus_refined_copy)
@@ -499,7 +546,9 @@ def coreg(
         # Save xform from mrivoxel to mri
         nativeindex_scalednative_t = np.copy(xform_nativeindex2scalednative)
         mrivoxel_scaledmri_t = Transform("mri_voxel", "mri", nativeindex_scalednative_t)
-        write_trans(filenames["mrivoxel_scaledmri_t_file"], mrivoxel_scaledmri_t, overwrite=True)
+        write_trans(
+            filenames["mrivoxel_scaledmri_t_file"], mrivoxel_scaledmri_t, overwrite=True
+        )
 
         # save sMRI derived fids in mm in polhemus space
         np.savetxt(filenames["smri_nasion_file"], smri_nasion_polhemus)
@@ -507,18 +556,21 @@ def coreg(
         np.savetxt(filenames["smri_lpa_file"], smri_lpa_polhemus)
 
     # -------------------------------------------------------------------------
-    # Create sMRI-derived freesurfer meshes in native/mri space in mm, for use by forward modelling
+    # Create sMRI-derived freesurfer meshes in native/mri space in mm, for use
+    # by forward modelling
     nativeindex_scalednative_t = np.copy(xform_nativeindex2scalednative)
     mrivoxel_scaledmri_t = Transform("mri_voxel", "mri", nativeindex_scalednative_t)
-    rhino_utils._create_freesurfer_meshes_from_bet_surfaces(filenames, mrivoxel_scaledmri_t['trans'])
+    rhino_utils._create_freesurfer_meshes_from_bet_surfaces(
+        filenames, mrivoxel_scaledmri_t["trans"]
+    )
 
     log_or_print(
-        "rhino.coreg_display(\"{}\", \"{}\") can be used to check the result".format(
+        'rhino.coreg_display("{}", "{}") can be used to check the result'.format(
             subjects_dir, subject
         ),
-        logger
+        logger,
     )
-    log_or_print('*** OSL RHINO COREGISTRATION COMPLETE ***', logger)
+    log_or_print("*** OSL RHINO COREGISTRATION COMPLETE ***", logger)
 
 
 def coreg_metrics(subjects_dir, subject):
@@ -553,19 +605,27 @@ def coreg_metrics(subjects_dir, subject):
 
     # Load polhemus fidcials, these are in mm
     if op.isfile(polhemus_nasion_file):
-        polhemus_nasion = np.loadtxt(polhemus_nasion_file)
-        polhemus_nasion_meg = rhino_utils.xform_points(head_trans["trans"], polhemus_nasion)
+        polhemus_nasion_polhemus = np.loadtxt(polhemus_nasion_file)
+        polhemus_nasion_meg = rhino_utils.xform_points(
+            head_trans["trans"], polhemus_nasion_polhemus
+        )
     if op.isfile(polhemus_rpa_file):
-        polhemus_rpa = np.loadtxt(polhemus_rpa_file)
-        polhemus_rpa_meg = rhino_utils.xform_points(head_trans["trans"], polhemus_rpa)
+        polhemus_rpa_polhemus = np.loadtxt(polhemus_rpa_file)
+        polhemus_rpa_meg = rhino_utils.xform_points(
+            head_trans["trans"], polhemus_rpa_polhemus
+        )
     if op.isfile(polhemus_lpa_file):
-        polhemus_lpa = np.loadtxt(polhemus_lpa_file)
-        polhemus_lpa_meg = rhino_utils.xform_points(head_trans["trans"], polhemus_lpa)
+        polhemus_lpa_polhemus = np.loadtxt(polhemus_lpa_file)
+        polhemus_lpa_meg = rhino_utils.xform_points(
+            head_trans["trans"], polhemus_lpa_polhemus
+        )
 
     # Load sMRI derived fids, these are in mm in polhemus/head space
     if op.isfile(smri_nasion_file):
         smri_nasion_polhemus = np.loadtxt(smri_nasion_file)
-        smri_nasion_meg = rhino_utils.xform_points(head_trans["trans"], smri_nasion_polhemus)
+        smri_nasion_meg = rhino_utils.xform_points(
+            head_trans["trans"], smri_nasion_polhemus
+        )
     if op.isfile(smri_rpa_file):
         smri_rpa_polhemus = np.loadtxt(smri_rpa_file)
         smri_rpa_meg = rhino_utils.xform_points(head_trans["trans"], smri_rpa_polhemus)
@@ -707,23 +767,29 @@ def coreg_display(
         polhemus_nasion_meg = None
         if op.isfile(polhemus_nasion_file):
             # Load, these are in mm
-            polhemus_nasion = np.loadtxt(polhemus_nasion_file)
+            polhemus_nasion_polhemus = np.loadtxt(polhemus_nasion_file)
             # Move to MEG (device) space
-            polhemus_nasion_meg = rhino_utils.xform_points(head_trans["trans"], polhemus_nasion)
+            polhemus_nasion_meg = rhino_utils.xform_points(
+                head_trans["trans"], polhemus_nasion_polhemus
+            )
 
         polhemus_rpa_meg = None
         if op.isfile(polhemus_rpa_file):
             # Load, these are in mm
-            polhemus_rpa = np.loadtxt(polhemus_rpa_file)
+            polhemus_rpa_polhemus = np.loadtxt(polhemus_rpa_file)
             # Move to MEG (device) space
-            polhemus_rpa_meg = rhino_utils.xform_points(head_trans["trans"], polhemus_rpa)
+            polhemus_rpa_meg = rhino_utils.xform_points(
+                head_trans["trans"], polhemus_rpa_polhemus
+            )
 
         polhemus_lpa_meg = None
         if op.isfile(polhemus_lpa_file):
             # Load, these are in mm
-            polhemus_lpa = np.loadtxt(polhemus_lpa_file)
+            polhemus_lpa_polhemus = np.loadtxt(polhemus_lpa_file)
             # Move to MEG (device) space
-            polhemus_lpa_meg = rhino_utils.xform_points(head_trans["trans"], polhemus_lpa)
+            polhemus_lpa_meg = rhino_utils.xform_points(
+                head_trans["trans"], polhemus_lpa_polhemus
+            )
 
         # Load sMRI derived fids, these are in mm in polhemus/head space
 
@@ -732,28 +798,35 @@ def coreg_display(
             # Load, these are in mm
             smri_nasion_polhemus = np.loadtxt(smri_nasion_file)
             # Move to MEG (device) space
-            smri_nasion_meg = rhino_utils.xform_points(head_trans["trans"], smri_nasion_polhemus)
+            smri_nasion_meg = rhino_utils.xform_points(
+                head_trans["trans"], smri_nasion_polhemus
+            )
 
         smri_rpa_meg = None
         if op.isfile(smri_rpa_file):
             # Load, these are in mm
             smri_rpa_polhemus = np.loadtxt(smri_rpa_file)
             # Move to MEG (device) space
-            smri_rpa_meg = rhino_utils.xform_points(head_trans["trans"], smri_rpa_polhemus)
+            smri_rpa_meg = rhino_utils.xform_points(
+                head_trans["trans"], smri_rpa_polhemus
+            )
 
         smri_lpa_meg = None
         if op.isfile(smri_lpa_file):
             # Load, these are in mm
             smri_lpa_polhemus = np.loadtxt(smri_lpa_file)
             # Move to MEG (device) space
-            smri_lpa_meg = rhino_utils.xform_points(head_trans["trans"], smri_lpa_polhemus)
+            smri_lpa_meg = rhino_utils.xform_points(
+                head_trans["trans"], smri_lpa_polhemus
+            )
 
     if display_headshape_pnts:
         polhemus_headshape_meg = None
         if op.isfile(polhemus_headshape_file):
             polhemus_headshape_polhemus = np.loadtxt(polhemus_headshape_file)
-            polhemus_headshape_meg = rhino_utils.xform_points(head_trans['trans'],
-                                                          polhemus_headshape_polhemus)
+            polhemus_headshape_meg = rhino_utils.xform_points(
+                head_trans["trans"], polhemus_headshape_polhemus
+            )
 
     # -------------------------------------------------------------------------
     # Setup MEG sensors
@@ -762,12 +835,19 @@ def coreg_display(
 
         meg_picks = pick_types(info, meg=True, ref_meg=False, exclude=())
 
-        coil_transs = [_loc_to_coil_trans(info['chs'][pick]['loc'])
-                       for pick in meg_picks]
-        coils = _create_meg_coils([info['chs'][pick] for pick in meg_picks],
-                                  acc='normal')
+        coil_transs = [
+            _loc_to_coil_trans(info["chs"][pick]["loc"]) for pick in meg_picks
+        ]
+        coils = _create_meg_coils(
+            [info["chs"][pick] for pick in meg_picks], acc="normal"
+        )
 
-        meg_rrs, meg_tris, meg_sensor_locs, meg_sensor_oris = list(), list(), list(), list()
+        meg_rrs, meg_tris, meg_sensor_locs, meg_sensor_oris = (
+            list(),
+            list(),
+            list(),
+            list(),
+        )
         offset = 0
         for coil, coil_trans in zip(coils, coil_transs):
             rrs, tris = _sensor_shape(coil)
@@ -789,18 +869,21 @@ def coreg_display(
             offset += len(meg_rrs[-1])
 
         if len(meg_rrs) == 0:
-            log_or_print('MEG sensors not found. Cannot plot MEG locations.', logger)
+            log_or_print("MEG sensors not found. Cannot plot MEG locations.", logger)
         else:
             meg_rrs = apply_trans(meg_trans, np.concatenate(meg_rrs, axis=0))
-            meg_sensor_locs = apply_trans(meg_trans, np.concatenate(meg_sensor_locs, axis=0))
-            meg_sensor_oris = apply_trans(meg_trans, np.concatenate(meg_sensor_oris, axis=0))
+            meg_sensor_locs = apply_trans(
+                meg_trans, np.concatenate(meg_sensor_locs, axis=0)
+            )
+            meg_sensor_oris = apply_trans(
+                meg_trans, np.concatenate(meg_sensor_oris, axis=0)
+            )
             meg_tris = np.concatenate(meg_tris, axis=0)
 
         # convert to mm
         meg_rrs = meg_rrs * 1000
         meg_sensor_locs = meg_sensor_locs * 1000
         meg_sensor_oris = meg_sensor_oris * 1000
-
 
     # -------------------------------------------------------------------------
     # Do plots
@@ -856,7 +939,11 @@ def coreg_display(
             # Polhemus-derived nasion, rpa, lpa
             if polhemus_nasion_meg is not None and len(polhemus_nasion_meg.T) > 0:
                 color, scale, alpha = "pink", 0.012, 1.5
-                for data in [polhemus_nasion_meg.T, polhemus_rpa_meg.T, polhemus_lpa_meg.T]:
+                for data in [
+                    polhemus_nasion_meg.T,
+                    polhemus_rpa_meg.T,
+                    polhemus_lpa_meg.T,
+                ]:
                     renderer.sphere(
                         center=data,
                         color=color,
@@ -865,7 +952,9 @@ def coreg_display(
                         backface_culling=True,
                     )
             else:
-                log_or_print("There are no polhemus derived fiducials to display", logger)
+                log_or_print(
+                    "There are no polhemus derived fiducials to display", logger
+                )
 
         if display_sensors:
             # Sensors
@@ -879,10 +968,19 @@ def coreg_display(
         if display_sensor_oris:
 
             if len(meg_rrs) > 0:
-                color, scale = (0., 0.25, 0.5), 15
-                renderer.quiver3d(x=meg_sensor_locs[:, 0], y=meg_sensor_locs[:, 1], z=meg_sensor_locs[:, 2],
-                      u=meg_sensor_oris[:, 0], v=meg_sensor_oris[:, 1], w=meg_sensor_oris[:, 2],
-                      color=color, mode='arrow', scale=scale, backface_culling=False)
+                color, scale = (0.0, 0.25, 0.5), 15
+                renderer.quiver3d(
+                    x=meg_sensor_locs[:, 0],
+                    y=meg_sensor_locs[:, 1],
+                    z=meg_sensor_locs[:, 2],
+                    u=meg_sensor_oris[:, 0],
+                    v=meg_sensor_oris[:, 1],
+                    w=meg_sensor_oris[:, 2],
+                    color=color,
+                    mode="arrow",
+                    scale=scale,
+                    backface_culling=False,
+                )
 
         if display_outskin or display_outskin_with_nose:
 
@@ -903,7 +1001,10 @@ def coreg_display(
             surf_smri = dict(rr=coords_meg, tris=faces)
 
             renderer.surface(
-                surface=surf_smri, color=(0, 0.7, 0.7), opacity=0.4, backface_culling=False
+                surface=surf_smri,
+                color=(0, 0.7, 0.7),
+                opacity=0.4,
+                backface_culling=False,
             )
 
         renderer.set_camera(
@@ -952,9 +1053,16 @@ def coreg_display(
 
         if display_sensor_oris:
             if len(meg_rrs) > 0:
-                ax.quiver(meg_sensor_locs[:, 0], meg_sensor_locs[:, 1], meg_sensor_locs[:, 2],
-                      meg_sensor_oris[:, 0], meg_sensor_oris[:, 1], meg_sensor_oris[:, 2],
-                      arrow_length_ratio=.3, length=1.5)
+                ax.quiver(
+                    meg_sensor_locs[:, 0],
+                    meg_sensor_locs[:, 1],
+                    meg_sensor_locs[:, 2],
+                    meg_sensor_oris[:, 0],
+                    meg_sensor_oris[:, 1],
+                    meg_sensor_oris[:, 2],
+                    arrow_length_ratio=0.3,
+                    length=1.5,
+                )
 
         if display_outskin or display_outskin_with_nose:
             color, scale, alpha, marker = (0, 0.7, 0.7), 4, 0.3, "o"
@@ -1002,7 +1110,9 @@ def coreg_display(
                         alpha=alpha,
                     )
             else:
-                log_or_print("There are no structural MRI derived fiducials to plot", logger)
+                log_or_print(
+                    "There are no structural MRI derived fiducials to plot", logger
+                )
 
             if polhemus_nasion_meg is not None and len(polhemus_nasion_meg) > 0:
                 color, scale, alpha, marker = (1, 0.5, 0.7), 400, 1, "."
@@ -1076,12 +1186,8 @@ def bem_display(
 
     filenames = get_coreg_filenames(subjects_dir, subject)
 
-    bet_outskin_plus_nose_mesh_file = filenames[
-        "bet_outskin_plus_nose_mesh_file"
-    ]
-    bet_outskin_plus_nose_surf_file = filenames[
-        "bet_outskin_plus_nose_surf_file"
-    ]
+    bet_outskin_plus_nose_mesh_file = filenames["bet_outskin_plus_nose_mesh_file"]
+    bet_outskin_plus_nose_surf_file = filenames["bet_outskin_plus_nose_surf_file"]
     bet_outskin_mesh_file = filenames["bet_outskin_mesh_file"]
     bet_outskin_mesh_vtk_file = filenames["bet_outskin_mesh_vtk_file"]
     bet_outskin_surf_file = filenames["bet_outskin_surf_file"]
@@ -1173,7 +1279,9 @@ def bem_display(
         # Move from head space to MEG (device) space
         src_pnts = rhino_utils.xform_points(head_trans["trans"], src_pnts.T).T
 
-        log_or_print("BEM surface: number of dipoles = {}".format(src_pnts.shape[0]), logger)
+        log_or_print(
+            "BEM surface: number of dipoles = {}".format(src_pnts.shape[0]), logger
+        )
 
     # -------------------------------------------------------------------------
     # Do plots

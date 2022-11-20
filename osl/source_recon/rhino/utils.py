@@ -27,11 +27,13 @@ from numba.types import intc, intp, float64, voidptr
 from numba.types import CPointer
 
 import logging
+
 logging.getLogger("numba").setLevel(logging.WARNING)
 
 from osl.source_recon.beamforming import transform_recon_timeseries
 from osl.utils.logger import log_or_print
 from osl.utils import soft_import
+
 
 def system_call(cmd, verbose=False):
     if verbose:
@@ -171,7 +173,6 @@ def _get_vol_info_from_nii(mri):
         mri_height=dims[1],
         mri_depth=dims[2],
         mri_volume_name=mri,
-
     )
     return out
 
@@ -277,7 +278,7 @@ def _binary_majority3d(img):
     return imgout
 
 
-def rigid_transform_3D(B, A, compute_scaling = False):
+def rigid_transform_3D(B, A, compute_scaling=False):
     """Calculate affine transform from points in A to point in B.
 
     Parameters
@@ -328,7 +329,6 @@ def rigid_transform_3D(B, A, compute_scaling = False):
     # if linalg.matrix_rank(H) < 3:
     #    raise ValueError("rank of H = {}, expecting 3".format(linalg.matrix_rank(H)))
 
-
     # find rotation
     U, S, Vt = np.linalg.svd(H)
     R = Vt.T @ U.T
@@ -345,20 +345,21 @@ def rigid_transform_3D(B, A, compute_scaling = False):
         # Bm = C @ R @ Am + error
         # where C = c I is a scalar scaling
         RAm = R @ Am
-        U2, S2, V2t = np.linalg.svd( Bm @ np.linalg.pinv(RAm) )
+        U2, S2, V2t = np.linalg.svd(Bm @ np.linalg.pinv(RAm))
 
         # take average of eigenvalues, accounting for the rank
-        S2 = np.identity(3)*np.mean(S2[S2 > 1e-9])
+        S2 = np.identity(3) * np.mean(S2[S2 > 1e-9])
 
         scaling_xform[0:3, 0:3] = S2
 
-    t = - R @ centroid_A + centroid_B
+    t = -R @ centroid_A + centroid_B
 
     xform = np.eye(4)
     xform[0:3, 0:3] = R
     xform[0:3, -1] = np.reshape(t, (1, -1))
 
     return xform, scaling_xform
+
 
 def xform_points(xform, pnts):
     """Applies homogenous linear transformation to an array of 3D coordinates.
@@ -609,8 +610,12 @@ def rhino_icp(
                 plt.figure(frameon=False)
                 ax = plt.axes(projection="3d")
                 ax.scatter(
-                    data1[0, 0:-1:10], data1[1, 0:-1:10], data1[2, 0:-1:10], c="blue",
-                    marker=".", s=1,
+                    data1[0, 0:-1:10],
+                    data1[1, 0:-1:10],
+                    data1[2, 0:-1:10],
+                    c="blue",
+                    marker=".",
+                    s=1,
                 )
                 ax.scatter(
                     data2[0, :], data2[1, :], data2[2, :], c="red", marker="o", s=5
@@ -619,8 +624,12 @@ def rhino_icp(
                     data2r[0, :], data2r[1, :], data2r[2, :], c="green", marker="o", s=5
                 )
                 ax.scatter(
-                    data2r_icp[0, :], data2r_icp[1, :], data2r_icp[2, :], c="yellow",
-                    marker="o", s=5,
+                    data2r_icp[0, :],
+                    data2r_icp[1, :],
+                    data2r_icp[2, :],
+                    c="yellow",
+                    marker="o",
+                    s=5,
                 )
                 plt.show()
                 plt.draw()
@@ -675,7 +684,7 @@ def _get_vtk_mesh_native(vtk_mesh_file, nii_mesh_file):
     num_rrs = int(data.iloc[3, 1])
 
     # these will be in voxel index space
-    rrs_flirtcoords = data.iloc[4: num_rrs + 4, 0:3].to_numpy().astype(np.float64)
+    rrs_flirtcoords = data.iloc[4 : num_rrs + 4, 0:3].to_numpy().astype(np.float64)
 
     # move from flirtcoords mm to mri mm (native) space
     xform_flirtcoords2nii = _get_flirtcoords2native_xform(nii_mesh_file)
@@ -683,7 +692,7 @@ def _get_vtk_mesh_native(vtk_mesh_file, nii_mesh_file):
 
     num_tris = int(data.iloc[num_rrs + 4, 1])
     tris_nii = (
-        data.iloc[num_rrs + 5: num_rrs + 5 + num_tris, 1:4].to_numpy().astype(int)
+        data.iloc[num_rrs + 5 : num_rrs + 5 + num_tris, 1:4].to_numpy().astype(int)
     )
 
     return rrs_nii, tris_nii
@@ -766,7 +775,7 @@ def _transform_vtk_mesh(
     data = pd.read_csv(vtk_mesh_file_in, delim_whitespace=True)
 
     num_rrs = int(data.iloc[3, 1])
-    data.iloc[4: num_rrs + 4, 0:3] = rrs_out
+    data.iloc[4 : num_rrs + 4, 0:3] = rrs_out
 
     # write new vtk file
     data.to_csv(out_vtk_file, sep=" ", index=False)
@@ -1022,20 +1031,26 @@ def _create_freesurfer_meshes_from_bet_surfaces(filenames, xform_mri_voxel2mri):
     # Create sMRI-derived freesurfer surfaces in native/mri space in mm,
     # for use by forward modelling
 
-    _create_freesurfer_mesh_from_bet_surface(infile=filenames['bet_inskull_mesh_vtk_file'],
-                                       surf_outfile=filenames['bet_inskull_surf_file'],
-                                       nii_mesh_file=filenames['bet_inskull_mesh_file'],
-                                       xform_mri_voxel2mri=xform_mri_voxel2mri)
+    _create_freesurfer_mesh_from_bet_surface(
+        infile=filenames["bet_inskull_mesh_vtk_file"],
+        surf_outfile=filenames["bet_inskull_surf_file"],
+        nii_mesh_file=filenames["bet_inskull_mesh_file"],
+        xform_mri_voxel2mri=xform_mri_voxel2mri,
+    )
 
-    _create_freesurfer_mesh_from_bet_surface(infile=filenames['bet_outskull_mesh_vtk_file'],
-                                       surf_outfile=filenames['bet_outskull_surf_file'],
-                                       nii_mesh_file=filenames['bet_outskull_mesh_file'],
-                                       xform_mri_voxel2mri=xform_mri_voxel2mri)
+    _create_freesurfer_mesh_from_bet_surface(
+        infile=filenames["bet_outskull_mesh_vtk_file"],
+        surf_outfile=filenames["bet_outskull_surf_file"],
+        nii_mesh_file=filenames["bet_outskull_mesh_file"],
+        xform_mri_voxel2mri=xform_mri_voxel2mri,
+    )
 
-    _create_freesurfer_mesh_from_bet_surface(infile=filenames['bet_outskin_mesh_vtk_file'],
-                                       surf_outfile=filenames['bet_outskin_surf_file'],
-                                       nii_mesh_file=filenames['bet_outskin_mesh_file'],
-                                       xform_mri_voxel2mri=xform_mri_voxel2mri)
+    _create_freesurfer_mesh_from_bet_surface(
+        infile=filenames["bet_outskin_mesh_vtk_file"],
+        surf_outfile=filenames["bet_outskin_surf_file"],
+        nii_mesh_file=filenames["bet_outskin_mesh_file"],
+        xform_mri_voxel2mri=xform_mri_voxel2mri,
+    )
 
 
 def _create_freesurfer_mesh_from_bet_surface(
@@ -1091,7 +1106,9 @@ def _create_freesurfer_mesh_from_bet_surface(
         # or you might want to flip the normals to make them point outward, not mandatory
         pcd.normals = o3d.utility.Vector3dVector(-np.asarray(pcd.normals))
 
-        mesh = o3d.geometry.TriangleMesh.create_from_point_cloud_poisson(pcd, depth=8)[0]
+        mesh = o3d.geometry.TriangleMesh.create_from_point_cloud_poisson(pcd, depth=8)[
+            0
+        ]
 
         # mesh = mesh.simplify_quadric_decimation(nii_nativeindex.shape[1])
 
@@ -1124,7 +1141,6 @@ def _create_freesurfer_mesh_from_bet_surface(
         raise ValueError("Invalid infile. Needs to be a .nii.gz or .vtk file")
 
 
-
 def _transform_bet_surfaces(flirt_xform_file, mne_xform_file, filenames, smri_file):
 
     # Transform betsurf mask/mesh using passed in flirt transform and mne transform
@@ -1132,10 +1148,10 @@ def _transform_bet_surfaces(flirt_xform_file, mne_xform_file, filenames, smri_fi
         # xform mask
         system_call(
             "flirt -interp nearestneighbour -in {} -ref {} -applyxfm -init {} -out {}".format(
-            op.join(filenames["basedir"], "flirt_" + mesh_name + ".nii.gz"),
-            smri_file,
-            flirt_xform_file,
-            op.join(filenames["basedir"], mesh_name),
+                op.join(filenames["basedir"], "flirt_" + mesh_name + ".nii.gz"),
+                smri_file,
+                flirt_xform_file,
+                op.join(filenames["basedir"], mesh_name),
             )
         )
 
