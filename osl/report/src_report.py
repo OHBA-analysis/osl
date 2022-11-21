@@ -53,8 +53,9 @@ def gen_html_data(config, src_dir, subject, reportdir, logger=None):
         # Load the data object from last time
         data = pickle.load(open(f"{reportdir}/{subject}/data.pkl", "rb"))
 
-        # Update the config based on this run
-        data["config"] = update_config(data["config"], config)
+        if "config" in data:
+            # Update the config based on this run
+            data["config"] = update_config(data["config"], config)
 
     # Otherwise, this is the first time this has been called
     else:

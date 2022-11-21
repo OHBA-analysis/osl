@@ -87,8 +87,12 @@ def detect_badsegments(
         chinds = mne.pick_types(raw.info, meg=True, ref_meg=ref_meg, exclude='bads')
     elif picks == "eeg":
         chinds = mne.pick_types(raw.info, eeg=True, ref_meg=ref_meg, exclude='bads')
+    elif picks == "eog":
+        chinds = mne.pick_types(raw.info, eog=True, ref_meg=ref_meg, exclude='bads')
+    elif picks == "ecg":
+        chinds = mne.pick_types(raw.info, ecg=True, ref_meg=ref_meg, exclude='bads')
     else:
-        raise ValueError("picks needs to be specified.")
+        raise NotImplementedError(f"picks={picks} not available.")
 
     if mode is None:
         if detect_zeros:
@@ -170,8 +174,12 @@ def detect_badchannels(raw, picks, ref_meg="auto", significance_level=0.05):
         chinds = mne.pick_types(raw.info, meg=True, ref_meg=ref_meg, exclude='bads')
     elif picks == "eeg":
         chinds = mne.pick_types(raw.info, eeg=True, ref_meg=ref_meg, exclude='bads')
+    elif picks == "eog":
+        chinds = mne.pick_types(raw.info, eog=True, ref_meg=ref_meg, exclude='bads')
+    elif picks == "ecg":
+        chinds = mne.pick_types(raw.info, ecg=True, ref_meg=ref_meg, exclude='bads')
     else:
-        raise ValueError("picks must be specified.")
+        raise NotImplementedError(f"picks={picks} not available.")
     ch_names = np.array(raw.ch_names)[chinds]
 
     bdinds = sails.utils.detect_artefacts(
@@ -217,19 +225,17 @@ def drop_bad_epochs(
     }
 
     if (picks == "mag") or (picks == "grad"):
-        chinds = mne.pick_types(
-            epochs.info, meg=picks, ref_meg=ref_meg, exclude='bads'
-        )
+        chinds = mne.pick_types(epochs.info, meg=picks, ref_meg=ref_meg, exclude='bads')
     elif picks == "meg":
-        chinds = mne.pick_types(
-            epochs.info, meg=True, ref_meg=ref_meg, exclude='bads'
-        )
+        chinds = mne.pick_types(epochs.info, meg=True, ref_meg=ref_meg, exclude='bads')
     elif picks == "eeg":
-        chinds = mne.pick_types(
-            epochs.info, eeg=True, ref_meg=ref_meg, exclude='bads'
-        )
+        chinds = mne.pick_types(epochs.info, eeg=True, ref_meg=ref_meg, exclude='bads')
+    elif picks == "eog":
+        chinds = mne.pick_types(epochs.info, eog=True, ref_meg=ref_meg, exclude='bads')
+    elif picks == "ecg":
+        chinds = mne.pick_types(epochs.info, ecg=True, ref_meg=ref_meg, exclude='bads')
     else:
-        raise ValueError("picks needs to be specified.")
+        raise NotImplementedError(f"picks={picks} not available.")
 
     if mode is None:
         X = epochs.get_data(picks=chinds)

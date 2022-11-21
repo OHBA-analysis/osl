@@ -51,7 +51,7 @@ def extract_polhemus_from_info(
     polhemus_lpa = []
     polhemus_nasion = []
 
-    # Read info from fif file
+    # Read info from fif file
     info = read_info(fif_file)
     for dig in info["dig"]:
 

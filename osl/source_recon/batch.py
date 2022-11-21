@@ -321,7 +321,9 @@ def run_src_batch(
     else:
         flags = [pool_func(*aa) for aa in args]
 
-    logger.info("Processed {0}/{1} files successfully".format(np.sum(flags), len(flags)))
+    logger.info(
+        "Processed {0}/{1} files successfully".format(int(np.sum(flags)), len(flags))
+    )
 
     # Generate individual subject HTML report
     src_report.gen_html_page(reportdir)

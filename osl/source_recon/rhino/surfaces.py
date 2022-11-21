@@ -22,6 +22,7 @@ from mne.transforms import write_trans, Transform
 import osl.source_recon.rhino.utils as rhino_utils
 from osl.utils.logger import log_or_print
 
+
 def get_surfaces_filenames(subjects_dir, subject):
     """
     Generates a dict of files generated and used by rhino.compute_surfaces.
@@ -53,18 +54,17 @@ def get_surfaces_filenames(subjects_dir, subject):
         "smri_file": op.join(basedir, "smri.nii.gz"),
         "mni2mri_flirt_xform_file": op.join(basedir, "mni2mri_flirt_xform_file.txt"),
         "mni_mri_t_file": op.join(basedir, "mni_mri-trans.fif"),
-
-        "bet_outskin_mesh_vtk_file": op.join(basedir, "outskin_mesh.vtk"), # BET output
-        "bet_inskull_mesh_vtk_file": op.join(basedir, "inskull_mesh.vtk"), # BET output
-        "bet_outskull_mesh_vtk_file": op.join(basedir, "outskull_mesh.vtk"), # BET output
-
+        "bet_outskin_mesh_vtk_file": op.join(basedir, "outskin_mesh.vtk"),  # BET output
+        "bet_inskull_mesh_vtk_file": op.join(basedir, "inskull_mesh.vtk"),  # BET output
+        "bet_outskull_mesh_vtk_file": op.join(
+            basedir, "outskull_mesh.vtk"
+        ),  # BET output
         "bet_outskin_mesh_file": op.join(basedir, "outskin_mesh.nii.gz"),
         "bet_outskin_plus_nose_mesh_file": op.join(
             basedir, "outskin_plus_nose_mesh.nii.gz"
         ),
         "bet_inskull_mesh_file": op.join(basedir, "inskull_mesh.nii.gz"),
         "bet_outskull_mesh_file": op.join(basedir, "outskull_mesh.nii.gz"),
-
         "std_brain": op.join(
             os.environ["FSLDIR"],
             "data",
@@ -216,7 +216,9 @@ def compute_surfaces(
     if std_orient != "RADIOLOGICAL":
         raise ValueError(
             "Orientation of standard brain must be RADIOLOGICAL, \
-please check output of:\n fslorient -orient {}".format(filenames["std_brain"])
+please check output of:\n fslorient -orient {}".format(
+                filenames["std_brain"]
+            )
         )
 
     # We will assume orientation of sMRI brain is RADIOLOGICAL
@@ -226,7 +228,9 @@ please check output of:\n fslorient -orient {}".format(filenames["std_brain"])
     if smri_orient != "RADIOLOGICAL" and smri_orient != "NEUROLOGICAL":
         raise ValueError(
             "Cannot determine orientation of subject brain, \
-please check output of:\n fslorient -orient {}".format(filenames["smri_file"])
+please check output of:\n fslorient -orient {}".format(
+                filenames["smri_file"]
+            )
         )
 
     # if orientation is not RADIOLOGICAL then force it to be RADIOLOGICAL
@@ -240,10 +244,12 @@ please check output of:\n fslorient -orient {}".format(filenames["smri_file"])
         "You can use the following call to check the passed in structural MRI is appropriate,",
         logger,
     )
-    log_or_print("including checking that the L-R, S-I, A-P labels are sensible:", logger)
+    log_or_print(
+        "including checking that the L-R, S-I, A-P labels are sensible:", logger
+    )
     log_or_print("In Python:", logger)
     log_or_print(
-        "fsleyes(\"{}\", \"{}\")".format(filenames["smri_file"], filenames["std_brain"]),
+        'fsleyes("{}", "{}")'.format(filenames["smri_file"], filenames["std_brain"]),
         logger,
     )
     log_or_print("From the cmd line:", logger)
@@ -274,9 +280,7 @@ please check output of:\n fslorient -orient {}".format(filenames["smri_file"])
 
     # Apply mri2mniaxes xform to smri to get smri_mniaxes, which means sMRIs
     # voxel indices axes are aligned to be the same as MNI's
-    flirt_smri_mniaxes_file = op.join(
-        filenames["basedir"], "flirt_smri_mniaxes.nii.gz"
-    )
+    flirt_smri_mniaxes_file = op.join(filenames["basedir"], "flirt_smri_mniaxes.nii.gz")
     rhino_utils.system_call(
         "flirt -in {} -ref {} -applyxfm -init {} -out {}".format(
             filenames["smri_file"],
@@ -320,9 +324,7 @@ please check output of:\n fslorient -orient {}".format(filenames["smri_file"])
     # to the MNI standard brain
 
     flirt_mniaxes2mni_file = op.join(filenames["basedir"], "flirt_mniaxes2mni.txt")
-    flirt_smri_mni_bet_file = op.join(
-        filenames["basedir"], "flirt_smri_mni_bet.nii.gz"
-    )
+    flirt_smri_mni_bet_file = op.join(filenames["basedir"], "flirt_smri_mni_bet.nii.gz")
     rhino_utils.system_call(
         "flirt -in {} -ref {} -omat {} -o {}".format(
             flirt_smri_mniaxes_bet_file,
@@ -345,7 +347,7 @@ please check output of:\n fslorient -orient {}".format(filenames["smri_file"])
     )
 
     # and also calculate its inverse, from MNI to mri
-    mni2mri_flirt_xform_file = filenames['mni2mri_flirt_xform_file']
+    mni2mri_flirt_xform_file = filenames["mni2mri_flirt_xform_file"]
 
     rhino_utils.system_call(
         "convert_xfm -omat {}  -inverse {}".format(
@@ -436,9 +438,7 @@ please check output of:\n fslorient -orient {}".format(filenames["smri_file"])
     )
 
     # move MRI to MNI big FOV space and load in
-    flirt_smri_mni_bigfov_file = op.join(
-        filenames["basedir"], "flirt_smri_mni_bigfov"
-    )
+    flirt_smri_mni_bigfov_file = op.join(filenames["basedir"], "flirt_smri_mni_bigfov")
     rhino_utils.system_call(
         "flirt -in {} -ref {} -applyxfm -init {} -out {}".format(
             filenames["smri_file"],
@@ -603,11 +603,12 @@ please check output of:\n fslorient -orient {}".format(filenames["smri_file"])
     # 7) Output surfaces in sMRI(native) space
 
     # Transform betsurf output mask/mesh output from MNI to sMRI space
-    rhino_utils._transform_bet_surfaces(mni2mri_flirt_xform_file,
-                                        filenames["mni_mri_t_file"],
-                                        filenames,
-                                        filenames["smri_file"],
-                                        )
+    rhino_utils._transform_bet_surfaces(
+        mni2mri_flirt_xform_file,
+        filenames["mni_mri_t_file"],
+        filenames,
+        filenames["smri_file"],
+    )
 
     # -------------------------------------------------------------------------
     # Write a file to indicate RHINO has been run
@@ -626,8 +627,12 @@ please check output of:\n fslorient -orient {}".format(filenames["smri_file"])
             "rm -f {}".format(op.join(filenames["basedir"], "flirt*"))
         )
 
-    log_or_print("rhino.surfaces_display(\"{}\", \"{}\") can be used to check the result".format(
-        subjects_dir, subject), logger)
+    log_or_print(
+        'rhino.surfaces_display("{}", "{}") can be used to check the result'.format(
+            subjects_dir, subject
+        ),
+        logger,
+    )
     log_or_print("*** OSL RHINO COMPUTE SURFACES COMPLETE ***", logger)
 
 
@@ -650,7 +655,6 @@ def surfaces_display(subjects_dir, subject):
     bet_outskull_mesh_file is the inner skull surface, due to the naming
     conventions used by BET
     """
-
 
     filenames = get_surfaces_filenames(subjects_dir, subject)
 
