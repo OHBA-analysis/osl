@@ -12,6 +12,9 @@ import pandas as pd
 
 from osl import source_recon
 
+import logging
+logger = logging.getLogger("osl")
+
 
 RAW_DIR = "/ohba/pi/mwoolrich/datasets/mrc_meguk_public/Nottingham"
 PREPROC_DIR = "/ohba/pi/mwoolrich/cgohil/ukmp_notts/preproc"
@@ -22,7 +25,7 @@ PREPROC_FILE = PREPROC_DIR + "/{0}_task-resteyesopen_meg/{0}_task-resteyesopen_m
 POS_FILE = RAW_DIR + "/{0}/meg/{0}_headshape.pos"
 
 
-def save_polhemus_from_pos(src_dir, subject, preproc_file, smri_file, epoch_file, logger):
+def save_polhemus_from_pos(src_dir, subject, preproc_file, smri_file, epoch_file):
     """Saves fiducials/headshape from a pos file."""
 
     # Load pos file

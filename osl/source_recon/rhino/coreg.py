@@ -116,7 +116,6 @@ def coreg(
     use_dev_ctf_t=True,
     already_coregistered=False,
     allow_smri_scaling=False,
-    logger=None,
 ):
     """Coregistration.
 
@@ -200,8 +199,6 @@ def coreg(
         but not the size of the sMRI-derived fids.
         E.g. this might be the case if we do not trust the size (e.g. in mm) of the sMRI,
         or if we are using a template sMRI that has not come from this subject.
-    logger : logging.getLogger
-        Logger.
     """
 
     # Note the jargon used varies for xforms and coord spaces:
@@ -211,7 +208,7 @@ def coreg(
     #
     # RHINO does everthing in mm
 
-    log_or_print("*** RUNNING OSL RHINO COREGISTRATION ***", logger)
+    log_or_print("*** RUNNING OSL RHINO COREGISTRATION ***")
 
     filenames = get_coreg_filenames(subjects_dir, subject)
     surfaces_filenames = get_surfaces_filenames(subjects_dir, subject)
@@ -232,12 +229,9 @@ def coreg(
     if use_dev_ctf_t:
         dev_ctf_t = raw.info["dev_ctf_t"]
         if dev_ctf_t is not None:
-            log_or_print("CTF data", logger)
-            log_or_print(
-                "Setting dev_head_t equal to dev_ctf_t in fif file info.",
-                logger,
-            )
-            log_or_print("To turn this off, set use_dev_ctf_t=False", logger)
+            log_or_print("CTF data")
+            log_or_print("Setting dev_head_t equal to dev_ctf_t in fif file info.")
+            log_or_print("To turn this off, set use_dev_ctf_t=False")
             dev_head_t, _ = _get_trans(raw.info["dev_head_t"], "meg", "head")
             dev_head_t["trans"] = dev_ctf_t["trans"]
 
@@ -285,41 +279,32 @@ def coreg(
 
         if use_headshape:
             if use_nose:
-                log_or_print(
-                    "The MRI-derived nose is going to be used to aid coreg.",
-                    logger,
-                )
+                log_or_print("The MRI-derived nose is going to be used to aid coreg.")
                 log_or_print(
                     "Please ensure that rhino.compute_surfaces was run with "
                     + "include_nose=True.",
-                    logger,
                 )
                 log_or_print(
                     "Please ensure that the polhemus headshape points include the nose.",
-                    logger,
                 )
             else:
-                log_or_print(
-                    "The MRI-derived nose is not going to be used to aid coreg.",
-                    logger,
-                )
+                log_or_print("The MRI-derived nose is not going to be used to aid coreg.")
                 log_or_print(
                     "Please ensure that the polhemus headshape points do not include "
                     + "the nose",
-                    logger,
                 )
 
         # Load in the "polhemus-derived fiducial points"
-        log_or_print(f"loading: {filenames['polhemus_headshape_file']}", logger)
+        log_or_print(f"loading: {filenames['polhemus_headshape_file']}")
         polhemus_headshape_polhemus = np.loadtxt(filenames["polhemus_headshape_file"])
 
-        log_or_print(f"loading: {filenames['polhemus_nasion_file']}", logger)
+        log_or_print(f"loading: {filenames['polhemus_nasion_file']}")
         polhemus_nasion_polhemus = np.loadtxt(filenames["polhemus_nasion_file"])
 
-        log_or_print(f"loading: {filenames['polhemus_rpa_file']}", logger)
+        log_or_print(f"loading: {filenames['polhemus_rpa_file']}")
         polhemus_rpa_polhemus = np.loadtxt(filenames["polhemus_rpa_file"])
 
-        log_or_print(f"loading: {filenames['polhemus_lpa_file']}", logger)
+        log_or_print(f"loading: {filenames['polhemus_lpa_file']}")
         polhemus_lpa_polhemus = np.loadtxt(filenames["polhemus_lpa_file"])
 
         # Load in outskin_mesh_file to get the "sMRI-derived headshape points"
@@ -473,7 +458,7 @@ def coreg(
         # ICP algorithm initilaised using the xform estimate in step 2.
 
         if use_headshape:
-            log_or_print("Running ICP...", logger)
+            log_or_print("Running ICP...")
 
             # Run ICP with multiple initialisations to refine registration of
             # sMRI-derived headshape points to polhemus derived headshape points,
@@ -490,7 +475,6 @@ def coreg(
                 smri_headshape_polhemus,
                 polhemus_headshape_polhemus_4icp,
                 Ninits=30,
-                logger=logger
             )
 
         else:
@@ -568,9 +552,8 @@ def coreg(
         'rhino.coreg_display("{}", "{}") can be used to check the result'.format(
             subjects_dir, subject
         ),
-        logger,
     )
-    log_or_print("*** OSL RHINO COREGISTRATION COMPLETE ***", logger)
+    log_or_print("*** OSL RHINO COREGISTRATION COMPLETE ***")
 
 
 def coreg_metrics(subjects_dir, subject):
@@ -653,7 +636,6 @@ def coreg_display(
     display_fiducials=True,
     display_headshape_pnts=True,
     filename=None,
-    logger=None,
 ):
     """Display coregistration.
 
@@ -694,8 +676,6 @@ def coreg_display(
     filename : str
         Filename to save display to (as an interactive html).
         Must have extension .html.
-    logger : logging.getLogger
-        Logger.
     """
 
     # Note the jargon used varies for xforms and coord spaces:
@@ -869,7 +849,7 @@ def coreg_display(
             offset += len(meg_rrs[-1])
 
         if len(meg_rrs) == 0:
-            log_or_print("MEG sensors not found. Cannot plot MEG locations.", logger)
+            log_or_print("MEG sensors not found. Cannot plot MEG locations.")
         else:
             meg_rrs = apply_trans(meg_trans, np.concatenate(meg_rrs, axis=0))
             meg_sensor_locs = apply_trans(
@@ -907,7 +887,7 @@ def coreg_display(
                     backface_culling=True,
                 )
             else:
-                log_or_print("There are no headshape points to display", logger)
+                log_or_print("There are no headshape points to display")
 
         if display_fiducials:
 
@@ -934,7 +914,7 @@ def coreg_display(
                         solid_transform=transform,
                     )
             else:
-                log_or_print("There are no MRI derived fiducials to display", logger)
+                log_or_print("There are no MRI derived fiducials to display")
 
             # Polhemus-derived nasion, rpa, lpa
             if polhemus_nasion_meg is not None and len(polhemus_nasion_meg.T) > 0:
@@ -952,9 +932,7 @@ def coreg_display(
                         backface_culling=True,
                     )
             else:
-                log_or_print(
-                    "There are no polhemus derived fiducials to display", logger
-                )
+                log_or_print("There are no polhemus derived fiducials to display")
 
         if display_sensors:
             # Sensors
@@ -1012,7 +990,7 @@ def coreg_display(
         )
 
         # Save or show
-        rhino_utils.save_or_show_renderer(renderer, filename, logger)
+        rhino_utils.save_or_show_renderer(renderer, filename)
 
     # -------------------------------------------------------------------------
     elif plot_type == "scatter":
@@ -1092,7 +1070,7 @@ def coreg_display(
                     alpha=alpha,
                 )
             else:
-                log_or_print("There are no headshape points to plot", logger)
+                log_or_print("There are no headshape points to plot")
 
         if display_fiducials:
 
@@ -1110,9 +1088,7 @@ def coreg_display(
                         alpha=alpha,
                     )
             else:
-                log_or_print(
-                    "There are no structural MRI derived fiducials to plot", logger
-                )
+                log_or_print("There are no structural MRI derived fiducials to plot")
 
             if polhemus_nasion_meg is not None and len(polhemus_nasion_meg) > 0:
                 color, scale, alpha, marker = (1, 0.5, 0.7), 400, 1, "."
@@ -1128,12 +1104,12 @@ def coreg_display(
                         alpha=alpha,
                     )
             else:
-                log_or_print("There are no polhemus derived fiducials to plot", logger)
+                log_or_print("There are no polhemus derived fiducials to plot")
 
         if filename is None:
             plt.show()
         else:
-            log_or_print(f"saving {filename}", logger)
+            log_or_print(f"saving {filename}")
             plt.savefig(filename)
             plt.close()
     else:
@@ -1150,7 +1126,6 @@ def bem_display(
     display_outskin_with_nose=True,
     display_sensors=False,
     filename=None,
-    logger=None,
 ):
     """Displays the coregistered RHINO scalp surface and inner skull surface.
 
@@ -1173,8 +1148,6 @@ def bem_display(
     filename : str
         Filename to save display to (as an interactive html).
         Must have extension .html.
-    logger : logging.getLogger
-        Logger.
     """
 
     # Note the jargon used varies for xforms and coord spaces:
@@ -1261,7 +1234,7 @@ def bem_display(
             meg_tris.append(tris + offset)
             offset += len(meg_rrs[-1])
         if len(meg_rrs) == 0:
-            log_or_print("MEG sensors not found. Cannot plot MEG locations.", logger)
+            log_or_print("MEG sensors not found. Cannot plot MEG locations.")
         else:
             meg_rrs = apply_trans(meg_trans, np.concatenate(meg_rrs, axis=0))
             meg_tris = np.concatenate(meg_tris, axis=0)
@@ -1280,7 +1253,7 @@ def bem_display(
         src_pnts = rhino_utils.xform_points(head_trans["trans"], src_pnts.T).T
 
         log_or_print(
-            "BEM surface: number of dipoles = {}".format(src_pnts.shape[0]), logger
+            "BEM surface: number of dipoles = {}".format(src_pnts.shape[0])
         )
 
     # -------------------------------------------------------------------------
@@ -1357,7 +1330,7 @@ def bem_display(
         )
 
         # Save or show
-        rhino_utils.save_or_show_renderer(renderer, filename, logger)
+        rhino_utils.save_or_show_renderer(renderer, filename)
 
     # -------------------------------------------------------------------------
     elif plot_type == "scatter":
@@ -1457,7 +1430,7 @@ def bem_display(
         if filename is None:
             plt.show()
         else:
-            log_or_print(f"saving {filename}", logger)
+            log_or_print(f"saving {filename}")
             plt.savefig(filename)
             plt.close()
     else:

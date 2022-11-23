@@ -539,7 +539,7 @@ def icp(A, B, init_pose=None, max_iterations=50, tolerance=0.0001):
 
 
 def rhino_icp(
-    smri_headshape_polhemus, polhemus_headshape_polhemus, Ninits=10, logger=None
+    smri_headshape_polhemus, polhemus_headshape_polhemus, Ninits=10
 ):
     """Runs Iterative Closest Point with multiple initialisations.
 
@@ -552,8 +552,6 @@ def rhino_icp(
         [3 x N] locations of the Polhemus headshape points in polhemus space
     Ninits : int
         Number of random initialisations to perform.
-    logger : logging.getLogger
-        Logger.
 
     Returns
     -------
@@ -592,7 +590,7 @@ def rhino_icp(
 
         if err[init] < err_old:
 
-            log_or_print("ICP found better xform, error={}".format(e), logger)
+            log_or_print("ICP found better xform, error={}".format(e))
 
             err_old = e
 
@@ -995,7 +993,7 @@ def recon_timeseries2niftii(
     return out_nii_fname, reference_brain_fname
 
 
-def save_or_show_renderer(renderer, filename, logger=None):
+def save_or_show_renderer(renderer, filename):
     """Save or show a renderer.
 
     Parameters
@@ -1005,8 +1003,6 @@ def save_or_show_renderer(renderer, filename, logger=None):
     filename : str
         Filename to save display to (as an interactive html).
         Must have extension .html. If None we display the renderer.
-    logger : logging.getLogger
-        Logger
     """
     if filename is None:
         renderer.show()
@@ -1019,7 +1015,7 @@ def save_or_show_renderer(renderer, filename, logger=None):
                 + " ".join(allowed_extensions)
             )
 
-        log_or_print(f"saving {filename}", logger)
+        log_or_print(f"saving {filename}")
         if ext == ".html":
             renderer.figure.plotter.export_html(filename)
         elif ext in allowed_extensions:

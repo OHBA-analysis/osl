@@ -101,6 +101,9 @@ def set_up(prefix='', log_file=None, level=None, console_format=None, startup=Tr
     if log_file is not None:
         osl_logger.info('logging to file: {0}'.format(log_file))
 
+    # Attribute to let us know if we have setup the OSL logger
+    osl_logger.already_setup = True
+
 
 def set_level(level, handler='console'):
     """Set new logging level for OSL module."""
@@ -120,17 +123,15 @@ def get_level(handler='console'):
             return handler.level
 
 
-def log_or_print(msg, logger):
-    """Execute logger.info or print.
+def log_or_print(msg):
+    """Execute logger.info if an OSL logger has been setup, otherwise print.
 
     Parameters
     ----------
     msg : str
         Message to log/print.
-    logger : logger or None
-        If logger=None we use print, other we use logger.info.
     """
-    if logger is None:
-        print(msg)
+    if hasattr(osl_logger, "already_setup"):
+        osl_logger.info(msg)
     else:
-        logger.info(msg)
+        print(msg)

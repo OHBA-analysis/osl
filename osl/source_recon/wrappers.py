@@ -6,7 +6,7 @@ section of a config.
 All functions in this module accept the following arguments for
 consistency:
 
-    func(src_dir, subject, preproc_file, smri_file, *userargs, logger)
+    func(src_dir, subject, preproc_file, smri_file, epoch_file, *userargs)
 
 Custom functions (i.e. functions passed via the extra_funcs argument)
 must also conform to this.
@@ -15,7 +15,6 @@ must also conform to this.
 # Authors: Chetan Gohil <chetan.gohil@psych.ox.ac.uk>
 
 
-import logging
 import os.path as op
 from pathlib import Path
 import pickle
@@ -26,7 +25,7 @@ import mne
 from . import rhino, beamforming, parcellation, sign_flipping
 from ..report import src_report
 
-
+import logging
 logger = logging.getLogger(__name__)
 
 
@@ -40,7 +39,6 @@ def extract_fiducials_from_fif(
     preproc_file,
     smri_file,
     epoch_file,
-    logger,
     **userargs,
 ):
     """Wrapper function to extract fiducials/headshape points.
@@ -57,8 +55,6 @@ def extract_fiducials_from_fif(
         Path to the T1 weighted structural MRI file to use in source reconstruction.
     epoch_file : str
         Path to epoched preprocessed fif file.
-    logger : logging.getLogger
-        Logger.
     userargs : keyword arguments
         Keyword arguments to pass to
         osl.source_recon.rhino.extract_polhemus_from_info.
@@ -86,7 +82,6 @@ def compute_surfaces(
     preproc_file,
     smri_file,
     epoch_file,
-    logger,
     include_nose,
     recompute_surfaces=False,
 ):
@@ -104,8 +99,6 @@ def compute_surfaces(
         Path to the T1 weighted structural MRI file to use in source reconstruction.
     epoch_file : str
         Path to epoched preprocessed fif file.
-    logger : logging.getLogger
-        Logger.
     include_nose : bool
         Should we include the nose when we're extracting the surfaces?
     recompute_surfaces : bool
@@ -119,7 +112,6 @@ def compute_surfaces(
         subject=subject,
         include_nose=include_nose,
         recompute_surfaces=recompute_surfaces,
-        logger=logger,
     )
 
     # Save info for the report
@@ -138,7 +130,6 @@ def coreg(
     preproc_file,
     smri_file,
     epoch_file,
-    logger,
     use_nose,
     use_headshape,
     already_coregistered=False,
@@ -158,8 +149,6 @@ def coreg(
         Path to the T1 weighted structural MRI file to use in source reconstruction.
     epoch_file : str
         Path to epoched preprocessed fif file.
-    logger : logging.getLogger
-        Logger.
     use_nose : bool
         Should we use the nose in the coregistration?
     use_headshape : bool
@@ -183,7 +172,6 @@ def coreg(
         use_nose=use_nose,
         already_coregistered=already_coregistered,
         allow_smri_scaling=allow_smri_scaling,
-        logger=logger,
     )
 
     # Calculate metrics
@@ -195,7 +183,6 @@ def coreg(
         subject=subject,
         display_outskin_with_nose=False,
         filename=f"{src_dir}/{subject}/rhino/coreg.html",
-        logger=logger,
     )
     
     # Save info for the report
@@ -219,7 +206,6 @@ def forward_model(
     preproc_file,
     smri_file,
     epoch_file,
-    logger,
     model,
     eeg=False,
 ):
@@ -237,8 +223,6 @@ def forward_model(
         Path to the T1 weighted structural MRI file to use in source reconstruction.
     epoch_file : str
         Path to epoched preprocessed fif file.
-    logger : logging.getLogger
-        Logger.
     eeg : bool
         Are we using EEG channels in the source reconstruction?
     """
@@ -248,7 +232,6 @@ def forward_model(
         subject=subject,
         model=model,
         eeg=eeg,
-        logger=logger,
     )
 
     # Save info for the report
@@ -268,7 +251,6 @@ def coregister(
     preproc_file,
     smri_file,
     epoch_file,
-    logger,
     include_nose,
     use_nose,
     use_headshape,
@@ -292,8 +274,6 @@ def coregister(
         Path to the T1 weighted structural MRI file to use in source reconstruction.
     epoch_file : str
         Path to epoched preprocessed fif file.
-    logger : logging.getLogger
-        Logger.
     include_nose : bool
         Should we include the nose when we're extracting the surfaces?
     use_nose : bool
@@ -324,7 +304,6 @@ def coregister(
         subject=subject,
         include_nose=include_nose,
         recompute_surfaces=recompute_surfaces,
-        logger=logger,
     )
 
     # Run coregistration
@@ -336,7 +315,6 @@ def coregister(
         use_nose=use_nose,
         already_coregistered=already_coregistered,
         allow_smri_scaling=allow_smri_scaling,
-        logger=logger,
     )
 
     # Calculate metrics
@@ -348,7 +326,6 @@ def coregister(
         subject=subject,
         display_outskin_with_nose=False,
         filename=f"{src_dir}/{subject}/rhino/coreg.html",
-        logger=logger,
     )
 
     # Compute forward model
@@ -357,7 +334,6 @@ def coregister(
         subject=subject,
         model=model,
         eeg=eeg,
-        logger=logger,
     )
 
     # Save info for the report
@@ -392,7 +368,6 @@ def beamform(
     preproc_file,
     smri_file,
     epoch_file,
-    logger,
     freq_range,
     chantypes,
     rank,
@@ -414,8 +389,6 @@ def beamform(
         Path to the T1 weighted structural MRI file to use in source reconstruction.
     epoch_file : str
         Path to epoched preprocessed fif file.
-    logger : logging.getLogger
-        Logger.
     freq_range : list
         Lower and upper band to bandpass filter before beamforming. If None,
         no filtering is done.
@@ -477,7 +450,6 @@ def beamform(
         chantypes=chantypes,
         weight_norm="nai",
         rank=rank,
-        logger=logger,
         save_figs=True,
     )
 
@@ -498,7 +470,6 @@ def beamform(
         recon_timeseries=bf_data,
         spatial_resolution=spatial_resolution,
         reference_brain=reference_brain,
-        logger=logger,
     )
 
     if save_bf_data:
@@ -527,7 +498,6 @@ def beamform_and_parcellate(
     preproc_file,
     smri_file,
     epoch_file,
-    logger,
     chantypes,
     rank,
     freq_range,
@@ -552,8 +522,6 @@ def beamform_and_parcellate(
         Path to the T1 weighted structural MRI file to use in source reconstruction.
     epoch_file : str
         Path to epoched preprocessed fif file.
-    logger : logging.getLogger
-        Logger.
     chantypes : list of str
         Channel types to use in beamforming.
     rank : dict
@@ -621,7 +589,6 @@ def beamform_and_parcellate(
         chantypes=chantypes,
         weight_norm="nai",
         rank=rank,
-        logger=logger,
         save_figs=True,
     )
 
@@ -642,7 +609,6 @@ def beamform_and_parcellate(
         recon_timeseries=bf_data,
         spatial_resolution=spatial_resolution,
         reference_brain=reference_brain,
-        logger=logger,
     )
 
     if save_bf_data:
@@ -660,7 +626,6 @@ def beamform_and_parcellate(
         voxel_coords=coords_mni,
         method=method,
         working_dir=src_dir / subject / "rhino",
-        logger=logger,
     )
     parcel_data = p.parcel_timeseries["data"]
 
@@ -681,9 +646,7 @@ def beamform_and_parcellate(
 
     # Save plots
     parcellation.plot_correlation(
-        parcel_data,
-        filename=f"{src_dir}/{subject}/rhino/parc_corr.png",
-        logger=logger,
+        parcel_data, filename=f"{src_dir}/{subject}/rhino/parc_corr.png",
     )
 
     # Save info for the report
@@ -778,7 +741,6 @@ def fix_sign_ambiguity(
     preproc_file,
     smri_file,
     epoch_file,
-    logger,
     template,
     n_embeddings,
     standardize,
@@ -800,8 +762,6 @@ def fix_sign_ambiguity(
         Path to the T1 weighted structural MRI file to use in source reconstruction.
     epoch_file : str
         Path to epoched preprocessed fif file.
-    logger : logging.getLogger
-        Logger.
     template : str
         Template subject.
     n_embeddings : int
@@ -833,11 +793,11 @@ def fix_sign_ambiguity(
 
     # Find the channels to flip
     flips, metrics = sign_flipping.find_flips(
-        cov, template_cov, n_embeddings, n_init, n_iter, max_flips, logger
+        cov, template_cov, n_embeddings, n_init, n_iter, max_flips,
     )
 
     # Apply flips to the parcellated data
-    sign_flipping.apply_flips(src_dir, subject, flips, logger)
+    sign_flipping.apply_flips(src_dir, subject, flips)
 
     # Save info for the report
     src_report.add_to_data(

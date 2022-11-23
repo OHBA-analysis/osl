@@ -90,7 +90,6 @@ def compute_surfaces(
     include_nose=True,
     cleanup_files=True,
     recompute_surfaces=False,
-    logger=None,
 ):
     """Compute surfaces.
 
@@ -146,8 +145,6 @@ def compute_surfaces(
     recompute_surfaces : bool
         Specifies whether or not to run compute_surfaces, if the passed in
         options have already been run
-    logger : logging.getLogger
-        Logger.
     """
 
     # Note the jargon used varies for xforms and coord spaces, e.g.:
@@ -170,29 +167,17 @@ def compute_surfaces(
                 is_same_mri = completed_mri_file == filenames["smri_file"]
                 is_same_include_nose = completed_include_nose == include_nose
                 if is_same_mri and is_same_include_nose:
-                    log_or_print(
-                        "*** OSL RHINO: USING PREVIOUSLY COMPUTED SURFACES ***",
-                        logger,
-                    )
-                    log_or_print(f"Surfaces directory: {filenames['basedir']}", logger)
-                    log_or_print(f"include_nose={completed_include_nose}", logger)
+                    log_or_print("*** OSL RHINO: USING PREVIOUSLY COMPUTED SURFACES ***")
+                    log_or_print(f"Surfaces directory: {filenames['basedir']}")
+                    log_or_print(f"include_nose={completed_include_nose}")
                     return
 
-    log_or_print("*** RUNNING OSL RHINO COMPUTE SURFACES ***", logger)
+    log_or_print("*** RUNNING OSL RHINO COMPUTE SURFACES ***")
     if include_nose:
-        log_or_print(
-            "The nose is going to be added to the outer skin (scalp) surface.",
-            logger,
-        )
-        log_or_print(
-            "Please ensure that the structural MRI has a FOV that includes the nose",
-            logger,
-        )
+        log_or_print("The nose is going to be added to the outer skin (scalp) surface.")
+        log_or_print("Please ensure that the structural MRI has a FOV that includes the nose")
     else:
-        log_or_print(
-            "The nose is not going to be added to the outer skin (scalp) surface",
-            logger,
-        )
+        log_or_print("The nose is not going to be added to the outer skin (scalp) surface")
 
     # Check smri_file
     smri_ext = "".join(Path(smri_file).suffixes)
@@ -235,28 +220,17 @@ please check output of:\n fslorient -orient {}".format(
 
     # if orientation is not RADIOLOGICAL then force it to be RADIOLOGICAL
     if smri_orient != "RADIOLOGICAL":
-        log_or_print("reorienting subject brain to be RADIOLOGICAL", logger)
+        log_or_print("reorienting subject brain to be RADIOLOGICAL")
         rhino_utils.system_call(
             "fslorient -forceradiological {}".format(filenames["smri_file"])
         )
 
-    log_or_print(
-        "You can use the following call to check the passed in structural MRI is appropriate,",
-        logger,
-    )
-    log_or_print(
-        "including checking that the L-R, S-I, A-P labels are sensible:", logger
-    )
-    log_or_print("In Python:", logger)
-    log_or_print(
-        'fsleyes("{}", "{}")'.format(filenames["smri_file"], filenames["std_brain"]),
-        logger,
-    )
-    log_or_print("From the cmd line:", logger)
-    log_or_print(
-        "fsleyes {} {}".format(filenames["smri_file"], filenames["std_brain"]),
-        logger,
-    )
+    log_or_print("You can use the following call to check the passed in structural MRI is appropriate,")
+    log_or_print("including checking that the L-R, S-I, A-P labels are sensible:")
+    log_or_print("In Python:")
+    log_or_print('fsleyes("{}", "{}")'.format(filenames["smri_file"], filenames["std_brain"]))
+    log_or_print("From the cmd line:")
+    log_or_print("fsleyes {} {}".format(filenames["smri_file"], filenames["std_brain"]))
 
     # -------------------------------------------------------------------------
     # 1) Transform sMRI to be aligned with the MNI axes so that BET works well
@@ -307,7 +281,7 @@ please check output of:\n fslorient -orient {}".format(
 
     # -------------------------------------------------------------------------
     # 2) Use BET to skull strip sMRI so that flirt works well
-    log_or_print("Running BET pre-FLIRT...", logger)
+    log_or_print("Running BET pre-FLIRT...")
 
     flirt_smri_mniaxes_bet_file = op.join(
         filenames["basedir"], "flirt_smri_mniaxes_bet"
@@ -318,7 +292,7 @@ please check output of:\n fslorient -orient {}".format(
 
     # -------------------------------------------------------------------------
     # 3) Use flirt to register skull stripped sMRI to MNI space
-    log_or_print("Running FLIRT...", logger)
+    log_or_print("Running FLIRT...")
 
     # Flirt is run on the skull stripped brains to register the smri_mniaxes
     # to the MNI standard brain
@@ -380,7 +354,7 @@ please check output of:\n fslorient -orient {}".format(
 
     # Run BET on smri to get the surface mesh (in MNI space),
     # as BETSURF needs this.
-    log_or_print("Running BET pre-BETSURF...", logger)
+    log_or_print("Running BET pre-BETSURF...")
 
     flirt_smri_mni_bet_file = op.join(filenames["basedir"], "flirt_smri_mni_bet")
     rhino_utils.system_call(
@@ -388,7 +362,7 @@ please check output of:\n fslorient -orient {}".format(
     )
 
     # Run BETSURF - to get the head surfaces in MNI space
-    log_or_print("Running BETSURF...", logger)
+    log_or_print("Running BETSURF...")
 
     # Need to provide BETSURF with transform to MNI space.
     # Since flirt_smri_mni_file is already in MNI space,
@@ -411,7 +385,7 @@ please check output of:\n fslorient -orient {}".format(
 
     # -------------------------------------------------------------------------
     # 5) Refine scalp outline, adding nose to scalp surface (optional)
-    log_or_print("Refining scalp surface...", logger)
+    log_or_print("Refining scalp surface...")
 
     # We do this in MNI big FOV space, to allow the full nose to be included
 
@@ -484,7 +458,7 @@ please check output of:\n fslorient -orient {}".format(
     mask = mask[1:-1, 1:-1, 1:-1]
 
     if include_nose:
-        log_or_print("Adding nose to scalp surface...", logger)
+        log_or_print("Adding nose to scalp surface...")
 
         # RECLASSIFY BRIGHT VOXELS OUTSIDE OF MASK (TO PUT NOSE INSIDE
         # THE MASK SINCE BET WILL HAVE EXCLUDED IT)
@@ -630,10 +604,9 @@ please check output of:\n fslorient -orient {}".format(
     log_or_print(
         'rhino.surfaces_display("{}", "{}") can be used to check the result'.format(
             subjects_dir, subject
-        ),
-        logger,
+        )
     )
-    log_or_print("*** OSL RHINO COMPUTE SURFACES COMPLETE ***", logger)
+    log_or_print("*** OSL RHINO COMPUTE SURFACES COMPLETE ***")
 
 
 def surfaces_display(subjects_dir, subject):

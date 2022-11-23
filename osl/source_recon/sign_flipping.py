@@ -14,8 +14,11 @@ from tqdm import trange
 
 from osl.utils.logger import log_or_print
 
+import logging
+osl_logger = logging.getLogger(__name__)
 
-def find_flips(cov, template_cov, n_embeddings, n_init, n_iter, max_flips, logger=None):
+
+def find_flips(cov, template_cov, n_embeddings, n_init, n_iter, max_flips):
     """Find channels to flip.
 
     We search for the channels to flip by randomly flipping them and saving the
@@ -35,8 +38,6 @@ def find_flips(cov, template_cov, n_embeddings, n_init, n_iter, max_flips, logge
         Number of sign flipping iterations per subject to perform.
     max_flips : int
         Maximum number of channels to flip in an iteration.
-    logger : logging.getLogger
-        Logger.
 
     Returns
     -------
@@ -47,8 +48,7 @@ def find_flips(cov, template_cov, n_embeddings, n_init, n_iter, max_flips, logge
         Evaluation metric (correlation between covariance matrices) as a function
         of iterations. Shape is (n_iter + 1,).
     """
-    if logger is not None:
-        log_or_print("find_flips", logger)
+    log_or_print("find_flips")
 
     # Get the number of channels
     n_channels = cov.shape[-1] // n_embeddings
@@ -70,13 +70,13 @@ def find_flips(cov, template_cov, n_embeddings, n_init, n_iter, max_flips, logge
         metric = covariance_matrix_correlation(cov, template_cov, n_embeddings)
         if n == 0:
             metrics.append(metric)
-            log_or_print(f"init {n}, unflipped metric: {metric}", logger)
+            log_or_print(f"init {n}, unflipped metric: {metric}")
 
         # Randomly permute the sign of different channels and calculate the metric
-        if logger is None:
-            iterator = trange(n_iter, desc="sign flipping", ncols=98)
-        else:
+        if hasattr(osl_logger, "already_setup"):
             iterator = range(n_iter)
+        else:
+            iterator = trange(n_iter, desc="sign flipping", ncols=98)
         for j in iterator:
             new_flips = randomly_flip(flips, max_flips)
             new_cov = apply_flips_to_covariance(cov, new_flips, n_embeddings)
@@ -95,7 +95,7 @@ def find_flips(cov, template_cov, n_embeddings, n_init, n_iter, max_flips, logge
 
         # Save metric as a function of init
         metrics.append(best_metric)
-        log_or_print(f"init {n}, current best metric: {best_metric}", logger)
+        log_or_print(f"init {n}, current best metric: {best_metric}")
 
     return best_flips, metrics
 
@@ -269,7 +269,7 @@ def apply_flips_to_covariance(cov, flips, n_embeddings=1):
     return cov * flips
 
 
-def apply_flips(src_dir, subject, flips, logger=None):
+def apply_flips(src_dir, subject, flips):
     """Saves the sign flipped data.
 
     Parameters
@@ -280,8 +280,6 @@ def apply_flips(src_dir, subject, flips, logger=None):
         Subject name/id.
     flips : numpy.ndarray
         Flips to apply.
-    logger : logging.getLogger
-        Logger.
     """
     # Load parcellated data
     parc_file = op.join(src_dir, str(subject), "rhino", "parc.npy")
@@ -292,7 +290,7 @@ def apply_flips(src_dir, subject, flips, logger=None):
 
     # Save
     outfile = op.join(src_dir, str(subject), "sflip_parc.npy")
-    log_or_print(f"saving: {outfile}", logger)
+    log_or_print(f"saving: {outfile}")
     np.save(outfile, flipped_data)
 
 

@@ -42,10 +42,10 @@ from mne.utils import (
     _sym_mat_pow,
     _check_src_normal,
     check_version,
-    logger,
     verbose,
     warn,
 )
+from mne.utils import logger as mne_logger
 
 from osl.source_recon import rhino
 from osl.source_recon.rhino import utils as rhino_utils
@@ -69,7 +69,6 @@ def make_lcmv(
     depth=None,
     inversion="matrix",
     verbose=None,
-    logger=None,
     save_figs=False,
 ):
     """Compute LCMV spatial filter.
@@ -100,8 +99,6 @@ def make_lcmv(
         The regularization for the whitened data covariance.
     label : instance of Label
         Restricts the LCMV solution to a given label.
-    logger : logging.getLogger()
-        Logger.
     save_figs : bool
         Should we save figures?
 
@@ -110,7 +107,7 @@ def make_lcmv(
     filters : instance of MNE Beamformer
         Dictionary containing filter weights from LCMV beamformer. See MNE docs.
     """
-    log_or_print("*** RUNNING OSL MAKE LCMV ***", logger)
+    log_or_print("*** RUNNING OSL MAKE LCMV ***")
 
     # load forward solution
     fwd_fname = rhino.get_coreg_filenames(subjects_dir, subject)["forward_model_file"]
@@ -164,10 +161,7 @@ def make_lcmv(
             # Mean variance of channels of this type
             variance = np.mean(np.diag(data_cov.data)[inds])
             noise_cov_diag[inds] = variance
-            log_or_print(
-                "variance for chantype {} is {}".format(type, variance),
-                logger,
-            )
+            log_or_print("variance for chantype {} is {}".format(type, variance))
 
         bads = [b for b in data.info["bads"] if b in data_cov.ch_names]
         noise_cov = Covariance(
@@ -201,7 +195,7 @@ def make_lcmv(
         )
         plt.close("all")
 
-    log_or_print("*** OSL MAKE LCMV COMPLETE ***", logger)
+    log_or_print("*** OSL MAKE LCMV COMPLETE ***")
 
     return filters
 
@@ -298,7 +292,6 @@ def transform_recon_timeseries(
     recon_timeseries,
     spatial_resolution=None,
     reference_brain="mni",
-    logger=None,
 ):
     """Spatially resamples a (ndipoles x ntpts) array of reconstructed time
     courses (in head/polhemus space) to dipoles on the brain grid of the
@@ -331,8 +324,6 @@ def transform_recon_timeseries(
         Note that Scaled/unscaled relates to the allow_smri_scaling option in coreg.
         If allow_scaling was False, then the unscaled MRI will be the same as the scaled.
         MRI.
-    logger : logging.getLogger
-        Logger.
 
     Returns
     -------
@@ -371,7 +362,7 @@ def transform_recon_timeseries(
         spatial_resolution = int(np.round(np.min(store[np.where(store > 0)]) * 1000))
 
     spatial_resolution = int(spatial_resolution)
-    log_or_print(f"spatial_resolution = {spatial_resolution} mm", logger)
+    log_or_print(f"spatial_resolution = {spatial_resolution} mm")
 
     if reference_brain == "mni":
         # reference is mni stdbrain
@@ -519,9 +510,9 @@ def _make_lcmv(
     # MWW
     # del noise_rank
     rank = data_rank
-    logger.info("Making LCMV beamformer with data cov rank %s" % (rank,))
+    mne_logger.info("Making LCMV beamformer with data cov rank %s" % (rank,))
     # MWW added:
-    logger.info("Making LCMV beamformer with noise cov rank %s" % (noise_rank,))
+    mne_logger.info("Making LCMV beamformer with noise cov rank %s" % (noise_rank,))
 
     del data_rank
     depth = _check_depth(depth, "depth_sparse")
@@ -661,7 +652,7 @@ def _compute_beamformer(
     n_sources = G.shape[1] // n_orient
     assert nn.shape == (n_sources, 3)
 
-    logger.info(
+    mne_logger.info(
         "Computing beamformer filters for %d source%s" % (n_sources, _pl(n_sources))
     )
     n_channels = G.shape[0]
@@ -860,7 +851,7 @@ def _compute_beamformer(
             W /= np.sqrt(noise)
 
     W = W.reshape(n_sources * n_orient, n_channels)
-    logger.info("Filter computation complete")
+    mne_logger.info("Filter computation complete")
     return W, max_power_ori
 
 
