@@ -3,7 +3,7 @@
 """
 
 # Authors: Chetan Gohil <chetan.gohil@psych.ox.ac.uk>
-# Authors: Mark Woolrich <mark.woolrich@ohba.ox.ac.uk>
+#          Mark Woolrich <mark.woolrich@ohba.ox.ac.uk>
 
 from glob import glob
 from pathlib import Path
@@ -17,20 +17,20 @@ PREPROC_DIR = "/ohba/pi/mwoolrich/cgohil/ukmp_notts/preproc"
 # Settings
 
 # Note that with CTF, MNE will return:
-# ~274 axial grads (as magnetometers) if {picks: 'mag', ref_meg: False}
-# ~28 reference axial grads if {picks: 'grad'}
+# ~274 axial grads (as magnetometers) if {picks: mag, ref_meg: False}
+# ~28 reference axial grads if {picks: grad}
 
 config = """
     preproc:
     - set_channel_types: {EEG057: eog, EEG058: eog, EEG059: ecg}
-    - filter: {l_freq: 0.5, h_freq: 125, method: 'iir', iir_params: {order: 5, ftype: butter}}
+    - filter: {l_freq: 0.5, h_freq: 125, method: iir, iir_params: {order: 5, ftype: butter}}
     - notch_filter: {freqs: 50 100}
     - resample: {sfreq: 250}
     - crop: {tmin: 10, tmax: 300}           
     - set_channel_types: {EEG057: eog, EEG058: eog, EEG059: ecg}
-    - bad_channels: {picks: 'mag', ref_meg: False, significance_level: 0.1}
-    - bad_channels: {picks: 'grad', significance_level: 0.4}
-    - bad_segments: {segment_len: 600, picks: 'mag', ref_meg: False, significance_level: 0.1}
+    - bad_channels: {picks: mag, ref_meg: False, significance_level: 0.1}
+    - bad_channels: {picks: grad, significance_level: 0.4}
+    - bad_segments: {segment_len: 600, picks: mag, ref_meg: False, significance_level: 0.1}
 """
 
 # Setup

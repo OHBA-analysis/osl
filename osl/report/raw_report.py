@@ -373,8 +373,12 @@ def plot_channel_time_series(raw, savebase=None, exclude_bads=False):
         # ~28 reference axial grads if {picks: 'grad'}
 
         channel_types = {
-            'Axial Grads (chtype=''mag'')': mne.pick_types(raw.info, meg='mag', ref_meg=False, exclude=exclude),
-            'Ref Axial Grad (chtype=''ref_meg'')': mne.pick_types(raw.info, meg='grad', exclude=exclude),
+            'Axial Grads (chtype=mag)': mne.pick_types(
+                raw.info, meg='mag', ref_meg=False, exclude=exclude
+            ),
+            'Ref Axial Grad (chtype=ref_meg)': mne.pick_types(
+                raw.info, meg='grad', exclude=exclude
+            ),
             'EEG': mne.pick_types(raw.info, eeg=True),
             'CSD': mne.pick_types(raw.info, csd=True),
         }
