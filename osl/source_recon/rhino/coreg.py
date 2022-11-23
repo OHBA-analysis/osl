@@ -38,8 +38,7 @@ from osl.utils.logger import log_or_print
 
 
 def get_coreg_filenames(subjects_dir, subject):
-    """
-    Generates a dict of files generated and used by RHINO.
+    """Generates a dict of files generated and used by RHINO.
 
     Files will be in subjects_dir/subject/rhino/coreg.
 
@@ -141,27 +140,26 @@ def coreg(
     registered to the sMRI-derived scalp surface in native sMRI space.
 
     In more detail:
-
-    1) Map location of fiducials in MNI standard space brain to native sMRI
-    space. These are then used as the location of the sMRI-derived fiducials
-    in native sMRI space.
+    1)  Map location of fiducials in MNI standard space brain to native sMRI
+        space. These are then used as the location of the sMRI-derived fiducials
+        in native sMRI space.
     2a) We have polhemus-derived fids in polhemus space and sMRI-derived fids
-    in native sMRI space. Use these to estimate the affine xform from
-    native sMRI space to polhemus (head) space.
+        in native sMRI space. Use these to estimate the affine xform from
+        native sMRI space to polhemus (head) space.
     2b) We can also optionally learn the best scaling to add to this affine xform,
-    such that the sMRI-derived fids are scaled in size to better match the
-    polhemus-derived fids.
-    This assumes that we trust the size (e.g. in mm) of the polhemus-derived fids,
-    but not the size of sMRI-derived fids. E.g. this might be the case if we do not
-    trust the size (e.g. in mm) of the sMRI, or if we are using a template sMRI that
-    would has not come from this subject.
-    3) If a scaling is learnt in step 2, we apply it to sMRI, and to anything
-    derived from sMRI
-    4) Transform sMRI-derived headshape pnts into polhemus space
-    5) We have the polhemus-derived headshape points in polhemus
-    space and the sMRI-derived headshape (scalp surface) in native sMRI space.
-    Use these to estimate the affine xform from native sMRI space using the
-    ICP algorithm initilaised using the xform estimate in step 2.
+        such that the sMRI-derived fids are scaled in size to better match the
+        polhemus-derived fids.
+        This assumes that we trust the size (e.g. in mm) of the polhemus-derived
+        fids, but not the size of sMRI-derived fids. E.g. this might be the case
+        if we do not trust the size (e.g. in mm) of the sMRI, or if we are using
+        a template sMRI that would has not come from this subject.
+    3)  If a scaling is learnt in step 2, we apply it to sMRI, and to anything
+        derived from sMRI
+    4)  Transform sMRI-derived headshape pnts into polhemus space
+    5)  We have the polhemus-derived headshape points in polhemus
+        space and the sMRI-derived headshape (scalp surface) in native sMRI space.
+        Use these to estimate the affine xform from native sMRI space using the
+        ICP algorithm initilaised using the xform estimate in step 2.
 
     Parameters
     ----------
@@ -169,10 +167,10 @@ def coreg(
         Full path to MNE-derived fif file.
     subjects_dir : string
         Directory to put RHINO subject dirs in.
-        Files will be in subjects_dir/subject/coreg/
+        Files will be in subjects_dir/subject/coreg.
     subject : string
         Subject name dir to put RHINO files in.
-        Files will be in subjects_dir/subject/coreg/
+        Files will be in subjects_dir/subject/coreg.
     use_headshape : bool
         Determines whether polhemus derived headshape points are used.
     use_nose : bool
@@ -551,7 +549,7 @@ def coreg(
     log_or_print(
         'rhino.coreg_display("{}", "{}") can be used to check the result'.format(
             subjects_dir, subject
-        ),
+        )
     )
     log_or_print("*** OSL RHINO COREGISTRATION COMPLETE ***")
 
@@ -639,7 +637,7 @@ def coreg_display(
 ):
     """Display coregistration.
 
-    Displays the coregistered RHINO scalp surface and polhemus/sensor locations
+    Displays the coregistered RHINO scalp surface and polhemus/sensor locations.
 
     Display is done in MEG (device) space (in mm).
 
@@ -647,32 +645,32 @@ def coreg_display(
     initialse the coreg, if headshape points are being used).
 
     Yellow diamonds are the MNI standard space derived fiducials (these are the
-    ones that matter)
+    ones that matter).
 
     Parameters
     ----------
     subjects_dir : string
         Directory to put RHINO subject dirs in.
-        Files will be in subjects_dir/subject/rhino/coreg/
+        Files will be in subjects_dir/subject/rhino/coreg.
     subject : string
         Subject name dir to put RHINO files in.
-        Files will be in subjects_dir/subject/rhino/coreg/
+        Files will be in subjects_dir/subject/rhino/coreg.
     plot_type : string
         Either:
-            'surf' to do a 3D surface plot using surface meshes
-            'scatter' to do a scatter plot using just point clouds
+            'surf' to do a 3D surface plot using surface meshes.
+            'scatter' to do a scatter plot using just point clouds.
     display_outskin_with_nose : bool
-        Whether to show nose with scalp surface in the display
+        Whether to show nose with scalp surface in the display.
     display_outskin : bool
-        Whether to show scalp surface in the display
+        Whether to show scalp surface in the display.
     display_sensors : bool
-        Whether to include sensors in the display
+        Whether to include sensors in the display.
     display_sensor_oris - bool
-        Whether to include sensor orientations in the display
+        Whether to include sensor orientations in the display.
     display_fiducials - bool
-        Whether to include fiducials in the display
+        Whether to include fiducials in the display.
     display_headshape_pnts - bool
-        Whether to include headshape points in the display
+        Whether to include headshape points in the display.
     filename : str
         Filename to save display to (as an interactive html).
         Must have extension .html.
@@ -1139,12 +1137,12 @@ def bem_display(
         Subject name dir to find RHINO files in.
     plot_type : string
         Either:
-            'surf' to do a 3D surface plot using surface meshes
-            'scatter' to do a scatter plot using just point clouds
+            'surf' to do a 3D surface plot using surface meshes.
+            'scatter' to do a scatter plot using just point clouds.
     display_outskin_with_nose : bool
-        Whether to include nose with scalp surface in the display
+        Whether to include nose with scalp surface in the display.
     display_sensors : bool
-        Whether to include sensor locations in the display
+        Whether to include sensor locations in the display.
     filename : str
         Filename to save display to (as an interactive html).
         Must have extension .html.

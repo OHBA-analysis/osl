@@ -24,8 +24,7 @@ from osl.utils.logger import log_or_print
 
 
 def get_surfaces_filenames(subjects_dir, subject):
-    """
-    Generates a dict of files generated and used by rhino.compute_surfaces.
+    """Generates a dict of files generated and used by rhino.compute_surfaces.
 
     Files will be in subjects_dir/subject/rhino/surfaces.
 
@@ -40,11 +39,10 @@ def get_surfaces_filenames(subjects_dir, subject):
     -------
     filenames : dict
         A dict of files generated and used by rhino.compute_surfaces.
-
         Note that  due to the unusal naming conventions used by BET:
-         - bet_inskull_*_file is actually the brain surface
-         - bet_outskull_*_file is actually the inner skull surface
-         - bet_outskin_*_file is the outer skin/scalp surface
+        - bet_inskull_*_file is actually the brain surface
+        - bet_outskull_*_file is actually the inner skull surface
+        - bet_outskin_*_file is the outer skin/scalp surface
     """
     basedir = op.join(subjects_dir, subject, "rhino", "surfaces")
     os.makedirs(basedir, exist_ok=True)
@@ -106,14 +104,14 @@ def compute_surfaces(
     3) Use flirt to register skull stripped sMRI to MNI space
     4) Use BET/BETSURF to get:
     a) The scalp surface (excluding nose), this gives the sMRI-derived
-        headshape points in native sMRI space, which can be used in the
-        headshape points registration later.
+       headshape points in native sMRI space, which can be used in the
+       headshape points registration later.
     b) The scalp surface (outer skin), inner skull and brain surface,
        these can be used for forward modelling later.
        Note that  due to the unusal naming conventions used by BET:
-        - bet_inskull_mesh_file is actually the brain surface
-        - bet_outskull_mesh_file is actually the inner skull surface
-        - bet_outskin_mesh_file is the outer skin/scalp surface
+       - bet_inskull_mesh_file is actually the brain surface
+       - bet_outskull_mesh_file is actually the inner skull surface
+       - bet_outskin_mesh_file is the outer skin/scalp surface
     5) Refine scalp outline, adding nose to scalp surface (optional)
     6) Output the transform from sMRI space to MNI
     7) Output surfaces in sMRI space
@@ -129,11 +127,11 @@ def compute_surfaces(
         will be the native/sMRI axis used throughout rhino. The qform
         will be ignored.
     subjects_dir : string
-        Directory to put RHINO subject dirs in.
-        Files will be in subjects_dir/subject/surfaces/
+        Directory to put RHINO subject directories in.
+        Files will be in subjects_dir/subject/surfaces.
     subject : string
-        Subject name dir to put RHINO files in.
-        Files will be in subjects_dir/subject/surfaces/
+        Subject name directory to put RHINO files in.
+        Files will be in subjects_dir/subject/surfaces.
     include_nose : bool
         Specifies whether to add the nose to the outer skin
         (scalp) surface. This can help rhino's coreg to work
@@ -141,10 +139,11 @@ def compute_surfaces(
         include the nose.
         Requires the smri_file to have a FOV that includes the nose!
     cleanup_files : bool
-        Specifies whether to cleanup intermediate files in the coreg dir.
+        Specifies whether to cleanup intermediate files in the coreg
+        directory.
     recompute_surfaces : bool
-        Specifies whether or not to run compute_surfaces, if the passed in
-        options have already been run
+        Specifies whether or not to run compute_surfaces if the passed in
+        options have already been run.
     """
 
     # Note the jargon used varies for xforms and coord spaces, e.g.:
@@ -612,21 +611,25 @@ please check output of:\n fslorient -orient {}".format(
 def surfaces_display(subjects_dir, subject):
     """Display surfaces.
 
-    Displays the surfaces extracted from the sMRI using rhino.compute_surfaces
-    Display is shown in sMRI (native) space
+    Displays the surfaces extracted from the sMRI using
+    rhino.compute_surfaces.
+
+    Display is shown in sMRI (native) space.
 
     Parameters
     ----------
     subjects_dir : string
-        Directory to put RHINO subject dirs in.
-        Files will be in subjects_dir/subject/surfaces/
+        Directory to put RHINO subject directories in.
+        Files will be in subjects_dir/subject/surfaces.
     subject : string
-        Subject name dir to put RHINO files in.
-        Files will be in subjects_dir/subject/surfaces/
+        Subject name directory to put RHINO files in.
+        Files will be in subjects_dir/subject/surfaces.
 
-    Note that bet_inskull_mesh_file is actually the brain surface and
-    bet_outskull_mesh_file is the inner skull surface, due to the naming
-    conventions used by BET
+    Notes
+    -----
+    bet_inskull_mesh_file is actually the brain surface and
+    bet_outskull_mesh_file is the inner skull surface, due to
+    the naming conventions used by BET.
     """
 
     filenames = get_surfaces_filenames(subjects_dir, subject)

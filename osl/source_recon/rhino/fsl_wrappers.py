@@ -40,7 +40,7 @@ def fsleyes(image_list):
 
     Parameters
     ----------
-    image_list : string or tuple of strings
+    image_list : string | tuple of strings
         Niftii filenames or tuple of niftii filenames
 
     Examples
