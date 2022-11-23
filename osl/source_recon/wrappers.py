@@ -793,7 +793,13 @@ def fix_sign_ambiguity(
 
     # Find the channels to flip
     flips, metrics = sign_flipping.find_flips(
-        cov, template_cov, n_embeddings, n_init, n_iter, max_flips,
+        cov,
+        template_cov,
+        n_embeddings,
+        n_init,
+        n_iter,
+        max_flips,
+        use_tqdm=False,
     )
 
     # Apply flips to the parcellated data

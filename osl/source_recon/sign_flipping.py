@@ -14,11 +14,10 @@ from tqdm import trange
 
 from osl.utils.logger import log_or_print
 
-import logging
-osl_logger = logging.getLogger(__name__)
 
-
-def find_flips(cov, template_cov, n_embeddings, n_init, n_iter, max_flips):
+def find_flips(
+    cov, template_cov, n_embeddings, n_init, n_iter, max_flips, use_tqdm=True
+):
     """Find channels to flip.
 
     We search for the channels to flip by randomly flipping them and saving the
@@ -38,6 +37,8 @@ def find_flips(cov, template_cov, n_embeddings, n_init, n_iter, max_flips):
         Number of sign flipping iterations per subject to perform.
     max_flips : int
         Maximum number of channels to flip in an iteration.
+    use_tqdm : bool
+        Should we display a tqdm progress bar?
 
     Returns
     -------
@@ -73,10 +74,10 @@ def find_flips(cov, template_cov, n_embeddings, n_init, n_iter, max_flips):
             log_or_print(f"init {n}, unflipped metric: {metric}")
 
         # Randomly permute the sign of different channels and calculate the metric
-        if hasattr(osl_logger, "already_setup"):
-            iterator = range(n_iter)
-        else:
+        if use_tqdm:
             iterator = trange(n_iter, desc="sign flipping", ncols=98)
+        else:
+            iterator = range(n_iter)
         for j in iterator:
             new_flips = randomly_flip(flips, max_flips)
             new_cov = apply_flips_to_covariance(cov, new_flips, n_embeddings)

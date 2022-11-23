@@ -8,7 +8,7 @@ Note, the parcellated data is saved to: {src_dir}/*/{event_type}/rhino/parc.npy
 from osl import source_recon
 
 # Setup paths to epoched data files
-event_type = "external_disp"
+event_type = "internal_disp"
 epoch_dir = f"/ohba/pi/knobre/cgohil/dg_int_ext/epoch/{event_type}"
 subjects = ["s01_block_01", "s01_block_02"]
 
@@ -22,12 +22,12 @@ for subject in subjects:
     epoch_files.append(f"{epoch_dir}/{run_id}_preproc_raw/{run_id}_preproc_raw_epo.fif")
 
 # Setup paths to structural MRI files
-smri_dir = "/ohba/pi/knobre/dgresch/Internal_External/data/raw/mri"
+smri_dir = "/ohba/pi/knobre/dgresch/Internal_External/data/mri/02_onlyT1"
 
 smri_files = []
 for subject in subjects:
     s = subject.split("_")[0]
-    smri_files.append(f"{smri_dir}/{s}/images_03_t1_mpr_ax_1mm_iso_withNose_32ch_v2.nii")
+    smri_files.append(f"{smri_dir}/{s}.nii")
 
 # Settings
 config = """

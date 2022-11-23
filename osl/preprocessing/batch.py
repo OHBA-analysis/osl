@@ -375,13 +375,15 @@ def write_dataset(dataset, outbase, run_id, overwrite=False):
 
     return fif_outname
 
-def read_dataset(fif):
+def read_dataset(fif, preload=False):
     """Reads fif/npy/yml files associated with a dataset.
 
     Parameters
     ----------
     fif : str
         Path to raw fif file (can be preprocessed).
+    preload : bool
+        Should we load the raw fif data?
 
     Returns
     -------
@@ -391,7 +393,7 @@ def read_dataset(fif):
     print("Loading dataset:")
 
     print("Reading", fif)
-    raw = mne.io.read_raw_fif(fif)
+    raw = mne.io.read_raw_fif(fif, preload=preload)
 
     events = Path(fif.replace("preproc_raw.fif", "events.npy"))
     if events.exists():
