@@ -67,9 +67,14 @@ setup(name=name,
                 'osl.source_recon.parcellation'],
 
 
-      package_data={'osl': ['utils/*tree',
+      package_data={'osl': [# Simulations
                             'utils/simulation_config/*npy',
                             'utils/simulation_config/*fif',
+                            # Channel information
+                            'utils/neuromag306_info.yml',
+                            # Parcellation files
+                            'osl/source_recon/parcellation/files/*gz',
+                            # Report templates
                             'report/templates/*']},
 
       command_options={
