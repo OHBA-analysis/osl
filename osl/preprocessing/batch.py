@@ -757,7 +757,6 @@ def run_proc_chain(
             report_data_dir,
             ica=dataset["ica"],
             preproc_fif_filename=fif_outname,
-            logger=logger,
         )
         gen_html_page(reportdir)
 
