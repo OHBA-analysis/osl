@@ -61,7 +61,7 @@ setup(name=name,
               'osl_preproc = osl.preprocessing.batch:main',
           ]},
 
-      packages=['osl', 'osl.report', 'osl.maxfilter',
+      packages=['osl', 'osl.tests', 'osl.report', 'osl.maxfilter',
                 'osl.preprocessing', 'osl.utils', 'osl.utils.spmio',
                 'osl.source_recon', 'osl.source_recon.rhino',
                 'osl.source_recon.parcellation'],
@@ -73,7 +73,7 @@ setup(name=name,
                             # Channel information
                             'utils/neuromag306_info.yml',
                             # Parcellation files
-                            'osl/source_recon/parcellation/files/*gz',
+                            'source_recon/parcellation/files/*gz',
                             # Report templates
                             'report/templates/*']},
 
