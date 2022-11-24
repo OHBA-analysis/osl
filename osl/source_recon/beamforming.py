@@ -638,7 +638,7 @@ def transform_leadfield(
             leadfield_out[:, cc] = leadfield[:, recon_index]
             recon_indices[cc] = recon_index
 
-    return leadfield_out, reference_brain_resampled, coords_out, recon_indices
+    return leadfield_out
 
 
 @verbose
