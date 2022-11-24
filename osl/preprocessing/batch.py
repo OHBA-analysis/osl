@@ -898,6 +898,7 @@ def run_proc_batch(
     else:
         proc_flags = [pool_func(*aa) for aa in args]
 
+    osl_logger.set_up(log_file=logfile, level=verbose, startup=False)
     logger.info(
         "Processed {0}/{1} files successfully".format(
             np.sum(proc_flags), len(proc_flags)
