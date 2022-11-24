@@ -44,14 +44,13 @@ config = """
         orthogonalisation: symmetric
 """
 
-def remove_headshape_points(src_dir, subject, preproc_file, smri_file, logger):
+def remove_headshape_points(src_dir, subject, preproc_file, smri_file, epoch_file, logger):
     """Removes headshape points near the nose."""
 
-    # Get coreg filenames
-    subjects_dir = op.join(src_dir, "coreg")
-    filenames = source_recon.rhino.get_coreg_filenames(subjects_dir, subject)
+    # Get coreg filenames
+    filenames = source_recon.rhino.get_coreg_filenames(src_dir, subject)
 
-    # Load saved headshape and nasion files
+    # Load saved headshape and nasion files
     hs = np.loadtxt(filenames["polhemus_headshape_file"])
     nas = np.loadtxt(filenames["polhemus_nasion_file"])
 
@@ -65,7 +64,7 @@ def remove_headshape_points(src_dir, subject, preproc_file, smri_file, logger):
     keep = distances > 70  
     hs = hs[:, keep]
 
-    # Overwrite headshape file
+    # Overwrite headshape file
     logger.info(f"overwritting {filenames['polhemus_headshape_file']}")
     np.savetxt(filenames["polhemus_headshape_file"], hs)
 

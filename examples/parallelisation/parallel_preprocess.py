@@ -37,7 +37,7 @@ if __name__ == "__main__":
 
     # Setup a Dask client for parallel processing
     #
-    # Generally, we advise leaving threads_per_worker=1
+    # Generally, we advise leaving threads_per_worker=1
     # and setting n_workers to the number of CPUs you want
     # to use.
     #
