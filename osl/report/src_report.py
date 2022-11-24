@@ -231,7 +231,7 @@ def gen_html_summary(reportdir):
 
     if data["fix_sign_ambiguity"]:
         data["template"] = subject_data[0]["template"]
-        metrics = np.array([d["metrics"] for d in subject_data])
+        metrics = np.array([d["metrics"] for d in subject_data if "metrics" in d])
         data["plt_sflip"] = plot_sign_flipping_results(metrics, reportdir)
 
     # Create panel
