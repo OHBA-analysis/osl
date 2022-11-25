@@ -42,10 +42,10 @@ from mne.utils import (
     _sym_mat_pow,
     _check_src_normal,
     check_version,
-    logger,
     verbose,
     warn,
 )
+from mne.utils import logger as mne_logger
 
 from osl.source_recon import rhino
 from osl.source_recon.rhino import utils as rhino_utils
@@ -69,48 +69,46 @@ def make_lcmv(
     depth=None,
     inversion="matrix",
     verbose=None,
-    logger=None,
     save_figs=False,
 ):
     """Compute LCMV spatial filter.
 
-    Wrapper for RHINO version of mne.beamformer.make_lcmv
+    Wrapper for RHINO version of mne.beamformer.make_lcmv.
 
     Parameters
     ----------
     subjects_dir : string
-        Directory to find RHINO subject dirs in.
+        Directory to find RHINO subject directories in.
     subject : string
-        Subject name dir to find RHINO fwd model file in.
-    data : instance of raw or epochs
+        Subject name directory to find RHINO fwd model file in.
+    data : instance of mne.Raw | mne.Epochs
         The measurement data to specify the channels to include.
         Bad channels in info['bads'] are not used.
         Will also be used to calculate data_cov
-    data_cov : instance of Covariance | None
+    data_cov : instance of mne.Covariance | None
         The noise covariance matrix used to whiten.
         If None will be computed from dat.
-    noise_cov : instance of Covariance | None
+    noise_cov : instance of mne.Covariance | None
         The noise covariance matrix used to whiten.
         If None will be computed from dat as a diagonal matrix
         with variances set to the average of all sensors of that type.
-    chantypes : List
+    chantypes : list
         List of channel types to use. E.g. ['eeg'], ['mag', 'grad'],
         ['eeg', 'mag', 'grad'].
     reg : float
         The regularization for the whitened data covariance.
     label : instance of Label
         Restricts the LCMV solution to a given label.
-    logger : logging.getLogger()
-        Logger.
     save_figs : bool
         Should we save figures?
 
     Returns
     -------
-    filters : instance of MNE Beamformer
-        Dictionary containing filter weights from LCMV beamformer. See MNE docs.
+    filters : instance of mne.beamformer.Beamformer
+        Dictionary containing filter weights from LCMV beamformer.
+        See MNE docs.
     """
-    log_or_print("*** RUNNING OSL MAKE LCMV ***", logger)
+    log_or_print("*** RUNNING OSL MAKE LCMV ***")
 
     # load forward solution
     fwd_fname = rhino.get_coreg_filenames(subjects_dir, subject)["forward_model_file"]
@@ -164,10 +162,7 @@ def make_lcmv(
             # Mean variance of channels of this type
             variance = np.mean(np.diag(data_cov.data)[inds])
             noise_cov_diag[inds] = variance
-            log_or_print(
-                "variance for chantype {} is {}".format(type, variance),
-                logger,
-            )
+            log_or_print("variance for chantype {} is {}".format(type, variance))
 
         bads = [b for b in data.info["bads"] if b in data_cov.ch_names]
         noise_cov = Covariance(
@@ -201,7 +196,7 @@ def make_lcmv(
         )
         plt.close("all")
 
-    log_or_print("*** OSL MAKE LCMV COMPLETE ***", logger)
+    log_or_print("*** OSL MAKE LCMV COMPLETE ***")
 
     return filters
 
@@ -242,26 +237,26 @@ def apply_lcmv_raw(raw, filters, reject_by_annotations="omit"):
 
 
 def get_recon_timeseries(subjects_dir, subject, coord_mni, recon_timeseries_head):
-    """Gets the reconstructed time series nearest to the passed in coordinate
-    in MNI space>
+    """Gets the reconstructed time series nearest to the passed coordinates
+    in MNI space.
 
     Parameters
     ----------
     subjects_dir : string
-        Directory to find RHINO subject dirs in.
+        Directory to find RHINO subject directories in.
     subject : string
-        Subject name dir to find RHINO files in.
-    coord_mni : (3,) np.array
+        Subject name directory to find RHINO files in.
+    coord_mni : (3,) numpy.ndarray
         3D coordinate in MNI space to get timeseries for
     recon_timeseries_head : (ndipoles, ntpts) np.array
-        Reconstructed time courses in head (polhemus) space
+        Reconstructed time courses in head (polhemus) space.
         Assumes that the dipoles are the same (and in the same order)
         as those in the forward model, coreg_filenames['forward_model_file'].
 
     Returns
     -------
     recon_timeseries : numpy.ndarray
-        The timecourse in recon_timeseries_head nearest to coord_mni
+        The timecourse in recon_timeseries_head nearest to coord_mni.
     """
 
     surfaces_filenames = rhino.get_surfaces_filenames(subjects_dir, subject)
@@ -273,7 +268,7 @@ def get_recon_timeseries(subjects_dir, subject, coord_mni, recon_timeseries_head
 
     # Get hold of coords of points reconstructed to.
     # Note, MNE forward model is done in head space in metres.
-    # Rhino does everything in mm
+    # RHINO does everything in mm
     fwd = read_forward_solution(coreg_filenames["forward_model_file"])
     vs = fwd["src"][0]
     recon_coords_head = vs["rr"][vs["vertno"]] * 1000  # in mm
@@ -298,7 +293,6 @@ def transform_recon_timeseries(
     recon_timeseries,
     spatial_resolution=None,
     reference_brain="mni",
-    logger=None,
 ):
     """Spatially resamples a (ndipoles x ntpts) array of reconstructed time
     courses (in head/polhemus space) to dipoles on the brain grid of the
@@ -307,16 +301,16 @@ def transform_recon_timeseries(
     Parameters
     ----------
     subjects_dir : string
-        Directory to find RHINO subject dirs in.
+        Directory to find RHINO subject directories in.
     subject : string
-        Subject name dir to find RHINO files in.
+        Subject name directory to find RHINO files in.
     recon_timeseries : numpy.ndarray
         (ndipoles, ntpts) or (ndipoles, ntpts, ntrials) of reconstructed time courses
         (in head (polhemus) space). Assumes that the dipoles are the same (and in the
         same order) as those in the forward model,
         coreg_filenames['forward_model_file']. Typically derive from the
         VolSourceEstimate's output by MNE source recon methods, e.g.
-        mne.beamformer.apply_lcmv, obtained using a forward model generated by Rhino.
+        mne.beamformer.apply_lcmv, obtained using a forward model generated by RHINO.
     spatial_resolution : int
         Resolution to use for the reference brain in mm
         (must be an integer, or will be cast to nearest int)
@@ -328,24 +322,21 @@ def transform_recon_timeseries(
             the scaled native/mri space. "
         'unscaled_mri' indicates that the reference_brain is the subject's sMRI in
             unscaled native/mri space.
-        Note that Scaled/unscaled relates to the allow_smri_scaling option in coreg.
-        If allow_scaling was False, then the unscaled MRI will be the same as the scaled.
-        MRI.
-    logger : logging.getLogger
-        Logger.
+        Note that scaled/unscaled relates to the allow_smri_scaling option in coreg.
+        If allow_scaling was False, then the unscaled MRI will be the same as the
+        scaled MRI.
 
     Returns
     -------
-    recon_timeseries_out : numpy.ndarray
-        (ndipoles, ntpts) np.array of reconstructed time courses resampled
-        on the reference brain grid.
+    recon_timeseries_out : (ndipoles, ntpts) numpy.ndarray
+        Array of reconstructed time courses resampled on the reference brain grid.
     reference_brain_fname : string
         File name of the requested reference brain at the requested
         spatial resolution, int(spatial_resolution)
-        (with zero for background, and !=0 for brain)
-    coords_out : numpy.ndarray
-        (3, ndipoles) np.array of coordinates (in mm) of dipoles in
-        recon_timeseries_out in "reference_brain" space
+        (with zero for background, and !=0 for brain).
+    coords_out : (3, ndipoles) numpy.ndarray
+        Array of coordinates (in mm) of dipoles in recon_timeseries_out in
+        "reference_brain" space.
     """
 
     surfaces_filenames = rhino.get_surfaces_filenames(subjects_dir, subject)
@@ -354,7 +345,7 @@ def transform_recon_timeseries(
     # -------------------------------------------------------
     # Get hold of coords of points reconstructed to.
     # Note, MNE forward model is done in head space in metres.
-    # Rhino does everything in mm
+    # RHINO does everything in mm
     fwd = read_forward_solution(coreg_filenames["forward_model_file"])
     vs = fwd["src"][0]
     recon_coords_head = vs["rr"][vs["vertno"]] * 1000  # in mm
@@ -371,7 +362,7 @@ def transform_recon_timeseries(
         spatial_resolution = int(np.round(np.min(store[np.where(store > 0)]) * 1000))
 
     spatial_resolution = int(spatial_resolution)
-    log_or_print(f"spatial_resolution = {spatial_resolution} mm", logger)
+    log_or_print(f"spatial_resolution = {spatial_resolution} mm")
 
     if reference_brain == "mni":
         # reference is mni stdbrain
@@ -489,9 +480,10 @@ def _make_lcmv(
 ):
     """Compute LCMV spatial filter.
 
-    RHINO version of mne.beamformer.make_lcmv Code that is different to
-    mne.beamformer.make_lcmv is labelled with MWW.
+    RHINO version of mne.beamformer.make_lcmv.
     """
+    # Code that is different to mne.beamformer.make_lcmv is labelled with MWW
+
     # check number of sensor types present in the data and ensure a noise cov
     info = _simplify_info(info)
     noise_cov, _, allow_mismatch = _check_one_ch_type(
@@ -519,9 +511,9 @@ def _make_lcmv(
     # MWW
     # del noise_rank
     rank = data_rank
-    logger.info("Making LCMV beamformer with data cov rank %s" % (rank,))
+    mne_logger.info("Making LCMV beamformer with data cov rank %s" % (rank,))
     # MWW added:
-    logger.info("Making LCMV beamformer with noise cov rank %s" % (noise_rank,))
+    mne_logger.info("Making LCMV beamformer with noise cov rank %s" % (noise_rank,))
 
     del data_rank
     depth = _check_depth(depth, "depth_sparse")
@@ -596,14 +588,13 @@ def _compute_beamformer(
     For more detailed information on the parameters, see the docstrings of
     `make_lcmv` and `make_dics`.
 
-    RHINO version of mne.beamformer._compute_beamformer
-    See lines marked MWW for where code has been changed
+    RHINO version of mne.beamformer._compute_beamformer.
 
     Parameters
     ----------
-    G : ndarray, shape (n_dipoles, n_channels)
+    G : (n_dipoles, n_channels) numpy.ndarray
         The leadfield.
-    Cm : ndarray, shape (n_channels, n_channels)
+    Cm : (n_channels, n_channels) numpy.ndarray
         The data covariance matrix.
     reg : float
         Regularization parameter.
@@ -619,18 +610,20 @@ def _compute_beamformer(
         See compute_rank.
     inversion : 'matrix' | 'single'
         The inversion scheme to compute the weights.
-    nn : ndarray, shape (n_dipoles, 3)
+    nn : (n_dipoles, 3) numpy.ndarray
         The source normals.
-    orient_std : ndarray, shape (n_dipoles,)
+    orient_std : (n_dipoles,) numpy.ndarray
         The std of the orientation prior used in weighting the lead fields.
-    whitener : ndarray, shape (n_channels, n_channels)
+    whitener : (n_channels, n_channels) numpy.ndarray
         The whitener.
 
     Returns
     -------
-    W : ndarray, shape (n_dipoles, n_channels)
+    W : (n_dipoles, n_channels) numpy.ndarray
         The beamformer filter weights.
     """
+    # Lines changes are marked with MWW
+
     _check_option(
         "weight_norm",
         weight_norm,
@@ -661,7 +654,7 @@ def _compute_beamformer(
     n_sources = G.shape[1] // n_orient
     assert nn.shape == (n_sources, 3)
 
-    logger.info(
+    mne_logger.info(
         "Computing beamformer filters for %d source%s" % (n_sources, _pl(n_sources))
     )
     n_channels = G.shape[0]
@@ -860,7 +853,7 @@ def _compute_beamformer(
             W /= np.sqrt(noise)
 
     W = W.reshape(n_sources * n_orient, n_channels)
-    logger.info("Filter computation complete")
+    mne_logger.info("Filter computation complete")
     return W, max_power_ori
 
 
@@ -882,9 +875,8 @@ def _prepare_beamformer_input(
     """Input preparation common for LCMV, DICS, and RAP-MUSIC.
 
     RHINO version of mne.beamformer._prepare_beamformer_input.
-
-    See lines marked MWW (or CG) for where code has been changed.
     """
+    # Lines marked MWW (or CG) for where code has been changed.
 
     # MWW
     # _check_option('pick_ori', pick_ori, ('normal', 'max-power', 'vector', None))

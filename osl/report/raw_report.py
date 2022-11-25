@@ -76,7 +76,7 @@ def get_header_id(raw):
     return raw.filenames[0].split('/')[-1].strip('.fif')
 
 
-def gen_html_data(raw, outdir, ica=None, preproc_fif_filename=None, logger=None):
+def gen_html_data(raw, outdir, ica=None, preproc_fif_filename=None):
     """Generate HTML web-report for an MNE data object.
 
     Parameters
@@ -89,8 +89,6 @@ def gen_html_data(raw, outdir, ica=None, preproc_fif_filename=None, logger=None)
         ICA object.
     preproc_fif_filename : str
         Filename of file output by preprocessing
-    logger : logging.getLogger
-        Logger.
     """
 
     data = {}
@@ -113,7 +111,7 @@ def gen_html_data(raw, outdir, ica=None, preproc_fif_filename=None, logger=None)
     try:
         data['nhpi'] = len(raw.info['hpi_meas'][0]['hpi_coils'])
     except:
-        log_or_print("No HPI info in fif file", logger)
+        log_or_print("No HPI info in fif file")
 
     chtype = [channel_type(raw.info, c) for c in range(data['nchans'])]
     chs, chcounts = np.unique(chtype, return_counts=True)
@@ -373,8 +371,12 @@ def plot_channel_time_series(raw, savebase=None, exclude_bads=False):
         # ~28 reference axial grads if {picks: 'grad'}
 
         channel_types = {
-            'Axial Grads (chtype=''mag'')': mne.pick_types(raw.info, meg='mag', ref_meg=False, exclude=exclude),
-            'Ref Axial Grad (chtype=''ref_meg'')': mne.pick_types(raw.info, meg='grad', exclude=exclude),
+            'Axial Grads (chtype=mag)': mne.pick_types(
+                raw.info, meg='mag', ref_meg=False, exclude=exclude
+            ),
+            'Ref Axial Grad (chtype=ref_meg)': mne.pick_types(
+                raw.info, meg='grad', exclude=exclude
+            ),
             'EEG': mne.pick_types(raw.info, eeg=True),
             'CSD': mne.pick_types(raw.info, csd=True),
         }

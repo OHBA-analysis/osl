@@ -12,17 +12,20 @@ import pandas as pd
 
 from osl import source_recon
 
+import logging
+logger = logging.getLogger("osl")
+
 
 RAW_DIR = "/ohba/pi/mwoolrich/datasets/mrc_meguk_public/Nottingham"
 PREPROC_DIR = "/ohba/pi/mwoolrich/cgohil/ukmp_notts/preproc"
 SRC_DIR = "/ohba/pi/mwoolrich/cgohil/ukmp_notts/src"
 
 SMRI_FILE = "/ohba/pi/mwoolrich/cgohil/ukmp_notts/smri/{0}_T1w.nii.gz"
-PREPROC_FILE = PREPROC_DIR + "/{0}_task-resteyesopen_meg_preproc_raw.fif"
+PREPROC_FILE = PREPROC_DIR + "/{0}_task-resteyesopen_meg/{0}_task-resteyesopen_meg_preproc_raw.fif"
 POS_FILE = RAW_DIR + "/{0}/meg/{0}_headshape.pos"
 
 
-def save_polhemus_from_pos(src_dir, subject, preproc_file, smri_file, logger):
+def save_polhemus_from_pos(src_dir, subject, preproc_file, smri_file, epoch_file):
     """Saves fiducials/headshape from a pos file."""
 
     # Load pos file
@@ -92,7 +95,7 @@ source_recon.setup_fsl("/home/cgohil/local/fsl")
 subjects = []
 preproc_files = []
 smri_files = []
-for path in sorted(glob(PREPROC_DIR + "/sub-*_preproc_raw.fif")):
+for path in sorted(glob(PREPROC_DIR + "/*/sub-*_preproc_raw.fif")):
     subject = Path(path).stem.split("_")[0]
     subjects.append(subject)
     preproc_files.append(PREPROC_FILE.format(subject))

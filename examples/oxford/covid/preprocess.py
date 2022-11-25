@@ -35,5 +35,5 @@ preprocessing.run_proc_batch(
     config,
     inputs,
     outdir=preproc_dir,
-    overwrite=true,
+    overwrite=True,
 )

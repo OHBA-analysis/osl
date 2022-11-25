@@ -185,7 +185,7 @@ def run_src_chain(
                         + "Please pass via extra_funcs "
                         + f"or use available functions: {avail_names}."
                     )
-            func(src_dir, subject, preproc_file, smri_file, epoch_file, logger, **userargs)
+            func(src_dir, subject, preproc_file, smri_file, epoch_file, **userargs)
 
     except Exception as e:
         logger.critical("*********************************")
@@ -209,7 +209,7 @@ def run_src_chain(
         return False
 
     # Generate HTML data for the report
-    src_report.gen_html_data(config, src_dir, subject, reportdir, logger)
+    src_report.gen_html_data(config, src_dir, subject, reportdir)
 
     return True
 
@@ -321,6 +321,7 @@ def run_src_batch(
     else:
         flags = [pool_func(*aa) for aa in args]
 
+    osl_logger.set_up(log_file=logfile, level=verbose, startup=False)
     logger.info(
         "Processed {0}/{1} files successfully".format(int(np.sum(flags)), len(flags))
     )

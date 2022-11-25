@@ -21,7 +21,7 @@ for subject in subjects:
 for preproc_file, run_id in zip(preproc_files, run_ids):
 
     # Load preprocessed fif and ICA
-    dataset = preprocessing.read_dataset(preproc_file)
+    dataset = preprocessing.read_dataset(preproc_file, preload=True)
     raw = dataset["raw"]
     ica = dataset["ica"]
 
@@ -32,6 +32,4 @@ for preproc_file, run_id in zip(preproc_files, run_ids):
     raw = ica.apply(raw)
 
     # Save cleaned data
-    dataset["raw"] = raw
-    dataset["ica"] = ica
-    preprocessing.write_dataset(dataset, preproc_dir, run_id, overwrite=True)
+    dataset["raw"].save(preproc_file, overwrite=True)

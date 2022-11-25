@@ -375,13 +375,15 @@ def write_dataset(dataset, outbase, run_id, overwrite=False):
 
     return fif_outname
 
-def read_dataset(fif):
+def read_dataset(fif, preload=False):
     """Reads fif/npy/yml files associated with a dataset.
 
     Parameters
     ----------
     fif : str
         Path to raw fif file (can be preprocessed).
+    preload : bool
+        Should we load the raw fif data?
 
     Returns
     -------
@@ -391,7 +393,7 @@ def read_dataset(fif):
     print("Loading dataset:")
 
     print("Reading", fif)
-    raw = mne.io.read_raw_fif(fif)
+    raw = mne.io.read_raw_fif(fif, preload=preload)
 
     events = Path(fif.replace("preproc_raw.fif", "events.npy"))
     if events.exists():
@@ -755,7 +757,6 @@ def run_proc_chain(
             report_data_dir,
             ica=dataset["ica"],
             preproc_fif_filename=fif_outname,
-            logger=logger,
         )
         gen_html_page(reportdir)
 
@@ -897,6 +898,7 @@ def run_proc_batch(
     else:
         proc_flags = [pool_func(*aa) for aa in args]
 
+    osl_logger.set_up(log_file=logfile, level=verbose, startup=False)
     logger.info(
         "Processed {0}/{1} files successfully".format(
             np.sum(proc_flags), len(proc_flags)

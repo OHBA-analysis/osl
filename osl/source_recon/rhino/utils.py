@@ -52,7 +52,7 @@ def get_gridstep(coords):
     Returns
     -------
     gridstep: int
-        Spatial resolution of dipole grid in mm
+        Spatial resolution of dipole grid in mm.
     """
     store = []
     for ii in range(coords.shape[0]):
@@ -64,20 +64,19 @@ def get_gridstep(coords):
 
 def niimask2indexpointcloud(nii_fname, volindex=None):
     """Takes in a nii.gz mask file name (which equals zero for background and
-    neq zero for the mask) and returns the mask as a 3 x npoints point cloud.
+    != zero for the mask) and returns the mask as a 3 x npoints point cloud.
 
     Parameters
     ----------
     nii_fname : string
-        A nii.gz mask file name
-        (with zero for background, and !=0 for the mask)
+        A nii.gz mask file name (with zero for background, and !=0 for the mask).
     volindex : int
-        Volume index, used if nii_mask is a 4D file
+        Volume index, used if nii_mask is a 4D file.
 
     Returns
     -------
-    pc : nd.array
-        3 x npoints point cloud as voxel indices
+    pc : numpy.ndarray
+        3 x npoints point cloud as voxel indices.
     """
 
     vol = nib.load(nii_fname).get_fdata()
@@ -105,14 +104,14 @@ def niimask2mmpointcloud(nii_mask, volindex=None):
     ----------
     nii_mask : string
         A nii.gz mask file name or the [x,y,z] volume
-        (with zero for background, and !=0 for the mask)
+        (with zero for background, and !=0 for the mask).
     volindex : int
-        Volume index, used if nii_mask is a 4D file
+        Volume index, used if nii_mask is a 4D file.
 
     Returns
     -------
     pc : numpy.ndarray
-        3 x npoints point cloud as mm in native space (using sform)
+        3 x npoints point cloud as mm in native space (using sform).
     values : numpy.ndarray
          npoints values.
     """
@@ -139,9 +138,14 @@ def niimask2mmpointcloud(nii_mask, volindex=None):
 
 
 def _closest_node(node, nodes):
-    """
-    Find nearest node in nodes to the passed in node.
-    Returns the index to the nearest node in nodes.
+    """Find nearest node in nodes to the passed in node.
+
+    Returns
+    -------
+    index : int
+        Index to the nearest node in nodes.
+    distance : float
+        Distance.
     """
 
     if len(nodes) == 1:
@@ -284,9 +288,9 @@ def rigid_transform_3D(B, A, compute_scaling=False):
     Parameters
     ----------
     A : numpy.ndarray
-        3 x num_points. Set of points to register from
+        3 x num_points. Set of points to register from.
     B : numpy.ndarray
-        3 x num_points. Set of points to register to
+        3 x num_points. Set of points to register to.
 
     compute_scaling : bool
         Do we compute a scaling on top of rotation and translation?
@@ -294,9 +298,10 @@ def rigid_transform_3D(B, A, compute_scaling=False):
     Returns
     -------
     xform : numpy.ndarray
-        Calculated affine transform, does not include scaling
+        Calculated affine transform, does not include scaling.
     scaling_xform : numpy.ndarray
-        Calculated scaling transform (a diagonal 4x4 matrix), does not include rotation or translation
+        Calculated scaling transform (a diagonal 4x4 matrix),
+        does not include rotation or translation.
 
     see http://nghiaho.com/?page_id=671
     """
@@ -367,14 +372,14 @@ def xform_points(xform, pnts):
     Parameters
     ----------
     xform : numpy.ndarray
-        4x4 matrix containing the affine transform
+        4x4 matrix containing the affine transform.
     pnts : numpy.ndarray
-        points to transform, should be 3 x num_points
+        points to transform, should be 3 x num_points.
 
     Returns
     -------
     newpnts : numpy.ndarray
-        pnts following the xform, will be 3 x num_points
+        pnts following the xform, will be 3 x num_points.
     """
     if len(pnts.shape) == 1:
         pnts = np.reshape(pnts, [-1, 1])
@@ -446,16 +451,16 @@ def nearest_neighbor(src, dst):
     Parameters
     ----------
     src : numpy.ndarray
-        Nxm array of points
+        Nxm array of points.
     dst : numpy.ndarray
-        Nxm array of points
+        Nxm array of points.
 
     Returns
     -------
     distances : numpy.ndarray
-        Euclidean distances of the nearest neighbor
+        Euclidean distances of the nearest neighbor.
     indices : numpy.ndarray
-        dst indices of the nearest neighbor
+        dst indices of the nearest neighbor.
     """
 
     neigh = NearestNeighbors(n_neighbors=1)
@@ -471,24 +476,24 @@ def icp(A, B, init_pose=None, max_iterations=50, tolerance=0.0001):
     Parameters
     ----------
     A : numpy.ndarray
-        Nxm numpy array of source mD points
+        Nxm numpy array of source mD points.
     B : numpy.ndarray
-        Nxm numpy array of destination mD point
+        Nxm numpy array of destination mD point.
     init_pose : numpy.ndarray
-        (m+1)x(m+1) homogeneous transformation
+        (m+1)x(m+1) homogeneous transformation.
     max_iterations : int
-        Exit algorithm after max_iterations
+        Exit algorithm after max_iterations.
     tolerance : float
-        Convergence criteria
+        Convergence criteria.
 
     Returns
     -------
     T : numpy.ndarray
-        (4 x 4) Final homogeneous transformation that maps A on to B
+        (4 x 4) Final homogeneous transformation that maps A on to B.
     distances : numpy.ndarray
-        Euclidean distances (errors) of the nearest neighbor
+        Euclidean distances (errors) of the nearest neighbor.
     i : float
-        Number of iterations to converge
+        Number of iterations to converge.
 
     Notes
     -----
@@ -539,7 +544,7 @@ def icp(A, B, init_pose=None, max_iterations=50, tolerance=0.0001):
 
 
 def rhino_icp(
-    smri_headshape_polhemus, polhemus_headshape_polhemus, Ninits=10, logger=None
+    smri_headshape_polhemus, polhemus_headshape_polhemus, Ninits=10
 ):
     """Runs Iterative Closest Point with multiple initialisations.
 
@@ -549,11 +554,9 @@ def rhino_icp(
         [3 x N] locations of the Headshape points in polehumus space
         (i.e. MRI scalp surface).
     polhemus_headshape_polhemus : numpy.ndarray
-        [3 x N] locations of the Polhemus headshape points in polhemus space
+        [3 x N] locations of the Polhemus headshape points in polhemus space.
     Ninits : int
         Number of random initialisations to perform.
-    logger : logging.getLogger
-        Logger.
 
     Returns
     -------
@@ -592,7 +595,7 @@ def rhino_icp(
 
         if err[init] < err_old:
 
-            log_or_print("ICP found better xform, error={}".format(e), logger)
+            log_or_print("ICP found better xform, error={}".format(e))
 
             err_old = e
 
@@ -783,10 +786,11 @@ def _transform_vtk_mesh(
 
 def _get_mne_xform_from_flirt_xform(flirt_xform, nii_mesh_file_in, nii_mesh_file_out):
     """
-    Returns a mm coordinates to mm coordinates MNE xform that corresponds to the passed in flirt xform
+    Returns a mm coordinates to mm coordinates MNE xform that corresponds to the
+    passed in flirt xform.
 
     Note that we need to do this as flirt xforms include an extra xform
-    based on the voxel dimensions (see _get_flirtcoords2native_xform )
+    based on the voxel dimensions (see _get_flirtcoords2native_xform).
     """
 
     flirtcoords2native_xform_in = _get_flirtcoords2native_xform(nii_mesh_file_in)
@@ -816,9 +820,8 @@ def _get_flirt_xform_between_axes(from_nii, target_nii):
       from2targetaxes = inv(targetvox2target) * fromvox2from
 
     In more detail:
-    We need the sform for the transformed from_nii
-    to be the same as the sform for the target_nii, without changing the
-    actual coordinates (in mm).
+    We need the sform for the transformed from_nii to be the same as the sform
+    for the target_nii, without changing the actual coordinates (in mm).
     In other words, we need:
     fromvox2from * from_nii_vox = targetvox2target * from_nii_target_vox
     where
@@ -930,14 +933,13 @@ def recon_timeseries2niftii(
     Parameters
     ----------
     subjects_dir : string
-        Directory to find RHINO subject dirs in.
+        Directory to find RHINO subject directories in.
     subject : string
-        Subject name dir to find RHINO files in.
-    recon_timeseries : (ndipoles, ntpts) np.array
+        Subject name directory to find RHINO files in.
+    recon_timeseries : (ndipoles, ntpts) np.ndarray
         Reconstructed time courses (in head (polhemus) space).
         Assumes that the dipoles are the same (and in the same order)
-        as those in the forward model,
-        coreg_filenames['forward_model_file'].
+        as those in the forward model, coreg_filenames['forward_model_file'].
         Typically derive from the VolSourceEstimate's output by
         MNE source recon methods, e.g. mne.beamformer.apply_lcmv, obtained
         using a forward model generated by RHINO.
@@ -947,20 +949,19 @@ def recon_timeseries2niftii(
         If None, then the gridstep used in coreg_filenames['forward_model_file']
         is used.
     reference_brain : string, 'mni' or 'mri'
-        'mni' indicates that the reference_brain is the stdbrain in MNI space
-        'mri' indicates that the reference_brain is the sMRI in native/mri space
-    times : (ntpts, ) np.array
-        Times points in seconds.
-        Will assume that these are regularly spaced
+        'mni' indicates that the reference_brain is the stdbrain in MNI space.
+        'mri' indicates that the reference_brain is the sMRI in native/mri space.
+    times : (ntpts, ) np.ndarray
+        Times points in seconds. Will assume that these are regularly spaced.
 
     Returns
     -------
     out_nii_fname : string
-        Name of output niftii file
+        Name of output niftii file.
     reference_brain_fname : string
-        Niftii file name of standard brain mask in MNI space at requested resolution,
-        int(stdbrain_resolution)
-        (with zero for background, and !=0 for the mask)
+        Niftii file name of standard brain mask in MNI space at requested
+        resolution, int(stdbrain_resolution) (with zero for background, and
+        !=0 for the mask).
     """
 
     if len(recon_timeseries.shape) == 1:
@@ -995,7 +996,7 @@ def recon_timeseries2niftii(
     return out_nii_fname, reference_brain_fname
 
 
-def save_or_show_renderer(renderer, filename, logger=None):
+def save_or_show_renderer(renderer, filename):
     """Save or show a renderer.
 
     Parameters
@@ -1005,8 +1006,6 @@ def save_or_show_renderer(renderer, filename, logger=None):
     filename : str
         Filename to save display to (as an interactive html).
         Must have extension .html. If None we display the renderer.
-    logger : logging.getLogger
-        Logger
     """
     if filename is None:
         renderer.show()
@@ -1019,7 +1018,7 @@ def save_or_show_renderer(renderer, filename, logger=None):
                 + " ".join(allowed_extensions)
             )
 
-        log_or_print(f"saving {filename}", logger)
+        log_or_print(f"saving {filename}")
         if ext == ".html":
             renderer.figure.plotter.export_html(filename)
         elif ext in allowed_extensions:

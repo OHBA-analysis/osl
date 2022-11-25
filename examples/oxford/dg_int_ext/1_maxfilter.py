@@ -9,8 +9,8 @@ from osl.maxfilter import run_maxfilter_batch
 
 # Setup paths to raw (pre-maxfiltered) fif files
 input_files = [
-    "/ohba/pi/knobre/dgresch/Internal_External/data/raw/meg/s01/InEx_s01_block_01.fif",
-    "/ohba/pi/knobre/dgresch/Internal_External/data/raw/meg/s01/InEx_s01_block_02.fif",
+    "/ohba/pi/knobre/dgresch/Internal_External/data/meg/00_raw/s01/InEx_s01_block_01.fif",
+    "/ohba/pi/knobre/dgresch/Internal_External/data/meg/00_raw/s01/InEx_s01_block_02.fif",
 ]
 
 # Directory to save the maxfiltered data to

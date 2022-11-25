@@ -39,7 +39,6 @@ def forward_model(
     eeg=False,
     meg=True,
     verbose=False,
-    logger=None,
 ):
     """Compute forward model.
 
@@ -65,10 +64,8 @@ def forward_model(
         Whether to compute forward model for eeg sensors
     meg : bool
         Whether to compute forward model for meg sensors
-    logger : logging.getLogger
-        Logger.
     """
-    log_or_print("*** RUNNING OSL RHINO FORWARD MODEL ***", logger)
+    log_or_print("*** RUNNING OSL RHINO FORWARD MODEL ***")
 
     # compute MNE bem solution
     if model == "Single Layer":
@@ -84,7 +81,6 @@ def forward_model(
         gridstep=gridstep,
         mindist=mindist,
         exclude=exclude,
-        logger=logger,
     )
 
     # The BEM solution requires a BEM model which describes the geometry of the
@@ -122,7 +118,7 @@ def forward_model(
     filenames = get_coreg_filenames(subjects_dir, subject)
     write_forward_solution(filenames["forward_model_file"], fwd, overwrite=True)
 
-    log_or_print("*** OSL RHINO FORWARD MODEL COMPLETE ***", logger)
+    log_or_print("*** OSL RHINO FORWARD MODEL COMPLETE ***")
 
 
 def make_fwd_solution(
@@ -228,7 +224,7 @@ def make_fwd_solution(
 
 
 def setup_volume_source_space(
-    subjects_dir, subject, gridstep=5, mindist=5.0, exclude=0.0, logger=None
+    subjects_dir, subject, gridstep=5, mindist=5.0, exclude=0.0
 ):
     """Set up a volume source space grid inside the inner skull surface.
     This is a RHINO specific version of mne.setup_volume_source_space.
@@ -247,8 +243,6 @@ def setup_volume_source_space(
     exclude : float
         Exclude points closer than this distance (mm) from the center of mass
         of the bounding surface.
-    logger : logging.getLogger
-        Logger
 
     Returns
     -------
@@ -326,7 +320,7 @@ def setup_volume_source_space(
         file_format="freesurfer",
         overwrite=True,
     )
-    log_or_print("Using bet_inskull_surf_file for single shell surface", logger)
+    log_or_print("Using bet_inskull_surf_file for single shell surface")
 
     verts, tris = read_surface(coreg_filenames["bet_outskull_surf_file"])
     tris = tris.astype(int)

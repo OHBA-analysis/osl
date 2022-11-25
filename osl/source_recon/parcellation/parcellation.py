@@ -70,7 +70,6 @@ class Parcellation:
         voxel_coords,
         method="spatial_basis",
         working_dir=None,
-        logger=None,
     ):
         """Parcellate voxel time series.
 
@@ -94,8 +93,6 @@ class Parcellation:
         working_dir : str
             Dir to put temp file in. If None, attempt to use same dir as passed in
             parcellation.
-        logger : logging.getLogger
-            Logger.
 
         Returns
         -------
@@ -115,7 +112,7 @@ class Parcellation:
                 parcel it belongs to
         """
         parcellation_asmatrix = _resample_parcellation(
-            self, voxel_coords, working_dir, logger=logger
+            self, voxel_coords, working_dir,
         )
         data, voxel_weightings, voxel_assignments = _get_parcel_timeseries(
             voxel_timeseries, parcellation_asmatrix, method=method
@@ -221,7 +218,7 @@ def plot_parcellation(parcellation, **kwargs):
     )
 
 
-def plot_correlation(parc_ts, filename, logger=None):
+def plot_correlation(parc_ts, filename):
     if parc_ts.ndim == 3:
         shape = parc_ts.shape
         parc_ts = parc_ts.reshape(shape[0], shape[1] * shape[2])
@@ -235,13 +232,13 @@ def plot_correlation(parc_ts, filename, logger=None):
     ax.set_xlabel("Parcel")
     ax.set_ylabel("Parcel")
     fig.colorbar(im, cax=cax, orientation='vertical')
-    log_or_print(f"saving {filename}", logger)
+    log_or_print(f"saving {filename}")
     fig.savefig(filename)
     plt.close(fig)
 
 
 def _resample_parcellation(
-    parcellation, voxel_coords, working_dir=None, logger=None,
+    parcellation, voxel_coords, working_dir=None,
 ):
     """Resample parcellation so that its voxel coords correspond (using
     nearest neighbour) to passed in voxel_coords. Passed in voxel_coords
@@ -260,8 +257,6 @@ def _resample_parcellation(
     working_dir : str
         Dir to put temp file in. If None, attempt to use same dir as passed
         in parcellation.
-    logger : logging.getLogger
-        Logger.
 
     Returns
     -------
@@ -269,7 +264,7 @@ def _resample_parcellation(
         (nvoxels x nparcels) resampled parcellation
     """
     gridstep = int(rhino_utils.get_gridstep(voxel_coords.T) / 1000)
-    log_or_print(f"gridstep = {gridstep} mm", logger)
+    log_or_print(f"gridstep = {gridstep} mm")
 
     pth, parcellation_name = op.split(op.splitext(op.splitext(parcellation.file)[0])[0])
 

@@ -26,7 +26,7 @@ source_recon.setup_fsl("/home/cgohil/local/fsl")
 
 # Look up which subjects we preprocessed to see what SMRI files we need to fix
 smri_files = []
-for path in sorted(glob(PREPROC_DIR + "/sub-*_preproc_raw.fif")):
+for path in sorted(glob(PREPROC_DIR + "/*/sub-*_preproc_raw.fif")):
     subject = Path(path).stem.split("_")[0]
     smri_files.append(SMRI_FILE.format(subject))
 

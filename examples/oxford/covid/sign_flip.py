@@ -21,7 +21,7 @@ for path in sorted(glob(src_dir + "/*/rhino/parc.npy")):
 
 # Find a good template subject to align other subjects to
 template = find_template_subject(
-    SRC_DIR, subjects, n_embeddings=15, standardize=True
+    src_dir, subjects, n_embeddings=15, standardize=True
 )
 
 # Settings for batch processing
