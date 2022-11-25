@@ -806,7 +806,7 @@ def plot_bad_ica(raw, ica, savebase):
 
     # Create figure
     fig = plt.figure(figsize=(16, 5 * nbad), facecolor=[0.95] * 3)
-    if nbad == 0;
+    if nbad == 0:
         plt.subplot(111, frameon=False)
         plt.text(0.5, 0.5, 'No Components Rejected', ha='center', va='center')
         plt.xticks([])
