@@ -708,6 +708,26 @@ def run_proc_chain(
         if outdir is not None:
             fif_outname = write_dataset(dataset, outbase, run_id, overwrite=overwrite)
 
+        # Generate report data
+        if gen_report:
+            # Switch to non-GUI plotting backend
+            mpl_backend = matplotlib.pyplot.get_backend()
+            matplotlib.use('Agg')
+
+            from ..report import gen_html_data, gen_html_page  # avoids circular import
+            logger.info("{0} : Generating Report".format(now))
+            report_data_dir = validate_outdir(reportdir / Path(fif_outname).stem)
+            gen_html_data(
+                dataset["raw"],
+                report_data_dir,
+                ica=dataset["ica"],
+                preproc_fif_filename=fif_outname,
+            )
+            gen_html_page(reportdir)
+
+            # Restore plotting context
+            matplotlib.use(mpl_backend)
+
     except Exception as e:
         # Preprocessing failed
 
@@ -747,18 +767,6 @@ def run_proc_chain(
     if fif_outname is not None:
         logger.info("Output file is {}".format(fif_outname))
 
-    # Generate report data
-    if gen_report:
-        from ..report import gen_html_data, gen_html_page  # avoids circular import
-        logger.info("{0} : Generating Report".format(now))
-        report_data_dir = validate_outdir(reportdir / Path(fif_outname).stem)
-        gen_html_data(
-            dataset["raw"],
-            report_data_dir,
-            ica=dataset["ica"],
-            preproc_fif_filename=fif_outname,
-        )
-        gen_html_page(reportdir)
 
     if ret_dataset:
         return dataset
