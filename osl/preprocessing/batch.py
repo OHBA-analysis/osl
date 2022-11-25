@@ -9,6 +9,7 @@
 #          Mats van Es <mats.vanes@psych.ox.ac.uk>
 
 import argparse
+import matplotlib
 import matplotlib.pyplot as plt
 import os
 import sys
