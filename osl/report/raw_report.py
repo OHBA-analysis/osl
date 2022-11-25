@@ -806,59 +806,65 @@ def plot_bad_ica(raw, ica, savebase):
 
     # Create figure
     fig = plt.figure(figsize=(16, 5 * nbad), facecolor=[0.95] * 3)
-    axes = []
-    for i in np.arange(nbad):
-        lowerlimit = 0.1 + i / (nbad * 1.1)
-        multiplier = nbad * 1.3
+    if nbad == 0;
+        plt.subplot(111, frameon=False)
+        plt.text(0.5, 0.5, 'No Components Rejected', ha='center', va='center')
+        plt.xticks([])
+        plt.yticks([])
+    else:
+        axes = []
+        for i in np.arange(nbad):
+            lowerlimit = 0.1 + i / (nbad * 1.1)
+            multiplier = nbad * 1.3
 
-        # Create axis for subplot
-        # adapted from mne/viz/ica._create_properties_layout
-        if 'mag' in raw.get_channel_types() and 'grad' in raw.get_channel_types():
-            topomap1_layout = [0.08, lowerlimit + 0.5 / multiplier, (0.3-0.08)/2+0.08, 0.45 / multiplier]
-            topomap2_layout = [(0.3-0.08)/2+0.08, lowerlimit + 0.5 / multiplier, 0.3, 0.45 / multiplier]
-        else:
-            topomap1_layout = [0.08, lowerlimit + 0.5 / multiplier, 0.3, 0.45 / multiplier]
-        axes_params = (('topomap', topomap1_layout),
-                       ('image', [0.5, lowerlimit + 0.6 / multiplier, 0.45, 0.35 / multiplier]),
-                       ('erp', [0.5, lowerlimit + 0.5 / multiplier, 0.45, 0.1 / multiplier]),
-                       ('spectrum', [0.08, lowerlimit + 0.1 / multiplier, 0.32, 0.3 / multiplier]),
-                       ('variance', [0.5, lowerlimit + 0.025 / multiplier, 0.45, 0.25 / multiplier]))
-        axes += [[fig.add_axes(loc, label=name) for name, loc in axes_params]]
+            # Create axis for subplot
+            # adapted from mne/viz/ica._create_properties_layout
+            if 'mag' in raw.get_channel_types() and 'grad' in raw.get_channel_types():
+                topomap1_layout = [0.08, lowerlimit + 0.5 / multiplier, (0.3-0.08)/2+0.08, 0.45 / multiplier]
+                topomap2_layout = [(0.3-0.08)/2+0.08, lowerlimit + 0.5 / multiplier, 0.3, 0.45 / multiplier]
+            else:
+                topomap1_layout = [0.08, lowerlimit + 0.5 / multiplier, 0.3, 0.45 / multiplier]
+            axes_params = (('topomap', topomap1_layout),
+                           ('image', [0.5, lowerlimit + 0.6 / multiplier, 0.45, 0.35 / multiplier]),
+                           ('erp', [0.5, lowerlimit + 0.5 / multiplier, 0.45, 0.1 / multiplier]),
+                           ('spectrum', [0.08, lowerlimit + 0.1 / multiplier, 0.32, 0.3 / multiplier]),
+                           ('variance', [0.5, lowerlimit + 0.025 / multiplier, 0.45, 0.25 / multiplier]))
+            axes += [[fig.add_axes(loc, label=name) for name, loc in axes_params]]
 
-        ica.plot_properties(raw, picks=exclude_uniq[i], axes=axes[i], show=False, verbose=0)
+            ica.plot_properties(raw, picks=exclude_uniq[i], axes=axes[i], show=False, verbose=0)
 
-        # Add another topo if we're dealing with two sensor types
-        if 'mag' in raw.get_channel_types() and 'grad' in raw.get_channel_types():
-            ax2 = fig.add_axes(topomap2_layout, label='topomap2')
-            kind, dropped_indices, epochs_src, data = mne.viz.ica._prepare_data_ica_properties(
-                raw, ica, reject_by_annotation=True, reject='auto')
-            mne.viz.ica._plot_ica_topomap(ica, exclude_uniq[i], ch_type='grad',  axes=ax2, show=False)
+            # Add another topo if we're dealing with two sensor types
+            if 'mag' in raw.get_channel_types() and 'grad' in raw.get_channel_types():
+                ax2 = fig.add_axes(topomap2_layout, label='topomap2')
+                kind, dropped_indices, epochs_src, data = mne.viz.ica._prepare_data_ica_properties(
+                    raw, ica, reject_by_annotation=True, reject='auto')
+                mne.viz.ica._plot_ica_topomap(ica, exclude_uniq[i], ch_type='grad',  axes=ax2, show=False)
 
-        if np.any([x in ica.labels_.keys() for x in ica._ica_names]): # this is for the osl_plot_ica convention
-            title = "".join((ica._ica_names[exclude_uniq[i]]," - ", ica.labels_[ica._ica_names[exclude_uniq[i]]].upper()))
+            if np.any([x in ica.labels_.keys() for x in ica._ica_names]): # this is for the osl_plot_ica convention
+                title = "".join((ica._ica_names[exclude_uniq[i]]," - ", ica.labels_[ica._ica_names[exclude_uniq[i]]].upper()))
 
-        elif 'eog' in ica.labels_.keys() and 'ecg' in ica.labels_.keys(): # this is for the MNE automatic labelling convention
-            flag_eog = exclude_uniq[i] in ica.labels_['eog']
-            flag_ecg = exclude_uniq[i] in ica.labels_['ecg']
-            title = "".join((ica._ica_names[exclude_uniq[i]]," - ", flag_eog*'EOG', flag_ecg*flag_eog*'/', flag_ecg*'ECG'))
+            elif 'eog' in ica.labels_.keys() and 'ecg' in ica.labels_.keys(): # this is for the MNE automatic labelling convention
+                flag_eog = exclude_uniq[i] in ica.labels_['eog']
+                flag_ecg = exclude_uniq[i] in ica.labels_['ecg']
+                title = "".join((ica._ica_names[exclude_uniq[i]]," - ", flag_eog*'EOG', flag_ecg*flag_eog*'/', flag_ecg*'ECG'))
 
-        elif 'eog' in ica.labels_.keys():
-            flag_eog = exclude_uniq[i] in ica.labels_['eog']
-            title = "".join((ica._ica_names[exclude_uniq[i]]," - ", flag_eog*'EOG'))
+            elif 'eog' in ica.labels_.keys():
+                flag_eog = exclude_uniq[i] in ica.labels_['eog']
+                title = "".join((ica._ica_names[exclude_uniq[i]]," - ", flag_eog*'EOG'))
 
-        elif 'ecg' in ica.labels_.keys():
-            flag_ecg = exclude_uniq[i] in ica.labels_['ecg']
-            title = "".join((ica._ica_names[exclude_uniq[i]]," - ", flag_ecg*'ECG'))
+            elif 'ecg' in ica.labels_.keys():
+                flag_ecg = exclude_uniq[i] in ica.labels_['ecg']
+                title = "".join((ica._ica_names[exclude_uniq[i]]," - ", flag_ecg*'ECG'))
 
-        if 'mag' in raw.get_channel_types() and 'grad' in raw.get_channel_types():
-            title = title + '\n (mag)'
-            ax2.set_title(title.replace('mag', 'grad'))
+            if 'mag' in raw.get_channel_types() and 'grad' in raw.get_channel_types():
+                title = title + '\n (mag)'
+                ax2.set_title(title.replace('mag', 'grad'))
 
-        else: # this is for if there is nothing in ica.labels_
-            title = None
+            else: # this is for if there is nothing in ica.labels_
+                title = None
 
-        if title is not None:
-            axes[i][0].set_title(title, fontsize=12)
+            if title is not None:
+                axes[i][0].set_title(title, fontsize=12)
 
     if savebase is not None:
         figname = savebase.format('ica')
