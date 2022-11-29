@@ -210,12 +210,14 @@ def gen_html_summary(reportdir):
 
     if data["coreg"]:
         subjects = np.array([d["filename"] for d in subject_data])
-        fid_err = np.around([d["fid_err"] for d in subject_data], decimals=2)
-        data['coreg_table'] = tabulate(
-            np.c_[subjects, fid_err[:, 0], fid_err[:, 1], fid_err[:, 2]],
-            tablefmt='html',
-            headers=["Subject", "Nasion", "LPA", "RPA"],
-        )
+
+        if subject_data[0]["fid_err"] is not None:
+            fid_err = np.around([d["fid_err"] for d in subject_data], decimals=2)
+            data['coreg_table'] = tabulate(
+                np.c_[subjects, fid_err[:, 0], fid_err[:, 1], fid_err[:, 2]],
+                tablefmt='html',
+                headers=["Subject", "Nasion", "LPA", "RPA"],
+            )
 
     # Create plots
     os.makedirs(f"{reportdir}/summary", exist_ok=True)
