@@ -619,7 +619,7 @@ def beamform_and_parcellate(
 
     # Parcellation
     logger.info("parcellation")
-    logger.info(parcellation_file)
+    logger.info(f"using file {parcellation_file}")
     p = parcellation.Parcellation(parcellation_file)
     p.parcellate(
         voxel_timeseries=bf_data_mni,
