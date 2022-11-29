@@ -113,8 +113,7 @@ recon_timeseries_mni = np.load(op.join(recon_dir, "recon_timeseries_mni.npy"))
 recon_coords_mni = np.load(op.join(recon_dir, "recon_coords_mni.npy"))
 
 # plot centre of mass for each parcel
-p = parcellation.Parcellation(parcellation_fname)
-p.plot()
+p = parcellation.plot_parcellation(parcellation_fname)
 
 # view parcellation in fsleyes
 # note that it is a 4D niftii file, where the 4th dimension is over parcels
@@ -122,11 +121,9 @@ p.plot()
 
 # Apply parcellation to voxelwise data (voxels x tpts) contained in recon_timeseries_mni
 # Resulting parcel_timeseries will be (parcels x tpts) in MNI space
-p.parcellate(
+parcel_ts, _, _ = parcellation.parcellate_timeseries(
     recon_timeseries_mni, recon_coords_mni, method="spatial_basis"
 )
-
-parcel_ts = p.parcel_timeseries["data"]
 
 # -------------
 # Orthogonalise

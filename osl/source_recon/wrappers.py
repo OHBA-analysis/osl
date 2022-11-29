@@ -620,14 +620,13 @@ def beamform_and_parcellate(
     # Parcellation
     logger.info("parcellation")
     logger.info(f"using file {parcellation_file}")
-    p = parcellation.Parcellation(parcellation_file)
-    p.parcellate(
+    parcel_data, _, _ = parcellation.parcellate_timeseries(
+        parcellation_file,
         voxel_timeseries=bf_data_mni,
         voxel_coords=coords_mni,
         method=method,
         working_dir=src_dir / subject / "rhino",
     )
-    parcel_data = p.parcel_timeseries["data"]
 
     # Orthogonalisation
     if orthogonalisation not in [None, "symmetric"]:
