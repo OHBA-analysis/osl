@@ -28,7 +28,7 @@ def convert_notts(notts_opm_mat_file, smri_file, tsv_file, fif_file, smri_fixed_
 
     # Note that later in this function, we will also apply this sform to
     # the sensor coordinates and orientations.
-    # This is because, with the OPM Notts data, coregistration on the sensor coordinations 
+    # This is because, with the OPM Notts data, coregistration on the sensor coordinates
     # has already been carried out, and so the sensor coordinates need to stay matching 
     # the coordinates used in the MRI
 

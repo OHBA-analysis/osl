@@ -9,6 +9,7 @@ Created on Tue Nov  9 15:39:24 2021
 import os
 import os.path as op
 
+import mne.io
 import numpy as np
 
 from osl import preprocessing
@@ -16,16 +17,18 @@ from osl import source_recon
 import matplotlib.pyplot as plt
 
 from osl.utils import opm
+import matplotlib.pyplot as plt
+
 
 subjects_to_do = np.arange(0, 10)
 sessions_to_do = np.arange(0, 2)
 subj_sess_2exclude = np.zeros([10, 2]).astype(bool)
 
 #subj_sess_2exclude = np.ones([10, 2]).astype(bool)
-#subj_sess_2exclude[0, 0] = False
+#subj_sess_2exclude[0,0]=False
 
-run_convert = True
-run_preproc = True
+run_convert = False
+run_preproc = False
 run_beamform_and_parcellate = True
 run_fix_sign_ambiguity = True
 
@@ -36,9 +39,6 @@ parcellation_fname = op.join('/Users/woolrich/Dropbox/vols_scripts/hmm_misc_func
 std_brain = '/Users/woolrich/homedir/vols_data/self_paced_fingertap/subject1/rhino/surfaces/MNI152_T1_brain_2mm.nii.gz'
 
 subjects_dir = '/Users/woolrich/homedir/vols_data/notts_movie_opm'
-
-rank = {'mag': 100}
-chantypes = ['mag']
 
 # resolution of dipole grid for source recon
 gridstep = 8  # mm
@@ -55,6 +55,7 @@ tsv_files = []
 
 fif_files = []
 preproc_fif_files = []
+ica_fif_files = []
 
 recon_dir = op.join(subjects_dir, 'recon')
 
@@ -73,8 +74,9 @@ for sub in subjects_to_do:
             tsv_file = op.join(subjects_dir, sub_dir, ses_dir, subject + '_channels.tsv')
 
             # output files
-            fif_file = op.join(subjects_dir, subject, subject + '_meg.fif')
-            preproc_fif_file = op.join(subjects_dir, subject, subject + '_meg_preproc_raw.fif')
+            fif_file = op.join(subjects_dir, subject + '_meg', subject + '_meg.fif')
+            preproc_fif_file = op.join(subjects_dir, subject + '_meg', subject + '_meg_preproc_raw.fif')
+            ica_fif_file = op.join(subjects_dir, subject + '_meg', subject + '_meg_ica.fif')
 
             # check opm file and structural file exists for this subject
             if op.exists(notts_opm_mat_file) and op.exists(smri_file):
@@ -87,10 +89,11 @@ for sub in subjects_to_do:
                 tsv_files.append(tsv_file)
                 fif_files.append(fif_file)
                 preproc_fif_files.append(preproc_fif_file)
+                ica_fif_files.append(ica_fif_file)
 
                 # Make directories that will be needed
-                if not os.path.isdir(op.join(subjects_dir, subject)):
-                    os.mkdir(op.join(subjects_dir, subject))
+                if not os.path.isdir(op.join(subjects_dir, subject + '_meg')):
+                    os.mkdir(op.join(subjects_dir, subject + '_meg'))
 
 # -------------------------------------------------------------
 # %% Create fif files
@@ -117,17 +120,50 @@ if run_preproc:
         - bad_segments: {segment_len: 400, picks: 'meg', significance_level: 0.1}
         - bad_segments: {segment_len: 600, picks: 'meg', significance_level: 0.1}
         - bad_segments: {segment_len: 800, picks: 'meg', significance_level: 0.1}
+        - ica_raw:      {picks: 'meg', n_components: 40}
+        
     """
 
     dataset = preprocessing.run_proc_batch(config, fif_files, outdir=subjects_dir, overwrite=True)
 
-    # preprocessing.run_proc_batch will output preproc fif_files in subjects_dir
-    # we will now move them into the subjects_dir/subject dirs
-    for subject, preproc_fif_file in zip(subjects, preproc_fif_files):
-        os.system('mv {} {}'.format(
-            op.join(subjects_dir, subject + '_meg_preproc_raw.fif'),
-            preproc_fif_file
-        ))
+if False:
+
+    ############
+    def plot_ica_topmaps(ica_in, raw_in, index):
+        # select z channel indices
+        z_inds = [i for i, c in enumerate(raw_in.pick('meg', exclude='bads').ch_names) if '[Z]' in c]
+        # get channel names of Z channels
+        ch_names = [c for c in raw_in.pick('meg', exclude='bads').ch_names if '[Z]' in c]
+        # get mne.info of the Z channels
+        info_z = raw_in.copy().pick_channels(ch_names).info
+
+        mne.viz.plot_topomap(ica_in.get_components()[z_inds, index], info_z)
+
+    ############
+
+
+    # Manual bad IC labelling and removal
+    for ica_fif_file, preproc_fif_file in zip(ica_fif_files, preproc_fif_files):
+
+        # Load preprocessed fif and ICA
+        dataset = preprocessing.read_dataset(preproc_fif_file, preload=True)
+        raw = dataset["raw"]
+        ica = dataset["ica"]
+
+        print("ICs for {}".format(preproc_fif_file))
+
+        ica.plot_sources(raw, show_scrollbars=True, block=True)
+
+        #preprocessing.plot_ica(ica, raw)
+        #plot_ica_topmaps(ica, raw, 1)
+        ica.apply(raw)
+
+        raw.save(preproc_fif_file, overwrite=True)
+        ica.save(ica_fif_file, overwrite=True)
+
+        print("Finished")
+
+
 
 if False:
 
@@ -136,11 +172,10 @@ if False:
         smri_files[0],
         recon_dir,
         subjects[0],
-        overwrite=True
     )
 
     # to view surfaces for subject 0:
-    source_recon.rhino.surfaces_display(recon_dir, subjects[3])
+    source_recon.rhino.surfaces_display(recon_dir, subjects[0])
 
     # to just run coreg for subject 0:
     source_recon.rhino.coreg(
@@ -150,9 +185,10 @@ if False:
         already_coregistered=True
     )
 
-# to view coreg result for subject 0:
-source_recon.rhino.coreg_display(recon_dir, subjects[0],
-                                 plot_type='surf')
+    # to view coreg result for subject 0:
+    source_recon.rhino.coreg_display(recon_dir, subjects[0],
+                                     plot_type='surf')
+
 # -------------------------------------------------------------
 # %% Coreg and Source recon and Parcellate
 
@@ -180,7 +216,6 @@ if run_beamform_and_parcellate:
         subjects=subjects,
         preproc_files=preproc_fif_files,
         smri_files=smri_files,
-        report_name='recon_report'
     )
 
 if False:
@@ -216,7 +251,10 @@ if run_fix_sign_ambiguity:
     """
 
     # Do the sign flipping
-    source_recon.run_src_batch(config, recon_dir, subjects, report_name='sflip_report')
+    source_recon.run_src_batch(config,
+                               recon_dir,
+                               subjects,
+                               )
 
     if True:
         # copy sf files to a single directory (makes it easier to copy minimal files to, e.g. BMRC, for downstream analysis)

@@ -178,7 +178,8 @@ def gen_html_data(raw, outdir, ica=None, preproc_fif_filename=None):
 
     # Add ICA if it's been passed
     if ica is not None:
-        data['plt_ica'] = plot_bad_ica(raw, ica, savebase)
+        if len(ica.exclude) > 0:
+            data['plt_ica'] = plot_bad_ica(raw, ica, savebase)
 
     # Save data that will be used to create html page
     with open(outdir / 'data.pkl', 'wb') as outfile:
