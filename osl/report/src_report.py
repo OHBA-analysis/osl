@@ -78,7 +78,8 @@ def gen_html_data(config, src_dir, subject, reportdir, logger=None):
     if data["coreg"]:
         data["fid_err"] = subject_data["fid_err"]
     if data["beamform_and_parcellate"]:
-        data["parcellation_file"] = Path(subject_data["parcellation_file"]).name
+        data["parcellation_file"] = subject_data["parcellation_file"]
+        data["parcellation_filename"] = Path(subject_data["parcellation_file"]).name
     if data["fix_sign_ambiguity"]:
         data["template"] = subject_data["template"]
         data["metrics"] = subject_data["metrics"]
@@ -225,7 +226,7 @@ def gen_html_summary(reportdir):
     data["plt_config"] = plot_config(data["config"], reportdir)
 
     if "parcellation_file" in subject_data[0]:
-        data["parcellation_file"] = subject_data[0]["parcellation_file"]
+        data["parcellation_filename"] = subject_data[0]["parcellation_filename"]
         data["plt_parc"] = plot_parcellation(
             subject_data[0]["parcellation_file"],
             reportdir,

@@ -1,4 +1,4 @@
-"""Functions and classes to handle parcellation.
+"""Functions to handle parcellation.
 
 """
 
@@ -22,182 +22,36 @@ from osl.utils import soft_import
 from osl.utils.logger import log_or_print
 
 
-class Parcellation:
-    def __init__(self, file):
-        if isinstance(file, Parcellation):
-            self.__dict__.update(file.__dict__)
-            return
-        self.file = find_file(file)
-        self.parcellation = nib.load(self.file)
-        self.dims = self.parcellation.shape[:3]
-        self.n_parcels = self.parcellation.shape[3]
-        self.parcel_timeseries = None
+def load_parcellation(parcellation_file):
+    """Load a parcellation file.
 
-    def __repr__(self):
-        return f"{self.__class__.__name__}({repr(self.file)})"
+    Parameters
+    ----------
+    parcellation_file : str
+        Path to parcellation file.
 
-    def data(self):
-        return self.parcellation.get_fdata()
-
-    def nonzero(self):
-        return [np.nonzero(self.data()[..., i]) for i in range(self.n_parcels)]
-
-    def nonzero_coords(self):
-        return [
-            nib.affines.apply_affine(self.parcellation.affine, np.array(nonzero).T)
-            for nonzero in self.nonzero()
-        ]
-
-    def weights(self):
-        return [
-            self.data()[..., i][nonzero] for i, nonzero in enumerate(self.nonzero())
-        ]
-
-    def roi_centers(self):
-        return np.array(
-            [
-                np.average(c, weights=w, axis=0)
-                for c, w in zip(self.nonzero_coords(), self.weights())
-            ]
-        )
-
-    def plot(self, **kwargs):
-        return plot_parcellation(self, **kwargs)
-
-    def parcellate(
-        self,
-        voxel_timeseries,
-        voxel_coords,
-        method="spatial_basis",
-        working_dir=None,
-    ):
-        """Parcellate voxel time series.
-
-        Parameters
-        ----------
-        voxel_timeseries : numpy.ndarray
-            nvoxels x ntpts, or nvoxels x ntpts x ntrials
-            Data to be parcellated. Data is assumed to be in same space as the
-            parcellation (e.g. typically corresponds to the output from
-            rhino.resample_recon_ts).
-        voxel_coords : numpy.ndarray
-            (nvoxels x 3) coordinates of voxel_timeseries in mm in same space as
-            parcellation (e.g. typically corresponds to the output from
-            rhino.resample_recon_ts).
-        method : str
-            'pca' - take 1st PC in each parcel
-            'spatial_basis' - The parcel time-course for each spatial map is the
-            1st PC from all voxels, weighted by the spatial map. If the parcellation
-            is unweighted and non-overlapping, 'spatialBasis' will give the same
-            result as 'PCA' except with a different normalization.
-        working_dir : str
-            Dir to put temp file in. If None, attempt to use same dir as passed in
-            parcellation.
-
-        Returns
-        -------
-        parcel_timeseries : dict
-            Containing:
-            "data": numpy.ndarray
-                nparcels x ntpts, or nparcels x ntpts x ntrials, parcellated data
-            "voxel_coords": numpy.ndarray
-                Passed in (nvoxels x 3) coordinates of voxel_timeseries
-            "voxel_weightings": numpy.ndarray
-                nvoxels x nparcels
-                Voxel weightings for each parcel, corresponds to
-                parcel_data = voxel_weightings.T * voxel_data
-            "voxel_assignments": bool numpy.ndarray
-                nvoxels x nparcels
-                Boolean assignments indicating for each voxel the winner takes all
-                parcel it belongs to
-        """
-        parcellation_asmatrix = _resample_parcellation(
-            self, voxel_coords, working_dir,
-        )
-        data, voxel_weightings, voxel_assignments = _get_parcel_timeseries(
-            voxel_timeseries, parcellation_asmatrix, method=method
-        )
-
-        self.parcel_timeseries = {
-            "data": data,
-            "voxel_coords": voxel_coords,
-            "voxel_weightings": voxel_weightings,
-            "voxel_assignments": voxel_assignments,
-        }
-
-    def symmetric_orthogonalise(self, maintain_magnitudes=False, compute_weights=False):
-        self.parcel_timeseries["data"] = symmetric_orthogonalise(
-            self.parcel_timeseries["data"],
-            maintain_magnitudes=maintain_magnitudes,
-            compute_weights=compute_weights,
-        )
-
-    def nii(
-        self,
-        parcel_timeseries_data,
-        method="assignments",
-        out_nii_fname=None,
-        working_dir=None,
-        times=None,
-    ):
-        """Outputs parcel_timeseries_data as a niftii file using the parcellation
-
-        Parameters
-        ----------
-        parcel_timeseries_data : numpy.ndarray
-            Needs to have same number of parcels as the parcellation
-            Needs to be nparcels x ntpts
-        method : str
-            Method used to allocate values to voxels given the parcel values,
-            use either:
-                "weights" - Voxel weightings for each parcel
-                "assignments" - Boolean assignments indicating the winner-takes-all
-                parcel each voxel belongs to
-        working_dir : str
-            Dir name to put files in
-        out_nii_fname : str
-            Output nii file name, will be output at spatial resolution of
-            parcel_timeseries['voxel_coords']. If None then will generate a name
-        times : (ntpts, ) numpy.ndarray
-            Times points in seconds.
-            Will assume that time points are regularly spaced.
-            Used to set up 4D nii files correctly.
-
-        Returns
-        -------
-        out_nii_fname : str
-            Output nii file name, will be output at spatial resolution of
-            parcel_timeseries['voxel_coords']
-
-        """
-
-        if self.parcel_timeseries is None:
-            raise ValueError(
-                "You need to have run Parcellation.parcellate() or "
-                + "Parcellation.load_parcel_timeseries() prior to calling"
-                + "Parcellation.nii()."
-            )
-
-        result = _parcel_timeseries2nii(
-            self,
-            parcel_timeseries_data,
-            method=method,
-            out_nii_fname=out_nii_fname,
-            working_dir=working_dir,
-            times=times,
-        )
-
-        return result
-
-    def load_parcel_timeseries(self, fname):
-        self.parcel_timeseries = _load_parcel_timeseries(fname)
-        return self.parcel_timeseries
-
-    def save_parcel_timeseries(self, fname):
-        _save_parcel_timeseries(self.parcel_timeseries, fname)
+    Returns
+    -------
+    parcellation : nibabel image
+        Parcellation.
+    """
+    parcellation_file = find_file(parcellation_file)
+    return nib.load(parcellation_file)
 
 
 def find_file(filename):
+    """Look for a parcellation file within the package.
+
+    Parameters
+    ----------
+    filename : str
+        Path to parcellation file to look for.
+
+    Returns
+    -------
+    filename : str
+        Path to parcellation file found.
+    """
     if not op.exists(filename):
         files_dir = str(Path(__file__).parent) + "/files/"
         if op.exists(files_dir + filename):
@@ -207,105 +61,51 @@ def find_file(filename):
     return filename
 
 
-def plot_parcellation(parcellation, **kwargs):
-    parcellation = Parcellation(parcellation)
-    return plot_markers(
-        np.zeros(parcellation.n_parcels),
-        parcellation.roi_centers(),
-        colorbar=False,
-        node_cmap="binary_r",
-        **kwargs,
-    )
-
-
-def plot_correlation(parc_ts, filename):
-    if parc_ts.ndim == 3:
-        shape = parc_ts.shape
-        parc_ts = parc_ts.reshape(shape[0], shape[1] * shape[2])
-    corr = np.corrcoef(parc_ts)
-    np.fill_diagonal(corr, 0)
-    fig, ax = plt.subplots()
-    divider = make_axes_locatable(ax)
-    cax = divider.append_axes('right', size='5%', pad=0.05)
-    im = ax.imshow(corr)
-    ax.set_title("Correlation")
-    ax.set_xlabel("Parcel")
-    ax.set_ylabel("Parcel")
-    fig.colorbar(im, cax=cax, orientation='vertical')
-    log_or_print(f"saving {filename}")
-    fig.savefig(filename)
-    plt.close(fig)
-
-
-def _resample_parcellation(
-    parcellation, voxel_coords, working_dir=None,
+def parcellate_timeseries(
+    parcellation_file, voxel_timeseries, voxel_coords, method, working_dir
 ):
-    """Resample parcellation so that its voxel coords correspond (using
-    nearest neighbour) to passed in voxel_coords. Passed in voxel_coords
-    and parcellation must be in the same space, e.g. MNI.
-
-    Used to make sure that the parcellation's voxel coords are the same
-    as the voxel coords for some timeseries data, before calling
-    get_parcel_timeseries.
+    """Parcellate a voxel time series.
 
     Parameters
     ----------
-    parcellation : parcellation.Parcellation
-        In same space as voxel_coords.
-    voxel_coords :
-        (nvoxels x 3) coordinates in mm in same space as parcellation.
+    voxel_timeseries : numpy.ndarray
+        nvoxels x ntpts, or nvoxels x ntpts x ntrials
+        Data to be parcellated. Data is assumed to be in same space as the
+        parcellation (e.g. typically corresponds to the output from
+        rhino.resample_recon_ts).
+    voxel_coords : numpy.ndarray
+        (nvoxels x 3) coordinates of voxel_timeseries in mm in same space as
+        parcellation (e.g. typically corresponds to the output from
+        rhino.resample_recon_ts).
+    method : str
+        'pca' - take 1st PC in each parcel
+        'spatial_basis' - The parcel time-course for each spatial map is the
+        1st PC from all voxels, weighted by the spatial map. If the parcellation
+        is unweighted and non-overlapping, 'spatialBasis' will give the same
+        result as 'PCA' except with a different normalization.
     working_dir : str
-        Dir to put temp file in. If None, attempt to use same dir as passed
-        in parcellation.
+        Dir to put temp file in. If None, attempt to use same dir as passed in
+        parcellation.
 
     Returns
     -------
-    parcellation_asmatrix : numpy.ndarray
-        (nvoxels x nparcels) resampled parcellation
+    parcel_timeseries : numpy.ndarray
+        nparcels x ntpts, or nparcels x ntpts x ntrials, parcellated data.
+    voxel_weightings: numpy.ndarray
+        nvoxels x nparcels
+        Voxel weightings for each parcel, corresponds to
+        parcel_data = voxel_weightings.T * voxel_data
+    voxel_assignments: bool numpy.ndarray
+        nvoxels x nparcels
+        Boolean assignments indicating for each voxel the winner takes all
+        parcel it belongs to.
     """
-    gridstep = int(rhino_utils.get_gridstep(voxel_coords.T) / 1000)
-    log_or_print(f"gridstep = {gridstep} mm")
-
-    pth, parcellation_name = op.split(op.splitext(op.splitext(parcellation.file)[0])[0])
-
-    if working_dir is None:
-        working_dir = pth
-
-    parcellation_resampled = op.join(
-        working_dir, parcellation_name + "_{}mm.nii.gz".format(gridstep)
+    parcellation_asmatrix = _resample_parcellation(
+        parcellation_file, voxel_coords, working_dir
     )
-
-    # create std brain of the required resolution
-    os.system(
-        "flirt -in {} -ref {} -out {} -applyisoxfm {}".format(
-            parcellation.file, parcellation.file, parcellation_resampled, gridstep
-        )
+    return _get_parcel_timeseries(
+        voxel_timeseries, parcellation_asmatrix, method=method
     )
-
-    nparcels = nib.load(parcellation_resampled).get_fdata().shape[3]
-
-    # parcellation_asmatrix will be the parcels mapped onto the same dipole grid
-    # as voxel_coords
-    parcellation_asmatrix = np.zeros((voxel_coords.shape[1], nparcels))
-
-    for parcel_index in range(nparcels):
-        parcellation_coords, parcellation_vals = rhino_utils.niimask2mmpointcloud(
-            parcellation_resampled, parcel_index
-        )
-
-        kdtree = KDTree(parcellation_coords.T)
-
-        # Find each voxel_coords best matching parcellation_coords and assign
-        # the corresponding parcel value to
-        for ind in range(voxel_coords.shape[1]):
-            distance, index = kdtree.query(voxel_coords[:, ind])
-
-            # Exclude from parcel any voxel_coords that are further than gridstep
-            # away from the best matching parcellation_coords
-            if distance < gridstep:
-                parcellation_asmatrix[ind, parcel_index] = parcellation_vals[index]
-
-    return parcellation_asmatrix
 
 
 def _get_parcel_timeseries(
@@ -557,9 +357,84 @@ def _get_parcel_timeseries(
     return parcel_timeseries, voxel_weightings, voxel_assignments
 
 
+def _resample_parcellation(
+    parcellation_file,
+    voxel_coords,
+    working_dir=None,
+):
+    """Resample parcellation so that its voxel coords correspond (using
+    nearest neighbour) to passed in voxel_coords. Passed in voxel_coords
+    and parcellation must be in the same space, e.g. MNI.
+
+    Used to make sure that the parcellation's voxel coords are the same
+    as the voxel coords for some timeseries data, before calling
+    get_parcel_timeseries.
+
+    Parameters
+    ----------
+    parcellation_file : str
+        Path to parcellation file. In same space as voxel_coords.
+    voxel_coords :
+        (nvoxels x 3) coordinates in mm in same space as parcellation.
+    working_dir : str
+        Dir to put temp file in. If None, attempt to use same dir as passed
+        in parcellation.
+
+    Returns
+    -------
+    parcellation_asmatrix : numpy.ndarray
+        (nvoxels x nparcels) resampled parcellation
+    """
+    gridstep = int(rhino_utils.get_gridstep(voxel_coords.T) / 1000)
+    log_or_print(f"gridstep = {gridstep} mm")
+
+    pth, parcellation_name = op.split(op.splitext(op.splitext(parcellation_file)[0])[0])
+
+    if working_dir is None:
+        working_dir = pth
+
+    parcellation_resampled = op.join(
+        working_dir, parcellation_name + "_{}mm.nii.gz".format(gridstep)
+    )
+
+    # create std brain of the required resolution
+    os.system(
+        "flirt -in {} -ref {} -out {} -applyisoxfm {}".format(
+            parcellation_file, parcellation_file, parcellation_resampled, gridstep
+        )
+    )
+
+    nparcels = nib.load(parcellation_resampled).get_fdata().shape[3]
+
+    # parcellation_asmatrix will be the parcels mapped onto the same dipole grid
+    # as voxel_coords
+    parcellation_asmatrix = np.zeros((voxel_coords.shape[1], nparcels))
+
+    for parcel_index in range(nparcels):
+        parcellation_coords, parcellation_vals = rhino_utils.niimask2mmpointcloud(
+            parcellation_resampled, parcel_index
+        )
+
+        kdtree = KDTree(parcellation_coords.T)
+
+        # Find each voxel_coords best matching parcellation_coords and assign
+        # the corresponding parcel value to
+        for ind in range(voxel_coords.shape[1]):
+            distance, index = kdtree.query(voxel_coords[:, ind])
+
+            # Exclude from parcel any voxel_coords that are further than gridstep
+            # away from the best matching parcellation_coords
+            if distance < gridstep:
+                parcellation_asmatrix[ind, parcel_index] = parcellation_vals[index]
+
+    return parcellation_asmatrix
+
+
 def _parcel_timeseries2nii(
     parcellation,
     parcel_timeseries_data,
+    voxel_weightings,
+    voxel_assignments,
     out_nii_fname=None,
     working_dir=None,
     times=None,
@@ -570,10 +445,18 @@ def _parcel_timeseries2nii(
 
     Parameters
     ----------
-    parcellation : parcellation.Parcellation
-        Parcellation to use
+    parcellation_file : str
+        Path to parcellation file.
     parcel_timeseries_data: numpy.ndarray
         Needs to be nparcels x ntpts
+    voxel_weightings : numpy.ndarray
+        nvoxels x nparcels
+        Voxel weightings for each parcel to compute parcel_timeseries from
+        voxel_timeseries.
+    voxel_assignments : bool numpy.ndarray
+        nvoxels x nparcels
+        Boolean assignments indicating for each voxel the winner takes all
+        parcel it belongs to.
     working_dir : str
         Dir name to put files in
     out_nii_fname : str
@@ -591,7 +474,7 @@ def _parcel_timeseries2nii(
         Output nii file name, will be output at spatial resolution of
         parcel_timeseries['voxel_coords']
     """
-    pth, parcellation_name = op.split(op.splitext(op.splitext(parcellation.file)[0])[0])
+    pth, parcellation_name = op.split(op.splitext(op.splitext(parcellation_file)[0])[0])
 
     if working_dir is None:
         working_dir = pth
@@ -601,39 +484,24 @@ def _parcel_timeseries2nii(
 
     # compute parcellation_mask_file to be mean over all parcels
     parcellation_mask_file = op.join(working_dir, parcellation_name + "_mask.nii.gz")
-    os.system("fslmaths {} -Tmean {}".format(parcellation.file, parcellation_mask_file))
+    os.system("fslmaths {} -Tmean {}".format(parcellation_file, parcellation_mask_file))
 
     if len(parcel_timeseries_data.shape) == 1:
         parcel_timeseries_data = np.reshape(
             parcel_timeseries_data, [parcel_timeseries_data.shape[0], 1]
         )
 
-    if parcellation.n_parcels != parcel_timeseries_data.shape[0]:
-        raise ValueError(
-            "Passed in data are not compatible with passed in parcellation - "
-            + "they need to have the same number of parcels.\n"
-            + "p.n_parcels = {} \nparcel_timeseries_data.shape[0] = {} \n".format(
-                parcellation.n_parcels, parcel_timeseries_data.shape[0]
-            )
-        )
-
     # Compute nmaskvoxels x ntpts voxel_data
     if method == "assignments":
-        weightings = parcellation.parcel_timeseries["voxel_assignments"]
+        weightings = voxel_assignments
     elif method == "weights":
-        # parcel_timeseries_data = voxel_weightings.T *  voxel_data
-        # voxel_weightings were computed by parcellation.parcellate()
-        weightings = np.linalg.pinv(
-            parcellation.parcel_timeseries["voxel_weightings"].T
-        )
+        weightings = np.linalg.pinv(voxel_weightings.T)
     else:
         raise ValueError("Invalid method. Must be assignments or weights.")
 
     voxel_data = weightings @ parcel_timeseries_data
 
     # voxel_coords is nmaskvoxels x 3 in mm
-    voxel_coords = parcellation.parcel_timeseries["voxel_coords"]
-
     gridstep = int(rhino_utils.get_gridstep(voxel_coords.T) / 1000)
 
     # Sample parcellation_mask to the desired resolution
@@ -677,7 +545,7 @@ def _parcel_timeseries2nii(
                 :,
             ] = voxel_data[ind, :]
 
-    # SAVE AS NIFTI
+    # Save as nifti
     vol_nii = nib.Nifti1Image(vol, nib.load(parcellation_mask_resampled).affine)
 
     vol_nii.header.set_xyzt_units(2)  # mm
@@ -756,7 +624,11 @@ def symmetric_orthogonalise(
         # polar factors of A
         ortho_timeseries = U @ np.conjugate(V)
     else:
-        raise ValueError("Not full rank, rank required is {}, but rank is only {}".format(timeseries.shape[1], r))
+        raise ValueError(
+            "Not full rank, rank required is {}, but rank is only {}".format(
+                timeseries.shape[1], r
+            )
+        )
 
     if compute_weights:
         # weights are a weighting matrix such that,
@@ -796,3 +668,67 @@ def _load_parcel_timeseries(fname):
     # load passed in hd5 file
     dd = soft_import("deepdish")
     return dd.io.load(fname)
+
+
+def _roi_centers(parcellation_file):
+    """Get ROI centers.
+
+    Parameters
+    ----------
+    parcellation_file : str
+        Path to parcellation file.
+    """
+    parcellation = load_parcellation(parcellation_file)
+    n_parcels = parcellation.shape[3]
+    data = parcellation.get_fdata()
+    nonzero = [np.nonzero(data[..., i]) for i in range(n_parcels)]
+    nonzero_coords = [
+        nib.affines.apply_affine(parcellation.affine, np.array(nz).T) for nz in nonzero
+    ]
+    weights = [data[..., i][nz] for i, nz in enumerate(nonzero)]
+    return np.array(
+        [
+            np.average(c, weights=w, axis=0)
+            for c, w in zip(nonzero_coords, weights)
+        ]
+    )
+
+
+def plot_parcellation(parcellation_file, **kwargs):
+    """Plots a parcellation.
+
+    Parameters
+    ----------
+    parcellation_file : str
+        Path to parcellation file.
+    kwargs : keyword arguments
+        Keyword arguments to pass to nilearn.plotting.plot_markers.
+    """
+    roi_centers = _roi_centers(parcellation_file)
+    n_parcels = roi_centers.shape[0]
+    return plot_markers(
+        np.zeros(n_parcels),
+        roi_centers,
+        colorbar=False,
+        node_cmap="binary_r",
+        **kwargs,
+    )
+
+
+def plot_correlation(parc_ts, filename):
+    if parc_ts.ndim == 3:
+        shape = parc_ts.shape
+        parc_ts = parc_ts.reshape(shape[0], shape[1] * shape[2])
+    corr = np.corrcoef(parc_ts)
+    np.fill_diagonal(corr, 0)
+    fig, ax = plt.subplots()
+    divider = make_axes_locatable(ax)
+    cax = divider.append_axes("right", size="5%", pad=0.05)
+    im = ax.imshow(corr)
+    ax.set_title("Correlation")
+    ax.set_xlabel("Parcel")
+    ax.set_ylabel("Parcel")
+    fig.colorbar(im, cax=cax, orientation="vertical")
+    log_or_print(f"saving {filename}")
+    fig.savefig(filename)
+    plt.close(fig)
