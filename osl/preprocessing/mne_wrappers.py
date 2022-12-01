@@ -372,14 +372,13 @@ def run_mne_ica_autoreject(dataset, userargs):
     eog_indices, eog_scores = dataset["ica"].find_bads_eog(
         dataset["raw"], threshold=0.35, measure="correlation"
     )
-
     dataset["ica"].exclude.extend(eog_indices)
-    logger.info("Marking {0} as EOG ICs".format(len(dataset["ica"].exclude)))
+    logger.info("Marking {0} as EOG ICs".format(len(eog_indices)))
     ecg_indices, ecg_scores = dataset["ica"].find_bads_ecg(
         dataset["raw"], threshold=ecgthreshold, method=ecgmethod
     )
     dataset["ica"].exclude.extend(ecg_indices)
-    logger.info("Marking {0} as ECG ICs".format(len(dataset["ica"].exclude)))
+    logger.info("Marking {0} as ECG ICs".format(len(ecg_indices)))
     if ("apply" not in userargs) or (userargs["apply"] is True):
         logger.info("Removing selected components from raw data")
         dataset["ica"].apply(dataset["raw"])
