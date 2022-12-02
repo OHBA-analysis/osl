@@ -7,7 +7,7 @@
 
 import os
 import os.path as op
-
+import subprocess
 from pathlib import Path
 
 import numpy as np
@@ -27,7 +27,6 @@ from numba.types import intc, intp, float64, voidptr
 from numba.types import CPointer
 
 import logging
-
 logging.getLogger("numba").setLevel(logging.WARNING)
 
 from osl.source_recon.beamforming import transform_recon_timeseries
@@ -38,7 +37,7 @@ from osl.utils import soft_import
 def system_call(cmd, verbose=False):
     if verbose:
         log_or_print(cmd)
-    os.system(cmd)
+    subprocess.call(cmd, shell=True)
 
 
 def get_gridstep(coords):
