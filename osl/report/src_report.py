@@ -216,12 +216,13 @@ def gen_html_summary(reportdir):
             "subjects": [], "nas_err": [], "lpa_err": [], "rpa_err": [],
         }
         for d in subject_data:
-            if d["fid_err"] is not None:
-                fid_err_table["subjects"].append(d["fif_id"])
-                fid_err_table["nas_err"].append(np.round(d["fid_err"][0], decimals=2))
-                fid_err_table["lpa_err"].append(np.round(d["fid_err"][1], decimals=2))
-                fid_err_table["rpa_err"].append(np.round(d["fid_err"][2], decimals=2))
-        if len(fid_err_table) > 1:
+            if "fid_err" in d:
+                if d["fid_err"] is not None:
+                    fid_err_table["subjects"].append(d["fif_id"])
+                    fid_err_table["nas_err"].append(np.round(d["fid_err"][0], decimals=2))
+                    fid_err_table["lpa_err"].append(np.round(d["fid_err"][1], decimals=2))
+                    fid_err_table["rpa_err"].append(np.round(d["fid_err"][2], decimals=2))
+        if len(fid_err_table["subjects"]) > 1:
             data["coreg_table"] = tabulate(
                 np.c_[
                     fid_err_table["subjects"],
