@@ -388,6 +388,7 @@ def _resample_parcellation(
     gridstep = int(rhino_utils.get_gridstep(voxel_coords.T) / 1000)
     log_or_print(f"gridstep = {gridstep} mm")
 
+    parcellation_file = find_file(parcellation_file)
     pth, parcellation_name = op.split(op.splitext(op.splitext(parcellation_file)[0])[0])
 
     if working_dir is None:
@@ -398,7 +399,7 @@ def _resample_parcellation(
     )
 
     # create std brain of the required resolution
-    os.system(
+    rhino_utils.system_call(
         "flirt -in {} -ref {} -out {} -applyisoxfm {}".format(
             parcellation_file, parcellation_file, parcellation_resampled, gridstep
         )
@@ -474,6 +475,7 @@ def _parcel_timeseries2nii(
         Output nii file name, will be output at spatial resolution of
         parcel_timeseries['voxel_coords']
     """
+    parcellation_file = find_file(parcellation_file)
     pth, parcellation_name = op.split(op.splitext(op.splitext(parcellation_file)[0])[0])
 
     if working_dir is None:
@@ -484,7 +486,9 @@ def _parcel_timeseries2nii(
 
     # compute parcellation_mask_file to be mean over all parcels
     parcellation_mask_file = op.join(working_dir, parcellation_name + "_mask.nii.gz")
-    os.system("fslmaths {} -Tmean {}".format(parcellation_file, parcellation_mask_file))
+    rhino_utils.system_call(
+        "fslmaths {} -Tmean {}".format(parcellation_file, parcellation_mask_file)
+    )
 
     if len(parcel_timeseries_data.shape) == 1:
         parcel_timeseries_data = np.reshape(
@@ -513,7 +517,7 @@ def _parcel_timeseries2nii(
     )
 
     # create std brain of the required resolution
-    os.system(
+    rhino_utils.system_call(
         "flirt -in {} -ref {} -out {} -applyisoxfm {}".format(
             parcellation_mask_file,
             parcellation_mask_file,

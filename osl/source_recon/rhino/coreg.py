@@ -584,32 +584,24 @@ def coreg_metrics(subjects_dir, subject):
     dev_head_t["trans"][0:3, -1] = dev_head_t["trans"][0:3, -1] * 1000
     head_trans = invert_transform(dev_head_t)
 
-    compute_distances = True
-
     # Load polhemus fidcials, these are in mm
     if op.isfile(polhemus_nasion_file):
         polhemus_nasion_polhemus = np.loadtxt(polhemus_nasion_file)
         polhemus_nasion_meg = rhino_utils.xform_points(
             head_trans["trans"], polhemus_nasion_polhemus
         )
-    else:
-        compute_distances = False
 
     if op.isfile(polhemus_rpa_file):
         polhemus_rpa_polhemus = np.loadtxt(polhemus_rpa_file)
         polhemus_rpa_meg = rhino_utils.xform_points(
             head_trans["trans"], polhemus_rpa_polhemus
         )
-    else:
-        compute_distances = False
 
     if op.isfile(polhemus_lpa_file):
         polhemus_lpa_polhemus = np.loadtxt(polhemus_lpa_file)
         polhemus_lpa_meg = rhino_utils.xform_points(
             head_trans["trans"], polhemus_lpa_polhemus
         )
-    else:
-        compute_distances = False
 
     # Load sMRI derived fids, these are in mm in polhemus/head space
     if op.isfile(smri_nasion_file):
@@ -617,30 +609,20 @@ def coreg_metrics(subjects_dir, subject):
         smri_nasion_meg = rhino_utils.xform_points(
             head_trans["trans"], smri_nasion_polhemus
         )
-    else:
-        compute_distances = False
 
     if op.isfile(smri_rpa_file):
         smri_rpa_polhemus = np.loadtxt(smri_rpa_file)
         smri_rpa_meg = rhino_utils.xform_points(head_trans["trans"], smri_rpa_polhemus)
-    else:
-        compute_distances = False
 
     if op.isfile(smri_lpa_file):
         smri_lpa_polhemus = np.loadtxt(smri_lpa_file)
         smri_lpa_meg = rhino_utils.xform_points(head_trans["trans"], smri_lpa_polhemus)
-    else:
-        compute_distances = False
 
     # Distance between polhemus and sMRI fiducials in cm
-
-    if compute_distances:
-        nasion_distance = np.sqrt(np.sum((polhemus_nasion_meg - smri_nasion_meg) ** 2))
-        lpa_distance = np.sqrt(np.sum((polhemus_lpa_meg - smri_lpa_meg) ** 2))
-        rpa_distance = np.sqrt(np.sum((polhemus_rpa_meg - smri_rpa_meg) ** 2))
-        distances = np.array([nasion_distance, lpa_distance, rpa_distance]) * 1e-1
-    else:
-        distances = None
+    nasion_distance = np.sqrt(np.sum((polhemus_nasion_meg - smri_nasion_meg) ** 2))
+    lpa_distance = np.sqrt(np.sum((polhemus_lpa_meg - smri_lpa_meg) ** 2))
+    rpa_distance = np.sqrt(np.sum((polhemus_rpa_meg - smri_rpa_meg) ** 2))
+    distances = np.array([nasion_distance, lpa_distance, rpa_distance]) * 1e-1
 
     return distances
 

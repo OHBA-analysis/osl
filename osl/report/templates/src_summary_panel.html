@@ -26,8 +26,12 @@
     {% if data.coreg %}
         <div class="tabpage" style='width: 100%' id='coregistration'>
             <h3>Coregistration</h3>
-            Distance between polhemus and structural MRI fiducials in cm.</br></br>
-            {{ data.coreg_table }}
+            {% if data.coreg_table is defined %}
+                Distance between polhemus and structural MRI fiducials in cm.</br></br>
+                {{ data.coreg_table }}
+            {% else %}
+                No fiducials were used in coregistration.
+            {% endif %}
         </div>
     {% endif %}
 
