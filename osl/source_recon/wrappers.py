@@ -175,7 +175,10 @@ def coreg(
     )
 
     # Calculate metrics
-    fid_err = rhino.coreg_metrics(subjects_dir=src_dir, subject=subject)
+    if already_coregistered:
+        fid_err = None
+    else:
+        fid_err = rhino.coreg_metrics(subjects_dir=src_dir, subject=subject)
 
     # Save plots
     rhino.coreg_display(
@@ -318,7 +321,10 @@ def coregister(
     )
 
     # Calculate metrics
-    fid_err = rhino.coreg_metrics(subjects_dir=src_dir, subject=subject)
+    if already_coregistered:
+        fid_err = None
+    else:
+        fid_err = rhino.coreg_metrics(subjects_dir=src_dir, subject=subject)
 
     # Save plots
     rhino.coreg_display(
