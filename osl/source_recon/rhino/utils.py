@@ -37,7 +37,7 @@ from osl.utils import soft_import
 
 def system_call(cmd, verbose=False):
     if verbose:
-        print(cmd)
+        log_or_print(cmd)
     os.system(cmd)
 
 
