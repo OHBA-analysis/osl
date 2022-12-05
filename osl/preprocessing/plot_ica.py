@@ -411,11 +411,13 @@ class osl_MNEBrowseFigure(MNEBrowseFigure):
         vscroll_dist = 0.1
         help_width = scroll_width * 2
         # MVE: ADD SIZES FOR TOPOS
+        exist_meg = any(ct in np.unique(ica.get_channel_types()) for ct in ['mag', 'grad'])
+        exist_eeg = 'eeg' in np.unique(ica.get_channel_types())
         n_topos = len(
             np.unique(
                 [
                     mne.io.pick.channel_type(ica.info, ch)
-                    for ch in mne.pick_types(ica.info, meg=True)
+                    for ch in mne.pick_types(ica.info, meg=exist_meg, eeg=exist_eeg)
                 ]
             )
         )
@@ -848,12 +850,14 @@ class osl_MNEBrowseFigure(MNEBrowseFigure):
             self._draw_event_lines()
 
         # OSL ADDITION: ADD TOPOS:
+        exist_meg = any(ct in np.unique(self.mne.ica.get_channel_types()) for ct in ['mag', 'grad'])
+        exist_eeg = 'eeg' in np.unique(self.mne.ica.get_channel_types())
         n_topos = len(picks)
         n_chtype = len(
             np.unique(
                 [
                     channel_type(self.mne.ica.info, ch)
-                    for ch in pick_types(self.mne.ica.info, meg=True)
+                    for ch in pick_types(self.mne.ica.info, meg=exist_meg, eeg=exist_eeg)
                 ]
             )
         )
@@ -879,6 +883,8 @@ class osl_MNEBrowseFigure(MNEBrowseFigure):
         import mne
         from mne.viz.topomap import _plot_ica_topomap
 
+        exist_meg = any(ct in np.unique(ica.get_channel_types()) for ct in ['mag', 'grad'])
+        exist_eeg = 'eeg' in np.unique(ica.get_channel_types())
         n_topos = len(picks)
         ica_tmp = ica.copy()
         ica_tmp._ica_names = ["" for i in ica_tmp._ica_names]
@@ -886,7 +892,7 @@ class osl_MNEBrowseFigure(MNEBrowseFigure):
         chtype = np.unique(
             [
                 mne.io.pick.channel_type(ica.info, ch)
-                for ch in mne.pick_types(ica.info, meg=True)
+                for ch in mne.pick_types(ica.info, meg=exist_meg, eeg=exist_eeg)
             ]
         )
         n_chtype = len(chtype)
