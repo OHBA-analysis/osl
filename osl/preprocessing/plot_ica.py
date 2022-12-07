@@ -1166,15 +1166,12 @@ class osl_MNEBrowseFigure(MNEBrowseFigure):
                 if "eog" not in self.mne.ica.labels_:
                     self.mne.ica.labels_["eog"] = []
                 for k in list(self.mne.ica.labels_.keys()):
-                    print('loop: ', k)
                     if "ecg" in k.lower() and k.lower() != "ecg":
                         tmp = self.mne.ica.labels_[k]
                         if type(tmp) is list and tmp:
                             tmp = tmp[0]
                         self.mne.ica.labels_["ecg"].append(tmp)
                     elif "eog" in k.lower() and k.lower() != "eog":
-                        print("point: ", k)
-                        print("value: ", self.mne.ica.labels_[k])
                         tmp = self.mne.ica.labels_[k]
                         if type(tmp) is list and tmp:
                             tmp = tmp[0]
