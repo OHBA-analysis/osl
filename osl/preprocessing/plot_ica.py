@@ -1161,21 +1161,26 @@ class osl_MNEBrowseFigure(MNEBrowseFigure):
 
             # Add to labels_ a generic eog/ecg field
             if len(list(self.mne.ica.labels_.keys())) > 0:
+                if "ecg" not in self.mne.ica.labels_:
+                    self.mne.ica.labels_["ecg"] = []
+                if "eog" not in self.mne.ica.labels_:
+                    self.mne.ica.labels_["eog"] = []
                 for k in list(self.mne.ica.labels_.keys()):
-                    if 'ecg' in k.lower() and k.lower()!='ecg':
-                        if 'ecg' not in self.mne.ica.labels_:
-                            self.mne.ica.labels_["ecg"] = []
+                    print('loop: ', k)
+                    if "ecg" in k.lower() and k.lower() != "ecg":
                         tmp = self.mne.ica.labels_[k]
-                        if type(tmp) is list:
+                        if type(tmp) is list and tmp:
                             tmp = tmp[0]
                         self.mne.ica.labels_["ecg"].append(tmp)
-                    elif 'eog' in k.lower() and k.lower()!='eog':
-                        if 'eog' not in self.mne.ica.labels_:
-                            self.mne.ica.labels_["eog"] = []
+                    elif "eog" in k.lower() and k.lower() != "eog":
+                        print("point: ", k)
+                        print("value: ", self.mne.ica.labels_[k])
                         tmp = self.mne.ica.labels_[k]
-                        if type(tmp) is list:
+                        if type(tmp) is list and tmp:
                             tmp = tmp[0]
-                        self.mne.ica.labels_["eog"].append(tmp)
+                        self.mne.ica.labels_["eog"].append(tmp)       
+                self.mne.ica.labels_["ecg"] = [v for v in self.mne.ica.labels_["ecg"] if v!= []]
+                self.mne.ica.labels_["eog"] = [v for v in self.mne.ica.labels_["eog"] if v!= []]
                 self.mne.ica.labels_["ecg"] = np.unique(self.mne.ica.labels_["ecg"]).tolist()
                 self.mne.ica.labels_["eog"] = np.unique(self.mne.ica.labels_["eog"]).tolist()
                 
