@@ -16,6 +16,9 @@ from dask.distributed import Client
 
 from osl import source_recon, utils
 
+import logging
+logger = logging.getLogger("osl")
+
 if __name__ == "__main__":
     utils.logger.set_up(level="INFO")
 
@@ -48,7 +51,7 @@ if __name__ == "__main__":
             orthogonalisation: symmetric
     """
 
-    def remove_headshape_points(src_dir, subject, preproc_file, smri_file, epoch_file, logger):
+    def remove_headshape_points(src_dir, subject, preproc_file, smri_file, epoch_file):
         """Removes headshape points near the nose."""
 
         # Get coreg filenames
