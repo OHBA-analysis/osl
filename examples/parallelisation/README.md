@@ -1,6 +1,6 @@
 
 Example scripts for parallelising batch processing with Dask
-----------------------------------------------------------
+------------------------------------------------------------
 
 If you're using a computer with multiple cores, we can batch processes (preprocess, source reconstruct) in parallel. The scripts `serial_*.py` use code that runs serially (i.e. without parallel workers) and the `parallel_*.py` scripts show the changes that need to be made to run the same processing in parallel.
 
