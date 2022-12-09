@@ -15,6 +15,9 @@ from glob import glob
 
 from osl import source_recon
 
+import logging
+logger = logging.getLogger("osl")
+
 # Directories
 anat_dir = "/ohba/pi/mwoolrich/datasets/CamCan_2021/cc700/mri/pipeline/release004/BIDS_20190411/anat"
 preproc_dir = "/ohba/pi/mwoolrich/cgohil/camcan/preproc"
@@ -44,7 +47,7 @@ config = """
         orthogonalisation: symmetric
 """
 
-def remove_headshape_points(src_dir, subject, preproc_file, smri_file, epoch_file, logger):
+def remove_headshape_points(src_dir, subject, preproc_file, smri_file, epoch_file):
     """Removes headshape points near the nose."""
 
     # Get coreg filenames
