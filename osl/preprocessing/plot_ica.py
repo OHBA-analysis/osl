@@ -411,11 +411,13 @@ class osl_MNEBrowseFigure(MNEBrowseFigure):
         vscroll_dist = 0.1
         help_width = scroll_width * 2
         # MVE: ADD SIZES FOR TOPOS
+        exist_meg = any(ct in np.unique(ica.get_channel_types()) for ct in ['mag', 'grad'])
+        exist_eeg = 'eeg' in np.unique(ica.get_channel_types())
         n_topos = len(
             np.unique(
                 [
                     mne.io.pick.channel_type(ica.info, ch)
-                    for ch in mne.pick_types(ica.info, meg=True)
+                    for ch in mne.pick_types(ica.info, meg=exist_meg, eeg=exist_eeg)
                 ]
             )
         )
@@ -848,12 +850,14 @@ class osl_MNEBrowseFigure(MNEBrowseFigure):
             self._draw_event_lines()
 
         # OSL ADDITION: ADD TOPOS:
+        exist_meg = any(ct in np.unique(self.mne.ica.get_channel_types()) for ct in ['mag', 'grad'])
+        exist_eeg = 'eeg' in np.unique(self.mne.ica.get_channel_types())
         n_topos = len(picks)
         n_chtype = len(
             np.unique(
                 [
                     channel_type(self.mne.ica.info, ch)
-                    for ch in pick_types(self.mne.ica.info, meg=True)
+                    for ch in pick_types(self.mne.ica.info, meg=exist_meg, eeg=exist_eeg)
                 ]
             )
         )
@@ -879,6 +883,8 @@ class osl_MNEBrowseFigure(MNEBrowseFigure):
         import mne
         from mne.viz.topomap import _plot_ica_topomap
 
+        exist_meg = any(ct in np.unique(ica.get_channel_types()) for ct in ['mag', 'grad'])
+        exist_eeg = 'eeg' in np.unique(ica.get_channel_types())
         n_topos = len(picks)
         ica_tmp = ica.copy()
         ica_tmp._ica_names = ["" for i in ica_tmp._ica_names]
@@ -886,7 +892,7 @@ class osl_MNEBrowseFigure(MNEBrowseFigure):
         chtype = np.unique(
             [
                 mne.io.pick.channel_type(ica.info, ch)
-                for ch in mne.pick_types(ica.info, meg=True)
+                for ch in mne.pick_types(ica.info, meg=exist_meg, eeg=exist_eeg)
             ]
         )
         n_chtype = len(chtype)
@@ -1155,21 +1161,23 @@ class osl_MNEBrowseFigure(MNEBrowseFigure):
 
             # Add to labels_ a generic eog/ecg field
             if len(list(self.mne.ica.labels_.keys())) > 0:
+                if "ecg" not in self.mne.ica.labels_:
+                    self.mne.ica.labels_["ecg"] = []
+                if "eog" not in self.mne.ica.labels_:
+                    self.mne.ica.labels_["eog"] = []
                 for k in list(self.mne.ica.labels_.keys()):
-                    if 'ecg' in k.lower() and k.lower()!='ecg':
-                        if 'ecg' not in self.mne.ica.labels_:
-                            self.mne.ica.labels_["ecg"] = []
+                    if "ecg" in k.lower() and k.lower() != "ecg":
                         tmp = self.mne.ica.labels_[k]
-                        if type(tmp) is list:
+                        if type(tmp) is list and tmp:
                             tmp = tmp[0]
                         self.mne.ica.labels_["ecg"].append(tmp)
-                    elif 'eog' in k.lower() and k.lower()!='eog':
-                        if 'eog' not in self.mne.ica.labels_:
-                            self.mne.ica.labels_["eog"] = []
+                    elif "eog" in k.lower() and k.lower() != "eog":
                         tmp = self.mne.ica.labels_[k]
-                        if type(tmp) is list:
+                        if type(tmp) is list and tmp:
                             tmp = tmp[0]
-                        self.mne.ica.labels_["eog"].append(tmp)
+                        self.mne.ica.labels_["eog"].append(tmp)       
+                self.mne.ica.labels_["ecg"] = [v for v in self.mne.ica.labels_["ecg"] if v!= []]
+                self.mne.ica.labels_["eog"] = [v for v in self.mne.ica.labels_["eog"] if v!= []]
                 self.mne.ica.labels_["ecg"] = np.unique(self.mne.ica.labels_["ecg"]).tolist()
                 self.mne.ica.labels_["eog"] = np.unique(self.mne.ica.labels_["eog"]).tolist()
                 
