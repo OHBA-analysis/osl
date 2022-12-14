@@ -5,7 +5,6 @@
 # Authors: Mark Woolrich <mark.woolrich@ohba.ox.ac.uk>
 #          Chetan Gohil <chetan.gohil@psych.ox.ac.uk>
 
-import os
 import os.path as op
 from pathlib import Path
 
@@ -20,6 +19,9 @@ from mpl_toolkits.axes_grid1 import make_axes_locatable
 import osl.source_recon.rhino.utils as rhino_utils
 from osl.utils import soft_import
 from osl.utils.logger import log_or_print
+
+from mne import create_info
+import mne.io
 
 
 def load_parcellation(parcellation_file):
@@ -432,7 +434,7 @@ def _resample_parcellation(
 
 
 def _parcel_timeseries2nii(
-    parcellation,
+    parcellation_file,
     parcel_timeseries_data,
     voxel_weightings,
     voxel_assignments,
@@ -736,3 +738,82 @@ def plot_correlation(parc_ts, filename):
     log_or_print(f"saving {filename}")
     fig.savefig(filename)
     plt.close(fig)
+
+def convert2niftii(parc_data, parcellation_file, mask_file):
+    '''
+    Takes (nparcels) or (nvolumes x nparcels) parc_data and returns
+    (xvoxels x yvoxels x zvoxels x nvolumes) niftii file
+    containing parc_data on a volumetric grid
+
+    Parameters
+    ----------
+
+    parc_data: np.ndarray
+        (nparcels) or (nvolumes x nparcels) parcel data
+    parcellation_file : str
+        Path to niftii parcellation file.
+    mask_file : str
+        Path to niftii parcellation mask file
+
+    Returns
+    -------
+    nii: nib.Nifti1Image
+        (xvoxels x yvoxels x zvoxels x nvolumes) nib.Nifti1Image
+        containing parc_data on a volumetric grid
+
+    '''
+
+    if len(parc_data.shape) == 1:
+        parc_data = np.reshape(parc_data, [1, -1])
+
+    # Load the mask
+    mask = nib.load(mask_file)
+    mask_grid = mask.get_fdata()
+    mask_grid = mask_grid.ravel(order="F")
+
+    # Get indices of non-zero elements, i.e. those which contain the brain
+    non_zero_voxels = mask_grid != 0
+
+    # Load the parcellation
+    parcellation = nib.load(parcellation_file)
+    parcellation_grid = parcellation.get_fdata()
+
+    # Make a 2D array of voxel weights for each parcel
+    n_parcels = parcellation.shape[-1]
+
+    # check parcellation is compatible:
+    if parc_data.shape[1] is not n_parcels:
+        Exception(
+            "Error: parcellation_file has a different number of parcels to the maps"
+        )
+
+    voxel_weights = parcellation_grid.reshape(-1, n_parcels, order="F")
+
+    # check mask is compatible with parcellation:
+    if voxel_weights.shape[0] != mask_grid.shape[0]:
+        Exception(
+            "Error: parcellation_file has a different number of voxels to mask_file"
+        )
+
+    voxel_weights = voxel_weights[non_zero_voxels]
+
+    # Normalise the voxels weights
+    voxel_weights /= voxel_weights.max(axis=0)[np.newaxis, ...]
+
+    # Generate a spatial map vector for each mode
+    n_voxels = voxel_weights.shape[0]
+    n_modes = parc_data.shape[0]
+    spatial_map_values = np.empty([n_voxels, n_modes])
+
+    for i in range(n_modes):
+        spatial_map_values[:, i] = voxel_weights @ parc_data[i]
+
+    # Final spatial map as a 3D grid for each mode
+    spatial_map = np.zeros([mask_grid.shape[0], n_modes])
+    spatial_map[non_zero_voxels] = spatial_map_values
+    spatial_map = spatial_map.reshape(
+        mask.shape[0], mask.shape[1], mask.shape[2], n_modes, order="F"
+    )
+    nii = nib.Nifti1Image(spatial_map, mask.affine, mask.header)
+
+    return nii

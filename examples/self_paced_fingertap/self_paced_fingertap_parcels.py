@@ -14,13 +14,16 @@ import os.path as op
 import numpy as np
 import matplotlib.pyplot as plt
 from osl.source_recon import rhino, beamforming, parcellation
-
 import glmtools
-
 import mne
+from nilearn import plotting
+import nibabel as nib
 
 subjects_dir = "/Users/woolrich/homedir/vols_data/self_paced_fingertap"
 subject = "subject1"
+stats_dir = op.join(subjects_dir, subject, "rhino", "stats")
+if not os.path.isdir(stats_dir):
+    os.mkdir(stats_dir)
 
 # load precomputed forward solution
 fwd_fname = rhino.get_coreg_filenames(subjects_dir, subject)["forward_model_file"]
@@ -29,20 +32,18 @@ fwd = mne.read_forward_solution(fwd_fname)
 # preprocessed fif file
 fif_file = op.join(subjects_dir, subject, "JRH_MotorCon_20100429_01_FORMARK_preproc_raw.fif")
 
-# parcellation to use
-parcellation_fname = op.join(
-    "/Users/woolrich/Dropbox/vols_scripts/hmm_misc_funcs/parcellations",
-    "fmri_d100_parcellation_with_PCC_reduced_2mm.nii.gz",
-)
+if True:
+    parcellation_fname = parcellation.find_file('fmri_d100_parcellation_with_PCC_reduced_2mm_ss5mm_ds8mm.nii.gz')
+    parcellation_fname_for_visualisation = parcellation.find_file('fmri_d100_parcellation_with_PCC_reduced_2mm.nii.gz')
 
-# nii volume to overlay parcellation results on
-parcellation_background_fname = op.join(
-    os.environ["FSLDIR"], "data/standard/MNI152_T1_2mm_brain.nii.gz"
-)
+else:
+    parcellation_fname = parcellation.find_file('Schaefer2018_100Parcels_7Networks_order_FSLMNI152_2mm_4d_ds8mm.nii.gz')
+    parcellation_fname_for_visualisation = parcellation.find_file('Schaefer2018_100Parcels_7Networks_order_FSLMNI152_2mm_4d.nii.gz')
+
+mask_fname_for_visualisation = parcellation.find_file('MNI152_T1_2mm_brain.nii.gz')
 
 run_recon = False
-
-orthogonalise_parcel_timeseries = True
+orthogonalise_parcel_timeseries = False
 rank = {"mag": 125}
 chantypes = ["mag"]
 
@@ -122,7 +123,7 @@ p = parcellation.plot_parcellation(parcellation_fname)
 # Apply parcellation to voxelwise data (voxels x tpts) contained in recon_timeseries_mni
 # Resulting parcel_timeseries will be (parcels x tpts) in MNI space
 parcel_ts, _, _ = parcellation.parcellate_timeseries(
-    recon_timeseries_mni, recon_coords_mni, method="spatial_basis"
+    parcellation_fname, recon_timeseries_mni, recon_coords_mni, "spatial_basis", recon_dir,
 )
 
 # -------------
@@ -145,8 +146,8 @@ if orthogonalise_parcel_timeseries:
     # plot between parcel correlations before and after orthog
     plt.figure()
     fig, axs = plt.subplots(1, 2, sharey="row")
-    axs[0].imshow(np.corrcoef(np.reshape(parcel_ts, (39, -1))))
-    axs[1].imshow(np.corrcoef(np.reshape(ortho_parcel_ts, (39, -1))))
+    axs[0].imshow(np.corrcoef(np.reshape(parcel_ts, (parcel_ts.shape[0], -1))))
+    axs[1].imshow(np.corrcoef(np.reshape(ortho_parcel_ts, (parcel_ts.shape[0], -1))))
     axs[0].title.set_text("Corrs before orthogonalisation")
     axs[1].title.set_text("Corrs after orthogonalisation")
     axs[0].set_xlabel("Parcel")
@@ -162,8 +163,20 @@ if orthogonalise_parcel_timeseries:
 parcel_power = np.mean(parcel_ts, axis=1) / np.std(
     parcel_ts, axis=1
 )
-rhino.fsleyes_overlay(
-    parcellation_background_fname, p.nii(parcel_power, method="assignments")
+
+nii = parcellation.convert2niftii(parcel_power,
+                                       parcellation_fname_for_visualisation,
+                                       mask_fname_for_visualisation)
+
+
+vol_power_fname = op.join(stats_dir, "vol_power")
+
+plotting.plot_img_on_surf(
+    nii,
+    views=["lateral", "medial"],
+    hemispheres=["left", "right"],
+    colorbar=True,
+    output_file=vol_power_fname,
 )
 
 # ------------------------------
@@ -190,6 +203,7 @@ rhino.fsleyes_overlay(
 
 # get time indices that correspond to the time window that was source
 # reconstructed
+
 ntotal_tpts = mne.io.read_raw_fif(fif_file).n_times
 
 tres = 1 / raw.info["sfreq"]
@@ -239,12 +253,21 @@ for cc in range(len(contrasts)):
 
 # Write out parcellated stats as niftii vols and view them
 con = 0
-stats_dir = op.join(subjects_dir, subject, "rhino", "stats")
-if not os.path.isdir(stats_dir):
-    os.mkdir(stats_dir)
-tstat_nii_fname = op.join(stats_dir, "tstat{}_parcel.nii.gz".format(cc + 1))
+tstat_nii_fname = op.join(stats_dir, "tstat{}_parcel".format(cc + 1))
 
-tstat_nii_fname = p.nii(
-    tstats[con][0, :], method="assignments", out_nii_fname=tstat_nii_fname
+nii = parcellation.convert2niftii(tstats[con][0, :],
+                                  parcellation_fname_for_visualisation,
+                                  mask_fname_for_visualisation)
+
+# Save nii file
+nib.save(nii, tstat_nii_fname)
+rhino.fsleyes_overlay(mask_fname_for_visualisation, tstat_nii_fname)
+
+# Save nii png of surface plot
+plotting.plot_img_on_surf(
+    nii,
+    views=["lateral", "medial"],
+    hemispheres=["left", "right"],
+    colorbar=True,
+    output_file=tstat_nii_fname,
 )
-rhino.fsleyes_overlay(parcellation_background_fname, tstat_nii_fname)
