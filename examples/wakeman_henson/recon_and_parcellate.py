@@ -19,13 +19,7 @@ out_dir = op.join(subjects_dir, "wakehen_glm")
 
 subjects_to_do = np.arange(0, 19)
 sessions_to_do = np.arange(0, 6)
-subj_sess_2exclude = np.zeros([19, 6]).astype(bool)
-
-subj_sess_2exclude = np.ones(subj_sess_2exclude.shape).astype(bool)
-subj_sess_2exclude[0:2, 0:2]=False
-
-#subj_sess_2exclude = np.zeros(subj_sess_2exclude.shape).astype(bool)
-
+subj_sess_2exclude = np.zeros(subj_sess_2exclude.shape).astype(bool)
 
 # -------------------------------------------------------------
 # %% Setup file names
@@ -79,13 +73,14 @@ config = """
         freq_range: [1, 45]
         chantypes: [mag, grad]
         rank: {meg: 60}
-        parcellation_file: Schaefer2018_100Parcels_7Networks_order_FSLMNI152_2mm_4d_ds8mm.nii.gz
+        parcellation_file: HarvOxf-sub-Schaefer100-combined-2mm_4d_ds8.nii.gz
         method: spatial_basis
         orthogonalisation: None
 """
 
 # parcellation_file: fmri_d100_parcellation_with_PCC_reduced_2mm_ss5mm_ds8mm.nii.gz
-# parcellation_file: Schaefer2018_100Parcels_7Networks_order_FSLMNI152_2mm_4d_ds8mm
+# parcellation_file: Schaefer2018_100Parcels_7Networks_order_FSLMNI152_2mm_4d_ds8.nii.gz
+# parcellation_file: HarvOxf-sub-Schaefer100-combined-2mm_4d_ds8.nii.gz
 
 source_recon.run_src_batch(
     config,

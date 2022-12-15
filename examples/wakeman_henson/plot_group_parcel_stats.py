@@ -20,7 +20,7 @@ subjects_dir = "/ohba/pi/mwoolrich/datasets/WakemanHenson/ds117"
 subjects_dir = "/Users/woolrich/homedir/vols_data/WakeHen"
 
 parcellation_file = "Schaefer2018_100Parcels_7Networks_order_FSLMNI152_2mm_4d.nii.gz"
-parcellation_file_3d = "Schaefer2018_100Parcels_7Networks_order_FSLMNI152_2mm.nii.gz"
+parcellation_file = "HarvOxf-sub-Schaefer100-combined-2mm_4d.nii.gz"
 
 mask_file = "MNI152_T1_2mm_brain.nii.gz"
 
@@ -66,7 +66,7 @@ cope_fname = op.join(
 # Save cope as nii file and view in fsleyes
 print(f"Saving {cope_fname}")
 nib.save(nii, cope_fname + '.nii.gz')
-rhino.fsleyes([parcellation.find_file(mask_file), parcellation.find_file(parcellation_file_3d), cope_fname + '.nii.gz'])
+rhino.fsleyes([parcellation.find_file(mask_file), cope_fname + '.nii.gz'])
 
 # plot png of cope on cortical surface
 plotting.plot_img_on_surf(
@@ -79,7 +79,7 @@ plotting.plot_img_on_surf(
 os.system('open {}'.format(cope_fname + '.png'))
 
 # ------------------------------------------------------
-# Plot time course of stats at a specified MNI coordinate
+# Plot time course of group stats for a specified parcel
 
 parcel_ind = 5
 print("Plotting COPE time course for parcel:", parcel_ind)
@@ -95,19 +95,29 @@ plt.title(
 )
 plt.xlabel("time (s)")
 plt.ylabel("abs(cope)")
-print("Please close the pop-up figures to continue running the code")
 plt.show()
 
+# ------------------------------------------------------------------
+# plot subject-specific copes for the first-level contrast
 
+print("Loading GLM:", group_glm_model_file)
+first_level_data = obj_from_hdf5file(group_glm_model_file, "data").data  # nsess x nparcels x ntpts
 
-
-
-
+plt.figure()
+plt.plot(epochs_times, first_level_data[:, parcel_ind, :].T)
+plt.plot(epochs_times, cope_timeseries, linewidth=2, color='k')
+plt.title(
+    "abs(cope) for contrast {}, for parcel={}".format(
+        first_level_contrast, parcel_ind
+    )
+)
+plt.xlabel("time (s)")
+plt.ylabel("abs(cope)")
+plt.show()
 
 # ------------------------------------------------------------------
 # Write stats as 4D niftii file in MNI space.
 # Note, 4th dimension is timepoint within an epoch/trial
-
 
 cope_map = model.copes[group_contrast, :, :].T
 nii = parcellation.convert2niftii(cope_map, parcellation.find_file(parcellation_file), parcellation.find_file(mask_file))
@@ -120,7 +130,7 @@ cope_fname = op.join(
 # Save cope as nii file and view in fsleyes
 print(f"Saving {cope_fname}")
 nib.save(nii, cope_fname + '.nii.gz')
-rhino.fsleyes([parcellation.find_file(mask_file), parcellation.find_file(parcellation_file_3d), cope_fname + '.nii.gz'])
+rhino.fsleyes([parcellation.find_file(mask_file), cope_fname + '.nii.gz'])
 
 # From fsleyes drop down menus Select "View/Time series"
 # To see time labelling in secs:
