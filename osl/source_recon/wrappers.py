@@ -635,7 +635,7 @@ def beamform_and_parcellate(
     )
 
     # Orthogonalisation
-    if orthogonalisation not in [None, "symmetric"]:
+    if orthogonalisation not in [None, "symmetric", "none", "None"]:
         raise NotImplementedError(orthogonalisation)
 
     if orthogonalisation == "symmetric":
@@ -643,6 +643,11 @@ def beamform_and_parcellate(
         parcel_data = parcellation.symmetric_orthogonalise(
             parcel_data, maintain_magnitudes=True
         )
+
+    # Create and save mne raw object for the parcellated data
+    parc_fif_file = src_dir / subject / "rhino/parc-raw.fif"
+    parc_raw = parcellation.convert2mne_raw(parcel_data.T, data)
+    parc_raw.save(parc_fif_file, overwrite=True)
 
     # Save parcellated data
     parc_data_file = src_dir / subject / "rhino/parc.npy"

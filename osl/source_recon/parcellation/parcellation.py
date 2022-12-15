@@ -5,7 +5,6 @@
 # Authors: Mark Woolrich <mark.woolrich@ohba.ox.ac.uk>
 #          Chetan Gohil <chetan.gohil@psych.ox.ac.uk>
 
-import os
 import os.path as op
 from pathlib import Path
 
@@ -20,6 +19,9 @@ from mpl_toolkits.axes_grid1 import make_axes_locatable
 import osl.source_recon.rhino.utils as rhino_utils
 from osl.utils import soft_import
 from osl.utils.logger import log_or_print
+
+from mne import create_info
+import mne.io
 
 
 def load_parcellation(parcellation_file):
@@ -430,139 +432,6 @@ def _resample_parcellation(
 
     return parcellation_asmatrix
 
-
-def _parcel_timeseries2nii(
-    parcellation,
-    parcel_timeseries_data,
-    voxel_weightings,
-    voxel_assignments,
-    out_nii_fname=None,
-    working_dir=None,
-    times=None,
-    method="assignments",
-):
-    """Outputs parcel_timeseries_data as a niftii file using passed in parcellation,
-    parcellation and parcel_timeseries_data need to have the same number of parcels.
-
-    Parameters
-    ----------
-    parcellation_file : str
-        Path to parcellation file.
-    parcel_timeseries_data: numpy.ndarray
-        Needs to be nparcels x ntpts
-    voxel_weightings : numpy.ndarray
-        nvoxels x nparcels
-        Voxel weightings for each parcel to compute parcel_timeseries from
-        voxel_timeseries.
-    voxel_assignments : bool numpy.ndarray
-        nvoxels x nparcels
-        Boolean assignments indicating for each voxel the winner takes all
-        parcel it belongs to.
-    working_dir : str
-        Dir name to put files in
-    out_nii_fname : str
-        Output name to put files in
-    times : (ntpts, ) numpy.ndarray
-        Times points in seconds.
-        Will assume that time points are regularly spaced.
-        Used to set nii file up correctly.
-    method : str
-        "weights" or "assignments"
-
-    Returns
-    -------
-    out_nii_fname : str
-        Output nii file name, will be output at spatial resolution of
-        parcel_timeseries['voxel_coords']
-    """
-    parcellation_file = find_file(parcellation_file)
-    pth, parcellation_name = op.split(op.splitext(op.splitext(parcellation_file)[0])[0])
-
-    if working_dir is None:
-        working_dir = pth
-
-    if out_nii_fname is None:
-        out_nii_fname = op.join(working_dir, parcellation_name + "_timeseries.nii.gz")
-
-    # compute parcellation_mask_file to be mean over all parcels
-    parcellation_mask_file = op.join(working_dir, parcellation_name + "_mask.nii.gz")
-    rhino_utils.system_call(
-        "fslmaths {} -Tmean {}".format(parcellation_file, parcellation_mask_file)
-    )
-
-    if len(parcel_timeseries_data.shape) == 1:
-        parcel_timeseries_data = np.reshape(
-            parcel_timeseries_data, [parcel_timeseries_data.shape[0], 1]
-        )
-
-    # Compute nmaskvoxels x ntpts voxel_data
-    if method == "assignments":
-        weightings = voxel_assignments
-    elif method == "weights":
-        weightings = np.linalg.pinv(voxel_weightings.T)
-    else:
-        raise ValueError("Invalid method. Must be assignments or weights.")
-
-    voxel_data = weightings @ parcel_timeseries_data
-
-    # voxel_coords is nmaskvoxels x 3 in mm
-    gridstep = int(rhino_utils.get_gridstep(voxel_coords.T) / 1000)
-
-    # Sample parcellation_mask to the desired resolution
-    pth, ref_brain_name = op.split(
-        op.splitext(op.splitext(parcellation_mask_file)[0])[0]
-    )
-    parcellation_mask_resampled = op.join(
-        working_dir, ref_brain_name + "_{}mm_brain.nii.gz".format(gridstep)
-    )
-
-    # create std brain of the required resolution
-    rhino_utils.system_call(
-        "flirt -in {} -ref {} -out {} -applyisoxfm {}".format(
-            parcellation_mask_file,
-            parcellation_mask_file,
-            parcellation_mask_resampled,
-            gridstep,
-        )
-    )
-
-    parcellation_mask_coords, vals = rhino_utils.niimask2mmpointcloud(
-        parcellation_mask_resampled
-    )
-    parcellation_mask_inds = rhino_utils.niimask2indexpointcloud(
-        parcellation_mask_resampled
-    )
-
-    vol = nib.load(parcellation_mask_resampled).get_fdata()
-    vol = np.zeros(np.append(vol.shape[:3], parcel_timeseries_data.shape[1]))
-    kdtree = KDTree(parcellation_mask_coords.T)
-
-    # Find each voxel_coords best matching parcellation_mask_coords
-    for ind in range(voxel_coords.shape[1]):
-        distance, index = kdtree.query(voxel_coords[:, ind])
-        # Exclude from parcel any voxel_coords that are further than gridstep away
-        if distance < gridstep:
-            vol[
-                parcellation_mask_inds[0, index],
-                parcellation_mask_inds[1, index],
-                parcellation_mask_inds[2, index],
-                :,
-            ] = voxel_data[ind, :]
-
-    # Save as nifti
-    vol_nii = nib.Nifti1Image(vol, nib.load(parcellation_mask_resampled).affine)
-
-    vol_nii.header.set_xyzt_units(2)  # mm
-    if times is not None:
-        vol_nii.header["pixdim"][4] = times[1] - times[0]
-        vol_nii.header["toffset"] = 0
-        vol_nii.header.set_xyzt_units(2, 8)  # mm and secs
-
-    nib.save(vol_nii, out_nii_fname)
-
-    return out_nii_fname
-
-
 def symmetric_orthogonalise(
     timeseries, maintain_magnitudes=False, compute_weights=False
 ):
@@ -736,3 +605,153 @@ def plot_correlation(parc_ts, filename):
     log_or_print(f"saving {filename}")
     fig.savefig(filename)
     plt.close(fig)
+
+def convert2niftii(parc_data, parcellation_file, mask_file):
+    '''
+    Takes (nparcels) or (nvolumes x nparcels) parc_data and returns
+    (xvoxels x yvoxels x zvoxels x nvolumes) niftii file
+    containing parc_data on a volumetric grid
+
+    Parameters
+    ----------
+
+    parc_data: np.ndarray
+        (nparcels) or (nvolumes x nparcels) parcel data
+    parcellation_file : str
+        Path to niftii parcellation file.
+    mask_file : str
+        Path to niftii parcellation mask file
+
+    Returns
+    -------
+    nii: nib.Nifti1Image
+        (xvoxels x yvoxels x zvoxels x nvolumes) nib.Nifti1Image
+        containing parc_data on a volumetric grid
+
+    '''
+
+    if len(parc_data.shape) == 1:
+        parc_data = np.reshape(parc_data, [1, -1])
+
+    # Load the mask
+    mask = nib.load(mask_file)
+    mask_grid = mask.get_fdata()
+    mask_grid = mask_grid.ravel(order="F")
+
+    # Get indices of non-zero elements, i.e. those which contain the brain
+    non_zero_voxels = mask_grid != 0
+
+    # Load the parcellation
+    parcellation = nib.load(parcellation_file)
+    parcellation_grid = parcellation.get_fdata()
+
+    # Make a 2D array of voxel weights for each parcel
+    n_parcels = parcellation.shape[-1]
+
+    # check parcellation is compatible:
+    if parc_data.shape[1] is not n_parcels:
+        Exception(
+            "Error: parcellation_file has a different number of parcels to the maps"
+        )
+
+    voxel_weights = parcellation_grid.reshape(-1, n_parcels, order="F")
+
+    # check mask is compatible with parcellation:
+    if voxel_weights.shape[0] != mask_grid.shape[0]:
+        Exception(
+            "Error: parcellation_file has a different number of voxels to mask_file"
+        )
+
+    voxel_weights = voxel_weights[non_zero_voxels]
+
+    # Normalise the voxels weights
+    voxel_weights /= voxel_weights.max(axis=0)[np.newaxis, ...]
+
+    # Generate a spatial map vector for each mode
+    n_voxels = voxel_weights.shape[0]
+    n_modes = parc_data.shape[0]
+    spatial_map_values = np.empty([n_voxels, n_modes])
+
+    for i in range(n_modes):
+        spatial_map_values[:, i] = voxel_weights @ parc_data[i]
+
+    # Final spatial map as a 3D grid for each mode
+    spatial_map = np.zeros([mask_grid.shape[0], n_modes])
+    spatial_map[non_zero_voxels] = spatial_map_values
+    spatial_map = spatial_map.reshape(
+        mask.shape[0], mask.shape[1], mask.shape[2], n_modes, order="F"
+    )
+    nii = nib.Nifti1Image(spatial_map, mask.affine, mask.header)
+
+    return nii
+
+def convert2mne_raw(parc_data, raw, parcel_names=None, copy_annotations=True, reinsert_bads=True):
+
+    '''
+    Create and returns an MNE raw object that contains parcellated data.
+
+    Parameters
+    ----------
+    parc_data: np.ndarray
+        ntpts x nparcels parcel data
+    raw: mne.io.Raw
+        mne.io.raw object that produced parc_data via source recon and parcellation.
+        Info such as timings and bad segments will be copied from this to parc_raw.
+    parcel_names: list(str)
+        list of strings indicating names of parcels.
+        If none then names are set to be 0 to n_parcels-1
+    reinsert_bads: bool
+        do we put back in bad segments (with the values set to zero)?
+        This assumes that the bad segments have been previously removed from the passed
+        in parc_data specifically using the annotations in raw.
+        It is recommended that if reinsert_bads is True then copy_annotations should
+        be True also.
+    copy_annotations: bool
+        do we copy annotations from raw to parc_raw?
+
+    Returns
+    -------
+        parc_raw: mne.io.Raw
+            Generated parcellation in mne.io.raw format
+
+    '''
+
+    # Load fif file info
+    info = raw.info
+
+    if reinsert_bads:
+        # parc_data is missing bad channels, insert these back in before creating new mne object
+
+        # Get time indices excluding bad segments from raw
+        _, times = raw.get_data(
+            reject_by_annotation="omit", return_times=True
+        )
+        inds = raw.time_as_index(times)
+
+        new_parc_data = np.zeros([len(raw.times), parc_data.shape[1]])
+        new_parc_data[inds, :] = parc_data
+
+    else:
+        new_parc_data = parc_data
+
+    # create parc info
+    if parcel_names is None:
+        parcel_names = [str(x) for x in np.arange(parc_data.shape[1]).tolist()]
+
+    parc_info = create_info(ch_names=parcel_names, ch_types='misc', sfreq=info['sfreq'])
+
+    # put data and info together
+    parc_raw = mne.io.RawArray(np.transpose(new_parc_data), parc_info)
+
+    # copy timing info
+    parc_raw.set_meas_date(raw.info['meas_date'])
+    parc_raw.__dict__['_first_samps'] = raw.__dict__['_first_samps']
+    parc_raw.__dict__['_last_samps'] = raw.__dict__['_last_samps']
+    parc_raw.__dict__['_cropped_samp'] = raw.__dict__['_cropped_samp']
+
+    if copy_annotations:
+        # copy annotations from raw
+        parc_raw.set_annotations(raw._annotations)
+
+    return parc_raw
+
