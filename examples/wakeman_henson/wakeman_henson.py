@@ -31,8 +31,8 @@ from osl.source_recon import rhino, beamforming
 base_dir = "/ohba/pi/mwoolrich/datasets/WakemanHenson/ds117"
 out_dir = "./wakehen_glm"
 
-#base_dir = "/Users/woolrich/homedir/vols_data/WakeHen"
-#out_dir = op.join(base_dir, "wakehen_glm")
+base_dir = "/Users/woolrich/homedir/vols_data/WakeHen"
+out_dir = op.join(base_dir, "wakehen_glm")
 
 in_fif_file = op.join(base_dir, "sub001/MEG/run_02_sss.fif")
 smri_file = op.join(base_dir, "sub001/anatomy/highres001.nii.gz")
