@@ -20,12 +20,10 @@ out_dir = op.join(subjects_dir, "wakehen_glm")
 
 subjects_to_do = np.arange(0, 19)
 sessions_to_do = np.arange(0, 6)
-subj_sess_2exclude = np.zeros([19, 6]).astype(bool)
+subj_sess_2exclude = np.zeros(subj_sess_2exclude.shape).astype(bool)
 
-subj_sess_2exclude = np.ones(subj_sess_2exclude.shape).astype(bool)
-subj_sess_2exclude[0:2,0:2]=False
-
-#subj_sess_2exclude = np.zeros(subj_sess_2exclude.shape).astype(bool)
+#subj_sess_2exclude = np.ones(subj_sess_2exclude.shape).astype(bool)
+#subj_sess_2exclude[0:2,0:2]=False
 
 # -------------------------------------------------------------
 # %% Setup file names
