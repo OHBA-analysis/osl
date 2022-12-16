@@ -171,8 +171,6 @@ nii = parcellation.convert2niftii(parcel_power,
 
 vol_power_fname = op.join(stats_dir, "vol_power")
 
-#nib.save(nii, vol_power_fname)
-
 plotting.plot_img_on_surf(
     nii,
     views=["lateral", "medial"],

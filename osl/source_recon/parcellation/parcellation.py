@@ -432,6 +432,137 @@ def _resample_parcellation(
 
     return parcellation_asmatrix
 
+def _parcel_timeseries2nii(
+    parcellation_file,
+    parcel_timeseries_data,
+    voxel_weightings,
+    voxel_assignments,
+    out_nii_fname=None,
+    working_dir=None,
+    times=None,
+    method="assignments",
+):
+    """Outputs parcel_timeseries_data as a niftii file using passed in parcellation,
+    parcellation and parcel_timeseries_data need to have the same number of parcels.
+
+    Parameters
+    ----------
+    parcellation_file : str
+        Path to parcellation file.
+    parcel_timeseries_data: numpy.ndarray
+        Needs to be nparcels x ntpts
+    voxel_weightings : numpy.ndarray
+        nvoxels x nparcels
+        Voxel weightings for each parcel to compute parcel_timeseries from
+        voxel_timeseries.
+    voxel_assignments : bool numpy.ndarray
+        nvoxels x nparcels
+        Boolean assignments indicating for each voxel the winner takes all
+        parcel it belongs to.
+    working_dir : str
+        Dir name to put files in
+    out_nii_fname : str
+        Output name to put files in
+    times : (ntpts, ) numpy.ndarray
+        Times points in seconds.
+        Will assume that time points are regularly spaced.
+        Used to set nii file up correctly.
+    method : str
+        "weights" or "assignments"
+
+    Returns
+    -------
+    out_nii_fname : str
+        Output nii file name, will be output at spatial resolution of
+        parcel_timeseries['voxel_coords']
+    """
+    parcellation_file = find_file(parcellation_file)
+    pth, parcellation_name = op.split(op.splitext(op.splitext(parcellation_file)[0])[0])
+
+    if working_dir is None:
+        working_dir = pth
+
+    if out_nii_fname is None:
+        out_nii_fname = op.join(working_dir, parcellation_name + "_timeseries.nii.gz")
+
+    # compute parcellation_mask_file to be mean over all parcels
+    parcellation_mask_file = op.join(working_dir, parcellation_name + "_mask.nii.gz")
+    rhino_utils.system_call(
+        "fslmaths {} -Tmean {}".format(parcellation_file, parcellation_mask_file)
+    )
+
+    if len(parcel_timeseries_data.shape) == 1:
+        parcel_timeseries_data = np.reshape(
+            parcel_timeseries_data, [parcel_timeseries_data.shape[0], 1]
+        )
+
+    # Compute nmaskvoxels x ntpts voxel_data
+    if method == "assignments":
+        weightings = voxel_assignments
+    elif method == "weights":
+        weightings = np.linalg.pinv(voxel_weightings.T)
+    else:
+        raise ValueError("Invalid method. Must be assignments or weights.")
+
+    voxel_data = weightings @ parcel_timeseries_data
+
+    # voxel_coords is nmaskvoxels x 3 in mm
+    gridstep = int(rhino_utils.get_gridstep(voxel_coords.T) / 1000)
+
+    # Sample parcellation_mask to the desired resolution
+    pth, ref_brain_name = op.split(
+        op.splitext(op.splitext(parcellation_mask_file)[0])[0]
+    )
+    parcellation_mask_resampled = op.join(
+        working_dir, ref_brain_name + "_{}mm_brain.nii.gz".format(gridstep)
+    )
+
+    # create std brain of the required resolution
+    rhino_utils.system_call(
+        "flirt -in {} -ref {} -out {} -applyisoxfm {}".format(
+            parcellation_mask_file,
+            parcellation_mask_file,
+            parcellation_mask_resampled,
+            gridstep,
+        )
+    )
+
+    parcellation_mask_coords, vals = rhino_utils.niimask2mmpointcloud(
+        parcellation_mask_resampled
+    )
+    parcellation_mask_inds = rhino_utils.niimask2indexpointcloud(
+        parcellation_mask_resampled
+    )
+
+    vol = nib.load(parcellation_mask_resampled).get_fdata()
+    vol = np.zeros(np.append(vol.shape[:3], parcel_timeseries_data.shape[1]))
+    kdtree = KDTree(parcellation_mask_coords.T)
+
+    # Find each voxel_coords best matching parcellation_mask_coords
+    for ind in range(voxel_coords.shape[1]):
+        distance, index = kdtree.query(voxel_coords[:, ind])
+        # Exclude from parcel any voxel_coords that are further than gridstep away
+        if distance < gridstep:
+            vol[
+                parcellation_mask_inds[0, index],
+                parcellation_mask_inds[1, index],
+                parcellation_mask_inds[2, index],
+                :,
+            ] = voxel_data[ind, :]
+
+    # Save as nifti
+    vol_nii = nib.Nifti1Image(vol, nib.load(parcellation_mask_resampled).affine)
+
+    vol_nii.header.set_xyzt_units(2)  # mm
+    if times is not None:
+        vol_nii.header["pixdim"][4] = times[1] - times[0]
+        vol_nii.header["toffset"] = 0
+        vol_nii.header.set_xyzt_units(2, 8)  # mm and secs
+
+    nib.save(vol_nii, out_nii_fname)
+
+    return out_nii_fname
+
 def symmetric_orthogonalise(
     timeseries, maintain_magnitudes=False, compute_weights=False
 ):
