@@ -179,6 +179,12 @@ plotting.plot_img_on_surf(
     output_file=vol_power_fname,
 )
 
+# -----------------------------------------------------------------
+# Note that you can convert parcellated data to mne.io.raw and view
+parc_raw = parcellation.convert2mne_raw(parcel_ts.T, raw, reinsert_bads=False)
+parc_raw.plot()
+
+
 # ------------------------------
 # Fit GLM to parcel time courses
 

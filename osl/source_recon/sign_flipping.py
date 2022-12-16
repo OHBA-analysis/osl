@@ -9,6 +9,10 @@ import os
 import os.path as op
 from pathlib import Path
 
+import mne.io
+
+from . import parcellation
+
 import numpy as np
 from tqdm import trange
 
@@ -294,6 +298,12 @@ def apply_flips(src_dir, subject, flips):
     log_or_print(f"saving: {outfile}")
     np.save(outfile, flipped_data)
 
+    # Create and save mne raw object for the sign flipped parcellated data
+    parc_fif_file = op.join(src_dir, str(subject), "rhino", "parc-raw.fif")
+    parc_raw = mne.io.read_raw_fif(parc_fif_file)
+    sf_parc_fif_file = op.join(src_dir, str(subject), "sflip_parc-raw.fif")
+    sf_parc_raw = parcellation.convert2mne_raw(flipped_data, parc_raw)
+    sf_parc_raw.save(sf_parc_fif_file, overwrite=True)
 
 def time_embed(x, n_embeddings):
     """Performs time-delay embedding.

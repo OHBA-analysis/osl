@@ -432,7 +432,6 @@ def _resample_parcellation(
 
     return parcellation_asmatrix
 
-
 def _parcel_timeseries2nii(
     parcellation_file,
     parcel_timeseries_data,
@@ -563,7 +562,6 @@ def _parcel_timeseries2nii(
     nib.save(vol_nii, out_nii_fname)
 
     return out_nii_fname
-
 
 def symmetric_orthogonalise(
     timeseries, maintain_magnitudes=False, compute_weights=False
@@ -817,3 +815,74 @@ def convert2niftii(parc_data, parcellation_file, mask_file):
     nii = nib.Nifti1Image(spatial_map, mask.affine, mask.header)
 
     return nii
+
+def convert2mne_raw(parc_data, raw, parcel_names=None, copy_annotations=True, reinsert_bads=True):
+
+    '''
+    Create and returns an MNE raw object that contains parcellated data.
+
+    Parameters
+    ----------
+    parc_data: np.ndarray
+        ntpts x nparcels parcel data
+    raw: mne.io.Raw
+        mne.io.raw object that produced parc_data via source recon and parcellation.
+        Info such as timings and bad segments will be copied from this to parc_raw.
+    parcel_names: list(str)
+        list of strings indicating names of parcels.
+        If none then names are set to be 0 to n_parcels-1
+    reinsert_bads: bool
+        do we put back in bad segments (with the values set to zero)?
+        This assumes that the bad segments have been previously removed from the passed
+        in parc_data specifically using the annotations in raw.
+        It is recommended that if reinsert_bads is True then copy_annotations should
+        be True also.
+    copy_annotations: bool
+        do we copy annotations from raw to parc_raw?
+
+    Returns
+    -------
+        parc_raw: mne.io.Raw
+            Generated parcellation in mne.io.raw format
+
+    '''
+
+    # Load fif file info
+    info = raw.info
+
+    if reinsert_bads:
+        # parc_data is missing bad channels, insert these back in before creating new mne object
+
+        # Get time indices excluding bad segments from raw
+        _, times = raw.get_data(
+            reject_by_annotation="omit", return_times=True
+        )
+        inds = raw.time_as_index(times)
+
+        new_parc_data = np.zeros([len(raw.times), parc_data.shape[1]])
+        new_parc_data[inds, :] = parc_data
+
+    else:
+        new_parc_data = parc_data
+
+    # create parc info
+    if parcel_names is None:
+        parcel_names = [str(x) for x in np.arange(parc_data.shape[1]).tolist()]
+
+    parc_info = create_info(ch_names=parcel_names, ch_types='misc', sfreq=info['sfreq'])
+
+    # put data and info together
+    parc_raw = mne.io.RawArray(np.transpose(new_parc_data), parc_info)
+
+    # copy timing info
+    parc_raw.set_meas_date(raw.info['meas_date'])
+    parc_raw.__dict__['_first_samps'] = raw.__dict__['_first_samps']
+    parc_raw.__dict__['_last_samps'] = raw.__dict__['_last_samps']
+    parc_raw.__dict__['_cropped_samp'] = raw.__dict__['_cropped_samp']
+
+    if copy_annotations:
+        # copy annotations from raw
+        parc_raw.set_annotations(raw._annotations)
+
+    return parc_raw
+
