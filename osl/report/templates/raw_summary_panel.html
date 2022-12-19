@@ -17,25 +17,26 @@
     </div>
 
     <div class="tabpage" style='width: 100%' id='time'>
-        <h3>Time series</h3>
+        <h3>Time Series</h3>
         {% if data.plt_summary_bad_segs != [] %}
-            <div style="width: 100%">
-                <h4>Bad segments</h4>
-                <img src="{{ data.plt_summary_bad_segs }}" alt="" style='max-width: 100%'/>
-            </div>
+            <h4>Bad segments</h4>
+            <img src="{{ data.plt_summary_bad_segs }}" alt="" style='max-width: 60%'/>
+        {% else %}
+            No summary.
         {% endif %}
     </div>
 
     <div class="tabpage" style='width: 100%' id='chans'>
         <h3>Channels</h3>
         {% if data.plt_summary_bad_chans != [] %}
-            <div style="width: 100%">
-                <h4>Bad channels</h4>
-                <img src="{{ data.plt_summary_bad_chans }}" alt="" style='max-width: 100%'/>
-            </div>
+            <h4>Bad channels</h4>
+            <img src="{{ data.plt_summary_bad_chans }}" alt="" style='max-width: 60%'/>
+        {% else %}
+            No summary.
         {% endif %}
     </div>
 
+    </div>
   </div>
 </div>
 
@@ -56,7 +57,7 @@ function openTab(event, figTag, button) {
         currentButton = 1;
     }
     if (figTag.includes('chans')) {
-        currentButton = 1;
+        currentButton = 2;
     }
 }
 

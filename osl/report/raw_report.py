@@ -874,9 +874,7 @@ def plot_bad_ica(raw, ica, savebase):
                 title = None
 
             if title is not None:
-
-
-             axes[i][0].set_title(title, fontsize=12)
+                axes[i][0].set_title(title, fontsize=12)
 
     if savebase is not None:
         figname = savebase.format('ica')
