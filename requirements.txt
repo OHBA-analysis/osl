@@ -2,7 +2,7 @@ numpy~=1.22.2
 scipy~=1.8.0
 matplotlib~=3.5.0
 mne==1.0.0
-sklearn~=0.0
+scikit-learn~=0.0
 fslpy
 sails~=1.1.1
 tabulate~=0.8.9
