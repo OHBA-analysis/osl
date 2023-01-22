@@ -134,6 +134,7 @@ def coreg(
     use_headshape,
     already_coregistered=False,
     allow_smri_scaling=False,
+    n_init=30,
 ):
     """Wrapper for full coregistration: compute_surfaces, coreg and forward_model.
 
@@ -162,6 +163,8 @@ def coreg(
         but not the size of the sMRI-derived fids.
         E.g. this might be the case if we do not trust the size (e.g. in mm) of the sMRI,
         or if we are using a template sMRI that has not come from this subject.
+    n_init : int
+        Number of initialisation for coregistration.
     """
     # Run coregistration
     rhino.coreg(
@@ -172,6 +175,7 @@ def coreg(
         use_nose=use_nose,
         already_coregistered=already_coregistered,
         allow_smri_scaling=allow_smri_scaling,
+        n_init=n_init,
     )
 
     # Calculate metrics
@@ -197,6 +201,7 @@ def coreg(
             "use_nose": use_nose,
             "already_coregistered": already_coregistered,
             "allow_smri_scaling": allow_smri_scaling,
+            "n_init_coreg": n_init,
             "fid_err": fid_err,
             "coreg_plot": f"{src_dir}/{subject}/rhino/coreg.html",
         }
@@ -261,6 +266,7 @@ def coregister(
     recompute_surfaces=False,
     already_coregistered=False,
     allow_smri_scaling=False,
+    n_init=30,
     eeg=False,
 ):
     """Wrapper for full coregistration: compute_surfaces, coreg and forward_model.
@@ -299,6 +305,8 @@ def coregister(
         or if we are using a template sMRI that has not come from this subject.
     eeg : bool
         Are we using EEG channels in the source reconstruction?
+    n_init : int
+        Number of initialisation for coregistration.
     """
     # Compute surfaces
     rhino.compute_surfaces(
@@ -318,6 +326,7 @@ def coregister(
         use_nose=use_nose,
         already_coregistered=already_coregistered,
         allow_smri_scaling=allow_smri_scaling,
+        n_init=n_init,
     )
 
     # Calculate metrics
@@ -355,6 +364,7 @@ def coregister(
             "use_headshape": use_headshape,
             "already_coregistered": already_coregistered,
             "allow_smri_scaling": allow_smri_scaling,
+            "n_init_coreg": n_init,
             "forward_model": True,
             "model": model,
             "eeg": eeg,

@@ -115,6 +115,7 @@ def coreg(
     use_dev_ctf_t=True,
     already_coregistered=False,
     allow_smri_scaling=False,
+    n_init=30,
 ):
     """Coregistration.
 
@@ -197,6 +198,8 @@ def coreg(
         but not the size of the sMRI-derived fids.
         E.g. this might be the case if we do not trust the size (e.g. in mm) of the sMRI,
         or if we are using a template sMRI that has not come from this subject.
+    n_init : int
+        Number of initialisations for the ICP algorithm that performs coregistration.
     """
 
     # Note the jargon used varies for xforms and coord spaces:
@@ -472,7 +475,7 @@ def coreg(
             xform_icp, err, e = rhino_utils.rhino_icp(
                 smri_headshape_polhemus,
                 polhemus_headshape_polhemus_4icp,
-                Ninits=30,
+                n_init=n_init,
             )
 
         else:

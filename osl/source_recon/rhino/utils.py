@@ -542,10 +542,8 @@ def icp(A, B, init_pose=None, max_iterations=50, tolerance=0.0001):
     return T, distances, i
 
 
-def rhino_icp(
-    smri_headshape_polhemus, polhemus_headshape_polhemus, Ninits=10
-):
-    """Runs Iterative Closest Point with multiple initialisations.
+def rhino_icp(smri_headshape_polhemus, polhemus_headshape_polhemus, n_init=10):
+    """Runs Iterative Closest Point (ICP) with multiple initialisations.
 
     Parameters
     ----------
@@ -554,7 +552,7 @@ def rhino_icp(
         (i.e. MRI scalp surface).
     polhemus_headshape_polhemus : numpy.ndarray
         [3 x N] locations of the Polhemus headshape points in polhemus space.
-    Ninits : int
+    n_init : int
         Number of random initialisations to perform.
 
     Returns
@@ -574,7 +572,7 @@ def rhino_icp(
     data2 = polhemus_headshape_polhemus
 
     err_old = np.Infinity
-    err = np.zeros(Ninits)
+    err = np.zeros(n_init)
 
     Mr = np.eye(4)
 
@@ -584,7 +582,7 @@ def rhino_icp(
 
     data2r = data2
 
-    for init in range(Ninits):
+    for init in range(n_init):
 
         Mi, distances, i = icp(data2r.T, data1.T)
 
