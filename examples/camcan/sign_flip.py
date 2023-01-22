@@ -1,15 +1,13 @@
-"""The script for sign flipping source reconstructed data from the CamCAN dataset on BMRC.
+"""Dipole sign flipping.
 
 """
 
 from glob import glob
 from dask.distributed import Client
-
 from osl import utils
 from osl.source_recon import find_template_subject, run_src_batch, setup_fsl
 
-# Directories
-SRC_DIR = "/well/woolrich/projects/camcan/autumn22/src"
+SRC_DIR = "/well/woolrich/projects/camcan/winter23/src"
 FSL_DIR = "/well/woolrich/projects/software/fsl"
 
 if __name__ == "__main__":
@@ -23,9 +21,7 @@ if __name__ == "__main__":
         subjects.append(subject)
 
     # Find a good template subject to align other subjects to
-    template = find_template_subject(
-        SRC_DIR, subjects, n_embeddings=15, standardize=True
-    )
+    template = find_template_subject(SRC_DIR, subjects, n_embeddings=15, standardize=True)
 
     # Settings for batch processing
     config = f"""
