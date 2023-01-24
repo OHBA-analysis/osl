@@ -1,4 +1,4 @@
-name: osl
+name: osl-ws
 channels:
 - conda-forge/label/vtk_dev
 - conda-forge
@@ -26,4 +26,7 @@ dependencies:
   - ipyevents==2.0.1
   - ipyvtklink==0.2.2
   - jupyter_client==7.4.9
-  - osl
+  - tensorflow==2.9.1
+  - openneuro-py==2022.4.0
+  - osl==0.1.1
+  - osl-dynamics==1.1.4
