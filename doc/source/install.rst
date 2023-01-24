@@ -1,5 +1,5 @@
-Installing oslpy
-================
+Installation
+============
 
 First, make sure you have conda (or miniconda) installed: https://docs.conda.io/en/latest. Then oslpy can be installed from source using the following:
 

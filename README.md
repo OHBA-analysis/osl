@@ -1,8 +1,8 @@
 OHBA Software Library (OSL)
 ===========================
 
-Installation
-------------
+Install from Source Code
+------------------------
 The recommended installation depends on your operating system. If you are installing on a Mac or Linux machine, we recommend:
 ```
 git clone https://github.com/OHBA-analysis/osl.git
@@ -12,15 +12,6 @@ conda activate osl
 pip install -e .
 ```
 Here, the `-e` indicates we have installed in 'editable mode'. This means if we execute `git pull` or make any local modifications these changes will be reflected when we import the package.
-
-On remote servers without displays specific package versions are required (related to source reconstruction visualisation). The following can be used to install on machines without a display:
-```
-git clone https://github.com/OHBA-analysis/osl.git
-cd osl
-conda env create -f envs/headless-server.yml
-conda activate osl
-pip install -e .
-```
 
 If you use the OHBA workstation (hbaws), we recommend:
 ```
