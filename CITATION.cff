@@ -1,8 +1,8 @@
-cff-version: 0.1.1
+cff-version: 0.2.0
 message: "If you use this software, please cite it as below."
 title: "OHBA Software Library in Python (OSL)"
-version: 0.1.1
-date-released: "2022-11-14"
+version: 0.2.0
+date-released: "2023-01-24"
 commit: 46aff022171862d1ea582c4c1dcb77ead6459a53
 doi: 10.5281/zenodo.6875060
 keywords:
