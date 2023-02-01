@@ -163,9 +163,8 @@ def run_src_chain(
 
     # Validation
     doing_coreg = (
-        any(["coregister" in method for method in config["source_recon"]]) or
         any(["compute_surfaces" in method for method in config["source_recon"]]) or
-        any(["coreg" in method for method in config["source_recon"]]) or
+        any(["coregister" in method for method in config["source_recon"]]) or
         any(["forward_model" in method for method in config["source_recon"]])
     )
     if doing_coreg and smri_file is None:
@@ -284,9 +283,8 @@ def run_src_batch(
             )
 
     doing_coreg = (
-        any(["coregister" in method for method in config["source_recon"]]) or
         any(["compute_surfaces" in method for method in config["source_recon"]]) or
-        any(["coreg" in method for method in config["source_recon"]]) or
+        any(["coregister" in method for method in config["source_recon"]]) or
         any(["forward_model" in method for method in config["source_recon"]])
     )
     if doing_coreg and smri_files is None:

@@ -63,8 +63,7 @@ for sub in subjects_to_do:
 config = """
     source_recon:
     - extract_fiducials_from_fif: {}
-
-    - coregister:
+    - compute_surfaces_coregister_and_forward_model:
         include_nose: false
         use_nose: false
         use_headshape: true

@@ -74,7 +74,7 @@ def save_polhemus_from_pos(src_dir, subject, preproc_file, smri_file, epoch_file
 config = """
     source_recon:
     - save_polhemus_from_pos: {}
-    - coregister:
+    - compute_surfaces_coregister_and_forward_model:
         include_nose: true
         use_nose: true
         use_headshape: true
