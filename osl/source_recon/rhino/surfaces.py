@@ -212,7 +212,7 @@ please check output of:\n fslorient -orient {}".format(
     if smri_orient != "RADIOLOGICAL" and smri_orient != "NEUROLOGICAL":
         raise ValueError(
             "Cannot determine orientation of subject brain, \
-please check output of:\n fslorient -orient {}".format(
+please check output of:\n fslorient -getorient {}".format(
                 filenames["smri_file"]
             )
         )
