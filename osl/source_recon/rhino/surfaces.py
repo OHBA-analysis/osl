@@ -45,6 +45,8 @@ def get_surfaces_filenames(subjects_dir, subject):
         - bet_outskin_*_file is the outer skin/scalp surface
     """
     basedir = op.join(subjects_dir, subject, "rhino", "surfaces")
+    if " " in basedir:
+        raise ValueError("subjects_dir/src_dir cannot contain spaces.")
     os.makedirs(basedir, exist_ok=True)
 
     filenames = {
@@ -212,7 +214,7 @@ please check output of:\n fslorient -orient {}".format(
     if smri_orient != "RADIOLOGICAL" and smri_orient != "NEUROLOGICAL":
         raise ValueError(
             "Cannot determine orientation of subject brain, \
-please check output of:\n fslorient -orient {}".format(
+please check output of:\n fslorient -getorient {}".format(
                 filenames["smri_file"]
             )
         )

@@ -124,7 +124,7 @@ def compute_surfaces(
     )
 
 
-def coreg(
+def coregister(
     src_dir,
     subject,
     preproc_file,
@@ -134,8 +134,9 @@ def coreg(
     use_headshape,
     already_coregistered=False,
     allow_smri_scaling=False,
+    n_init=30,
 ):
-    """Wrapper for full coregistration: compute_surfaces, coreg and forward_model.
+    """Wrapper for coregistration.
 
     Parameters
     ----------
@@ -162,6 +163,8 @@ def coreg(
         but not the size of the sMRI-derived fids.
         E.g. this might be the case if we do not trust the size (e.g. in mm) of the sMRI,
         or if we are using a template sMRI that has not come from this subject.
+    n_init : int
+        Number of initialisation for coregistration.
     """
     # Run coregistration
     rhino.coreg(
@@ -172,6 +175,7 @@ def coreg(
         use_nose=use_nose,
         already_coregistered=already_coregistered,
         allow_smri_scaling=allow_smri_scaling,
+        n_init=n_init,
     )
 
     # Calculate metrics
@@ -192,11 +196,12 @@ def coreg(
     src_report.add_to_data(
         f"{src_dir}/{subject}/report_data.pkl",
         {
-            "coreg": True,
+            "coregister": True,
             "use_headshape": use_headshape,
             "use_nose": use_nose,
             "already_coregistered": already_coregistered,
             "allow_smri_scaling": allow_smri_scaling,
+            "n_init_coreg": n_init,
             "fid_err": fid_err,
             "coreg_plot": f"{src_dir}/{subject}/rhino/coreg.html",
         }
@@ -248,7 +253,7 @@ def forward_model(
     )
 
 
-def coregister(
+def compute_surfaces_coregister_and_forward_model(
     src_dir,
     subject,
     preproc_file,
@@ -261,9 +266,10 @@ def coregister(
     recompute_surfaces=False,
     already_coregistered=False,
     allow_smri_scaling=False,
+    n_init=30,
     eeg=False,
 ):
-    """Wrapper for full coregistration: compute_surfaces, coreg and forward_model.
+    """Wrapper for: compute_surfaces, coregister and forward_model.
 
     Parameters
     ----------
@@ -299,6 +305,8 @@ def coregister(
         or if we are using a template sMRI that has not come from this subject.
     eeg : bool
         Are we using EEG channels in the source reconstruction?
+    n_init : int
+        Number of initialisation for coregistration.
     """
     # Compute surfaces
     rhino.compute_surfaces(
@@ -318,6 +326,7 @@ def coregister(
         use_nose=use_nose,
         already_coregistered=already_coregistered,
         allow_smri_scaling=allow_smri_scaling,
+        n_init=n_init,
     )
 
     # Calculate metrics
@@ -346,15 +355,15 @@ def coregister(
     src_report.add_to_data(
         f"{src_dir}/{subject}/report_data.pkl",
         {
-            "coregister": True,
             "compute_surfaces": True,
-            "coreg": True,
+            "coregister": True,
             "forward_model": True,
             "include_nose": include_nose,
             "use_nose": use_nose,
             "use_headshape": use_headshape,
             "already_coregistered": already_coregistered,
             "allow_smri_scaling": allow_smri_scaling,
+            "n_init_coreg": n_init,
             "forward_model": True,
             "model": model,
             "eeg": eeg,

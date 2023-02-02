@@ -190,7 +190,7 @@ if False:
 if run_beamform_and_parcellate:
     config = """
         source_recon:
-        - coregister:
+        - compute_surfaces_coregister_and_forward_model:
             include_nose: false
             use_nose: false
             use_headshape: true

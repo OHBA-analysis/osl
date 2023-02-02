@@ -69,8 +69,7 @@ for sub in subjects_to_do:
 config = """
     source_recon:
     - extract_fiducials_from_fif: {}
-
-    - coregister:
+    - compute_surfaces_coregister_and_forward_model:
         include_nose: false
         use_nose: false
         use_headshape: false
@@ -136,5 +135,4 @@ for subject, sflip_parc_file in zip(subjects, sflip_parc_files):
     )
 
     os.system("cp -f {} {}".format(sflip_parc_file, sflip_parc_file_to))
-
 

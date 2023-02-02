@@ -33,9 +33,9 @@ for subject in subjects:
 config = """
     source_recon:
     - extract_fiducials_from_fif: {}
-    - coregister:
-        include_nose: true
-        use_nose: true
+    - compute_surfaces_coregister_and_forward_model:
+        include_nose: false
+        use_nose: false
         use_headshape: true
         model: Single Layer
     - beamform_and_parcellate:

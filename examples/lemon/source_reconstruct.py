@@ -37,7 +37,7 @@ if __name__ == "__main__":
         - extract_fiducials_from_fif:
             include_eeg_as_headshape: true
         - fix_headshape_fiducials: {}
-        - coregister:
+        - compute_surfaces_coregister_and_forward_model:
             include_nose: false
             use_nose: false
             use_headshape: false

@@ -85,6 +85,8 @@ def import_data(infile, preload=True):
         raise ValueError(
             "infile must be a str. Got type(infile)={0}.".format(type(infile))
         )
+    if " " in infile:
+        raise ValueError("filename cannot contain spaces.")
 
     logger.info("IMPORTING: {0}".format(infile))
 
