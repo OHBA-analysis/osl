@@ -45,6 +45,8 @@ def get_surfaces_filenames(subjects_dir, subject):
         - bet_outskin_*_file is the outer skin/scalp surface
     """
     basedir = op.join(subjects_dir, subject, "rhino", "surfaces")
+    if " " in basedir:
+        raise ValueError("subjects_dir/src_dir cannot contain spaces.")
     os.makedirs(basedir, exist_ok=True)
 
     filenames = {

@@ -55,6 +55,8 @@ def get_coreg_filenames(subjects_dir, subject):
         A dict of files generated and used by RHINO.
     """
     basedir = op.join(subjects_dir, subject, "rhino", "coreg")
+    if " " in basedir:
+        raise ValueError("subjects_dir/src_dir cannot contain spaces.")
     os.makedirs(basedir, exist_ok=True)
 
     filenames = {
