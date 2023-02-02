@@ -124,7 +124,7 @@ def compute_surfaces(
     )
 
 
-def coreg(
+def coregister(
     src_dir,
     subject,
     preproc_file,
@@ -136,7 +136,7 @@ def coreg(
     allow_smri_scaling=False,
     n_init=30,
 ):
-    """Wrapper for full coregistration: compute_surfaces, coreg and forward_model.
+    """Wrapper for coregistration.
 
     Parameters
     ----------
@@ -196,7 +196,7 @@ def coreg(
     src_report.add_to_data(
         f"{src_dir}/{subject}/report_data.pkl",
         {
-            "coreg": True,
+            "coregister": True,
             "use_headshape": use_headshape,
             "use_nose": use_nose,
             "already_coregistered": already_coregistered,
@@ -253,7 +253,7 @@ def forward_model(
     )
 
 
-def coregister(
+def compute_surfaces_coregister_and_forward_model(
     src_dir,
     subject,
     preproc_file,
@@ -269,7 +269,7 @@ def coregister(
     n_init=30,
     eeg=False,
 ):
-    """Wrapper for full coregistration: compute_surfaces, coreg and forward_model.
+    """Wrapper for: compute_surfaces, coregister and forward_model.
 
     Parameters
     ----------
@@ -355,9 +355,8 @@ def coregister(
     src_report.add_to_data(
         f"{src_dir}/{subject}/report_data.pkl",
         {
-            "coregister": True,
             "compute_surfaces": True,
-            "coreg": True,
+            "coregister": True,
             "forward_model": True,
             "include_nose": include_nose,
             "use_nose": use_nose,

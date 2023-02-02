@@ -163,9 +163,8 @@ def run_src_chain(
 
     # Validation
     doing_coreg = (
-        any(["coregister" in method for method in config["source_recon"]]) or
         any(["compute_surfaces" in method for method in config["source_recon"]]) or
-        any(["coreg" in method for method in config["source_recon"]]) or
+        any(["coregister" in method for method in config["source_recon"]]) or
         any(["forward_model" in method for method in config["source_recon"]])
     )
     if doing_coreg and smri_file is None:
@@ -284,9 +283,8 @@ def run_src_batch(
             )
 
     doing_coreg = (
-        any(["coregister" in method for method in config["source_recon"]]) or
         any(["compute_surfaces" in method for method in config["source_recon"]]) or
-        any(["coreg" in method for method in config["source_recon"]]) or
+        any(["coregister" in method for method in config["source_recon"]]) or
         any(["forward_model" in method for method in config["source_recon"]])
     )
     if doing_coreg and smri_files is None:
@@ -326,13 +324,14 @@ def run_src_batch(
         "Processed {0}/{1} files successfully".format(int(np.sum(flags)), len(flags))
     )
 
-    # Generate individual subject HTML report
-    src_report.gen_html_page(reportdir)
+    if int(np.sum(flags)) > 0:
+        # Generate individual subject HTML report
+        src_report.gen_html_page(reportdir)
 
-    # Generate a summary report
-    if src_report.gen_html_summary(reportdir):
-        logger.info("******************************" + "*" * len(str(reportdir)))
-        logger.info(f"* REMEMBER TO CHECK REPORT: {reportdir} *")
-        logger.info("******************************" + "*" * len(str(reportdir)))
+        # Generate a summary report
+        if src_report.gen_html_summary(reportdir):
+            logger.info("******************************" + "*" * len(str(reportdir)))
+            logger.info(f"* REMEMBER TO CHECK REPORT: {reportdir} *")
+            logger.info("******************************" + "*" * len(str(reportdir)))
 
     return flags

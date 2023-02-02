@@ -18,15 +18,15 @@ smri_file = raw_dir + "/{0}/anat/{0}_T1w.nii"
 preproc_file = preproc_dir + "/{0}_task-restEO/{0}_task-restEO_preproc_raw.fif"
 
 # Subjects to do
-subjects = ["sub-004", "sub-005"]
+subjects = ["sub-006", "sub-007"]
 
 # Settings
 config = """
     source_recon:
     - extract_fiducials_from_fif: {}
-    - coregister:
-        include_nose: true
-        use_nose: true
+    - compute_surfaces_coregister_and_forward_model:
+        include_nose: false
+        use_nose: false
         use_headshape: true
         model: Single Layer
         recompute_surfaces: true

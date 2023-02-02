@@ -67,7 +67,7 @@ def gen_html_data(config, src_dir, subject, reportdir, logger=None):
     data["filename"] = subject
 
     # What have we done for this subject?
-    data["coreg"] = subject_data.pop("coreg", False)
+    data["coregister"] = subject_data.pop("coregister", False)
     data["beamform"] = subject_data.pop("beamform", False)
     data["beamform_and_parcellate"] = subject_data.pop("beamform_and_parcellate", False)
     data["fix_sign_ambiguity"] = subject_data.pop("fix_sign_ambiguity", False)
@@ -75,7 +75,7 @@ def gen_html_data(config, src_dir, subject, reportdir, logger=None):
     # Save info
     if data["beamform_and_parcellate"]:
         data["n_samples"] = subject_data["n_samples"]
-    if data["coreg"]:
+    if data["coregister"]:
         data["fid_err"] = subject_data["fid_err"]
     if data["beamform_and_parcellate"]:
         data["parcellation_file"] = subject_data["parcellation_file"]
@@ -204,12 +204,12 @@ def gen_html_summary(reportdir):
     data = {}
     data["total"] = total
     data["config"] = subject_data[0]["config"]
-    data["coreg"] = subject_data[0]["coreg"]
+    data["coregister"] = subject_data[0]["coregister"]
     data["beamform"] = subject_data[0]["beamform"]
     data["beamform_and_parcellate"] = subject_data[0]["beamform_and_parcellate"]
     data["fix_sign_ambiguity"] = subject_data[0]["fix_sign_ambiguity"]
 
-    if data["coreg"]:
+    if data["coregister"]:
         subjects = np.array([d["filename"] for d in subject_data])
 
         fid_err_table = {
