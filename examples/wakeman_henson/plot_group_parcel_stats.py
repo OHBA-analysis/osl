@@ -28,6 +28,8 @@ first_level_contrast = 15
 
 glm_dir = op.join(subjects_dir, "glm")
 
+show_plots = False
+
 # ------------------------------------------------------
 # Load group GLM fit
 
@@ -66,7 +68,8 @@ cope_fname = op.join(
 # Save cope as nii file and view in fsleyes
 print(f"Saving {cope_fname}")
 nib.save(nii, cope_fname + '.nii.gz')
-rhino.fsleyes([parcellation.find_file(mask_file), cope_fname + '.nii.gz'])
+if show_plots:
+    rhino.fsleyes([parcellation.find_file(mask_file), cope_fname + '.nii.gz'])
 
 # plot png of cope on cortical surface
 plotting.plot_img_on_surf(
@@ -82,7 +85,7 @@ os.system('open {}'.format(cope_fname + '.png'))
 # Plot time course of group stats for a specified parcel
 
 parcel_ind = 5
-print("Plotting COPE time course for parcel:", parcel_ind)
+print("Plotting group COPE time course for parcel:", parcel_ind)
 
 cope_timeseries = model.copes[group_contrast, parcel_ind, :]
 
@@ -95,12 +98,14 @@ plt.title(
 )
 plt.xlabel("time (s)")
 plt.ylabel("abs(cope)")
-plt.show()
+plt.savefig(op.join(stats_dir, 'gc{}_flc{}_tc_parc{}.png'.format(group_contrast, first_level_contrast, parcel_ind)))
+
+if show_plots:
+    plt.show()
 
 # ------------------------------------------------------------------
 # plot subject-specific copes for the first-level contrast
 
-print("Loading GLM:", group_glm_model_file)
 first_level_data = obj_from_hdf5file(group_glm_model_file, "data").data  # nsess x nparcels x ntpts
 
 plt.figure()
@@ -113,7 +118,10 @@ plt.title(
 )
 plt.xlabel("time (s)")
 plt.ylabel("abs(cope)")
-plt.show()
+plt.savefig(op.join(stats_dir, 'subjects_gc{}_flc{}_tc_parc{}.png'.format(group_contrast, first_level_contrast, parcel_ind)))
+
+if show_plots:
+    plt.show()
 
 # ------------------------------------------------------------------
 # Write stats as 4D niftii file in MNI space.
@@ -130,7 +138,8 @@ cope_fname = op.join(
 # Save cope as nii file and view in fsleyes
 print(f"Saving {cope_fname}")
 nib.save(nii, cope_fname + '.nii.gz')
-rhino.fsleyes([parcellation.find_file(mask_file), cope_fname + '.nii.gz'])
+if show_plots:
+    rhino.fsleyes([parcellation.find_file(mask_file), cope_fname + '.nii.gz'])
 
 # From fsleyes drop down menus Select "View/Time series"
 # To see time labelling in secs:

@@ -20,9 +20,11 @@ import osl
 subjects_dir = "/ohba/pi/mwoolrich/datasets/WakemanHenson/ds117"
 subjects_dir = "/Users/woolrich/homedir/vols_data/WakeHen"
 
-subjects_to_do = np.arange(0, 19)
-sessions_to_do = np.arange(0, 6)
-subj_sess_2exclude = np.zeros(subj_sess_2exclude.shape).astype(bool)
+nsubjects = 19
+nsessions = 6
+subjects_to_do = np.arange(0, nsubjects)
+sessions_to_do = np.arange(0, nsessions)
+subj_sess_2exclude = np.zeros([nsubjects, nsessions]).astype(bool)
 
 # -------------------------------------------------------------
 # %% Setup file names

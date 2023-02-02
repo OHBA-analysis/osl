@@ -18,12 +18,14 @@ out_dir = "./wakehen_glm"
 subjects_dir = "/Users/woolrich/homedir/vols_data/WakeHen"
 out_dir = op.join(subjects_dir, "wakehen_glm")
 
-subjects_to_do = np.arange(0, 19)
-sessions_to_do = np.arange(0, 6)
-subj_sess_2exclude = np.zeros(subj_sess_2exclude.shape).astype(bool)
+nsubjects = 19
+nsessions = 6
+subjects_to_do = np.arange(0, nsubjects)
+sessions_to_do = np.arange(0, nsessions)
+subj_sess_2exclude = np.zeros([nsubjects, nsessions]).astype(bool)
 
 #subj_sess_2exclude = np.ones(subj_sess_2exclude.shape).astype(bool)
-#subj_sess_2exclude[0:2,0:2]=False
+#subj_sess_2exclude[0:1,0:2]=False
 
 # -------------------------------------------------------------
 # %% Setup file names
@@ -90,13 +92,18 @@ config = """
       - bad_channels: {picks: 'mag', significance_level: 0.1}
       - bad_channels: {picks: 'grad', significance_level: 0.1}
       - bad_segments: {segment_len: 200, picks: 'mag', significance_level: 0.1}
-      - bad_segments: {segment_len: 400, picks: 'mag', significance_level: 0.1}
-      - bad_segments: {segment_len: 600, picks: 'mag', significance_level: 0.1}
+      - bad_segments: {segment_len: 200, picks: 'mag', significance_level: 0.1, mode: diff}    
+      - bad_segments: {segment_len: 500, picks: 'mag', significance_level: 0.1}
+      - bad_segments: {segment_len: 500, picks: 'mag', significance_level: 0.1, mode: diff}
       - bad_segments: {segment_len: 800, picks: 'mag', significance_level: 0.1}  
+      - bad_segments: {segment_len: 800, picks: 'mag', significance_level: 0.1, mode: diff}  
       - bad_segments: {segment_len: 200, picks: 'grad', significance_level: 0.1}
-      - bad_segments: {segment_len: 400, picks: 'grad', significance_level: 0.1}
-      - bad_segments: {segment_len: 600, picks: 'grad', significance_level: 0.1}
-      - bad_segments: {segment_len: 800, picks: 'grad', significance_level: 0.1}          
+      - bad_segments: {segment_len: 200, picks: 'grad', significance_level: 0.1, mode: diff}
+      - bad_segments: {segment_len: 500, picks: 'grad', significance_level: 0.1}
+      - bad_segments: {segment_len: 500, picks: 'grad', significance_level: 0.1, mode: diff}      
+      - bad_segments: {segment_len: 800, picks: 'grad', significance_level: 0.1}  
+      - bad_segments: {segment_len: 800, picks: 'grad', significance_level: 0.1, mode: diff}  
+     
       
 """
 

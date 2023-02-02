@@ -7,8 +7,8 @@ Run group analysis on data on the Wakeman-Henson dataset.
 
 # Authors: Mark Woolrich <mark.woolrich@ohba.ox.ac.uk>
 
-import os
 import os.path as op
+import h5py
 
 import numpy as np
 from anamnesis import obj_from_hdf5file
@@ -18,13 +18,15 @@ subjects_dir = "/ohba/pi/mwoolrich/datasets/WakemanHenson/ds117"
 
 subjects_dir = "/Users/woolrich/homedir/vols_data/WakeHen"
 
-subjects_to_do = np.arange(0, 19)
-sessions_to_do = np.arange(0, 6)
-subj_sess_2exclude = np.zeros(subj_sess_2exclude.shape).astype(bool)
+nsubjects = 19
+nsessions = 6
+subjects_to_do = np.arange(0, nsubjects)
+sessions_to_do = np.arange(0, nsessions)
+subj_sess_2exclude = np.zeros([nsubjects, nsessions]).astype(bool)
 
-first_level_contrasts = [1, 15]
+first_level_contrasts = [15]
 baseline_correct = True
-rectify = True
+rectify = False
 
 # -------------------------------------------------------------
 # %% Setup file names
@@ -85,7 +87,7 @@ for first_level_contrast in first_level_contrasts:
 
         if baseline_correct:
             baseline_mean = np.mean(
-                cope[:, epochs.times < 0],
+                cope[:, epochs_times < 0],
                 axis=1,
             )
             cope = cope - np.reshape(baseline_mean, [-1, 1])

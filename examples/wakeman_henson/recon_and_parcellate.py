@@ -7,6 +7,7 @@ Run group analysis on parcellated data on the Wakeman-Henson dataset.
 
 # Authors: Mark Woolrich <mark.woolrich@ohba.ox.ac.uk>
 
+import os
 import os.path as op
 from osl import source_recon
 import numpy as np
@@ -17,9 +18,14 @@ out_dir = "./wakehen_glm"
 subjects_dir = "/Users/woolrich/homedir/vols_data/WakeHen"
 out_dir = op.join(subjects_dir, "wakehen_glm")
 
-subjects_to_do = np.arange(0, 19)
-sessions_to_do = np.arange(0, 6)
-subj_sess_2exclude = np.zeros(subj_sess_2exclude.shape).astype(bool)
+nsubjects = 19
+nsessions = 6
+subjects_to_do = np.arange(0, nsubjects)
+sessions_to_do = np.arange(0, nsessions)
+subj_sess_2exclude = np.zeros([nsubjects, nsessions]).astype(bool)
+
+subj_sess_2exclude = np.ones(subj_sess_2exclude.shape).astype(bool)
+subj_sess_2exclude[0:1,0:2]=False
 
 # -------------------------------------------------------------
 # %% Setup file names
@@ -67,12 +73,12 @@ config = """
     - coregister:
         include_nose: false
         use_nose: false
-        use_headshape: true
+        use_headshape: false
         model: Single Layer
     - beamform_and_parcellate:
         freq_range: [1, 45]
         chantypes: [mag, grad]
-        rank: {meg: 60}
+        rank: {meg: 58}
         parcellation_file: HarvOxf-sub-Schaefer100-combined-2mm_4d_ds8.nii.gz
         method: spatial_basis
         orthogonalisation: None
@@ -99,16 +105,16 @@ template = source_recon.find_template_subject(
 )
 
 # Settings for batch processing
-config = f"""
+config = """
     source_recon:
     - fix_sign_ambiguity:
-        template: {template}
+        template: {}
         n_embeddings: 15
         standardize: True
         n_init: 3
-        n_iter: 2500
+        n_iter: 2000
         max_flips: 20
-"""
+""".format(template)
 
 # Do the sign flipping
 source_recon.run_src_batch(
@@ -121,7 +127,6 @@ source_recon.run_src_batch(
 # %% Copy sf files to a single directory (makes it easier to copy minimal
 # files to, e.g. BMRC, for downstream analysis)
 
-import os
 os.makedirs(op.join(recon_dir, "sflip_data"), exist_ok=True)
 
 for subject, sflip_parc_file in zip(subjects, sflip_parc_files):
@@ -131,3 +136,5 @@ for subject, sflip_parc_file in zip(subjects, sflip_parc_files):
     )
 
     os.system("cp -f {} {}".format(sflip_parc_file, sflip_parc_file_to))
+
+
