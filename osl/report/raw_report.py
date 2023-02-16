@@ -361,7 +361,7 @@ def plot_flowchart(raw, savebase=None):
         savebase = pathlib.Path(savebase)
         filebase = savebase.parent.name + "/" + savebase.name
         fpath = filebase.format('flowchart')
-    else
+    else:
         fpath = None
     return fpath
 
