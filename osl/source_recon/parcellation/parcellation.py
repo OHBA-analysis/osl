@@ -432,6 +432,7 @@ def _resample_parcellation(
 
     return parcellation_asmatrix
 
+
 def _parcel_timeseries2nii(
     parcellation_file,
     parcel_timeseries_data,
@@ -563,6 +564,7 @@ def _parcel_timeseries2nii(
 
     return out_nii_fname
 
+
 def symmetric_orthogonalise(
     timeseries, maintain_magnitudes=False, compute_weights=False
 ):
@@ -663,24 +665,29 @@ def symmetric_orthogonalise(
 
 
 def _save_parcel_timeseries(ts, fname):
-    # saves passed in dictionary, ts, as a hd5 file
+    """Saves passed in dictionary, ts, as a hd5 file."""
     dd = soft_import("deepdish")
     dd.io.save(fname, ts)
 
 
 def _load_parcel_timeseries(fname):
-    # load passed in hd5 file
+    """Load passed in hd5 file."""
     dd = soft_import("deepdish")
     return dd.io.load(fname)
 
 
-def _roi_centers(parcellation_file):
-    """Get ROI centers.
+def parcel_centers(parcellation_file):
+    """Get coordinates of parcel centers.
 
     Parameters
     ----------
     parcellation_file : str
         Path to parcellation file.
+
+    Returns
+    -------
+    coords : np.ndarray
+        Coordinates of each parcel. Shape is (n_parcels, 3).
     """
     parcellation = load_parcellation(parcellation_file)
     n_parcels = parcellation.shape[3]
@@ -690,12 +697,13 @@ def _roi_centers(parcellation_file):
         nib.affines.apply_affine(parcellation.affine, np.array(nz).T) for nz in nonzero
     ]
     weights = [data[..., i][nz] for i, nz in enumerate(nonzero)]
-    return np.array(
+    coords = np.array(
         [
             np.average(c, weights=w, axis=0)
             for c, w in zip(nonzero_coords, weights)
         ]
     )
+    return coords
 
 
 def plot_parcellation(parcellation_file, **kwargs):
@@ -708,11 +716,11 @@ def plot_parcellation(parcellation_file, **kwargs):
     kwargs : keyword arguments
         Keyword arguments to pass to nilearn.plotting.plot_markers.
     """
-    roi_centers = _roi_centers(parcellation_file)
-    n_parcels = roi_centers.shape[0]
+    parcel_centers = parcel_centers(parcellation_file)
+    n_parcels = parcel_centers.shape[0]
     return plot_markers(
         np.zeros(n_parcels),
-        roi_centers,
+        parcel_centers,
         colorbar=False,
         node_cmap="binary_r",
         **kwargs,
@@ -720,6 +728,15 @@ def plot_parcellation(parcellation_file, **kwargs):
 
 
 def plot_correlation(parc_ts, filename):
+    """Plot correlation between parcel time courses.
+
+    Parameters
+    ----------
+    parc_ts : np.ndarray
+        (n_samples, n_parcels) time series.
+    filename : str
+        Output filename.
+    """
     if parc_ts.ndim == 3:
         shape = parc_ts.shape
         parc_ts = parc_ts.reshape(shape[0], shape[1] * shape[2])
@@ -737,28 +754,28 @@ def plot_correlation(parc_ts, filename):
     fig.savefig(filename)
     plt.close(fig)
 
+
 def convert2niftii(parc_data, parcellation_file, mask_file):
-    '''
+    '''Convert parcellation to NIfTI.
+
     Takes (nparcels) or (nvolumes x nparcels) parc_data and returns
-    (xvoxels x yvoxels x zvoxels x nvolumes) niftii file
-    containing parc_data on a volumetric grid
+    (xvoxels x yvoxels x zvoxels x nvolumes) niftii file containing
+    parc_data on a volumetric grid.
 
     Parameters
     ----------
-
-    parc_data: np.ndarray
-        (nparcels) or (nvolumes x nparcels) parcel data
+    parc_data : np.ndarray
+        (nparcels) or (nvolumes x nparcels) parcel data.
     parcellation_file : str
-        Path to niftii parcellation file.
+        Path to niftii parcellation file..
     mask_file : str
-        Path to niftii parcellation mask file
+        Path to niftii parcellation mask file.
 
     Returns
     -------
-    nii: nib.Nifti1Image
+    nii : nib.Nifti1Image
         (xvoxels x yvoxels x zvoxels x nvolumes) nib.Nifti1Image
-        containing parc_data on a volumetric grid
-
+        containing parc_data on a volumetric grid.
     '''
 
     if len(parc_data.shape) == 1:
@@ -816,34 +833,35 @@ def convert2niftii(parc_data, parcellation_file, mask_file):
 
     return nii
 
-def convert2mne_raw(parc_data, raw, parcel_names=None, copy_annotations=True, reinsert_bads=True):
 
-    '''
-    Create and returns an MNE raw object that contains parcellated data.
+def convert2mne_raw(
+    parc_data, raw, parcel_names=None, copy_annotations=True, reinsert_bads=True
+):
+    '''Create and returns an MNE raw object that contains parcellated data.
 
     Parameters
     ----------
-    parc_data: np.ndarray
+    parc_data : np.ndarray
         ntpts x nparcels parcel data
     raw: mne.io.Raw
         mne.io.raw object that produced parc_data via source recon and parcellation.
         Info such as timings and bad segments will be copied from this to parc_raw.
     parcel_names: list(str)
-        list of strings indicating names of parcels.
+        List of strings indicating names of parcels.
         If none then names are set to be 0 to n_parcels-1
     reinsert_bads: bool
-        do we put back in bad segments (with the values set to zero)?
+        Do we put back in bad segments (with the values set to zero)?
         This assumes that the bad segments have been previously removed from the passed
         in parc_data, using the annotations in raw.
         It is recommended that if reinsert_bads is True then copy_annotations should
         be True also.
     copy_annotations: bool
-        do we copy annotations from raw to parc_raw?
+        Do we copy annotations from raw to parc_raw?
 
     Returns
     -------
-        parc_raw: mne.io.Raw
-            Generated parcellation in mne.io.raw format
+    parc_raw: mne.io.Raw
+        Generated parcellation in mne.io.raw format
 
     Notes
     -----
@@ -868,12 +886,11 @@ def convert2mne_raw(parc_data, raw, parcel_names=None, copy_annotations=True, re
     info = raw.info
 
     if reinsert_bads:
-        # parc_data is missing bad channels, insert these back in before creating new mne object
+        # parc_data is missing bad channels,
+        # insert these back in before creating new mne object
 
         # Get time indices excluding bad segments from raw
-        _, times = raw.get_data(
-            reject_by_annotation="omit", return_times=True
-        )
+        _, times = raw.get_data(reject_by_annotation="omit", return_times=True)
         inds = raw.time_as_index(times)
 
         new_parc_data = np.zeros([len(raw.times), parc_data.shape[1]])
@@ -883,16 +900,16 @@ def convert2mne_raw(parc_data, raw, parcel_names=None, copy_annotations=True, re
     else:
         new_parc_data = parc_data
 
-    # create parc info
+    # Create parc info
     if parcel_names is None:
         parcel_names = [str(x) for x in np.arange(parc_data.shape[1]).tolist()]
 
     parc_info = create_info(ch_names=parcel_names, ch_types='misc', sfreq=info['sfreq'])
 
-    # put data and info together
+    # Put data and info together
     parc_raw = mne.io.RawArray(np.transpose(new_parc_data), parc_info)
 
-    # copy timing info
+    # Copy timing info
     parc_raw.set_meas_date(raw.info['meas_date'])
     parc_raw.__dict__['_first_samps'] = raw.__dict__['_first_samps']
     parc_raw.__dict__['_last_samps'] = raw.__dict__['_last_samps']
@@ -904,3 +921,46 @@ def convert2mne_raw(parc_data, raw, parcel_names=None, copy_annotations=True, re
 
     return parc_raw
 
+
+def spatial_dist_adjacency(parcellation_file, dist, verbose=False):
+    """Compute adjacency from distances between parcels.
+
+    Parameters
+    ----------
+    parcellation_file : str
+        Path to parcellation file.
+    dist : float
+        Maximum (geodesic) distance in mm for two parcels to within to
+        be considered as neighbours.
+    verbose : bool
+        Should we print the distance between parcels that are considered
+        neighbours?
+
+    Returns
+    -------
+    adj_mat : np.ndarray
+        (n_parcels, n_parcels) matrix of zeros (indicating not neighbours)
+        and ones (indicating parcels are neighbours).
+    """
+
+    # Function to calculate distance between 2 points based on their
+    # 3D coordinates
+    distance = lambda x, y: np.sqrt(np.sum((x - y) ** 2))
+
+    # Get coordinate of the centroid of each parcel
+    coords = parcel_centers(parcellation_file)
+    n_parcels = coords.shape[0]
+
+    # Compute adjacency matrix
+    adj_mat = np.zeros([n_parcels, n_parcels])
+    for i in range(n_parcels):
+        adj_mat[i, i] = 1
+        for j in range(i + 1, n_parcels):
+            d = distance(coords[i], coords[j])  # in mm
+            if d < dist:
+                if verbose:
+                    print(f"parcels {i}, {j} : {np.round(d)} mm")
+                adj_mat[i, j] = 1
+                adj_mat[j, i] = 1
+
+    return adj_mat

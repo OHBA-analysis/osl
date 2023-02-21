@@ -8,7 +8,7 @@
 
   <div class="flex-child" style="flex: 1">
     <div class="tab" style="display: grid">
-        {% if data.coreg %}
+        {% if data.coregister %}
             <button class="button1" onclick="openTab(event, '{{ data.fif_id }}_coregistration', this.id)" style="border-top-style: solid">Coregistration</button>
         {% endif %}
         {% if data.beamform or data.beamform_and_parcellate %}
@@ -22,7 +22,7 @@
 
   <div class="flex-child" style="flex: 5; padding-left: 25px">
 
-    {% if data.coreg %}
+    {% if data.coregister %}
         <div class="tabpage" style='width: 100%' id={{ data.fif_id }}_coregistration>
             <h3>Coregistration</h3>
             <iframe data-src="{{ data.plt_coreg }}" width="525" height="525" id="{{ data.fif_id}}_coregistration_iframe"></iframe>

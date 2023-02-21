@@ -82,7 +82,7 @@ def compute_surfaces(
     preproc_file,
     smri_file,
     epoch_file,
-    include_nose,
+    include_nose=True,
     recompute_surfaces=False,
 ):
     """Wrapper for computing surfaces.
@@ -130,8 +130,8 @@ def coregister(
     preproc_file,
     smri_file,
     epoch_file,
-    use_nose,
-    use_headshape,
+    use_nose=True,
+    use_headshape=True,
     already_coregistered=False,
     allow_smri_scaling=False,
     n_init=30,
@@ -214,8 +214,8 @@ def forward_model(
     preproc_file,
     smri_file,
     epoch_file,
-    model,
     gridstep=8,
+    model="Single Layer",
     eeg=False,
 ):
     """Wrapper for computing the forward model.
@@ -235,6 +235,11 @@ def forward_model(
     gridstep : int
         A grid will be constructed with the spacing given by ``gridstep`` in mm,
         generating a volume source space.
+    model : str
+        Type of forward model to use.
+        Can be 'Single Layer' or 'Triple Layer', where:
+          'Single Layer' use a single layer (brain/cortex)
+          'Triple Layer' uses three layers (scalp, inner skull, brain/cortex)
     eeg : bool
         Are we using EEG channels in the source reconstruction?
     """
@@ -265,10 +270,10 @@ def compute_surfaces_coregister_and_forward_model(
     preproc_file,
     smri_file,
     epoch_file,
-    include_nose,
-    use_nose,
-    use_headshape,
-    model,
+    include_nose=True,
+    use_nose=True,
+    use_headshape=True,
+    model="Single Layer",
     recompute_surfaces=False,
     already_coregistered=False,
     allow_smri_scaling=False,
