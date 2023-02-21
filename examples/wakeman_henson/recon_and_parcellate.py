@@ -25,7 +25,7 @@ sessions_to_do = np.arange(0, nsessions)
 subj_sess_2exclude = np.zeros([nsubjects, nsessions]).astype(bool)
 
 subj_sess_2exclude = np.ones(subj_sess_2exclude.shape).astype(bool)
-subj_sess_2exclude[0:1,0:2]=False
+subj_sess_2exclude[0:1,0:6]=False
 
 # -------------------------------------------------------------
 # %% Setup file names
@@ -47,7 +47,6 @@ for sub in subjects_to_do:
             subject = sub_name + "_" + ses_name
 
             # input files
-            fif_in_file = op.join(subjects_dir, sub_name, "MEG", ses_name + "_sss.fif")
             smri_file = op.join(subjects_dir, sub_name, "anatomy", "highres001.nii.gz")
 
             preproc_fif_file = op.join(
@@ -57,7 +56,7 @@ for sub in subjects_to_do:
             # output files
             sflip_parc_file = op.join(recon_dir, subject, "sflip_parc.npy")
 
-            if op.exists(fif_in_file) and op.exists(smri_file):
+            if op.exists(preproc_fif_file) and op.exists(smri_file):
                 subjects.append(subject)
                 smri_files.append(smri_file)
                 preproc_fif_files.append(preproc_fif_file)
@@ -136,3 +135,12 @@ for subject, sflip_parc_file in zip(subjects, sflip_parc_files):
 
     os.system("cp -f {} {}".format(sflip_parc_file, sflip_parc_file_to))
 
+    sflip_parc_file_from = op.join(
+        recon_dir, subject, "sflip_parc-raw.fif"
+    )
+
+    sflip_parc_file_to = op.join(
+        recon_dir, "sflip_data", subject + "_sflip_parc-raw.fif"
+    )
+
+    os.system("cp -f {} {}".format(sflip_parc_file_from, sflip_parc_file_to))
