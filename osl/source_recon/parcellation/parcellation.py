@@ -716,11 +716,11 @@ def plot_parcellation(parcellation_file, **kwargs):
     kwargs : keyword arguments
         Keyword arguments to pass to nilearn.plotting.plot_markers.
     """
-    parcel_centers = parcel_centers(parcellation_file)
-    n_parcels = parcel_centers.shape[0]
+    parc_centers = parcel_centers(parcellation_file)
+    n_parcels = parc_centers.shape[0]
     return plot_markers(
         np.zeros(n_parcels),
-        parcel_centers,
+        parc_centers,
         colorbar=False,
         node_cmap="binary_r",
         **kwargs,
