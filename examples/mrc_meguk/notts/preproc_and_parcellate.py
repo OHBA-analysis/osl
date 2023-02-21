@@ -55,7 +55,7 @@ for sub in subjects_to_do:
         smri_files.append(smri_file)
 
 run_preproc = True
-run_beamform_and_parcellate = False
+run_beamform_and_parcellate = True
 run_fix_sign_ambiguity = False
 
 # parcellation to use
@@ -101,12 +101,11 @@ if run_preproc:
 # -------------------------------------------------------------
 # %% Coreg and Source recon and Parcellate
 
-def save_polhemus_from_pos(src_dir, subject, preproc_file, smri_file, logger):
+def save_polhemus_from_pos(src_dir, subject, preproc_file, smri_file, tmp):
     """Saves fiducials/headshape from a pos file."""
 
     # Load pos file
     pos_file = POS_FILE.format(subject)
-    logger.info(f"Saving polhemus from {pos_file}")
 
     #  Get coreg filenames
     filenames = source_recon.rhino.get_coreg_filenames(src_dir, subject)
@@ -151,10 +150,12 @@ if run_beamform_and_parcellate:
     config = """
         source_recon:
         - save_polhemus_from_pos: {}
-        - coregister:
+        - compute_surfaces:
             include_nose: true
+        - coregister:
             use_nose: true
             use_headshape: true
+        - forward_model:
             model: Single Layer
         - beamform_and_parcellate:
             freq_range: [1, 45]

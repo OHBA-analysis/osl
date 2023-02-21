@@ -1129,7 +1129,7 @@ def coreg_display(
 def bem_display(
     subjects_dir,
     subject,
-    plot_type="scatter",
+    plot_type="surf",
     display_outskin_with_nose=True,
     display_sensors=False,
     filename=None,

@@ -834,7 +834,7 @@ def convert2mne_raw(parc_data, raw, parcel_names=None, copy_annotations=True, re
     reinsert_bads: bool
         do we put back in bad segments (with the values set to zero)?
         This assumes that the bad segments have been previously removed from the passed
-        in parc_data specifically using the annotations in raw.
+        in parc_data, using the annotations in raw.
         It is recommended that if reinsert_bads is True then copy_annotations should
         be True also.
     copy_annotations: bool
@@ -844,6 +844,23 @@ def convert2mne_raw(parc_data, raw, parcel_names=None, copy_annotations=True, re
     -------
         parc_raw: mne.io.Raw
             Generated parcellation in mne.io.raw format
+
+    Notes
+    -----
+
+    Example 1:
+    If parcel_ts has not had bad segments removed (parc_raw will then also not have bad segments removed):
+        parc_raw = parcellation.convert2mne_raw(parcel_ts, raw, reinsert_bads=False, copy_annotations=True)
+
+    Example 2:
+    If parcel_ts has had bad segments removed, and you want them also omitted from parc_raw:
+        parc_raw = parcellation.convert2mne_raw(parcel_ts, raw, reinsert_bads=False, copy_annotations=False)
+
+    Example 3:
+    If parcel_ts has had bad segments removed, but you want to include them in parc_raw
+    (this is the most common scenario as bad segments are often omitted from the
+    calculation of parcel time courses):
+        parc_raw = parcellation.convert2mne_raw(parcel_ts, raw, reinsert_bads=True, copy_annotations=True)
 
     '''
 
@@ -860,6 +877,7 @@ def convert2mne_raw(parc_data, raw, parcel_names=None, copy_annotations=True, re
         inds = raw.time_as_index(times)
 
         new_parc_data = np.zeros([len(raw.times), parc_data.shape[1]])
+
         new_parc_data[inds, :] = parc_data
 
     else:

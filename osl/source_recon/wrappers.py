@@ -215,6 +215,7 @@ def forward_model(
     smri_file,
     epoch_file,
     model,
+    gridstep=8,
     eeg=False,
 ):
     """Wrapper for computing the forward model.
@@ -231,6 +232,9 @@ def forward_model(
         Path to the T1 weighted structural MRI file to use in source reconstruction.
     epoch_file : str
         Path to epoched preprocessed fif file.
+    gridstep : int
+        A grid will be constructed with the spacing given by ``gridstep`` in mm,
+        generating a volume source space.
     eeg : bool
         Are we using EEG channels in the source reconstruction?
     """
@@ -239,6 +243,7 @@ def forward_model(
         subjects_dir=src_dir,
         subject=subject,
         model=model,
+        gridstep=gridstep,
         eeg=eeg,
     )
 
@@ -248,6 +253,7 @@ def forward_model(
         {
             "forward_model": True,
             "model": model,
+            "gridstep": gridstep,
             "eeg": eeg,
         }
     )
@@ -612,8 +618,11 @@ def beamform_and_parcellate(
     filters.save(filters_file, overwrite=True)
 
     # Apply beamforming
+    # this is a wrapper call to mne's apply_lcmv function
+    # the output will have had bad time segments removed
     logger.info("beamforming.apply_lcmv")
     bf_data = beamforming.apply_lcmv(data, filters)
+
     if epoch_file is not None:
         bf_data = np.transpose([bf.data for bf in bf_data], axes=[1, 2, 0])
     else:
