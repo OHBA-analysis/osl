@@ -755,7 +755,7 @@ def plot_correlation(parc_ts, filename):
     plt.close(fig)
 
 
-def convert2niftii(parc_data, parcellation_file, mask_file):
+def convert2niftii(parc_data, parcellation_file, mask_file, tres=1, tmin=0):
     '''Convert parcellation to NIfTI.
 
     Takes (nparcels) or (nvolumes x nparcels) parc_data and returns
@@ -770,6 +770,10 @@ def convert2niftii(parc_data, parcellation_file, mask_file):
         Path to niftii parcellation file..
     mask_file : str
         Path to niftii parcellation mask file.
+    tres : float
+        Resolution of 4th dimension in secs
+    tmin : float
+        Value of first time point in secs
 
     Returns
     -------
@@ -830,6 +834,9 @@ def convert2niftii(parc_data, parcellation_file, mask_file):
         mask.shape[0], mask.shape[1], mask.shape[2], n_modes, order="F"
     )
     nii = nib.Nifti1Image(spatial_map, mask.affine, mask.header)
+
+    nii.header['pixdim'][4] = tres
+    nii.header['toffset'] = tmin
 
     return nii
 

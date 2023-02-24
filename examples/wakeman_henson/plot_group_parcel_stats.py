@@ -15,6 +15,7 @@ from anamnesis import obj_from_hdf5file
 import nibabel as nib
 from osl.source_recon import parcellation, rhino
 from nilearn import plotting
+import glmtools as glm
 
 subjects_dir = "/ohba/pi/mwoolrich/datasets/WakemanHenson/ds117"
 subjects_dir = "/Users/woolrich/homedir/vols_data/WakeHen"
@@ -58,6 +59,9 @@ tpt = 0.110 + 0.034
 volume_num = np.abs(epochs_times-tpt).argmin() # nearest epoch time to tpt
 
 cope_map = model.copes[group_contrast, :, volume_num]
+
+print(cope_map.shape)
+
 nii = parcellation.convert2niftii(cope_map, parcellation.find_file(parcellation_file), parcellation.find_file(mask_file))
 
 cope_fname = op.join(
@@ -128,7 +132,11 @@ if show_plots:
 # Note, 4th dimension is timepoint within an epoch/trial
 
 cope_map = model.copes[group_contrast, :, :].T
-nii = parcellation.convert2niftii(cope_map, parcellation.find_file(parcellation_file), parcellation.find_file(mask_file))
+nii = parcellation.convert2niftii(cope_map,
+                                  parcellation.find_file(parcellation_file),
+                                  parcellation.find_file(mask_file),
+                                  tres=epochs_times[1]-epochs_times[0],
+                                  tmin=epochs_times[0])
 
 cope_fname = op.join(
     stats_dir,

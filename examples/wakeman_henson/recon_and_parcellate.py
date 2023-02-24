@@ -144,3 +144,33 @@ for subject, sflip_parc_file in zip(subjects, sflip_parc_files):
     )
 
     os.system("cp -f {} {}".format(sflip_parc_file_from, sflip_parc_file_to))
+
+####
+
+if False:
+
+    workshop_subjects_dir = '/Users/woolrich/CloudDocs/workshop/coreg_clean/data/wake_hen_group'
+    workshop_recon_dir = op.join(workshop_subjects_dir, 'recon')
+
+    os.system("mkdir {}".format(workshop_recon_dir))
+    file_from = op.join(recon_dir, "report")
+    file_to = op.join(workshop_recon_dir + '/')
+
+    os.system("cp -fr {} {}".format(file_from, file_to))
+
+    for subject in subjects:
+
+        os.system("mkdir {}".format(op.join(workshop_recon_dir, subject)))
+
+        file_from = op.join(recon_dir, subject, "sflip_parc-raw.fif")
+        file_to = op.join(workshop_recon_dir, subject + '/')
+        os.system("cp -f {} {}".format(file_from, file_to))
+
+        subjects_dir, subject + "_meg", subject + "_meg_preproc_raw.fif"
+
+        os.system("mkdir {}".format(op.join(workshop_subjects_dir, subject + "_meg")))
+
+        file_from = op.join(subjects_dir, subject + "_meg/", "*.*")
+        file_to = op.join(workshop_subjects_dir, subject + "_meg/")
+
+        os.system("cp -f {} {}".format(file_from, file_to))

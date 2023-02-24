@@ -189,16 +189,3 @@ for preproc_fif_file, input_fif_file, glm_model_file, glm_time_file\
 
     np.save(glm_time_file, epochs.times)
 
-
-
-
-
-
-
-
-
-
-
-
-
-
