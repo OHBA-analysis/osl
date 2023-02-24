@@ -33,7 +33,11 @@ rectify = False
 
 glm_model_files = []
 glm_time_files = []
+
 glm_dir = op.join(subjects_dir, "glm")
+
+design_matrix = []
+subj_indices = []
 
 for sub in subjects_to_do:
     for ses in sessions_to_do:
@@ -54,14 +58,29 @@ for sub in subjects_to_do:
                 glm_model_files.append(glm_model_file)
                 glm_time_files.append(glm_time_file)
 
+                # store which subject this belongs to
+                subj_indices.append(sub)
+
 # -------------------
-# Setup group-level design matrix
+# Setup group-level design matrix in GLM tools
 print("\nSetting up group design matrix")
 
-DC = glm.design.DesignConfig()
-DC.add_regressor(name="Mean", rtype="Constant")
-DC.add_simple_contrasts()
-print(DC.to_yaml())
+design_matrix = np.zeros([len(subj_indices), len(set(subj_indices))])
+regressor_names = []
+
+for subj_ind in set(subj_indices):
+    regressor_names.append("Subject {}".format(subj_ind))
+    design_matrix[np.where(np.array(subj_indices)==subj_ind)[0], subj_ind] = 1
+
+des = glm.design.GLMDesign.initialise_from_matrices(
+    design_matrix,
+    regressor_names=regressor_names,
+    contrasts = np.ones([1,len(set(subj_indices))]),
+    contrast_names = ["Mean"]
+)
+
+des.plot_summary()
+
 
 for first_level_contrast in first_level_contrasts:
 
@@ -99,9 +118,6 @@ for first_level_contrast in first_level_contrasts:
     # Create GLM data
     data = glm.data.TrialGLMData(data=data)
 
-    # Create Design Matrix
-    des = DC.design_from_datainfo(data.info)
-
     # ------------------------------------------------------
 
     # Fit Model
@@ -111,12 +127,12 @@ for first_level_contrast in first_level_contrasts:
     # Save GLM
     print("Saving GLM:", group_glm_model_file)
     out = h5py.File(group_glm_model_file, "w")
-    des.to_hdf5(out.create_group("design"))
+    #des.to_hdf5(out.create_group("design"))
     data.to_hdf5(out.create_group("data"))
     model.to_hdf5(out.create_group("model"))
+    out.close()
 
     np.save(group_glm_time_file, epochs_times)
 
-    out.close()
 
 
