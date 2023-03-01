@@ -351,16 +351,19 @@ def plot_flowchart(raw, savebase=None):
             title=None
         fig, axes = plot_preproc_flowchart(config, fig=fig, ax=axes, title=title)
         cnt=cnt+1
+    if savebase is not None:
+        # Save figure
+        figname = savebase.format('flowchart')
+        fig.savefig(figname, dpi=150, transparent=True)
+        plt.close(fig)
 
-    # Save figure
-    figname = savebase.format('flowchart')
-    fig.savefig(figname, dpi=150, transparent=True)
-    plt.close(fig)
-
-    # Return the filename
-    savebase = pathlib.Path(savebase)
-    filebase = savebase.parent.name + "/" + savebase.name
-    return filebase.format('flowchart')
+        # Return the filename
+        savebase = pathlib.Path(savebase)
+        filebase = savebase.parent.name + "/" + savebase.name
+        fpath = filebase.format('flowchart')
+    else:
+        fpath = None
+    return fpath
 
 def plot_channel_time_series(raw, savebase=None, exclude_bads=False):
     """Plots sum-square time courses."""
@@ -455,10 +458,13 @@ def plot_channel_time_series(raw, savebase=None, exclude_bads=False):
         fig.savefig(figname, dpi=150, transparent=True)
         plt.close(fig)
 
-    # Return the filename
-    savebase = pathlib.Path(savebase)
-    filebase = savebase.parent.name + "/" + savebase.name
-    return filebase.format(plot_name)
+        # Return the filename
+        savebase = pathlib.Path(savebase)
+        filebase = savebase.parent.name + "/" + savebase.name
+        fpath = filebase.format(plot_name)
+    else:
+        fpath = None
+    return fpath
 
 
 def plot_sensors(raw, savebase=None):
@@ -482,14 +488,19 @@ def plot_sensors(raw, savebase=None):
         ax[0].axis('off')
         ax[2].axis('off')
         raw.plot_sensors(show=False, axes=ax[1])
-    figname = savebase.format('bad_chans')
-    fig.savefig(figname, dpi=150, transparent=True)
-    plt.close(fig)
 
-    # Return the filename
-    savebase = pathlib.Path(savebase)
-    filebase = savebase.parent.name + "/" + savebase.name
-    return filebase.format('bad_chans')
+    if savebase is not None:
+        figname = savebase.format('bad_chans')
+        fig.savefig(figname, dpi=150, transparent=True)
+        plt.close(fig)
+
+        # Return the filename
+        savebase = pathlib.Path(savebase)
+        filebase = savebase.parent.name + "/" + savebase.name
+        fpath = filebase.format('bad_chans')
+    else:
+        fpath = None
+    return fpath
 
 
 def plot_channel_dists(raw, savebase=None, exclude_bads=True):
@@ -565,11 +576,13 @@ def plot_channel_dists(raw, savebase=None, exclude_bads=True):
         figname = savebase.format(plot_name)
         fig.savefig(figname, dpi=150, transparent=True)
         plt.close(fig)
-
-    # Return the filename
-    savebase = pathlib.Path(savebase)
-    filebase = savebase.parent.name + "/" + savebase.name
-    return filebase.format(plot_name)
+        # Return the filename
+        savebase = pathlib.Path(savebase)
+        filebase = savebase.parent.name + "/" + savebase.name
+        fpath = filebase.format(plot_name)
+    else:
+        fpath = None
+    return fpath
 
 
 def plot_spectra(raw, savebase=None):
@@ -659,10 +672,15 @@ def plot_spectra(raw, savebase=None):
         fig.savefig(figname, dpi=150, transparent=True)
         plt.close(fig)
 
-    # Return filenames
-    savebase = pathlib.Path(savebase)
-    filebase = savebase.parent.name + "/" + savebase.name
-    return filebase.format('spectra_full'), filebase.format('spectra_zoom')
+        # Return filenames
+        savebase = pathlib.Path(savebase)
+        filebase = savebase.parent.name + "/" + savebase.name
+        fpath1 = filebase.format('spectra_full')
+        fpath2 = filebase.format('spectra_zoom')
+    else:
+        fpath1 = None
+        fpath2 = None
+    return fpath1, fpath2
 
 
 def plot_digitisation_2d(raw, savebase=None):
@@ -729,10 +747,13 @@ def plot_digitisation_2d(raw, savebase=None):
         fig.savefig(figname, dpi=150, transparent=True)
         plt.close(fig)
 
-    # Return the filename
-    savebase = pathlib.Path(savebase)
-    filebase = savebase.parent.name + "/" + savebase.name
-    return filebase.format('digitisation')
+        # Return the filename
+        savebase = pathlib.Path(savebase)
+        filebase = savebase.parent.name + "/" + savebase.name
+        fpath = filebase.format('digitisation')
+    else:
+        fpath = None
+    return fpath
 
 
 def plot_headmovement(raw, savebase=None):
@@ -769,10 +790,13 @@ def plot_eog_summary(raw, savebase=None):
         fig.savefig(figname, dpi=150, transparent=True)
         plt.close(fig)
 
-    # Return the filename
-    savebase = pathlib.Path(savebase)
-    filebase = savebase.parent.name + "/" + savebase.name
-    return filebase.format('EOG')
+        # Return the filename
+        savebase = pathlib.Path(savebase)
+        filebase = savebase.parent.name + "/" + savebase.name
+        fpath = filebase.format('EOG')
+    else:
+        fpath = None
+    return fpath
 
 
 def plot_ecg_summary(raw, savebase=None):
@@ -797,10 +821,13 @@ def plot_ecg_summary(raw, savebase=None):
         fig.savefig(figname, dpi=150, transparent=True)
         plt.close(fig)
 
-    # Return the filename
-    savebase = pathlib.Path(savebase)
-    filebase = savebase.parent.name + "/" + savebase.name
-    return filebase.format('ECG')
+        # Return the filename
+        savebase = pathlib.Path(savebase)
+        filebase = savebase.parent.name + "/" + savebase.name
+        fpath = filebase.format('ECG')
+    else:
+        fpath = None
+    return fpath
 
 
 def plot_bad_ica(raw, ica, savebase):
@@ -881,10 +908,13 @@ def plot_bad_ica(raw, ica, savebase):
         fig.savefig(figname, dpi=150, transparent=True)
         plt.close(fig)
 
-    # Return the filename
-    savebase = pathlib.Path(savebase)
-    filebase = savebase.parent.name + "/" + savebase.name
-    return filebase.format('ica')
+        # Return the filename
+        savebase = pathlib.Path(savebase)
+        filebase = savebase.parent.name + "/" + savebase.name
+        fpath = filebase.format('ica')
+    else:
+        fpath = None
+    return fpath
 
 
 def plot_summary_bad_segs(subject_data, reportdir):
