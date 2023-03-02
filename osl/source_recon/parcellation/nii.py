@@ -52,7 +52,23 @@ spatial_res = 8 # mm
 parcel4d_ds_fname = op.join(parc_name + '_ds' + str(spatial_res) + '.nii.gz')
 parcellation.nii.spatially_downsample(parcel4d_fname, parcel4d_ds_fname, mni_file, spatial_res)
 
+
+fslmaths /Users/woolrich/osl/osl/source_recon/parcellation/files/HarvOxf-sub-Schaefer100-combined-2mm_4d.nii.gz -Tmaxn /Users/woolrich/osl/osl/source_recon/parcellation/files/HarvOxf-sub-Schaefer100-combined-2mm.nii.gz
+
+
 '''
+
+def convert_4dparc_to_3d(parcel4d_fname, parcel3d_fname):
+    '''
+    Parameters
+    ----------
+    parcel4d_fname : str
+        4D nifii file, where each volume is a parcel
+    parcel3d_fname : str
+        3D nifii output fule with each voxel with a value of 0 if not in a parcel, or 1...p...n_parcels if in parcel p
+    '''
+
+    os.system('fslmaths {} -Tmaxn -add 1 {}'.format(parcel4d_fname, parcel3d_fname))
 
 def convert_3dparc_to_4d(parcel3d_fname, parcel4d_fname, tmpdir, n_parcels):
     '''
@@ -125,3 +141,5 @@ def append_4d_parcellation(file_in, file_out, file_append, parcel_indices=None):
 
     os.system('fslselectvols -i {} -o {} --vols={}'.format(file_append, file_out, vol_list_str))
     os.system('fslmerge -t {} {} {}'.format(file_out, file_in, file_out))
+
+
