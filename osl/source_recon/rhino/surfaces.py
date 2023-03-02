@@ -237,7 +237,7 @@ please check output of:\n fslorient -getorient {}".format(
     # 1) Transform sMRI to be aligned with the MNI axes so that BET works well
 
     img = nib.load(filenames["smri_file"])
-    img_density = np.sum(img.get_data()) / np.prod(img.get_data().shape)
+    img_density = np.sum(img.get_fdata()) / np.prod(img.get_fdata().shape)
 
     # We will start by transforming sMRI
     # so that its voxel indices axes are aligned to MNI's
@@ -266,7 +266,7 @@ please check output of:\n fslorient -getorient {}".format(
     )
 
     img = nib.load(flirt_smri_mniaxes_file)
-    img_latest_density = np.sum(img.get_data()) / np.prod(img.get_data().shape)
+    img_latest_density = np.sum(img.get_fdata()) / np.prod(img.get_fdata().shape)
 
     if 5 * img_latest_density < img_density:
         raise Exception(
