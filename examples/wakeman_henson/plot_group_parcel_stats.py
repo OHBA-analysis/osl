@@ -29,7 +29,7 @@ first_level_contrast = 15
 
 glm_dir = op.join(subjects_dir, "glm")
 
-show_plots = False
+show_plots = True
 
 # ------------------------------------------------------
 # Load group GLM fit
@@ -131,7 +131,11 @@ if show_plots:
 # Write stats as 4D niftii file in MNI space.
 # Note, 4th dimension is timepoint within an epoch/trial
 
+
+time_inds = np.where((epochs_times>-0.25) & (epochs_times<1))[0]
 cope_map = model.copes[group_contrast, :, :].T
+
+cope_map.shape
 nii = parcellation.convert2niftii(cope_map,
                                   parcellation.find_file(parcellation_file),
                                   parcellation.find_file(mask_file),

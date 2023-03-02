@@ -24,8 +24,8 @@ subjects_to_do = np.arange(0, nsubjects)
 sessions_to_do = np.arange(0, nsessions)
 subj_sess_2exclude = np.zeros([nsubjects, nsessions]).astype(bool)
 
-subj_sess_2exclude = np.ones(subj_sess_2exclude.shape).astype(bool)
-subj_sess_2exclude[0:1,0:6]=False
+#subj_sess_2exclude = np.ones(subj_sess_2exclude.shape).astype(bool)
+#subj_sess_2exclude[0:1,0:1]=False
 
 # -------------------------------------------------------------
 # %% Setup file names
@@ -74,9 +74,9 @@ config = """
         use_headshape: false
         model: Single Layer
     - beamform_and_parcellate:
-        freq_range: [1, 45]
-        chantypes: [mag, grad]
-        rank: {meg: 58}
+        freq_range: [1, 30]
+        chantypes: [grad]
+        rank: {grad: 55}
         parcellation_file: HarvOxf-sub-Schaefer100-combined-2mm_4d_ds8.nii.gz
         method: spatial_basis
         orthogonalisation: None
@@ -121,56 +121,44 @@ source_recon.run_src_batch(
     subjects,
 )
 
-# -------------------------------------------------------------
-# %% Copy sf files to a single directory (makes it easier to copy minimal
-# files to, e.g. BMRC, for downstream analysis)
 
-os.makedirs(op.join(recon_dir, "sflip_data"), exist_ok=True)
+if False:
+    # -------------------------------------------------------------
+    # %% Copy sf files to a single directory (makes it easier to copy minimal
+    # files to, e.g. BMRC, for downstream analysis)
 
-for subject, sflip_parc_file in zip(subjects, sflip_parc_files):
+    os.makedirs(op.join(recon_dir, "sflip_data"), exist_ok=True)
 
-    sflip_parc_file_to = op.join(
-        recon_dir, "sflip_data", subject + "_sflip_parc.npy"
-    )
+    for subject, sflip_parc_file in zip(subjects, sflip_parc_files):
 
-    os.system("cp -f {} {}".format(sflip_parc_file, sflip_parc_file_to))
+        sflip_parc_file_to = op.join(
+            recon_dir, "sflip_data", subject + "_sflip_parc.npy"
+        )
 
-    sflip_parc_file_from = op.join(
-        recon_dir, subject, "sflip_parc-raw.fif"
-    )
+        os.system("cp -f {} {}".format(sflip_parc_file, sflip_parc_file_to))
 
-    sflip_parc_file_to = op.join(
-        recon_dir, "sflip_data", subject + "_sflip_parc-raw.fif"
-    )
+        sflip_parc_file_from = op.join(
+            recon_dir, subject, "sflip_parc-raw.fif"
+        )
 
-    os.system("cp -f {} {}".format(sflip_parc_file_from, sflip_parc_file_to))
+        sflip_parc_file_to = op.join(
+            recon_dir, "sflip_data", subject + "_sflip_parc-raw.fif"
+        )
 
-####
+        os.system("cp -f {} {}".format(sflip_parc_file_from, sflip_parc_file_to))
+
+    ####
 
 if False:
 
-    workshop_subjects_dir = '/Users/woolrich/CloudDocs/workshop/coreg_clean/data/wake_hen_group'
+    # Use this to copy minimum report files necessary for group workshop practical
+
+    #workshop_subjects_dir = '/Users/woolrich/CloudDocs/workshop/coreg_clean/data/wake_hen_group'
+    workshop_subjects_dir = '/Users/woolrich/workshop/coreg_clean/data/wake_hen_group'
     workshop_recon_dir = op.join(workshop_subjects_dir, 'recon')
 
+    # copy report
     os.system("mkdir {}".format(workshop_recon_dir))
     file_from = op.join(recon_dir, "report")
     file_to = op.join(workshop_recon_dir + '/')
-
     os.system("cp -fr {} {}".format(file_from, file_to))
-
-    for subject in subjects:
-
-        os.system("mkdir {}".format(op.join(workshop_recon_dir, subject)))
-
-        file_from = op.join(recon_dir, subject, "sflip_parc-raw.fif")
-        file_to = op.join(workshop_recon_dir, subject + '/')
-        os.system("cp -f {} {}".format(file_from, file_to))
-
-        subjects_dir, subject + "_meg", subject + "_meg_preproc_raw.fif"
-
-        os.system("mkdir {}".format(op.join(workshop_subjects_dir, subject + "_meg")))
-
-        file_from = op.join(subjects_dir, subject + "_meg/", "*.*")
-        file_to = op.join(workshop_subjects_dir, subject + "_meg/")
-
-        os.system("cp -f {} {}".format(file_from, file_to))

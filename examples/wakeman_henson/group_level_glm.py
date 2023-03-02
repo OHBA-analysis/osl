@@ -26,7 +26,7 @@ subj_sess_2exclude = np.zeros([nsubjects, nsessions]).astype(bool)
 
 first_level_contrasts = [15]
 baseline_correct = True
-rectify = False
+rectify = True
 
 # -------------------------------------------------------------
 # %% Setup file names
@@ -80,7 +80,6 @@ des = glm.design.GLMDesign.initialise_from_matrices(
 )
 
 des.plot_summary()
-
 
 for first_level_contrast in first_level_contrasts:
 

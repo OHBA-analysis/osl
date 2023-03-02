@@ -85,8 +85,8 @@ config = """
     preproc:
       - find_events:       {min_duration: 0.005}
       - set_channel_types: {EEG062: eog, EEG062: eog, EEG063: ecg}
-      - filter:            {l_freq: 1.1, h_freq: 100}
-      - notch_filter:      {freqs: 50 100 150}
+      - filter:            {l_freq: 1, h_freq: 100}
+      - notch_filter:      {freqs: 50 100}
       - resample:          {sfreq: 150}
       - filter:            {l_freq: 1, h_freq: 30, method: iir, iir_params: {order: 5, btype: bandpass, ftype: butter}}
       - bad_channels: {picks: 'mag', significance_level: 0.1}

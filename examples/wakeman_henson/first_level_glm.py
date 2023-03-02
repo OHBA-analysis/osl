@@ -20,6 +20,10 @@ import osl
 subjects_dir = "/ohba/pi/mwoolrich/datasets/WakemanHenson/ds117"
 subjects_dir = "/Users/woolrich/homedir/vols_data/WakeHen"
 
+hilb_freq_range = None
+if True:
+    hilb_freq_range = (7, 13)
+
 nsubjects = 19
 nsessions = 6
 subjects_to_do = np.arange(0, nsubjects)
@@ -31,8 +35,11 @@ subj_sess_2exclude = np.zeros([nsubjects, nsessions]).astype(bool)
 
 preproc_fif_files = []
 input_fif_files = []
+epoch_fif_files = []
+abs_epoch_fif_files = []
 glm_model_files = []
 glm_time_files = []
+subjects = []
 
 recon_dir = op.join(subjects_dir, "recon")
 glm_dir = op.join(subjects_dir, "glm")
@@ -57,6 +64,14 @@ for sub in subjects_to_do:
                 recon_dir, subject, "sflip_parc-raw.fif"
             )
 
+            epoch_fif_file = op.join(
+                recon_dir, subject, "epoch_sflip_parc-epo.fif"
+            )
+
+            abs_epoch_fif_file = op.join(
+                recon_dir, subject, "abs_epoch_sflip_parc-epo.fif"
+            )
+
             glm_model_file = op.join(
                 glm_dir, subject, "first_level_glm_model.hdf5"
             )
@@ -67,12 +82,94 @@ for sub in subjects_to_do:
             if op.exists(input_fif_file) and op.exists(preproc_fif_file):
                 preproc_fif_files.append(preproc_fif_file)
                 input_fif_files.append(input_fif_file)
+                epoch_fif_files.append(epoch_fif_file)
+                abs_epoch_fif_files.append(abs_epoch_fif_file)
+
                 glm_model_files.append(glm_model_file)
                 glm_time_files.append(glm_time_file)
+                subjects.append(subject)
 
                 glm_subj_dir = op.join(glm_dir, subject)
                 if not os.path.isdir(glm_subj_dir):
                     os.makedirs(glm_subj_dir)
+
+
+# -------------------
+# Epoch first-level design matrix
+for preproc_fif_file, input_fif_file, epoch_fif_file, abs_epoch_fif_file \
+        in zip(preproc_fif_files, input_fif_files, epoch_fif_files, abs_epoch_fif_files):
+
+    raw = mne.io.read_raw(input_fif_file) # e.g. sensor, source space, or parcellated data
+
+    # Epoch
+    dataset = osl.preprocessing.read_dataset(preproc_fif_file)
+    epochs = mne.Epochs(
+        raw,
+        dataset["events"],
+        dataset["event_id"],
+        tmin=-1,
+        tmax=2.5,
+        baseline=(None, 0),
+        reject_by_annotation=True,
+    )
+
+    epochs.drop_bad(verbose=True)
+    epochs.load_data()
+    epochs.save(epoch_fif_file, overwrite=True)
+
+    #### hilb
+
+    # Do hilbert transform
+    hilb_raw = raw.copy()
+    hilb_raw.load_data()
+
+    if hilb_freq_range is not None:
+        hilb_raw.filter(
+            l_freq=hilb_freq_range[0],
+            h_freq=hilb_freq_range[1],
+            method="iir",
+            picks='all',
+            iir_params={"order": 5, "btype": "bandpass", "ftype": "butter"},
+        )
+
+    hilb_raw.load_data()
+    hilb_raw.apply_hilbert(picks='all')
+
+    # Epoch
+    dataset = osl.preprocessing.read_dataset(preproc_fif_file)
+    abs_epochs = mne.Epochs(
+        hilb_raw,
+        dataset["events"],
+        dataset["event_id"],
+        tmin=-1,
+        tmax=3,
+        baseline=(None, 0),
+        reject_by_annotation=True,
+    )
+
+    abs_epochs.drop_bad(verbose=True)
+    abs_epochs.load_data()
+    abs_epochs.save(abs_epoch_fif_file, overwrite=True)
+
+if False:
+    # Use this to copy minimum epoched files necessary for workshop practical
+
+    #workshop_subjects_dir = '/Users/woolrich/CloudDocs/workshop/coreg_clean/data/wake_hen_group'
+    workshop_subjects_dir = '/Users/woolrich/workshop/coreg_clean/data/wake_hen_group'
+    workshop_recon_dir = op.join(workshop_subjects_dir, 'recon')
+
+    # copy subject epoch fif files
+    for subject in subjects:
+
+        os.system("mkdir {}".format(op.join(workshop_recon_dir, subject)))
+
+        file_from = op.join(recon_dir, subject, "epoch_sflip_parc-epo.fif")
+        file_to = op.join(workshop_recon_dir, subject + '/')
+        os.system("cp -f {} {}".format(file_from, file_to))
+
+        file_from = op.join(recon_dir, subject, "abs_epoch_sflip_parc-epo.fif")
+        file_to = op.join(workshop_recon_dir, subject + '/')
+        os.system("cp -f {} {}".format(file_from, file_to))
 
 # -------------------
 # Setup first-level design matrix
@@ -146,29 +243,28 @@ print(DC.to_yaml())
 
 # -------------
 # Fit first-level GLM
+use_hilbert = True
 
-for preproc_fif_file, input_fif_file, glm_model_file, glm_time_file\
-        in zip(preproc_fif_files, input_fif_files, glm_model_files, glm_time_files):
+if use_hilbert:
+    use_abs = True
+    epoch_fif_files_to_use = abs_epoch_fif_files
+else:
+    use_abs = False
+    epoch_fif_files_to_use = epoch_fif_files
 
-    raw = mne.io.read_raw(input_fif_file) # e.g. sensor, source space, or parcellated data
+for epoch_fif_file, glm_model_file, glm_time_file \
+        in zip(epoch_fif_files_to_use, glm_model_files, glm_time_files):
 
-    # Epoch
-    dataset = osl.preprocessing.read_dataset(preproc_fif_file)
-    epochs = mne.Epochs(
-        raw,
-        dataset["events"],
-        dataset["event_id"],
-        tmin=-0.5,
-        tmax=1.5,
-        baseline=(None, 0),
-        reject_by_annotation=True,
-    )
+    epochs = mne.read_epochs(epoch_fif_file) # e.g. sensor, source space, or parcellated data
 
     epochs.drop_bad(verbose=True)
     epochs.load_data()
 
     # Load data in glmtools
     data = glm.io.load_mne_epochs(epochs)
+
+    if use_abs:
+        data.data = np.abs(data.data)
 
     # Create Design Matrix
     des = DC.design_from_datainfo(data.info)
