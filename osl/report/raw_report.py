@@ -842,7 +842,7 @@ def plot_bad_ica(raw, ica, savebase):
         ica.labels_ = {ica._ica_names[exc]: '' for exc in exclude_uniq}
 
     # Create figure
-    fig = plt.figure(figsize=(16, 5 * nbad), facecolor=[0.95] * 3)
+    fig = plt.figure(figsize=(16, 5 * np.max([nbad,1])), facecolor=[0.95] * 3)
     if nbad == 0:
         plt.subplot(111, frameon=False)
         plt.text(0.5, 0.5, 'No Components Rejected', ha='center', va='center')
