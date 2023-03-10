@@ -112,7 +112,9 @@ def detect_badsegments(
     elif metric == "var":
         metric_func = np.var
     else:
-        metric_func = stats.kurtosis
+        def kurtosis(inputs):
+            return stats.kurtosis(inputs, axis = None)
+        metric_func = kurtosis
 
     bdinds = sails.utils.detect_artefacts(
         XX,
