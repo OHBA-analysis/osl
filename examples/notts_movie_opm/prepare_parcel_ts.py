@@ -258,10 +258,8 @@ if run_fix_sign_ambiguity:
 
         sflip_parc_files = []
         for subject in subjects:
-            sflip_parc_file_from = op.join(recon_dir, subject, "sflip_parc.npy")
-            sflip_parc_file_to = op.join(
-                recon_dir, "sflip_data", subject + "_sflip_parc.npy"
-            )
+            sflip_parc_file_from = op.join(recon_dir, subject, "sflip_parc-raw.fif")
+            sflip_parc_file_to = op.join(recon_dir, "sflip_data", subject + "_sflip_parc-raw.fif")
 
             os.system("cp -f {} {}".format(sflip_parc_file_from, sflip_parc_file_to))
 

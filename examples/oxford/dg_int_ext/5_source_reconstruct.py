@@ -1,6 +1,6 @@
 """Example script for source reconstructing epoched data.
 
-Note, the parcellated data is saved to: {src_dir}/*/{event_type}/rhino/parc.npy
+Note, the parcellated data is saved as an MNE Epochs object: {src_dir}/*/{event_type}/rhino/parc-epo.fif
 """
 
 # Authors: Chetan Gohil <chetan.gohil@psych.ox.ac.uk>

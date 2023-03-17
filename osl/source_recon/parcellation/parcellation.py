@@ -850,29 +850,28 @@ def convert2mne_raw(
     ----------
     parc_data : np.ndarray
         ntpts x nparcels parcel data
-    raw: mne.io.Raw
+    raw : mne.Raw
         mne.io.raw object that produced parc_data via source recon and parcellation.
         Info such as timings and bad segments will be copied from this to parc_raw.
-    parcel_names: list(str)
+    parcel_names : list(str)
         List of strings indicating names of parcels.
-        If none then names are set to be 0 to n_parcels-1
-    reinsert_bads: bool
+        If None then names are set to be 0 to n_parcels-1.
+    reinsert_bads : bool
         Do we put back in bad segments (with the values set to zero)?
         This assumes that the bad segments have been previously removed from the passed
         in parc_data, using the annotations in raw.
         It is recommended that if reinsert_bads is True then copy_annotations should
         be True also.
-    copy_annotations: bool
+    copy_annotations : bool
         Do we copy annotations from raw to parc_raw?
 
     Returns
     -------
-    parc_raw: mne.io.Raw
-        Generated parcellation in mne.io.raw format
+    parc_raw : mne.Raw
+        Generated parcellation in mne.Raw format.
 
     Notes
     -----
-
     Example 1:
     If parcel_ts has not had bad segments removed (parc_raw will then also not have bad segments removed):
         parc_raw = parcellation.convert2mne_raw(parcel_ts, raw, reinsert_bads=False, copy_annotations=True)
@@ -886,7 +885,6 @@ def convert2mne_raw(
     (this is the most common scenario as bad segments are often omitted from the
     calculation of parcel time courses):
         parc_raw = parcellation.convert2mne_raw(parcel_ts, raw, reinsert_bads=True, copy_annotations=True)
-
     '''
 
     # Load fif file info
@@ -909,7 +907,7 @@ def convert2mne_raw(
 
     # Create parc info
     if parcel_names is None:
-        parcel_names = [str(x) for x in np.arange(parc_data.shape[1]).tolist()]
+        parcel_names = [str(i) for i in range(parc_data.shape[-1])]
 
     parc_info = create_info(ch_names=parcel_names, ch_types='misc', sfreq=info['sfreq'])
 
@@ -927,6 +925,41 @@ def convert2mne_raw(
         parc_raw.set_annotations(raw._annotations)
 
     return parc_raw
+
+def convert2mne_epochs(parc_data, epochs, parcel_names=None):
+    '''Create and returns an MNE Epochs object that contains parcellated data.
+
+    Parameters
+    ----------
+    parc_data : np.ndarray
+        epochs x ntpts x nparcels parcel data
+    epochs : mne.Epochs
+        mne.io.raw object that produced parc_data via source recon and parcellation.
+        Info such as timings and bad segments will be copied from this to parc_raw.
+    parcel_names : list(str)
+        List of strings indicating names of parcels.
+        If None then names are set to be 0 to n_parcels-1.
+
+    Returns
+    -------
+    parc_epo : mne.Epochs
+        Generated parcellation in mne.Epochs format.
+    '''
+
+    # Epochs info
+    info = epochs.info
+
+    # Create parc info
+    if parcel_names is None:
+        parcel_names = [str(i) for i in range(parc_data.shape[-1])]
+
+    parc_info = create_info(ch_names=parcel_names, ch_types='misc', sfreq=info['sfreq'])
+    parc_events = epochs.events
+
+    # Parcellated data Epochs object
+    parc_epo = mne.EpochsArray(np.swapaxes(parc_data, 1, 2), parc_info, parc_events)
+
+    return parc_epo
 
 
 def spatial_dist_adjacency(parcellation_file, dist, verbose=False):

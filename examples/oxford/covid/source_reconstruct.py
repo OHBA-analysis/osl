@@ -29,7 +29,6 @@ config = """
         use_nose: false
         use_headshape: true
         model: Single Layer
-        recompute_surfaces: true
     - beamform_and_parcellate:
         freq_range: [1, 45]
         chantypes: [mag, grad]

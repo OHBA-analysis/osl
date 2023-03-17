@@ -9,10 +9,7 @@ import os
 import os.path as op
 from pathlib import Path
 
-import mne.io
-
-from . import parcellation
-
+import mne
 import numpy as np
 from tqdm import trange
 
@@ -20,7 +17,13 @@ from osl.utils.logger import log_or_print
 
 
 def find_flips(
-    cov, template_cov, n_embeddings, n_init, n_iter, max_flips, use_tqdm=True
+    cov,
+    template_cov,
+    n_embeddings,
+    n_init,
+    n_iter,
+    max_flips,
+    use_tqdm=True,
 ):
     """Find channels to flip.
 
@@ -69,7 +72,6 @@ def find_flips(
     best_metric = 0
     metrics = []
     for n in range(n_init):
-
         # Reset the flips and calculate the evaluation metric before sign flipping
         flips = np.ones(n_channels)
         metric = covariance_matrix_correlation(cov, template_cov, n_embeddings)
@@ -106,7 +108,7 @@ def find_flips(
 
 
 def load_covariances(
-    parc_files, n_embeddings=1, standardize=True, loader=np.load, use_tqdm=True
+    parc_files, n_embeddings=1, standardize=True, loader=None, use_tqdm=True
 ):
     """Loads data and returns its covariance matrix.
 
@@ -135,7 +137,21 @@ def load_covariances(
         iterator = range(len(parc_files))
     for i in iterator:
         # Load data
-        x = loader(parc_files[i])
+        if loader is not None:
+            x = loader(parc_files[i])
+        elif "raw.fif" in parc_files[i]:
+            raw = mne.io.read_raw_fif(parc_files[i], verbose=False)
+            x = raw.get_data(reject_by_annotation="omit", verbose=False)
+            x = x.T  # (channels, time) -> (time, channels)
+        elif "epo.fif" in parc_files[i]:
+            epochs = mne.read_epochs(parc_files[i], verbose=False)
+            x = epochs.get_data()  # (epochs, channels, time)
+            x = np.swapaxes(x, 1, 2)
+            x = x.reshape(-1, x.shape[-1])  # (time, channels)
+        else:
+            raise ValueError(
+                "Don't know how to load the parcellated data. Please pass loader."
+            )
 
         # Prepare
         x = time_embed(x, n_embeddings)
@@ -274,7 +290,7 @@ def apply_flips_to_covariance(cov, flips, n_embeddings=1):
     return cov * flips
 
 
-def apply_flips(src_dir, subject, flips):
+def apply_flips(src_dir, subject, flips, epoched=False):
     """Saves the sign flipped data.
 
     Parameters
@@ -285,25 +301,45 @@ def apply_flips(src_dir, subject, flips):
         Subject name/id.
     flips : numpy.ndarray
         Flips to apply.
+    epoched : bool
+        Are we performing sign flipping on parc-raw.fif (epoched=False) or
+        parc-epo.fif files (epoched=True)?
     """
-    # Load parcellated data
-    parc_file = op.join(src_dir, str(subject), "rhino", "parc.npy")
-    data = np.load(parc_file)
+    if epoched:
+        parc_file = op.join(src_dir, subject, "rhino", "parc-epo.fif")
+        epochs = mne.read_epochs(parc_file, verbose=False)
+        sflip_epochs = epochs.copy()
+        sflip_epochs.load_data()
 
-    # Flip the sign of the channels
-    flipped_data = data * flips[np.newaxis, ...]
+        # Flip the sign of the channels
+        def flip(data):
+            return data * flips[np.newaxis, :, np.newaxis]
 
-    # Save
-    outfile = op.join(src_dir, str(subject), "sflip_parc.npy")
-    log_or_print(f"saving: {outfile}")
-    np.save(outfile, flipped_data)
+        sflip_epochs.apply_function(flip, picks="misc", channel_wise=False)
 
-    # Create and save mne raw object for the sign flipped parcellated data
-    parc_fif_file = op.join(src_dir, str(subject), "rhino", "parc-raw.fif")
-    parc_raw = mne.io.read_raw_fif(parc_fif_file)
-    sf_parc_fif_file = op.join(src_dir, str(subject), "sflip_parc-raw.fif")
-    sf_parc_raw = parcellation.convert2mne_raw(flipped_data, parc_raw)
-    sf_parc_raw.save(sf_parc_fif_file, overwrite=True)
+        # Save
+        outfile = op.join(src_dir, str(subject), "rhino", "sflip_parc-epo.fif")
+        log_or_print(f"saving: {outfile}")
+        sflip_epochs.save(outfile, overwrite=True)
+
+    else:
+        # Load parcellated data
+        parc_file = op.join(src_dir, subject, "rhino", "parc-raw.fif")
+        raw = mne.io.read_raw_fif(parc_file, verbose=False)
+        sflip_raw = raw.copy()
+        sflip_raw.load_data()
+
+        # Flip the sign of the channels
+        def flip(data):
+            return data * flips[:, np.newaxis]
+
+        sflip_raw.apply_function(flip, picks="misc", channel_wise=False)
+
+        # Save
+        outfile = op.join(src_dir, str(subject), "rhino", "sflip_parc-raw.fif")
+        log_or_print(f"saving: {outfile}")
+        sflip_raw.save(outfile, overwrite=True)
+
 
 def time_embed(x, n_embeddings):
     """Performs time-delay embedding.

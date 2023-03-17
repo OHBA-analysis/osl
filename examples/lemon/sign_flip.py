@@ -26,7 +26,7 @@ if __name__ == "__main__":
 
     # Get subjects
     subjects = []
-    for path in sorted(glob(SRC_DIR + "/*/rhino/parc.npy")):
+    for path in sorted(glob(SRC_DIR + "/*/rhino/parc-raw.fif")):
         subject = path.split("/")[-3]
         subjects.append(subject)
 
