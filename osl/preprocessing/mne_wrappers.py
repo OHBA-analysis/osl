@@ -171,17 +171,17 @@ def run_mne_epochs(dataset, userargs):
 # mne.preprocessing functions
 
 
-def run_mne_annotate_flat(dataset, userargs):
-    logger.info("MNE Stage - {0}.{1}".format("mne.preprocessing", "annotate_flat"))
+def run_mne_annotate_amplitude(dataset, userargs):
+    logger.info("MNE Stage - {0}.{1}".format("mne.preprocessing", "annotate_amplitude"))
     logger.info("userargs: {0}".format(str(userargs)))
     target = userargs.pop("target", "raw")
 
     # Import func - otherwise line is too long even for me
-    from mne.preprocessing import annotate_flat
+    from mne.preprocessing import annotate_amplitude
 
-    bad_annotations, flat_channels = annotate_flat(dataset[target], **userargs)
+    bad_annotations, bad_channels = annotate_amplitude(dataset[target], **userargs)
 
-    dataset[target].info["bads"].extend(flat_channels)
+    dataset[target].info["bads"].extend(bad_channels)
 
     # Can't combine annotations with different orig_times, the following line
     # fails if uncommented >>

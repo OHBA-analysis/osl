@@ -91,6 +91,8 @@ def detect_badsegments(
         chinds = mne.pick_types(raw.info, eog=True, ref_meg=ref_meg, exclude='bads')
     elif picks == "ecg":
         chinds = mne.pick_types(raw.info, ecg=True, ref_meg=ref_meg, exclude='bads')
+    elif picks == "emg":
+        chinds = mne.pick_types(raw.info, emg=True, ref_meg=ref_meg, exclude='bads')
     else:
         raise NotImplementedError(f"picks={picks} not available.")
 
