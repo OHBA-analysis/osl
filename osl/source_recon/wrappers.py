@@ -189,7 +189,7 @@ def coregister(
     rhino.coreg_display(
         subjects_dir=src_dir,
         subject=subject,
-        display_outskin_with_nose=use_nose,
+        display_outskin_with_nose=False,
         filename=f"{src_dir}/{subject}/rhino/coreg.html",
     )
 
@@ -351,7 +351,7 @@ def compute_surfaces_coregister_and_forward_model(
     rhino.coreg_display(
         subjects_dir=src_dir,
         subject=subject,
-        display_outskin_with_nose=use_nose,
+        display_outskin_with_nose=False,
         filename=f"{src_dir}/{subject}/rhino/coreg.html",
     )
 

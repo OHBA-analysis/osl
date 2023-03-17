@@ -164,8 +164,7 @@ def run_src_chain(
     # Validation
     doing_coreg = (
         any(["compute_surfaces" in method for method in config["source_recon"]]) or
-        any(["coregister" in method for method in config["source_recon"]]) or
-        any(["forward_model" in method for method in config["source_recon"]])
+        any(["coregister" in method for method in config["source_recon"]])
     )
     if doing_coreg and smri_file is None:
         raise ValueError("smri_file must be passed if we're doing coregistration.")
@@ -284,8 +283,7 @@ def run_src_batch(
 
     doing_coreg = (
         any(["compute_surfaces" in method for method in config["source_recon"]]) or
-        any(["coregister" in method for method in config["source_recon"]]) or
-        any(["forward_model" in method for method in config["source_recon"]])
+        any(["coregister" in method for method in config["source_recon"]])
     )
     if doing_coreg and smri_files is None:
         raise ValueError("smri_files must be passed if we are coregistering.")
