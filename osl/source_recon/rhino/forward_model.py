@@ -163,7 +163,7 @@ def make_fwd_solution(
     where they are in native MRI space in metres.
     """
 
-    fif_file = get_coreg_filenames(subjects_dir, subject)["fif_file"]
+    info_fif_file = get_coreg_filenames(subjects_dir, subject)["info_fif_file"]
 
     # Note, forward model is done in head space:
     head_scaledmri_trans_file = get_coreg_filenames(subjects_dir, subject)[
@@ -199,7 +199,7 @@ def make_fwd_solution(
     for ii in range(len(bem["surfs"])):
         bem["surfs"][ii]["tris"] = bem["surfs"][ii]["tris"].astype(int)
 
-    info = read_info(fif_file)
+    info = read_info(info_fif_file)
 
     # -------------------------------------------------------------------------
     # Main MNE call
