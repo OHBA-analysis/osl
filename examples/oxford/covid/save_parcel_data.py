@@ -13,10 +13,10 @@ out_dir = f"{src_dir}/npy"
 
 os.makedirs(out_dir, exist_ok=True)
 
-# Save epoched data as a numpy file
-files = sorted(glob(src_dir + "/*/rhino/parc-raw.fif"))
+# Save parcellated data as a numpy file
+files = sorted(glob(src_dir + "/*/sflip_parc-raw.fif"))
 for i, file in enumerate(files):
     print(f"Saving data: {file} -> {out_dir}/subject{i}.npy")
-    epochs = mne.io.read_raw_fif(file, verbose=False)
-    data = epochs.get_data(reject_by_annotation="omit").T  # (time, channels)
+    raw = mne.io.read_raw_fif(file, verbose=False)
+    data = raw.get_data(reject_by_annotation="omit").T  # (time, channels)
     np.save(f"{out_dir}/subject{i}.npy", data)

@@ -318,7 +318,7 @@ def apply_flips(src_dir, subject, flips, epoched=False):
         sflip_epochs.apply_function(flip, picks="misc", channel_wise=False)
 
         # Save
-        outfile = op.join(src_dir, str(subject), "rhino", "sflip_parc-epo.fif")
+        outfile = op.join(src_dir, str(subject),"sflip_parc-epo.fif")
         log_or_print(f"saving: {outfile}")
         sflip_epochs.save(outfile, overwrite=True)
 
@@ -336,7 +336,7 @@ def apply_flips(src_dir, subject, flips, epoched=False):
         sflip_raw.apply_function(flip, picks="misc", channel_wise=False)
 
         # Save
-        outfile = op.join(src_dir, str(subject), "rhino", "sflip_parc-raw.fif")
+        outfile = op.join(src_dir, str(subject), "sflip_parc-raw.fif")
         log_or_print(f"saving: {outfile}")
         sflip_raw.save(outfile, overwrite=True)
 

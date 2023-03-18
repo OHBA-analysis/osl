@@ -26,7 +26,7 @@ for subject in subjects:
     sens_files.append(
         f"{preproc_dir}/{subject}_gripper_trans/{subject}_gripper_trans_preproc_raw.fif"
     )
-    parc_files.append(f"{src_dir}/{subject}/rhino/sflip_parc-raw.fif")
+    parc_files.append(f"{src_dir}/{subject}/sflip_parc-raw.fif")
 
 #%% Event info
 

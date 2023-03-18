@@ -201,7 +201,7 @@ def make_lcmv(
     return filters
 
 
-def apply_lcmv(data, filters, reject_by_annotations="omit"):
+def apply_lcmv(data, filters, reject_by_annotations=None):
     """Apply a LCMV filter to an MNE Raw or Epochs object."""
     is_epoched = len(data.get_data().shape) == 3 and len(data) > 1
     if is_epoched:

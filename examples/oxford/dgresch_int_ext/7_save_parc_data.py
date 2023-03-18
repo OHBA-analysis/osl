@@ -15,7 +15,7 @@ out_dir = "/ohba/pi/knobre/cgohil/dg_int_ext/src/npy"
 os.makedirs(out_dir, exist_ok=True)
 
 # Save epoched data as a numpy file
-files = sorted(glob(src_dir + "/*/rhino/parc-epo.fif"))
+files = sorted(glob(src_dir + "/*/sflip_parc-epo.fif"))
 for i, file in enumerate(files):
     print(f"Saving data: {file} -> {out_dir}/subject{i}.npy")
     epochs = mne.read_epochs(file, verbose=False)
