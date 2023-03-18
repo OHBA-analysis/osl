@@ -6,7 +6,7 @@
 
 # Authors: Andrew Quinn <a.quinn@bham.ac.uk>
 #          Chetan Gohil <chetan.gohil@psych.ox.ac.uk>
-#          Mats van Es <mats.vanes@psych.ox.ac.uk>
+#          Mats van Es  <mats.vanes@psych.ox.ac.uk>
 
 import argparse
 import matplotlib
@@ -308,22 +308,26 @@ def append_preproc_info(dataset, config):
     dict
         Dataset dict containing the preprocessed data.
     """
+    from .. import __version__  # here to avoid circular import
+
     if dataset["raw"].info["description"] == None:
         dataset["raw"].info["description"] = ""
-    preprocinfo = (
+
+    preproc_info = (
         "\n\nOSL BATCH PROCESSING APPLIED ON "
         + f"{datetime.today().strftime('%d/%m/%Y %H:%M:%S')} \n"
+        + f"VERSION: {__version__}\n"
         + f"%% config start %% \n{config} \n%% config end %%"
     )
     dataset["raw"].info["description"] = (
-        dataset["raw"].info["description"] + preprocinfo
+        dataset["raw"].info["description"] + preproc_info
     )
 
     if dataset["epochs"] is not None:
         if dataset["epochs"].info["description"] == None:
             dataset["epochs"].info["description"] = ""
         dataset["epochs"].info["description"] = (
-            dataset["epochs"].info["description"] + preprocinfo
+            dataset["epochs"].info["description"] + preproc_info
         )
 
     return dataset
