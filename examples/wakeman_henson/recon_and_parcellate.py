@@ -54,7 +54,7 @@ for sub in subjects_to_do:
             )
 
             # output files
-            sflip_parc_file = op.join(recon_dir, subject, "sflip_parc.npy")
+            sflip_parc_file = op.join(recon_dir, subject, "sflip_parc-raw.fif")
 
             if op.exists(preproc_fif_file) and op.exists(smri_file):
                 subjects.append(subject)
@@ -131,15 +131,7 @@ if False:
 
     for subject, sflip_parc_file in zip(subjects, sflip_parc_files):
 
-        sflip_parc_file_to = op.join(
-            recon_dir, "sflip_data", subject + "_sflip_parc.npy"
-        )
-
-        os.system("cp -f {} {}".format(sflip_parc_file, sflip_parc_file_to))
-
-        sflip_parc_file_from = op.join(
-            recon_dir, subject, "sflip_parc-raw.fif"
-        )
+        sflip_parc_file_from = op.join(recon_dir, subject, sflip_parc_file)
 
         sflip_parc_file_to = op.join(
             recon_dir, "sflip_data", subject + "_sflip_parc-raw.fif"

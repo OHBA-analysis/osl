@@ -225,7 +225,7 @@ def custom_coregister(
     )
 
     # Coregister
-    source_recon.wrappers.coreg(
+    source_recon.wrappers.coregister(
         src_dir,
         subject,
         preproc_file,

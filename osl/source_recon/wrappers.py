@@ -26,6 +26,7 @@ from . import rhino, beamforming, parcellation, sign_flipping
 from ..report import src_report
 
 import logging
+
 logger = logging.getLogger(__name__)
 
 
@@ -120,7 +121,7 @@ def compute_surfaces(
         {
             "compute_surfaces": True,
             "include_nose": include_nose,
-        }
+        },
     )
 
 
@@ -191,7 +192,7 @@ def coregister(
         display_outskin_with_nose=False,
         filename=f"{src_dir}/{subject}/rhino/coreg.html",
     )
-    
+
     # Save info for the report
     src_report.add_to_data(
         f"{src_dir}/{subject}/report_data.pkl",
@@ -204,7 +205,7 @@ def coregister(
             "n_init_coreg": n_init,
             "fid_err": fid_err,
             "coreg_plot": f"{src_dir}/{subject}/rhino/coreg.html",
-        }
+        },
     )
 
 
@@ -260,7 +261,7 @@ def forward_model(
             "model": model,
             "gridstep": gridstep,
             "eeg": eeg,
-        }
+        },
     )
 
 
@@ -380,7 +381,7 @@ def compute_surfaces_coregister_and_forward_model(
             "eeg": eeg,
             "fid_err": fid_err,
             "coreg_plot": f"{src_dir}/{subject}/rhino/coreg.html",
-        }
+        },
     )
 
 
@@ -399,7 +400,6 @@ def beamform(
     rank,
     spatial_resolution=None,
     reference_brain="mni",
-    save_bf_data=False,
 ):
     """Wrapper function for beamforming.
 
@@ -436,8 +436,6 @@ def beamform(
         Note that Scaled/unscaled relates to the allow_smri_scaling option in coreg.
         If allow_scaling was False, then the unscaled MRI will be the same as the scaled.
         MRI.
-    save_bf_data : bool
-        Should we save the beamformed data?
     """
     logger.info("beamforming")
 
@@ -498,12 +496,6 @@ def beamform(
         reference_brain=reference_brain,
     )
 
-    if save_bf_data:
-        # Save beamformed data
-        bf_data_file = src_dir / subject / "rhino/bf.npy"
-        logger.info(f"saving {bf_data_file}")
-        np.save(bf_data_file, bf_data_mni.T)
-
     # Save info for the report
     src_report.add_to_data(
         f"{src_dir}/{subject}/report_data.pkl",
@@ -514,7 +506,7 @@ def beamform(
             "freq_range": freq_range,
             "filter_cov_plot": f"{src_dir}/{subject}/rhino/filter_cov.png",
             "filter_svd_plot": f"{src_dir}/{subject}/rhino/filter_svd.png",
-        }
+        },
     )
 
 
@@ -532,7 +524,6 @@ def beamform_and_parcellate(
     orthogonalisation,
     spatial_resolution=None,
     reference_brain="mni",
-    save_bf_data=False,
 ):
     """Wrapper function for beamforming and parcellation.
 
@@ -573,10 +564,8 @@ def beamform_and_parcellate(
         'unscaled_mri' indicates that the reference_brain is the subject's sMRI in
             unscaled native/mri space.
         Note that Scaled/unscaled relates to the allow_smri_scaling option in coreg.
-        If allow_scaling was False, then the unscaled MRI will be the same as the scaled.
-        MRI.
-    save_bf_data : bool
-        Should we save the beamformed data?
+        If allow_scaling was False, then the unscaled MRI will be the same as the
+        scaled MRI.
     """
     logger.info("beamform_and_parcellate")
 
@@ -588,12 +577,12 @@ def beamform_and_parcellate(
     else:
         # Load preprocessed data
         data = mne.io.read_raw_fif(preproc_file, preload=True)
-    data.pick(chantypes)
+    chantype_data = data.copy().pick(chantypes)
 
     if freq_range is not None:
         # Bandpass filter
         logger.info("bandpass filtering: {}-{} Hz".format(freq_range[0], freq_range[1]))
-        data = data.filter(
+        chantype_data = chantype_data.filter(
             l_freq=freq_range[0],
             h_freq=freq_range[1],
             method="iir",
@@ -611,7 +600,7 @@ def beamform_and_parcellate(
     filters = beamforming.make_lcmv(
         subjects_dir=src_dir,
         subject=subject,
-        data=data,
+        data=chantype_data,
         chantypes=chantypes,
         weight_norm="nai",
         rank=rank,
@@ -626,7 +615,7 @@ def beamform_and_parcellate(
     # this is a wrapper call to mne's apply_lcmv function
     # the output will have had bad time segments removed
     logger.info("beamforming.apply_lcmv")
-    bf_data = beamforming.apply_lcmv(data, filters)
+    bf_data = beamforming.apply_lcmv(chantype_data, filters)
 
     if epoch_file is not None:
         bf_data = np.transpose([bf.data for bf in bf_data], axes=[1, 2, 0])
@@ -639,12 +628,6 @@ def beamform_and_parcellate(
         spatial_resolution=spatial_resolution,
         reference_brain=reference_brain,
     )
-
-    if save_bf_data:
-        # Save beamformed data
-        bf_data_file = src_dir / subject / "rhino/bf.npy"
-        logger.info(f"saving {bf_data_file}")
-        np.save(bf_data_file, bf_data_mni.T)
 
     # Parcellation
     logger.info("parcellation")
@@ -667,19 +650,21 @@ def beamform_and_parcellate(
             parcel_data, maintain_magnitudes=True
         )
 
-    # Create and save mne raw object for the parcellated data
-    parc_fif_file = src_dir / subject / "rhino/parc-raw.fif"
-    parc_raw = parcellation.convert2mne_raw(parcel_data.T, data)
-    parc_raw.save(parc_fif_file, overwrite=True)
-
-    # Save parcellated data
-    parc_data_file = src_dir / subject / "rhino/parc.npy"
-    logger.info(f"saving {parc_data_file}")
-    np.save(parc_data_file, parcel_data.T)
+    if epoch_file is None:
+        # Save parcellated data as a MNE Raw object
+        parc_fif_file = src_dir / subject / "rhino/parc-raw.fif"
+        parc_raw = parcellation.convert2mne_raw(parcel_data.T, data)
+        parc_raw.save(parc_fif_file, overwrite=True)
+    else:
+        # Save parcellated data as a MNE Epochs object
+        parc_fif_file = src_dir / subject / "rhino/parc-epo.fif"
+        parc_epo = parcellation.convert2mne_epochs(parcel_data.T, data)
+        parc_epo.save(parc_fif_file, overwrite=True)
 
     # Save plots
     parcellation.plot_correlation(
-        parcel_data, filename=f"{src_dir}/{subject}/rhino/parc_corr.png",
+        parcel_data,
+        filename=f"{src_dir}/{subject}/rhino/parc_corr.png",
     )
 
     # Save info for the report
@@ -703,12 +688,12 @@ def beamform_and_parcellate(
             "parcellation_file": parcellation_file,
             "method": method,
             "orthogonalisation": orthogonalisation,
-            "parc_data_file": str(parc_data_file),
+            "parc_fif_file": str(parc_fif_file),
             "n_samples": n_samples,
             "n_parcels": n_parcels,
             "n_epochs": n_epochs,
             "parc_corr_plot": f"{src_dir}/{subject}/rhino/parc_corr.png",
-        }
+        },
     )
 
 
@@ -716,11 +701,17 @@ def beamform_and_parcellate(
 # Sign flipping wrappers
 
 
-def find_template_subject(src_dir, subjects, n_embeddings=1, standardize=True):
+def find_template_subject(
+    src_dir,
+    subjects,
+    n_embeddings=1,
+    standardize=True,
+    epoched=False,
+):
     """Function to find a good subject to align other subjects to in the sign flipping.
 
     Note, this function expects parcellated data to exist in the following location:
-    src_dir/*/rhino/parc.npy, the * here represents subject directories.
+    src_dir/*/rhino/parc-*.fif, the * here represents subject directories or 'raw' vs 'epo'.
 
     Parameters
     ----------
@@ -732,6 +723,9 @@ def find_template_subject(src_dir, subjects, n_embeddings=1, standardize=True):
         Number of time-delay embeddings that we will use (if we are doing any).
     standardize : bool
         Should we standardize (z-transform) the data before sign flipping?
+    epoched : bool
+        Are we performing sign flipping on parc-raw.fif (epoched=False) or
+        parc-epo.fif files (epoched=True)?
 
     Returns
     -------
@@ -743,7 +737,10 @@ def find_template_subject(src_dir, subjects, n_embeddings=1, standardize=True):
     # Get the parcellated data files
     parc_files = []
     for subject in subjects:
-        parc_file = op.join(src_dir, subject, "rhino", "parc.npy")
+        if epoched:
+            parc_file = op.join(src_dir, subject, "rhino", "parc-epo.fif")
+        else:
+            parc_file = op.join(src_dir, subject, "rhino", "parc-raw.fif")
         if Path(parc_file).exists():
             parc_files.append(parc_file)
         else:
@@ -780,6 +777,7 @@ def fix_sign_ambiguity(
     n_init,
     n_iter,
     max_flips,
+    epoched=False,
 ):
     """Wrapper function for fixing the dipole sign ambiguity.
 
@@ -807,6 +805,9 @@ def fix_sign_ambiguity(
         Number of sign flipping iterations per subject to perform.
     max_flips : int
         Maximum number of channels to flip in an iteration.
+    epoched : bool
+        Are we performing sign flipping on parc-raw.fif (epoched=False) or
+        parc-epo.fif files (epoched=True)?
     """
     logger.info("fix_sign_ambiguity")
     logger.info(f"using template: {template}")
@@ -814,7 +815,10 @@ def fix_sign_ambiguity(
     # Get path to the parcellated data file for this subject and the template
     parc_files = []
     for sub in [subject, template]:
-        parc_file = op.join(src_dir, str(sub), "rhino", "parc.npy")
+        if epoched:
+            parc_file = op.join(src_dir, sub, "rhino", "parc-epo.fif")
+        else:
+            parc_file = op.join(src_dir, sub, "rhino", "parc-raw.fif")
         if not Path(parc_file).exists():
             raise ValueError(f"{parc_file} not found")
         parc_files.append(parc_file)
@@ -836,7 +840,7 @@ def fix_sign_ambiguity(
     )
 
     # Apply flips to the parcellated data
-    sign_flipping.apply_flips(src_dir, subject, flips)
+    sign_flipping.apply_flips(src_dir, subject, flips, epoched=epoched)
 
     # Save info for the report
     src_report.add_to_data(
@@ -850,6 +854,5 @@ def fix_sign_ambiguity(
             "n_iter": n_iter,
             "max_flips": max_flips,
             "metrics": metrics,
-        }
+        },
     )
-

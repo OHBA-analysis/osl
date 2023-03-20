@@ -7,7 +7,10 @@
 
 import os.path as op
 from pathlib import Path
+from time import strftime
+from datetime import datetime
 
+import mne
 import numpy as np
 import nibabel as nib
 import matplotlib.pyplot as plt
@@ -16,12 +19,10 @@ from scipy.spatial import KDTree
 from nilearn.plotting import plot_markers
 from mpl_toolkits.axes_grid1 import make_axes_locatable
 
+import osl
 import osl.source_recon.rhino.utils as rhino_utils
 from osl.utils import soft_import
 from osl.utils.logger import log_or_print
-
-from mne import create_info
-import mne.io
 
 
 def load_parcellation(parcellation_file):
@@ -281,7 +282,6 @@ def _get_parcel_timeseries(
 
         # perform PCA on each parcel and select 1st PC scores to represent parcel
         for pp in range(nparcels):
-
             if any(parcellation_asmatrix[:, pp]):  # non-zero
                 parcel_data = voxel_timeseries_reshaped[
                     parcellation_asmatrix[:, pp] > 0, :
@@ -433,6 +433,181 @@ def _resample_parcellation(
     return parcellation_asmatrix
 
 
+def symmetric_orthogonalise(
+    timeseries, maintain_magnitudes=False, compute_weights=False
+):
+    """Returns orthonormal matrix L which is closest to A, as measured by the
+    Frobenius norm of (L-A). The orthogonal matrix is constructed from a singular
+    value decomposition of A.
+
+    If maintain_magnitudes is True, returns the orthogonal matrix L, whose columns
+    have the same magnitude as the respective columns of A, and which is closest to
+    A, as measured by the Frobenius norm of (L-A)
+
+    Parameters
+    ----------
+    timeseries : numpy.ndarray
+        (nparcels x ntpts) or (nparcels x ntpts x ntrials) data to orthoganlise.
+        In the latter case, the ntpts and ntrials dimensions are concatenated.
+    maintain_magnitudes : bool
+    compute_weights : bool
+
+    Returns
+    -------
+    ortho_timeseries : numpy.ndarray
+        (nparcels x ntpts) or (nparcels x ntpts x ntrials) orthoganalised data
+    weights : numpy.ndarray
+        (optional output depending on compute_weights flag)
+        weighting matrix such that, ortho_timeseries = timeseries * weights
+
+    Notes
+    -----
+    Colclough, G. L., Brookes, M., Smith, S. M. and Woolrich, M. W.,
+    "A symmetric multivariate leakage correction for MEG connectomes,"
+    NeuroImage 117, pp. 439-448 (2015)
+    """
+
+    if len(timeseries.shape) == 2:
+        # add dim for trials:
+        timeseries = np.expand_dims(timeseries, axis=2)
+        added_dim = True
+    else:
+        added_dim = False
+
+    nparcels = timeseries.shape[0]
+    ntpts = timeseries.shape[1]
+    ntrials = timeseries.shape[2]
+    compute_weights = False
+
+    # combine the trials and time dimensions together,
+    # we will re-separate them after the parcel timeseries are computed
+    timeseries = np.transpose(np.reshape(timeseries, (nparcels, ntpts * ntrials)))
+
+    if maintain_magnitudes:
+        D = np.diag(np.sqrt(np.diag(np.transpose(timeseries) @ timeseries)))
+        timeseries = timeseries @ D
+
+    [U, S, V] = np.linalg.svd(timeseries, full_matrices=False)
+
+    # we need to check that we have sufficient rank
+    tol = max(timeseries.shape) * S[0] * np.finfo(type(timeseries[0, 0])).eps
+    r = sum(S > tol)
+    full_rank = r >= timeseries.shape[1]
+
+    if full_rank:
+        # polar factors of A
+        ortho_timeseries = U @ np.conjugate(V)
+    else:
+        raise ValueError(
+            "Not full rank, rank required is {}, but rank is only {}".format(
+                timeseries.shape[1], r
+            )
+        )
+
+    if compute_weights:
+        # weights are a weighting matrix such that,
+        # ortho_timeseries = timeseries * weights
+        weights = np.transpose(V) @ np.diag(1.0 / S) @ np.conjugate(V)
+
+    if maintain_magnitudes:
+        # scale result
+        ortho_timeseries = ortho_timeseries @ D
+
+        if compute_weights:
+            # weights are a weighting matrix such that,
+            # ortho_timeseries = timeseries * weights
+            weights = D @ weights @ D
+
+    # Re-separate the trials and time dimensions
+    ortho_timeseries = np.reshape(
+        np.transpose(ortho_timeseries), (nparcels, ntpts, ntrials)
+    )
+
+    if added_dim:
+        ortho_timeseries = np.squeeze(ortho_timeseries, axis=2)
+
+    if compute_weights:
+        return ortho_timeseries, weights
+    else:
+        return ortho_timeseries
+
+
+def parcel_centers(parcellation_file):
+    """Get coordinates of parcel centers.
+
+    Parameters
+    ----------
+    parcellation_file : str
+        Path to parcellation file.
+
+    Returns
+    -------
+    coords : np.ndarray
+        Coordinates of each parcel. Shape is (n_parcels, 3).
+    """
+    parcellation = load_parcellation(parcellation_file)
+    n_parcels = parcellation.shape[3]
+    data = parcellation.get_fdata()
+    nonzero = [np.nonzero(data[..., i]) for i in range(n_parcels)]
+    nonzero_coords = [
+        nib.affines.apply_affine(parcellation.affine, np.array(nz).T) for nz in nonzero
+    ]
+    weights = [data[..., i][nz] for i, nz in enumerate(nonzero)]
+    coords = np.array(
+        [np.average(c, weights=w, axis=0) for c, w in zip(nonzero_coords, weights)]
+    )
+    return coords
+
+
+def plot_parcellation(parcellation_file, **kwargs):
+    """Plots a parcellation.
+
+    Parameters
+    ----------
+    parcellation_file : str
+        Path to parcellation file.
+    kwargs : keyword arguments
+        Keyword arguments to pass to nilearn.plotting.plot_markers.
+    """
+    parc_centers = parcel_centers(parcellation_file)
+    n_parcels = parc_centers.shape[0]
+    return plot_markers(
+        np.zeros(n_parcels),
+        parc_centers,
+        colorbar=False,
+        node_cmap="binary_r",
+        **kwargs,
+    )
+
+
+def plot_correlation(parc_ts, filename):
+    """Plot correlation between parcel time courses.
+
+    Parameters
+    ----------
+    parc_ts : np.ndarray
+        (n_samples, n_parcels) time series.
+    filename : str
+        Output filename.
+    """
+    if parc_ts.ndim == 3:
+        shape = parc_ts.shape
+        parc_ts = parc_ts.reshape(shape[0], shape[1] * shape[2])
+    corr = np.corrcoef(parc_ts)
+    np.fill_diagonal(corr, 0)
+    fig, ax = plt.subplots()
+    divider = make_axes_locatable(ax)
+    cax = divider.append_axes("right", size="5%", pad=0.05)
+    im = ax.imshow(corr)
+    ax.set_title("Correlation")
+    ax.set_xlabel("Parcel")
+    ax.set_ylabel("Parcel")
+    fig.colorbar(im, cax=cax, orientation="vertical")
+    log_or_print(f"saving {filename}")
+    fig.savefig(filename)
+    plt.close(fig)
+
+
 def _parcel_timeseries2nii(
     parcellation_file,
     parcel_timeseries_data,
@@ -565,198 +740,8 @@ def _parcel_timeseries2nii(
     return out_nii_fname
 
 
-def symmetric_orthogonalise(
-    timeseries, maintain_magnitudes=False, compute_weights=False
-):
-    """Returns orthonormal matrix L which is closest to A, as measured by the
-    Frobenius norm of (L-A). The orthogonal matrix is constructed from a singular
-    value decomposition of A.
-
-    If maintain_magnitudes is True, returns the orthogonal matrix L, whose columns
-    have the same magnitude as the respective columns of A, and which is closest to
-    A, as measured by the Frobenius norm of (L-A)
-
-    Parameters
-    ----------
-    timeseries : numpy.ndarray
-        (nparcels x ntpts) or (nparcels x ntpts x ntrials) data to orthoganlise.
-        In the latter case, the ntpts and ntrials dimensions are concatenated.
-    maintain_magnitudes : bool
-    compute_weights : bool
-
-    Returns
-    -------
-    ortho_timeseries : numpy.ndarray
-        (nparcels x ntpts) or (nparcels x ntpts x ntrials) orthoganalised data
-    weights : numpy.ndarray
-        (optional output depending on compute_weights flag)
-        weighting matrix such that, ortho_timeseries = timeseries * weights
-
-    Reference
-    ---------
-    Colclough, G. L., Brookes, M., Smith, S. M. and Woolrich, M. W.,
-    "A symmetric multivariate leakage correction for MEG connectomes,"
-    NeuroImage 117, pp. 439-448 (2015)
-    """
-
-    if len(timeseries.shape) == 2:
-        # add dim for trials:
-        timeseries = np.expand_dims(timeseries, axis=2)
-        added_dim = True
-    else:
-        added_dim = False
-
-    nparcels = timeseries.shape[0]
-    ntpts = timeseries.shape[1]
-    ntrials = timeseries.shape[2]
-    compute_weights = False
-
-    # combine the trials and time dimensions together,
-    # we will re-separate them after the parcel timeseries are computed
-    timeseries = np.transpose(np.reshape(timeseries, (nparcels, ntpts * ntrials)))
-
-    if maintain_magnitudes:
-        D = np.diag(np.sqrt(np.diag(np.transpose(timeseries) @ timeseries)))
-        timeseries = timeseries @ D
-
-    [U, S, V] = np.linalg.svd(timeseries, full_matrices=False)
-
-    # we need to check that we have sufficient rank
-    tol = max(timeseries.shape) * S[0] * np.finfo(type(timeseries[0, 0])).eps
-    r = sum(S > tol)
-    full_rank = r >= timeseries.shape[1]
-
-    if full_rank:
-        # polar factors of A
-        ortho_timeseries = U @ np.conjugate(V)
-    else:
-        raise ValueError(
-            "Not full rank, rank required is {}, but rank is only {}".format(
-                timeseries.shape[1], r
-            )
-        )
-
-    if compute_weights:
-        # weights are a weighting matrix such that,
-        # ortho_timeseries = timeseries * weights
-        weights = np.transpose(V) @ np.diag(1.0 / S) @ np.conjugate(V)
-
-    if maintain_magnitudes:
-        # scale result
-        ortho_timeseries = ortho_timeseries @ D
-
-        if compute_weights:
-            # weights are a weighting matrix such that,
-            # ortho_timeseries = timeseries * weights
-            weights = D @ weights @ D
-
-    # Re-separate the trials and time dimensions
-    ortho_timeseries = np.reshape(
-        np.transpose(ortho_timeseries), (nparcels, ntpts, ntrials)
-    )
-
-    if added_dim:
-        ortho_timeseries = np.squeeze(ortho_timeseries, axis=2)
-
-    if compute_weights:
-        return ortho_timeseries, weights
-    else:
-        return ortho_timeseries
-
-
-def _save_parcel_timeseries(ts, fname):
-    """Saves passed in dictionary, ts, as a hd5 file."""
-    dd = soft_import("deepdish")
-    dd.io.save(fname, ts)
-
-
-def _load_parcel_timeseries(fname):
-    """Load passed in hd5 file."""
-    dd = soft_import("deepdish")
-    return dd.io.load(fname)
-
-
-def parcel_centers(parcellation_file):
-    """Get coordinates of parcel centers.
-
-    Parameters
-    ----------
-    parcellation_file : str
-        Path to parcellation file.
-
-    Returns
-    -------
-    coords : np.ndarray
-        Coordinates of each parcel. Shape is (n_parcels, 3).
-    """
-    parcellation = load_parcellation(parcellation_file)
-    n_parcels = parcellation.shape[3]
-    data = parcellation.get_fdata()
-    nonzero = [np.nonzero(data[..., i]) for i in range(n_parcels)]
-    nonzero_coords = [
-        nib.affines.apply_affine(parcellation.affine, np.array(nz).T) for nz in nonzero
-    ]
-    weights = [data[..., i][nz] for i, nz in enumerate(nonzero)]
-    coords = np.array(
-        [
-            np.average(c, weights=w, axis=0)
-            for c, w in zip(nonzero_coords, weights)
-        ]
-    )
-    return coords
-
-
-def plot_parcellation(parcellation_file, **kwargs):
-    """Plots a parcellation.
-
-    Parameters
-    ----------
-    parcellation_file : str
-        Path to parcellation file.
-    kwargs : keyword arguments
-        Keyword arguments to pass to nilearn.plotting.plot_markers.
-    """
-    parc_centers = parcel_centers(parcellation_file)
-    n_parcels = parc_centers.shape[0]
-    return plot_markers(
-        np.zeros(n_parcels),
-        parc_centers,
-        colorbar=False,
-        node_cmap="binary_r",
-        **kwargs,
-    )
-
-
-def plot_correlation(parc_ts, filename):
-    """Plot correlation between parcel time courses.
-
-    Parameters
-    ----------
-    parc_ts : np.ndarray
-        (n_samples, n_parcels) time series.
-    filename : str
-        Output filename.
-    """
-    if parc_ts.ndim == 3:
-        shape = parc_ts.shape
-        parc_ts = parc_ts.reshape(shape[0], shape[1] * shape[2])
-    corr = np.corrcoef(parc_ts)
-    np.fill_diagonal(corr, 0)
-    fig, ax = plt.subplots()
-    divider = make_axes_locatable(ax)
-    cax = divider.append_axes("right", size="5%", pad=0.05)
-    im = ax.imshow(corr)
-    ax.set_title("Correlation")
-    ax.set_xlabel("Parcel")
-    ax.set_ylabel("Parcel")
-    fig.colorbar(im, cax=cax, orientation="vertical")
-    log_or_print(f"saving {filename}")
-    fig.savefig(filename)
-    plt.close(fig)
-
-
 def convert2niftii(parc_data, parcellation_file, mask_file, tres=1, tmin=0):
-    '''Convert parcellation to NIfTI.
+    """Convert parcellation to NIfTI.
 
     Takes (nparcels) or (nvolumes x nparcels) parc_data and returns
     (xvoxels x yvoxels x zvoxels x nvolumes) niftii file containing
@@ -780,7 +765,7 @@ def convert2niftii(parc_data, parcellation_file, mask_file, tres=1, tmin=0):
     nii : nib.Nifti1Image
         (xvoxels x yvoxels x zvoxels x nvolumes) nib.Nifti1Image
         containing parc_data on a volumetric grid.
-    '''
+    """
 
     if len(parc_data.shape) == 1:
         parc_data = np.reshape(parc_data, [1, -1])
@@ -835,98 +820,120 @@ def convert2niftii(parc_data, parcellation_file, mask_file, tres=1, tmin=0):
     )
     nii = nib.Nifti1Image(spatial_map, mask.affine, mask.header)
 
-    nii.header['pixdim'][4] = tres
-    nii.header['toffset'] = tmin
+    nii.header["pixdim"][4] = tres
+    nii.header["toffset"] = tmin
 
     return nii
 
 
-def convert2mne_raw(
-    parc_data, raw, parcel_names=None, copy_annotations=True, reinsert_bads=True
-):
-    '''Create and returns an MNE raw object that contains parcellated data.
+def convert2mne_raw(parc_data, raw, parcel_names=None):
+    """Create and returns an MNE raw object that contains parcellated data.
 
     Parameters
     ----------
     parc_data : np.ndarray
         ntpts x nparcels parcel data
-    raw: mne.io.Raw
+    raw : mne.Raw
         mne.io.raw object that produced parc_data via source recon and parcellation.
         Info such as timings and bad segments will be copied from this to parc_raw.
-    parcel_names: list(str)
+    parcel_names : list of str
         List of strings indicating names of parcels.
-        If none then names are set to be 0 to n_parcels-1
-    reinsert_bads: bool
-        Do we put back in bad segments (with the values set to zero)?
-        This assumes that the bad segments have been previously removed from the passed
-        in parc_data, using the annotations in raw.
-        It is recommended that if reinsert_bads is True then copy_annotations should
-        be True also.
-    copy_annotations: bool
-        Do we copy annotations from raw to parc_raw?
+        If None then names are set to be 0 to n_parcels-1.
 
     Returns
     -------
-    parc_raw: mne.io.Raw
-        Generated parcellation in mne.io.raw format
-
-    Notes
-    -----
-
-    Example 1:
-    If parcel_ts has not had bad segments removed (parc_raw will then also not have bad segments removed):
-        parc_raw = parcellation.convert2mne_raw(parcel_ts, raw, reinsert_bads=False, copy_annotations=True)
-
-    Example 2:
-    If parcel_ts has had bad segments removed, and you want them also omitted from parc_raw:
-        parc_raw = parcellation.convert2mne_raw(parcel_ts, raw, reinsert_bads=False, copy_annotations=False)
-
-    Example 3:
-    If parcel_ts has had bad segments removed, but you want to include them in parc_raw
-    (this is the most common scenario as bad segments are often omitted from the
-    calculation of parcel time courses):
-        parc_raw = parcellation.convert2mne_raw(parcel_ts, raw, reinsert_bads=True, copy_annotations=True)
-
-    '''
-
-    # Load fif file info
+    parc_raw : mne.Raw
+        Generated parcellation in mne.Raw format.
+    """
+    # Get Info object from the sensor-level Raw object
     info = raw.info
 
-    if reinsert_bads:
-        # parc_data is missing bad channels,
-        # insert these back in before creating new mne object
+    # Create Info object
+    if parcel_names is None:
+        parcel_names = [str(i) for i in range(parc_data.shape[-1])]
+    parc_info = mne.create_info(
+        ch_names=parcel_names, ch_types="misc", sfreq=info["sfreq"]
+    )
 
-        # Get time indices excluding bad segments from raw
-        _, times = raw.get_data(reject_by_annotation="omit", return_times=True)
-        inds = raw.time_as_index(times)
+    # Create Raw object
+    parc_raw = mne.io.RawArray(parc_data.T, parc_info)
 
-        new_parc_data = np.zeros([len(raw.times), parc_data.shape[1]])
+    # Copy timing info
+    parc_raw.set_meas_date(raw.info["meas_date"])
+    parc_raw.__dict__["_first_samps"] = raw.__dict__["_first_samps"]
+    parc_raw.__dict__["_last_samps"] = raw.__dict__["_last_samps"]
+    parc_raw.__dict__["_cropped_samp"] = raw.__dict__["_cropped_samp"]
 
-        new_parc_data[inds, :] = parc_data
+    # Copy annotations from raw
+    parc_raw.set_annotations(raw._annotations)
 
-    else:
-        new_parc_data = parc_data
+    # Add stim channel to the parc data
+    if "stim" in raw:
+        stim_raw = raw.copy().pick_types(stim=True)
+        stim_data = stim_raw.get_data()
+        stim_info = mne.create_info(
+            stim_raw.ch_names, raw.info["sfreq"], ["stim"] * stim_data.shape[0]
+        )
+        stim_raw = mne.io.RawArray(stim_data, stim_info)
+        parc_raw.add_channels([stim_raw], force_update_info=True)
+
+    # Add OSL processing info to the description
+    parc_raw.info["description"] = raw.info["description"]
+    src_info = (
+        "\n\nOSL BATCH SOURCE RECONSTRUCTION APPLIED ON "
+        + f"{datetime.today().strftime('%d/%m/%Y %H:%M:%S')} \n"
+        + f"VERSION: {osl.__version__}"
+    )
+    parc_raw.info["description"] += src_info
+
+    return parc_raw
+
+
+def convert2mne_epochs(parc_data, epochs, parcel_names=None):
+    """Create and returns an MNE Epochs object that contains parcellated data.
+
+    Parameters
+    ----------
+    parc_data : np.ndarray
+        epochs x ntpts x nparcels parcel data
+    epochs : mne.Epochs
+        mne.io.raw object that produced parc_data via source recon and parcellation.
+        Info such as timings and bad segments will be copied from this to parc_raw.
+    parcel_names : list(str)
+        List of strings indicating names of parcels.
+        If None then names are set to be 0 to n_parcels-1.
+
+    Returns
+    -------
+    parc_epo : mne.Epochs
+        Generated parcellation in mne.Epochs format.
+    """
+
+    # Epochs info
+    info = epochs.info
 
     # Create parc info
     if parcel_names is None:
-        parcel_names = [str(x) for x in np.arange(parc_data.shape[1]).tolist()]
+        parcel_names = [str(i) for i in range(parc_data.shape[-1])]
 
-    parc_info = create_info(ch_names=parcel_names, ch_types='misc', sfreq=info['sfreq'])
+    parc_info = mne.create_info(
+        ch_names=parcel_names, ch_types="misc", sfreq=info["sfreq"],
+    )
+    parc_events = epochs.events
 
-    # Put data and info together
-    parc_raw = mne.io.RawArray(np.transpose(new_parc_data), parc_info)
+    # Parcellated data Epochs object
+    parc_epo = mne.EpochsArray(np.swapaxes(parc_data, 1, 2), parc_info, parc_events)
 
-    # Copy timing info
-    parc_raw.set_meas_date(raw.info['meas_date'])
-    parc_raw.__dict__['_first_samps'] = raw.__dict__['_first_samps']
-    parc_raw.__dict__['_last_samps'] = raw.__dict__['_last_samps']
-    parc_raw.__dict__['_cropped_samp'] = raw.__dict__['_cropped_samp']
+    # Add OSL processing info to the description
+    parc_epo.info["description"] = epoch.info["description"]
+    src_info = (
+        "\n\nOSL BATCH SOURCE RECONSTRUCTION APPLIED ON "
+        + f"{datetime.today().strftime('%d/%m/%Y %H:%M:%S')} \n"
+        + f"VERSION: {osl.__version__}"
+    )
+    parc_epo.info["description"] += src_info
 
-    if copy_annotations:
-        # copy annotations from raw
-        parc_raw.set_annotations(raw._annotations)
-
-    return parc_raw
+    return parc_epo
 
 
 def spatial_dist_adjacency(parcellation_file, dist, verbose=False):

@@ -125,7 +125,7 @@ def compute_surfaces(
         (with .nii.gz extension).
         This is assumed to have a valid sform, i.e. the sform code
         needs to be 4 or 1, and the sform should transform from voxel
-        indices to voxel coords in mm. The axis sform uses to do this
+        indices to voxel coords in mm. The axis sform used to do this
         will be the native/sMRI axis used throughout rhino. The qform
         will be ignored.
     subjects_dir : string

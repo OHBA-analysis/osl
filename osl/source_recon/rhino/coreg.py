@@ -29,7 +29,7 @@ from mne.transforms import (
     invert_transform,
 )
 from mne.forward import _create_meg_coils
-from mne.io import _loc_to_coil_trans, read_info, read_raw
+from mne.io import _loc_to_coil_trans, read_info, read_raw, RawArray
 from mne.io.pick import pick_types
 
 import osl.source_recon.rhino.utils as rhino_utils
@@ -61,7 +61,7 @@ def get_coreg_filenames(subjects_dir, subject):
 
     filenames = {
         "basedir": basedir,
-        "fif_file": op.join(basedir, "data-raw.fif"),
+        "info_fif_file": op.join(basedir, "info-raw.fif"),
         "smri_file": op.join(basedir, "scaled_smri.nii.gz"),
         "head_scaledmri_t_file": op.join(basedir, "head_scaledmri-trans.fif"),
         "head_mri_t_file": op.join(basedir, "head_mri-trans.fif"),
@@ -228,6 +228,7 @@ def coreg(
         raise ValueError(
             "Invalid fif file, needs to be a *raw.fif or a *epochs.fif file"
         )
+    info = raw.info
 
     if use_dev_ctf_t:
         dev_ctf_t = raw.info["dev_ctf_t"]
@@ -238,7 +239,8 @@ def coreg(
             dev_head_t, _ = _get_trans(raw.info["dev_head_t"], "meg", "head")
             dev_head_t["trans"] = dev_ctf_t["trans"]
 
-    raw.save(filenames["fif_file"], overwrite=True)
+    raw = RawArray(np.zeros([len(info["ch_names"]), 1]), info)
+    raw.save(filenames["info_fif_file"], overwrite=True)
 
     if already_coregistered:
 
@@ -582,9 +584,9 @@ def coreg_metrics(subjects_dir, subject):
     polhemus_nasion_file = coreg_filenames["polhemus_nasion_file"]
     polhemus_rpa_file = coreg_filenames["polhemus_rpa_file"]
     polhemus_lpa_file = coreg_filenames["polhemus_lpa_file"]
-    fif_file = coreg_filenames["fif_file"]
+    info_fif_file = coreg_filenames["info_fif_file"]
 
-    info = read_info(fif_file)
+    info = read_info(info_fif_file)
     dev_head_t, _ = _get_trans(info["dev_head_t"], "meg", "head")
     dev_head_t["trans"][0:3, -1] = dev_head_t["trans"][0:3, -1] * 1000
     head_trans = invert_transform(dev_head_t)
@@ -709,7 +711,7 @@ def coreg_display(
     polhemus_rpa_file = coreg_filenames["polhemus_rpa_file"]
     polhemus_lpa_file = coreg_filenames["polhemus_lpa_file"]
     polhemus_headshape_file = coreg_filenames["polhemus_headshape_file"]
-    fif_file = coreg_filenames["fif_file"]
+    info_fif_file = coreg_filenames["info_fif_file"]
 
     if display_outskin_with_nose:
         outskin_mesh_file = bet_outskin_plus_nose_mesh_file
@@ -723,7 +725,7 @@ def coreg_display(
     # -------------------------------------------------------------------------
     # Setup xforms
 
-    info = read_info(fif_file)
+    info = read_info(info_fif_file)
 
     mrivoxel_scaledmri_t = read_trans(mrivoxel_scaledmri_t_file)
 
@@ -1177,7 +1179,7 @@ def bem_display(
     head_scaledmri_t_file = filenames["head_scaledmri_t_file"]
     mrivoxel_scaledmri_t_file = filenames["mrivoxel_scaledmri_t_file"]
 
-    fif_file = filenames["fif_file"]
+    info_fif_file = filenames["info_fif_file"]
 
     if display_outskin_with_nose:
         outskin_mesh_file = bet_outskin_plus_nose_mesh_file
@@ -1198,7 +1200,7 @@ def bem_display(
     # -------------------------------------------------------------------------
     # Setup xforms
 
-    info = read_info(fif_file)
+    info = read_info(info_fif_file)
 
     mrivoxel_scaledmri_t = read_trans(mrivoxel_scaledmri_t_file)
 

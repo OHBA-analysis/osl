@@ -13,9 +13,9 @@ from osl.source_recon import find_template_subject, run_src_batch
 src_dir = "/ohba/pi/knobre/cgohil/covid/src"
 
 # Subjects to sign flip
-# We create a list by looking for subjects that have a rhino/parc.npy file
+# We create a list by looking for subjects that have a rhino/parc-raw.fif file
 subjects = []
-for path in sorted(glob(src_dir + "/*/rhino/parc.npy")):
+for path in sorted(glob(src_dir + "/*/rhino/parc-raw.fif")):
     subject = path.split("/")[-3]
     subjects.append(subject)
 

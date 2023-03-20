@@ -74,9 +74,32 @@ def detect_badsegments(
 ):
     """Set bad segments in MNE object.
 
-    Note that with CTF data, mne.pick_types will return:
-    ~274 axial grads (as magnetometers) if {picks: 'mag', ref_meg: False}
-    ~28 reference axial grads if {picks: 'grad'}
+    Parameters
+    ----------
+    raw : mne.Raw
+        MNE raw object.
+    picks : str
+        Channel types to pick. Note that with CTF data, mne.pick_types will return:
+        ~274 axial grads (as magnetometers) if {picks: 'mag', ref_meg: False}
+        ~28 reference axial grads if {picks: 'grad'}.
+    segment_len : int
+        Window length to divide the data into (non-overlapping).
+    significance_level : float
+        Significance level for detecting outliers. Must be between 0-1.
+    metric : str
+        Metric to use. Could be 'std', 'var' or 'kurtosis'.
+    ref_meg : str
+        ref_meg argument to pass with mne.pick_types().
+    mode : str
+        Should be 'diff' or None. When mode='diff' we calculate a difference time
+        series before detecting bad segments.
+    detect_zeros : bool
+        Should we detect segments of zeros?
+
+    Returns
+    -------
+    raw : mne.Raw
+        Raw object with bad segments annotated.
     """
 
     gesd_args = {'alpha': significance_level}
@@ -113,7 +136,7 @@ def detect_badsegments(
         metric_func = np.var
     else:
         def kurtosis(inputs):
-            return stats.kurtosis(inputs, axis = None)
+            return stats.kurtosis(inputs, axis=None)
         metric_func = kurtosis
 
     bdinds = sails.utils.detect_artefacts(
@@ -163,9 +186,23 @@ def detect_badsegments(
 def detect_badchannels(raw, picks, ref_meg="auto", significance_level=0.05):
     """Set bad channels in MNE object.
 
-    Note that with CTF data, mne.pick_types will return:
-    ~274 axial grads (as magnetometers) if {picks: 'mag', ref_meg: False}
-    ~28 reference axial grads if {picks: 'grad'}
+    Parameters
+    ----------
+    raw : mne.Raw
+        MNE raw object.
+    picks : str
+        Channel types to pick. Note that with CTF data, mne.pick_types will return:
+        ~274 axial grads (as magnetometers) if {picks: 'mag', ref_meg: False}
+        ~28 reference axial grads if {picks: 'grad'}.
+    ref_meg : str
+        ref_meg argument to pass with mne.pick_types().
+    significance_level : float
+        Significance level for detecting outliers. Must be between 0-1.
+
+    Returns
+    -------
+    raw : mne.Raw
+        MNE Raw object with bad channels marked.
     """
 
     gesd_args = {'alpha': significance_level}
@@ -215,9 +252,36 @@ def drop_bad_epochs(
 ):
     """Drop bad epochs in MNE object.
 
-    Note that with CTF data, mne.pick_types will return:
-    ~274 axial grads (as magnetometers) if {picks: 'mag', ref_meg: False}
-    ~28 reference axial grads if {picks: 'grad'}
+    Parameters
+    ----------
+    epochs : mne.Epochs
+        MNE Epochs object.
+    picks : str
+        Channel types to pick. Note that with CTF data, mne.pick_types will return:
+        ~274 axial grads (as magnetometers) if {picks: 'mag', ref_meg: False}
+        ~28 reference axial grads if {picks: 'grad'}.
+    significance_level : float
+        Significance level for detecting outliers. Must be between 0-1.
+    max_percentage : float
+        Maximum fraction of the epochs to drop. Should be between 0-1.
+    outlier_side : int
+        Specify sidedness of the test:
+
+       - outlier_side = -1 -> outliers are all smaller
+       - outlier_side = 0  -> outliers could be small/negative or large/positive (default)
+       - outlier_side = 1  -> outliers are all larger
+    metric : str
+        Metric to use. Could be 'std', 'var' or 'kurtosis'.
+    ref_meg : str
+        ref_meg argument to pass with mne.pick_types().
+    mode : str
+        Should be 'diff' or None. When mode='diff' we calculate a difference time
+        series before detecting bad segments.
+
+    Returns
+    -------
+    epochs : mne.Epochs
+        MNE Epochs object with bad epoches marked.
     """
 
     gesd_args = {
