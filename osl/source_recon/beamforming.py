@@ -25,6 +25,7 @@ from mne.minimum_norm.inverse import _check_depth, _prepare_forward, _get_vertno
 from mne.source_estimate import _get_src_type
 from mne.forward import _subject_from_forward
 from mne.forward.forward import is_fixed_orient
+from mne.beamformer import read_beamformer
 from mne.beamformer._lcmv import _apply_lcmv
 from mne.beamformer._compute_beamformer import (
     _reduce_leadfield_rank,
@@ -1104,3 +1105,104 @@ def _prepare_beamformer_input(
     proj, _, _ = make_projector(info_picked["projs"], info_picked["ch_names"])
 
     return is_free_ori, info_picked, proj, vertno, gain, whitener, nn, orient_std
+
+
+def voxel_timeseries(
+    subjects_dir,
+    subject,
+    preproc_file,
+    chantypes,
+    freq_range=None,
+    spatial_resolution=None,
+    reference_brain="mni",
+    reject_by_annotations=None,
+):
+    """Get the voxel time series of beamformed data.
+
+    Parameters
+    ----------
+    subjects_dir : string
+        Directory to find RHINO subject directories in.
+    subject : string
+        Subject name directory to find RHINO fwd model file in.
+    preproc_file : str
+        Path to the preprocessed fif file.
+    chantypes : list of str
+        Channel types to use in beamforming.
+    freq_range : list
+        Lower and upper band to bandpass filter before beamforming. If None,
+        no filtering is done.
+    spatial_resolution : int
+        Resolution for beamforming to use for the reference brain in mm
+        (must be an integer, or will be cast to nearest int)
+        If None, then the gridstep used in coreg_filenames['forward_model_file']
+        is used.
+    reference_brain : string
+        'mni' indicates that the reference_brain is the stdbrain in MNI space
+        'mri' indicates that the reference_brain is the subject's sMRI in
+            the scaled native/mri space. "
+        'unscaled_mri' indicates that the reference_brain is the subject's sMRI in
+            unscaled native/mri space.
+        Note that Scaled/unscaled relates to the allow_smri_scaling option in coreg.
+        If allow_scaling was False, then the unscaled MRI will be the same as the
+        scaled MRI.
+    reject_by_annotations : str
+        Argument passed to .get_data() if the preproc file contains an MNE
+        Raw object.
+
+    Returns
+    -------
+    voxel_data : np.ndarray
+        Voxel time series in (voxels, time) format.
+    voxel_coords : np.ndarray
+        Voxel coordinates in MNI space.
+    """
+
+    # Load sensor data
+    if "raw.fif" in preproc_file:
+        # Load preprocessed data
+        data = mne.io.read_raw_fif(preproc_file, preload=True)
+    elif "epo.fif" in preproc_file:
+        # Load epoched data
+        data = mne.read_epochs(preproc_file, preload=True)
+    else:
+        raise ValueError("fif file must end in 'raw.fif' or 'epo.fif'.")
+
+    log_or_print(f"using chantypes: {chantypes}")
+    if isinstance(chantypes, str):
+        chantypes = [chantypes]
+    data.pick(chantypes)
+
+    # Bandpass filter
+    if freq_range is not None:
+        log_or_print(f"bandpass filtering: {freq_range}")
+        data = data.filter(
+            l_freq=freq_range[0],
+            h_freq=freq_range[1],
+            method="iir",
+            iir_params={"order": 5, "ftype": "butter"},
+        )
+
+    # Load the beamformer
+    filters_file = f"{subjects_dir}/{subject}/rhino/filters-lcmv.h5"
+    log_or_print(f"loading {filters_file}")
+    filters = read_beamformer(filters_file)
+
+    # Apply the beamformer
+    log_or_print("applying beamformer")
+    bf_data = apply_lcmv(data, filters, reject_by_annotations)
+
+    # Transform to MNI space
+    if "epo.fif" in preproc_file:
+        bf_data = np.transpose([bf.data for bf in bf_data], axes=[1, 2, 0])
+    else:
+        bf_data = bf_data.data
+    voxel_timeseries, _, voxel_coords, _ = transform_recon_timeseries(
+        subjects_dir=subjects_dir,
+        subject=subject,
+        recon_timeseries=bf_data,
+        spatial_resolution=spatial_resolution,
+        reference_brain=reference_brain,
+    )
+
+    return voxel_timeseries, voxel_coords

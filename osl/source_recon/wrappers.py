@@ -564,8 +564,8 @@ def beamform_and_parcellate(
         'unscaled_mri' indicates that the reference_brain is the subject's sMRI in
             unscaled native/mri space.
         Note that Scaled/unscaled relates to the allow_smri_scaling option in coreg.
-        If allow_scaling was False, then the unscaled MRI will be the same as the scaled.
-        MRI.
+        If allow_scaling was False, then the unscaled MRI will be the same as the
+        scaled MRI.
     """
     logger.info("beamform_and_parcellate")
 
