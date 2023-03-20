@@ -877,14 +877,8 @@ def convert2mne_raw(parc_data, raw, parcel_names=None):
         stim_raw = mne.io.RawArray(stim_data, stim_info)
         parc_raw.add_channels([stim_raw], force_update_info=True)
 
-    # Add OSL processing info to the description
+    # Copy the description from the sensor-level Raw object
     parc_raw.info["description"] = raw.info["description"]
-    src_info = (
-        "\n\nOSL BATCH SOURCE RECONSTRUCTION APPLIED ON "
-        + f"{datetime.today().strftime('%d/%m/%Y %H:%M:%S')} \n"
-        + f"VERSION: {osl.__version__}"
-    )
-    parc_raw.info["description"] += src_info
 
     return parc_raw
 
@@ -924,14 +918,8 @@ def convert2mne_epochs(parc_data, epochs, parcel_names=None):
     # Parcellated data Epochs object
     parc_epo = mne.EpochsArray(np.swapaxes(parc_data, 1, 2), parc_info, parc_events)
 
-    # Add OSL processing info to the description
-    parc_epo.info["description"] = epoch.info["description"]
-    src_info = (
-        "\n\nOSL BATCH SOURCE RECONSTRUCTION APPLIED ON "
-        + f"{datetime.today().strftime('%d/%m/%Y %H:%M:%S')} \n"
-        + f"VERSION: {osl.__version__}"
-    )
-    parc_epo.info["description"] += src_info
+    # Copy the description from the sensor-level Epochs object
+    parc_epo.info["description"] = epochs.info["description"]
 
     return parc_epo
 

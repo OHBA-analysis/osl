@@ -138,14 +138,17 @@ def load_covariances(
     for i in iterator:
         # Load data
         if loader is not None:
+            # Use the loader that has been passed
             x = loader(parc_files[i])
         elif "raw.fif" in parc_files[i]:
+            # We assume this is a parc-raw.fif file created in beamform_and_parcellated
             raw = mne.io.read_raw_fif(parc_files[i], verbose=False)
-            x = raw.get_data(reject_by_annotation="omit", verbose=False)
+            x = raw.get_data(picks="misc", reject_by_annotation="omit", verbose=False)
             x = x.T  # (channels, time) -> (time, channels)
         elif "epo.fif" in parc_files[i]:
+            # We assume this is a parc-epo.fif file created in beamform_and_parcellated
             epochs = mne.read_epochs(parc_files[i], verbose=False)
-            x = epochs.get_data()  # (epochs, channels, time)
+            x = epochs.get_data(picks="misc")  # (epochs, channels, time)
             x = np.swapaxes(x, 1, 2)
             x = x.reshape(-1, x.shape[-1])  # (time, channels)
         else:
