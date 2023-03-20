@@ -577,12 +577,12 @@ def beamform_and_parcellate(
     else:
         # Load preprocessed data
         data = mne.io.read_raw_fif(preproc_file, preload=True)
-    data.pick(chantypes)
+    chantype_data = data.copy().pick(chantypes)
 
     if freq_range is not None:
         # Bandpass filter
         logger.info("bandpass filtering: {}-{} Hz".format(freq_range[0], freq_range[1]))
-        data = data.filter(
+        chantype_data = chantype_data.filter(
             l_freq=freq_range[0],
             h_freq=freq_range[1],
             method="iir",
@@ -600,7 +600,7 @@ def beamform_and_parcellate(
     filters = beamforming.make_lcmv(
         subjects_dir=src_dir,
         subject=subject,
-        data=data,
+        data=chantype_data,
         chantypes=chantypes,
         weight_norm="nai",
         rank=rank,
@@ -615,7 +615,7 @@ def beamform_and_parcellate(
     # this is a wrapper call to mne's apply_lcmv function
     # the output will have had bad time segments removed
     logger.info("beamforming.apply_lcmv")
-    bf_data = beamforming.apply_lcmv(data, filters)
+    bf_data = beamforming.apply_lcmv(chantype_data, filters)
 
     if epoch_file is not None:
         bf_data = np.transpose([bf.data for bf in bf_data], axes=[1, 2, 0])

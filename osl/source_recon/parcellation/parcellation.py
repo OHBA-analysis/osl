@@ -10,6 +10,7 @@ from pathlib import Path
 from time import strftime
 from datetime import datetime
 
+import mne
 import numpy as np
 import nibabel as nib
 import matplotlib.pyplot as plt
@@ -22,9 +23,6 @@ import osl
 import osl.source_recon.rhino.utils as rhino_utils
 from osl.utils import soft_import
 from osl.utils.logger import log_or_print
-
-import mne
-from mne import create_info
 
 
 def load_parcellation(parcellation_file):
@@ -853,7 +851,9 @@ def convert2mne_raw(parc_data, raw, parcel_names=None):
     # Create Info object
     if parcel_names is None:
         parcel_names = [str(i) for i in range(parc_data.shape[-1])]
-    parc_info = create_info(ch_names=parcel_names, ch_types="misc", sfreq=info["sfreq"])
+    parc_info = mne.create_info(
+        ch_names=parcel_names, ch_types="misc", sfreq=info["sfreq"]
+    )
 
     # Create Raw object
     parc_raw = mne.io.RawArray(parc_data.T, parc_info)
@@ -866,6 +866,16 @@ def convert2mne_raw(parc_data, raw, parcel_names=None):
 
     # Copy annotations from raw
     parc_raw.set_annotations(raw._annotations)
+
+    # Add stim channel to the parc data
+    if "stim" in raw:
+        stim_raw = raw.copy().pick_types(stim=True)
+        stim_data = stim_raw.get_data()
+        stim_info = mne.create_info(
+            stim_raw.ch_names, raw.info["sfreq"], ["stim"] * stim_data.shape[0]
+        )
+        stim_raw = mne.io.RawArray(stim_data, stim_info)
+        parc_raw.add_channels([stim_raw], force_update_info=True)
 
     # Add OSL processing info to the description
     parc_raw.info["description"] = raw.info["description"]
@@ -906,7 +916,9 @@ def convert2mne_epochs(parc_data, epochs, parcel_names=None):
     if parcel_names is None:
         parcel_names = [str(i) for i in range(parc_data.shape[-1])]
 
-    parc_info = create_info(ch_names=parcel_names, ch_types="misc", sfreq=info["sfreq"])
+    parc_info = mne.create_info(
+        ch_names=parcel_names, ch_types="misc", sfreq=info["sfreq"],
+    )
     parc_events = epochs.events
 
     # Parcellated data Epochs object
