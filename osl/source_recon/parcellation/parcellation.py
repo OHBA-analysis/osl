@@ -868,7 +868,7 @@ def convert2mne_raw(parc_data, raw, parcel_names=None):
     # Copy annotations from raw
     parc_raw.set_annotations(raw._annotations)
 
-    # Add stim channel to the parc data
+    # Add stim channel
     if "stim" in raw:
         stim_raw = raw.copy().pick_types(stim=True)
         stim_data = stim_raw.get_data()
@@ -877,6 +877,16 @@ def convert2mne_raw(parc_data, raw, parcel_names=None):
         )
         stim_raw = mne.io.RawArray(stim_data, stim_info)
         parc_raw.add_channels([stim_raw], force_update_info=True)
+
+    # Add EMG channel
+    if "emg" in raw:
+        emg_raw = raw.copy().pick_types(emg=True)
+        emg_data = emg_raw.get_data()
+        emg_info = mne.create_info(
+            emg_raw.ch_names, raw.info["sfreq"], ["emg"] * emg_data.shape[0]
+        )
+        emg_raw = mne.io.RawArray(emg_data, emg_info)
+        parc_raw.add_channels([emg_raw], force_update_info=True)
 
     # Copy the description from the sensor-level Raw object
     parc_raw.info["description"] = raw.info["description"]
