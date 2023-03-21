@@ -15,18 +15,17 @@ must also conform to this.
 # Authors: Chetan Gohil <chetan.gohil@psych.ox.ac.uk>
 
 
+import pickle
 import os.path as op
 from pathlib import Path
-import pickle
 
-import numpy as np
 import mne
+import numpy as np
 
 from . import rhino, beamforming, parcellation, sign_flipping
 from ..report import src_report
 
 import logging
-
 logger = logging.getLogger(__name__)
 
 
@@ -418,7 +417,7 @@ def beamform(
     freq_range : list
         Lower and upper band to bandpass filter before beamforming. If None,
         no filtering is done.
-    chantypes : list of str
+    chantypes : str or list of str
         Channel types to use in beamforming.
     rank : dict
         Keys should be the channel types and the value should be the rank to use.
@@ -510,6 +509,168 @@ def beamform(
     )
 
 
+def parcellate(
+    src_dir,
+    subject,
+    preproc_file,
+    smri_file,
+    epoch_file,
+    parcellation_file,
+    method,
+    orthogonalisation,
+    spatial_resolution=None,
+    reference_brain="mni",
+):
+    """Wrapper function for parcellation.
+
+    Parameters
+    ----------
+    src_dir : str
+        Path to where to output the source reconstruction files.
+    subject : str
+        Subject name/id.
+    preproc_file : str
+        Path to the preprocessed fif file.
+    smri_file : str
+        Path to the T1 weighted structural MRI file to use in source reconstruction.
+    epoch_file : str
+        Path to epoched preprocessed fif file.
+    parcellation_file : str
+        Path to the parcellation file to use.
+    method : str
+        Method to use in the parcellation.
+    orthogonalisation : bool
+        Should we do orthogonalisation?
+    spatial_resolution : int
+        Resolution for beamforming to use for the reference brain in mm
+        (must be an integer, or will be cast to nearest int)
+        If None, then the gridstep used in coreg_filenames['forward_model_file']
+        is used.
+    reference_brain : string
+        'mni' indicates that the reference_brain is the stdbrain in MNI space
+        'mri' indicates that the reference_brain is the subject's sMRI in
+            the scaled native/mri space. "
+        'unscaled_mri' indicates that the reference_brain is the subject's sMRI in
+            unscaled native/mri space.
+        Note that Scaled/unscaled relates to the allow_smri_scaling option in coreg.
+        If allow_scaling was False, then the unscaled MRI will be the same as the
+        scaled MRI.
+    """
+    logger.info("parcellate")
+
+    # Get settings passed to the beamform wrapper
+    report_data = pickle.load(open(f"{src_dir}/{subject}/report_data.pkl", "rb"))
+    freq_range = report_data.pop("freq_range")
+    chantypes = report_data.pop("chantypes")
+    if isinstance(chantypes, str):
+        chantypes = [chantypes]
+
+    # Load sensor-level data
+    if epoch_file is not None:
+        logger.info("using epoched data")
+
+        # Load epoched data
+        data = mne.read_epochs(epoch_file, preload=True)
+    else:
+        # Load preprocessed data
+        data = mne.io.read_raw_fif(preproc_file, preload=True)
+    chantype_data = data.copy().pick(chantypes)
+
+    if freq_range is not None:
+        # Bandpass filter
+        logger.info("bandpass filtering: {}-{} Hz".format(freq_range[0], freq_range[1]))
+        chantype_data = chantype_data.filter(
+            l_freq=freq_range[0],
+            h_freq=freq_range[1],
+            method="iir",
+            iir_params={"order": 5, "ftype": "butter"},
+        )
+
+    # Load the beamforming filter
+    filters_file = src_dir / subject / "rhino/filters-lcmv.h5"
+    logger.info(f"loading {filters_file}")
+    filters = mne.beamformer.read_beamformer(filters_file)
+
+    # Apply beamforming
+    # this is a wrapper call to mne's apply_lcmv function
+    # the output will have had bad time segments removed
+    logger.info("beamforming.apply_lcmv")
+    bf_data = beamforming.apply_lcmv(chantype_data, filters)
+
+    if epoch_file is not None:
+        bf_data = np.transpose([bf.data for bf in bf_data], axes=[1, 2, 0])
+    else:
+        bf_data = bf_data.data
+    bf_data_mni, _, coords_mni, _ = beamforming.transform_recon_timeseries(
+        subjects_dir=src_dir,
+        subject=subject,
+        recon_timeseries=bf_data,
+        spatial_resolution=spatial_resolution,
+        reference_brain=reference_brain,
+    )
+
+    # Parcellation
+    logger.info(f"using file {parcellation_file}")
+    parcel_data, _, _ = parcellation.parcellate_timeseries(
+        parcellation_file,
+        voxel_timeseries=bf_data_mni,
+        voxel_coords=coords_mni,
+        method=method,
+        working_dir=src_dir / subject / "rhino",
+    )
+
+    # Orthogonalisation
+    if orthogonalisation not in [None, "symmetric", "none", "None"]:
+        raise NotImplementedError(orthogonalisation)
+
+    if orthogonalisation == "symmetric":
+        logger.info(f"{orthogonalisation} orthogonalisation")
+        parcel_data = parcellation.symmetric_orthogonalise(
+            parcel_data, maintain_magnitudes=True
+        )
+
+    if epoch_file is None:
+        # Save parcellated data as a MNE Raw object
+        parc_fif_file = src_dir / subject / "rhino/parc-raw.fif"
+        logger.info(f"saving {parc_fif_file}")
+        parc_raw = parcellation.convert2mne_raw(parcel_data.T, data)
+        parc_raw.save(parc_fif_file, overwrite=True)
+    else:
+        # Save parcellated data as a MNE Epochs object
+        parc_fif_file = src_dir / subject / "rhino/parc-epo.fif"
+        logger.info(f"saving {parc_fif_file}")
+        parc_epo = parcellation.convert2mne_epochs(parcel_data.T, data)
+        parc_epo.save(parc_fif_file, overwrite=True)
+
+    # Save plots
+    parcellation.plot_correlation(
+        parcel_data,
+        filename=f"{src_dir}/{subject}/rhino/parc_corr.png",
+    )
+
+    # Save info for the report
+    n_parcels = parcel_data.shape[0]
+    n_samples = parcel_data.shape[1]
+    if parcel_data.ndim == 3:
+        n_epochs = parcel_data.shape[2]
+    else:
+        n_epochs = None
+    src_report.add_to_data(
+        f"{src_dir}/{subject}/report_data.pkl",
+        {
+            "parcellate": True,
+            "parcellation_file": parcellation_file,
+            "method": method,
+            "orthogonalisation": orthogonalisation,
+            "parc_fif_file": str(parc_fif_file),
+            "n_samples": n_samples,
+            "n_parcels": n_parcels,
+            "n_epochs": n_epochs,
+            "parc_corr_plot": f"{src_dir}/{subject}/rhino/parc_corr.png",
+        },
+    )
+
+
 def beamform_and_parcellate(
     src_dir,
     subject,
@@ -539,7 +700,7 @@ def beamform_and_parcellate(
         Path to the T1 weighted structural MRI file to use in source reconstruction.
     epoch_file : str
         Path to epoched preprocessed fif file.
-    chantypes : list of str
+    chantypes : str or list of str
         Channel types to use in beamforming.
     rank : dict
         Keys should be the channel types and the value should be the rank to use.
@@ -653,11 +814,13 @@ def beamform_and_parcellate(
     if epoch_file is None:
         # Save parcellated data as a MNE Raw object
         parc_fif_file = src_dir / subject / "rhino/parc-raw.fif"
+        logger.info(f"saving {parc_fif_file}")
         parc_raw = parcellation.convert2mne_raw(parcel_data.T, data)
         parc_raw.save(parc_fif_file, overwrite=True)
     else:
         # Save parcellated data as a MNE Epochs object
         parc_fif_file = src_dir / subject / "rhino/parc-epo.fif"
+        logger.info(f"saving {parc_fif_file}")
         parc_epo = parcellation.convert2mne_epochs(parcel_data.T, data)
         parc_epo.save(parc_fif_file, overwrite=True)
 

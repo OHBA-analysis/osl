@@ -4,10 +4,7 @@
 
 # Authors: Chetan Gohil <chetan.gohil@psych.ox.ac.uk>
 
-import pickle
-import os
 import os.path as op
-from pathlib import Path
 
 import mne
 import numpy as np
@@ -321,7 +318,7 @@ def apply_flips(src_dir, subject, flips, epoched=False):
         sflip_epochs.apply_function(flip, picks="misc", channel_wise=False)
 
         # Save
-        outfile = op.join(src_dir, str(subject),"sflip_parc-epo.fif")
+        outfile = op.join(src_dir, str(subject), "sflip_parc-epo.fif")
         log_or_print(f"saving: {outfile}")
         sflip_epochs.save(outfile, overwrite=True)
 
