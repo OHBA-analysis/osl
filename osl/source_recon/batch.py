@@ -18,7 +18,6 @@ import yaml
 import mne
 
 from . import rhino, wrappers
-from ..preprocessing import read_dataset
 from ..report import src_report
 from ..utils import logger as osl_logger
 from ..utils import validate_outdir, find_run_id, parallel
@@ -274,7 +273,7 @@ def run_src_batch(
 
     # Validation
     n_subjects = len(subjects)
-    if preproc_files != None:
+    if preproc_files is not None:
         n_preproc_files = len(preproc_files)
         if n_subjects != n_preproc_files:
             raise ValueError(

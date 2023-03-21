@@ -7,8 +7,6 @@
 
 import os.path as op
 from pathlib import Path
-from time import strftime
-from datetime import datetime
 
 import mne
 import numpy as np
@@ -19,9 +17,7 @@ from scipy.spatial import KDTree
 from nilearn.plotting import plot_markers
 from mpl_toolkits.axes_grid1 import make_axes_locatable
 
-import osl
 import osl.source_recon.rhino.utils as rhino_utils
-from osl.utils import soft_import
 from osl.utils.logger import log_or_print
 
 
@@ -613,6 +609,7 @@ def _parcel_timeseries2nii(
     parcel_timeseries_data,
     voxel_weightings,
     voxel_assignments,
+    voxel_coords,
     out_nii_fname=None,
     working_dir=None,
     times=None,
@@ -635,6 +632,10 @@ def _parcel_timeseries2nii(
         nvoxels x nparcels
         Boolean assignments indicating for each voxel the winner takes all
         parcel it belongs to.
+    voxel_coords : numpy.ndarray
+        (nvoxels x 3) coordinates of voxel_timeseries in mm in same space as
+        parcellation (e.g. typically corresponds to the output from
+        rhino.resample_recon_ts).
     working_dir : str
         Dir name to put files in
     out_nii_fname : str
