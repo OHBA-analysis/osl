@@ -438,18 +438,18 @@ def beamform(
     """
     logger.info("beamforming")
 
+    if isinstance(chantypes, str):
+        chantypes = [chantypes]
+
+    # Load sensor-level data
     if epoch_file is not None:
         logger.info("using epoched data")
-
-        # Load epoched data
         data = mne.read_epochs(epoch_file, preload=True)
     else:
-        # Load preprocessed data
         data = mne.io.read_raw_fif(preproc_file, preload=True)
-    data.pick(chantypes)
 
+    # Bandpass filter
     if freq_range is not None:
-        # Bandpass filter
         logger.info("bandpass filtering: {}-{} Hz".format(freq_range[0], freq_range[1]))
         data = data.filter(
             l_freq=freq_range[0],
@@ -458,9 +458,8 @@ def beamform(
             iir_params={"order": 5, "ftype": "butter"},
         )
 
-    # Validation
-    if isinstance(chantypes, str):
-        chantypes = [chantypes]
+    # Pick channels
+    data.pick(chantypes)
 
     # Create beamforming filters
     logger.info("beamforming.make_lcmv")
@@ -568,23 +567,22 @@ def parcellate(
     # Load sensor-level data
     if epoch_file is not None:
         logger.info("using epoched data")
-
-        # Load epoched data
         data = mne.read_epochs(epoch_file, preload=True)
     else:
-        # Load preprocessed data
         data = mne.io.read_raw_fif(preproc_file, preload=True)
-    chantype_data = data.copy().pick(chantypes)
 
+    # Bandpass filter
     if freq_range is not None:
-        # Bandpass filter
         logger.info("bandpass filtering: {}-{} Hz".format(freq_range[0], freq_range[1]))
-        chantype_data = chantype_data.filter(
+        data = data.filter(
             l_freq=freq_range[0],
             h_freq=freq_range[1],
             method="iir",
             iir_params={"order": 5, "ftype": "butter"},
         )
+
+    # Pick channels
+    chantype_data = data.copy().pick(chantypes)
 
     # Load the beamforming filter
     filters_file = src_dir / subject / "rhino/filters-lcmv.h5"
@@ -730,29 +728,28 @@ def beamform_and_parcellate(
     """
     logger.info("beamform_and_parcellate")
 
+    if isinstance(chantypes, str):
+        chantypes = [chantypes]
+
+    # Load sensor-level data
     if epoch_file is not None:
         logger.info("using epoched data")
-
-        # Load epoched data
         data = mne.read_epochs(epoch_file, preload=True)
     else:
-        # Load preprocessed data
         data = mne.io.read_raw_fif(preproc_file, preload=True)
-    chantype_data = data.copy().pick(chantypes)
 
+    # Bandpass filter
     if freq_range is not None:
-        # Bandpass filter
         logger.info("bandpass filtering: {}-{} Hz".format(freq_range[0], freq_range[1]))
-        chantype_data = chantype_data.filter(
+        data = data.filter(
             l_freq=freq_range[0],
             h_freq=freq_range[1],
             method="iir",
             iir_params={"order": 5, "ftype": "butter"},
         )
 
-    # Validation
-    if isinstance(chantypes, str):
-        chantypes = [chantypes]
+    # Pick channels
+    chantype_data = data.copy().pick(chantypes)
 
     # Create beamforming filters
     logger.info("beamforming.make_lcmv")
