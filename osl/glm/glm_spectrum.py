@@ -65,7 +65,7 @@ class RawGLMSpectrum(GLMSpectrumResult):
             self.data = dd
 
     def plot_joint_spectrum(self, contrast=0, freqs='auto', base=1, ax=None,
-                       topo_scale='joint', lw=0.5,  ylabel='Power', title=None,
+                       topo_scale='joint', lw=0.5,  ylabel=None, title=None,
                        ylim=None, xtick_skip=1, topo_prop=1/3, metric='copes'):
         """Plot a GLM-Spectrum contrast with spatial line colouring and topograpies.
 
@@ -100,8 +100,12 @@ class RawGLMSpectrum(GLMSpectrumResult):
         """
         if metric == 'copes':
             spec = self.model.copes[contrast, :, :].T
+            ylabel = 'Power' if ylabel is None else ylabel
         elif metric == 'tstats':
             spec = self.model.tstats[contrast, :, :].T
+            ylabel = 't-statistics' if ylabel is None else ylabel
+        else:
+            raise ValueError("Metric '{}' not recognised".format(metric))
 
         if title is None:
             title = 'C {} : {}'.format(contrast, self.design.contrast_names[contrast])
@@ -111,7 +115,7 @@ class RawGLMSpectrum(GLMSpectrumResult):
                 ylim=ylim, xtick_skip=xtick_skip, topo_prop=topo_prop, ax=ax)
 
     def plot_sensor_spectrum(self, contrast, sensor_proj=False,
-                         xticks=None, xticklabels=None, lw=0.5, ax=None,
+                         xticks=None, xticklabels=None, lw=0.5, ax=None, title=None,
                          sensor_cols=True, base=1, ylabel=None, xtick_skip=1, metric='copes'):
         """Plot a GLM-Spectrum contrast with spatial line colouring.
 
@@ -219,6 +223,8 @@ class GroupGLMSpectrum:
             spec = self.model.copes[gcontrast, fcontrast, :, :].T
         elif metric == 'tstats':
             spec = self.model.tstats[gcontrast, fcontrast, :, :].T
+        else:
+            raise ValueError("Metric '{}' not recognised".format(metric))
 
         if title is None:
             gtitle = 'gC {} : {}'.format(gcontrast, self.contrast_names[gcontrast])
@@ -367,6 +373,7 @@ def group_glm_spectrum(inspectra, design_config=None, datainfo=None, metric='cop
             glmsp = inspectra[ii]
 
         fl_data.append(getattr(glmsp, metric)[np.newaxis, ...])
+        fl_contrast_names = glmsp.design.contrast_names
 
     fl_data = np.concatenate(fl_data, axis=0)
     group_data = glm.data.TrialGLMData(data=fl_data, **datainfo)
@@ -379,7 +386,7 @@ def group_glm_spectrum(inspectra, design_config=None, datainfo=None, metric='cop
     design = design_config.design_from_datainfo(group_data.info)
     model = glm.fit.OLSModel(design, group_data)
 
-    return GroupGLMSpectrum(model, design, glmsp.config, glmsp.info, data=group_data)
+    return GroupGLMSpectrum(model, design, glmsp.config, glmsp.info, data=group_data, fl_contrast_names=fl_contrast_names)
 
 
 def glm_spectrum(XX, reg_categorical=None, reg_ztrans=None, reg_unitmax=None,
@@ -453,6 +460,7 @@ def glm_spectrum(XX, reg_categorical=None, reg_ztrans=None, reg_unitmax=None,
     """
     if isinstance(XX, mne.io.base.BaseRaw):
         fs = XX.info['sfreq']
+        nperseg = int(np.floor(fs)) if nperseg is None else nperseg
         YY = XX.get_data()
         axis = 1
     else:
@@ -692,7 +700,7 @@ def plot_joint_spectrum(xvect, psd, info, ax=None, freqs='auto', base=1,
         fig = plt.figure()
         ax = plt.subplot(111)
 
-    plot_sensor_spectrum(xvect, psd, info, ax=ax, base=base, lw=0.25)
+    plot_sensor_spectrum(xvect, psd, info, ax=ax, base=base, lw=0.25, ylabel=ylabel)
     fx = prep_scaled_freq(base, xvect)
 
     if freqs == 'auto':
@@ -831,7 +839,7 @@ def plot_sensor_spectrum(xvect, psd, info, ax=None, sensor_proj=False,
         plot_channel_layout(axins, info)
 
     if title is not None:
-        ax.title(title)
+        ax.set_title(title)
 
 
 def plot_sensor_data(xvect, data, info, ax=None, lw=0.5,
