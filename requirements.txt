@@ -4,7 +4,8 @@ matplotlib~=3.5.0
 mne==1.0.0
 scikit-learn~=0.0
 fslpy
-sails~=1.1.1
+sails>=1.4.0
+glmtools>=0.2.1
 tabulate~=0.8.9
 pyyaml>=5.1
 neurokit2
@@ -24,7 +25,6 @@ coverage
 flake8
 
 yaml~=0.2.5
-glmtools~=0.1.2
 h5py~=3.6.0
 anamnesis~=1.0.3
 pandas~=1.3.5
