@@ -115,8 +115,6 @@ def make_lcmv(
     fwd_fname = rhino.get_coreg_filenames(subjects_dir, subject)["forward_model_file"]
     fwd = read_forward_solution(fwd_fname)
 
-    is_epoched = len(data.get_data().shape) == 3 and len(data) > 1
-
     if data_cov is None:
         # Note that if chantypes are meg, eeg; and meg includes mag, grad
         # then compute_covariance will project data separately for meg and eeg
@@ -133,10 +131,10 @@ def make_lcmv(
         # subspace and improve numerical stability. This is equivalent to what the
         # osl_normalise_sensor_data.m function in Matlab OSL is trying to do.
         # Note that in the output data_cov the scalings have been undone.
-        if is_epoched:
-            data_cov = compute_covariance(data, method="empirical", rank=rank)
-        else:
+        if isinstance(data, mne.io.Raw):
             data_cov = compute_raw_covariance(data, method="empirical", rank=rank)
+        else:
+            data_cov = compute_covariance(data, method="empirical", rank=rank)
 
     if noise_cov is None:
         # calculate noise covariance matrix
@@ -202,37 +200,28 @@ def make_lcmv(
     return filters
 
 
-def apply_lcmv(data, filters, reject_by_annotations=None):
+def apply_lcmv(data, filters):
     """Apply a LCMV filter to an MNE Raw or Epochs object."""
-    is_epoched = len(data.get_data().shape) == 3 and len(data) > 1
-    if is_epoched:
-        return mne.beamformer.apply_lcmv_epochs(data, filters)
+    if isinstance(data, mne.io.Raw):
+        return apply_lcmv_raw(data, filters)
     else:
-        return apply_lcmv_raw(data, filters, reject_by_annotations)
+        return mne.beamformer.apply_lcmv_epochs(data, filters)
 
 
-def apply_lcmv_raw(raw, filters, reject_by_annotations="omit"):
-    """Modified version of mne.beamformer.apply_lcmv_raw.
+def apply_lcmv_raw(raw, filters):
+    """Modified version of mne.beamformer.apply_lcmv_raw."""
 
-    This function has the option to remove bad segments
-    (reject_by_annotations='omit') whereas the MNE function does not.
-    """
     _check_reference(raw)
 
     # Get data from the mne.Raw object
-    data, times = raw.get_data(
-        reject_by_annotation=reject_by_annotations, return_times=True
-    )
+    data, times = raw.get_data(return_times=True)
 
-    # Select channels
-    sel = _check_channels_spatial_filter(raw.ch_names, filters)
-    data = data[sel]
-
-    info = raw.info
-    tmin = times[0]
+    # Select channels
+    chan_inds = _check_channels_spatial_filter(raw.ch_names, filters)
+    data = data[chan_inds]
 
     # Apply LCMV beamformer
-    stc = _apply_lcmv(data=data, filters=filters, info=info, tmin=tmin)
+    stc = _apply_lcmv(data=data, filters=filters, info=raw.info, tmin=times[0])
 
     return next(stc)
 
