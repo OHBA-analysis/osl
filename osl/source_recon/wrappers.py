@@ -976,9 +976,9 @@ def fix_sign_ambiguity(
     parc_files = []
     for sub in [subject, template]:
         if epoched:
-            parc_file = op.join(src_dir, sub, "rhino", "parc-epo.fif")
+            parc_file = op.join(src_dir, str(sub), "rhino", "parc-epo.fif")
         else:
-            parc_file = op.join(src_dir, sub, "rhino", "parc-raw.fif")
+            parc_file = op.join(src_dir, str(sub), "rhino", "parc-raw.fif")
         if not Path(parc_file).exists():
             raise ValueError(f"{parc_file} not found")
         parc_files.append(parc_file)
