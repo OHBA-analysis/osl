@@ -833,7 +833,7 @@ def convert2mne_raw(parc_data, raw, parcel_names=None):
     Parameters
     ----------
     parc_data : np.ndarray
-        ntpts x nparcels parcel data
+        nparcels x ntpts parcel data
     raw : mne.Raw
         mne.io.raw object that produced parc_data via source recon and parcellation.
         Info such as timings and bad segments will be copied from this to parc_raw.
@@ -851,13 +851,13 @@ def convert2mne_raw(parc_data, raw, parcel_names=None):
 
     # Create Info object
     if parcel_names is None:
-        parcel_names = [str(i) for i in range(parc_data.shape[-1])]
+        parcel_names = [str(i) for i in range(parc_data.shape[0])]
     parc_info = mne.create_info(
         ch_names=parcel_names, ch_types="misc", sfreq=info["sfreq"]
     )
 
     # Create Raw object
-    parc_raw = mne.io.RawArray(parc_data.T, parc_info)
+    parc_raw = mne.io.RawArray(parc_data, parc_info)
 
     # Copy timing info
     parc_raw.set_meas_date(raw.info["meas_date"])
@@ -900,7 +900,7 @@ def convert2mne_epochs(parc_data, epochs, parcel_names=None):
     Parameters
     ----------
     parc_data : np.ndarray
-        epochs x ntpts x nparcels parcel data
+        nparcels x ntpts x epochs parcel data
     epochs : mne.Epochs
         mne.io.raw object that produced parc_data via source recon and parcellation.
         Info such as timings and bad segments will be copied from this to parc_raw.
@@ -919,7 +919,7 @@ def convert2mne_epochs(parc_data, epochs, parcel_names=None):
 
     # Create parc info
     if parcel_names is None:
-        parcel_names = [str(i) for i in range(parc_data.shape[-1])]
+        parcel_names = [str(i) for i in range(parc_data.shape[0])]
 
     parc_info = mne.create_info(
         ch_names=parcel_names, ch_types="misc", sfreq=info["sfreq"],
@@ -927,7 +927,7 @@ def convert2mne_epochs(parc_data, epochs, parcel_names=None):
     parc_events = epochs.events
 
     # Parcellated data Epochs object
-    parc_epo = mne.EpochsArray(np.swapaxes(parc_data, 1, 2), parc_info, parc_events)
+    parc_epo = mne.EpochsArray(np.swapaxes(parc_data.T, 1, 2), parc_info, parc_events)
 
     # Copy the description from the sensor-level Epochs object
     parc_epo.info["description"] = epochs.info["description"]

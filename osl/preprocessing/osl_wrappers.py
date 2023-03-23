@@ -302,6 +302,8 @@ def drop_bad_epochs(
         chinds = mne.pick_types(epochs.info, eog=True, ref_meg=ref_meg, exclude='bads')
     elif picks == "ecg":
         chinds = mne.pick_types(epochs.info, ecg=True, ref_meg=ref_meg, exclude='bads')
+    elif picks == "misc":
+        chinds = mne.pick_types(epochs.info, misc=True, ref_meg=ref_meg, exclude='bads')
     else:
         raise NotImplementedError(f"picks={picks} not available.")
 

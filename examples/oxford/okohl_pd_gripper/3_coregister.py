@@ -1,13 +1,5 @@
 """Source reconstruct continuous sensor-level data.
 
-Note, if you get the following error:
-
-    Package 'open3d' is required for this function to run but cannot be imported.
-    Please install it into your python environment to continue.
-
-You need to install open3d:
-
-    pip install open3d
 """
 
 # Authors: Oliver Kohl <oliver.kohl@psych.ox.ac.uk>

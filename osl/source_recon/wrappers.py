@@ -479,21 +479,6 @@ def beamform(
     filters_file = src_dir / subject / "rhino/filters-lcmv.h5"
     filters.save(filters_file, overwrite=True)
 
-    # Apply beamforming
-    logger.info("beamforming.apply_lcmv")
-    bf_data = beamforming.apply_lcmv(data, filters)
-    if epoch_file is not None:
-        bf_data = np.transpose([bf.data for bf in bf_data], axes=[1, 2, 0])
-    else:
-        bf_data = bf_data.data
-    bf_data_mni, _, _, _ = beamforming.transform_recon_timeseries(
-        subjects_dir=src_dir,
-        subject=subject,
-        recon_timeseries=bf_data,
-        spatial_resolution=spatial_resolution,
-        reference_brain=reference_brain,
-    )
-
     # Save info for the report
     src_report.add_to_data(
         f"{src_dir}/{subject}/report_data.pkl",
@@ -590,8 +575,6 @@ def parcellate(
     filters = mne.beamformer.read_beamformer(filters_file)
 
     # Apply beamforming
-    # this is a wrapper call to mne's apply_lcmv function
-    # the output will have had bad time segments removed
     logger.info("beamforming.apply_lcmv")
     bf_data = beamforming.apply_lcmv(chantype_data, filters)
 
@@ -631,13 +614,13 @@ def parcellate(
         # Save parcellated data as a MNE Raw object
         parc_fif_file = src_dir / subject / "rhino/parc-raw.fif"
         logger.info(f"saving {parc_fif_file}")
-        parc_raw = parcellation.convert2mne_raw(parcel_data.T, data)
+        parc_raw = parcellation.convert2mne_raw(parcel_data, data)
         parc_raw.save(parc_fif_file, overwrite=True)
     else:
         # Save parcellated data as a MNE Epochs object
         parc_fif_file = src_dir / subject / "rhino/parc-epo.fif"
         logger.info(f"saving {parc_fif_file}")
-        parc_epo = parcellation.convert2mne_epochs(parcel_data.T, data)
+        parc_epo = parcellation.convert2mne_epochs(parcel_data, data)
         parc_epo.save(parc_fif_file, overwrite=True)
 
     # Save plots
@@ -770,8 +753,6 @@ def beamform_and_parcellate(
     filters.save(filters_file, overwrite=True)
 
     # Apply beamforming
-    # this is a wrapper call to mne's apply_lcmv function
-    # the output will have had bad time segments removed
     logger.info("beamforming.apply_lcmv")
     bf_data = beamforming.apply_lcmv(chantype_data, filters)
 
@@ -812,13 +793,13 @@ def beamform_and_parcellate(
         # Save parcellated data as a MNE Raw object
         parc_fif_file = src_dir / subject / "rhino/parc-raw.fif"
         logger.info(f"saving {parc_fif_file}")
-        parc_raw = parcellation.convert2mne_raw(parcel_data.T, data)
+        parc_raw = parcellation.convert2mne_raw(parcel_data, data)
         parc_raw.save(parc_fif_file, overwrite=True)
     else:
         # Save parcellated data as a MNE Epochs object
         parc_fif_file = src_dir / subject / "rhino/parc-epo.fif"
         logger.info(f"saving {parc_fif_file}")
-        parc_epo = parcellation.convert2mne_epochs(parcel_data.T, data)
+        parc_epo = parcellation.convert2mne_epochs(parcel_data, data)
         parc_epo.save(parc_fif_file, overwrite=True)
 
     # Save plots
@@ -976,9 +957,9 @@ def fix_sign_ambiguity(
     parc_files = []
     for sub in [subject, template]:
         if epoched:
-            parc_file = op.join(src_dir, sub, "rhino", "parc-epo.fif")
+            parc_file = op.join(src_dir, str(sub), "rhino", "parc-epo.fif")
         else:
-            parc_file = op.join(src_dir, sub, "rhino", "parc-raw.fif")
+            parc_file = op.join(src_dir, str(sub), "rhino", "parc-raw.fif")
         if not Path(parc_file).exists():
             raise ValueError(f"{parc_file} not found")
         parc_files.append(parc_file)
