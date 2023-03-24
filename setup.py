@@ -64,7 +64,7 @@ setup(name=name,
       packages=['osl', 'osl.tests', 'osl.report', 'osl.maxfilter',
                 'osl.preprocessing', 'osl.utils', 'osl.utils.spmio',
                 'osl.source_recon', 'osl.source_recon.rhino',
-                'osl.source_recon.parcellation'],
+                'osl.source_recon.parcellation', 'osl.glm'],
 
 
       package_data={'osl': [# Simulations
