@@ -1017,7 +1017,7 @@ def save_or_show_renderer(renderer, filename):
 
         log_or_print(f"saving {filename}")
         if ext == ".html":
-            renderer.figure.plotter.export_html(filename)
+            renderer.figure.plotter.export_html(filename, backend="panel")
         elif ext in allowed_extensions:
             renderer.figure.plotter.save_graphic(filename)
 
