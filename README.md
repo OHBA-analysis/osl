@@ -18,7 +18,7 @@ where the environment file `<os>.yml` can be:
 - `hbaws.yml` if you are using an OHBA workstation at Oxford.
 - `bmrc.yml` if you are using the BMRC at Oxford.
 
-Note, all of the above environments come with Jupyter Notebook installed. The `hbaws.yml` environment also comes with Spyder installed.
+Note, all of the above environments come with Jupyter Notebook installed. The `hbaws.yml` and `m1_mac.yml` environments also comes with Spyder installed.
 
 Deleting osl
 ------------
