@@ -12,7 +12,7 @@ README = (HERE / "README.md").read_text()
 reqs = ['numpy', 'scipy', 'matplotlib', 'mne>=1.0.0', 'scikit-learn', 'fslpy',
         'sails', 'tabulate', 'pyyaml>=5.1', 'neurokit2', 'jinja2',
         'glmtools', 'numba', 'nilearn', 'dask', 'distributed', 'parse',
-        'opencv-python', 'pythreejs', 'h5io']
+        'opencv-python', 'panel', 'h5io']
 doc_reqs = ['sphinx==4.0.2', 'numpydoc', 'sphinx_gallery', 'pydata-sphinx-theme']
 dev_reqs = ['setuptools>=41.0.1', 'pytest', 'pytest-cov', 'coverage', 'flake8']
 
