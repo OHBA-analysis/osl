@@ -16,7 +16,7 @@ from scipy import signal, stats
 # GLM-Spectrum classes designed to work with GLM-Spectra computed from  MNE
 # format sensorspace data
 
-class RawGLMSpectrum(GLMSpectrumResult):
+class SensorGLMSpectrum(GLMSpectrumResult):
     """A class for GLM-Spectra fitted from MNE-Python Raw objects."""
 
     def __init__(self, glmspec, info):
@@ -29,6 +29,15 @@ class RawGLMSpectrum(GLMSpectrumResult):
         self.data = glmspec.data
 
         self.info = info
+
+    def __str__(self):
+        msg = 'SensorGLMSpectrum\n'
+        line = '\tData - {} Subjects, {} Channels and {} Frequencies\n'
+        msg += line.format(self.design.design_matrix.shape[0], self.model.copes.shape[2], self.model.copes.shape[3])
+
+        line = '\tFirst-Level - {} Regressors and {} Contrasts\n'
+        msg += line.format(self.design.design_matrix.shape[1], self.model.copes.shape[1])
+        return msg
 
     def save_pkl(self, outname, overwrite=True, save_data=False):
         """Save GLM-Spectrum result to a pickle file.
@@ -161,7 +170,7 @@ class RawGLMSpectrum(GLMSpectrumResult):
                             sensor_cols=sensor_cols, base=base, ylabel=ylabel, xtick_skip=xtick_skip)
 
 
-class GroupGLMSpectrum:
+class GroupSensorGLMSpectrum:
     """A class for group level GLM-Spectra fitted across mmultiple first-level
     GLM-Spectra computed from MNE-Python Raw objects"""
 
@@ -182,6 +191,52 @@ class GroupGLMSpectrum:
             self.fl_contrast_names = [chr(65 + ii) for ii in range(self.model.copes.shape[1])]
         else:
             self.fl_contrast_names = fl_contrast_names
+
+    def __str__(self):
+        msg = 'GroupSensorGLMSpectrum\n'
+        line = '\tData - {} Subjects, {} Channels and {} Frequencies\n'
+        msg += line.format(self.design.design_matrix.shape[0], self.model.copes.shape[2], self.model.copes.shape[3])
+
+        line = '\tFirst-Level - {} Regressors and {} Contrasts\n'
+        msg += line.format(self.design.design_matrix.shape[1], self.model.copes.shape[1])
+
+        line = '\tGroup-Level - {} Regressors and {} Contrasts\n'
+        msg += line.format(self.design.design_matrix.shape[1], self.model.copes.shape[0])
+        return msg
+
+    def save_pkl(self, outname, overwrite=True, save_data=False):
+        """Save GLM-Spectrum result to a pickle file.
+
+        Parameters
+        ----------
+        outname : str
+             Filename or full file path to write pickle to
+        overwrite : bool
+             Overwrite previous file if one exists? (Default value = True)
+        save_data : bool
+             Save STFT data in pickle? This is omitted by default to save disk
+             space (Default value = False)
+
+        """
+        if Path(outname).exists() and not overwrite:
+            msg = "{} already exists. Please delete or do use overwrite=True."
+            raise ValueError(msg.format(outname))
+
+        self.config.detrend_func = None  # Have to drop this to pickle
+
+        # This is hacky - but pickles are all or nothing and I don't know how
+        # else to do it. HDF5 would be better longer term
+        if save_data == False:
+            # Temporarily remove data before saving
+            dd = self.data
+            self.data = None
+
+        with open(outname, 'bw') as outp:
+            pickle.dump(self, outp)
+
+        # Put data back
+        if save_data == False:
+            self.data = dd
 
     def plot_joint_spectrum(self, gcontrast=0, fcontrast=0, freqs='auto', base=1, ax=None,
                        topo_scale='joint', lw=0.5,  ylabel='Power', title=None,
@@ -256,7 +311,7 @@ class GroupGLMSpectrum:
 
         Returns
         -------
-        GroupGLMSpectrum instance containing a single first level contrast.
+        GroupSensorGLMSpectrum instance containing a single first level contrast.
 
         """
         ret_con = deepcopy(self.data)
@@ -359,7 +414,7 @@ def group_glm_spectrum(inspectra, design_config=None, datainfo=None, metric='cop
 
     Returns
     -------
-    GroupGLMSpectrum
+    GroupSensorGLMSpectrum
 
     """
     datainfo = {} if datainfo is None else datainfo
@@ -386,7 +441,7 @@ def group_glm_spectrum(inspectra, design_config=None, datainfo=None, metric='cop
     design = design_config.design_from_datainfo(group_data.info)
     model = glm.fit.OLSModel(design, group_data)
 
-    return GroupGLMSpectrum(model, design, glmsp.config, glmsp.info, data=group_data, fl_contrast_names=fl_contrast_names)
+    return GroupSensorGLMSpectrum(model, design, glmsp.config, glmsp.info, data=group_data, fl_contrast_names=fl_contrast_names)
 
 
 def glm_spectrum(XX, reg_categorical=None, reg_ztrans=None, reg_unitmax=None,
@@ -455,7 +510,7 @@ def glm_spectrum(XX, reg_categorical=None, reg_ztrans=None, reg_unitmax=None,
 
     Returns
     -------
-    RawGLMSpectrum
+    SensorGLMSpectrum
 
     """
     if isinstance(XX, mne.io.base.BaseRaw):
@@ -491,7 +546,7 @@ def glm_spectrum(XX, reg_categorical=None, reg_ztrans=None, reg_unitmax=None,
                               fit_method='glmtools')
 
     if isinstance(XX, mne.io.base.BaseRaw):
-        return RawGLMSpectrum(glmspec, XX.info)
+        return SensorGLMSpectrum(glmspec, XX.info)
     else:
         return glmspec
 
@@ -506,7 +561,7 @@ def read_glm_spectrum(infile):
 
     Returns
     -------
-    RawGLMSpectrum
+    SensorGLMSpectrum
 
     """
     with open(infile, 'rb') as outp:
