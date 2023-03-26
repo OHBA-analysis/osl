@@ -11,6 +11,8 @@ from glmtools.design import DesignConfig
 from sails.stft import GLMSpectrumResult, glm_periodogram
 from scipy import signal, stats
 
+from matplotlib.patches import ConnectionPatch
+
 #%% ---------------------------------------
 #
 # GLM-Spectrum classes designed to work with GLM-Spectra computed from  MNE
@@ -32,7 +34,7 @@ class SensorGLMSpectrum(GLMSpectrumResult):
 
     def __str__(self):
         msg = 'SensorGLMSpectrum\n'
-        line = '\tData - {} Subjects, {} Channels and {} Frequencies\n'
+        line = '\tData - {} Segments, {} Channels and {} Frequencies\n'
         msg += line.format(self.design.design_matrix.shape[0], self.model.copes.shape[2], self.model.copes.shape[3])
 
         line = '\tFirst-Level - {} Regressors and {} Contrasts\n'
@@ -75,7 +77,7 @@ class SensorGLMSpectrum(GLMSpectrumResult):
 
     def plot_joint_spectrum(self, contrast=0, freqs='auto', base=1, ax=None,
                        topo_scale='joint', lw=0.5,  ylabel=None, title=None,
-                       ylim=None, xtick_skip=1, topo_prop=1/3, metric='copes'):
+                       ylim=None, xtick_skip=1, topo_prop=1/5, metric='copes'):
         """Plot a GLM-Spectrum contrast with spatial line colouring and topograpies.
 
         Parameters
@@ -194,7 +196,7 @@ class GroupSensorGLMSpectrum:
 
     def __str__(self):
         msg = 'GroupSensorGLMSpectrum\n'
-        line = '\tData - {} Subjects, {} Channels and {} Frequencies\n'
+        line = '\tData - {} Inputs, {} Channels and {} Frequencies\n'
         msg += line.format(self.design.design_matrix.shape[0], self.model.copes.shape[2], self.model.copes.shape[3])
 
         line = '\tFirst-Level - {} Regressors and {} Contrasts\n'
@@ -240,7 +242,7 @@ class GroupSensorGLMSpectrum:
 
     def plot_joint_spectrum(self, gcontrast=0, fcontrast=0, freqs='auto', base=1, ax=None,
                        topo_scale='joint', lw=0.5,  ylabel='Power', title=None,
-                       ylim=None, xtick_skip=1, topo_prop=1/3, metric='copes'):
+                       ylim=None, xtick_skip=1, topo_prop=1/5, metric='copes'):
         """
 
         Parameters
@@ -717,7 +719,7 @@ def plot_joint_spectrum_clusters(xvect, psd, clusters, info, ax=None, freqs='aut
 
 def plot_joint_spectrum(xvect, psd, info, ax=None, freqs='auto', base=1,
         topo_scale='joint', lw=0.5, ylabel='Power', title='', ylim=None,
-        xtick_skip=1, topo_prop=1/3):
+        xtick_skip=1, topo_prop=1/5):
     """Plot a GLM-Spectrum contrast with spatial line colouring and topograpies.
 
     Parameters
@@ -753,9 +755,16 @@ def plot_joint_spectrum(xvect, psd, info, ax=None, freqs='auto', base=1,
     """
     if ax is None:
         fig = plt.figure()
+        fig.subplots_adjust(top=0.8)
         ax = plt.subplot(111)
 
-    plot_sensor_spectrum(xvect, psd, info, ax=ax, base=base, lw=0.25, ylabel=ylabel)
+    ax.set_axis_off()
+
+    title_prop = 0.1
+    main_prop = 1-title_prop-topo_prop
+    main_ax = ax.inset_axes((0, 0, 1, main_prop))
+
+    plot_sensor_spectrum(xvect, psd, info, ax=main_ax, base=base, lw=0.25, ylabel=ylabel)
     fx = prep_scaled_freq(base, xvect)
 
     if freqs == 'auto':
@@ -767,32 +776,8 @@ def plot_joint_spectrum(xvect, psd, info, ax=None, freqs='auto', base=1,
     else:
         topo_freq_inds = [np.argmin(np.abs(xvect - ff)) for ff in freqs]
 
-
-    # ylims are abit complicated...
-    #  yl2[1] | Topos...
-    #         | Topos....
-    #   yl[1] |
-    #         |
-    #         |
-    #         | --------------
-    #         |
-    #         |
-    #   yl[0] |
-    # Remove top third of y-axis and set limits
-    yl = ax.get_ylim()
-    if np.all(np.sign(yl) > -1):
-        # Yscale all positive
-        yl2 = (yl[0], yl[1]*(1+topo_prop))
-        ax.set_ylim(*yl2)
-        ax.spines['left'].set_bounds(*yl)
-
-    elif len(np.unique(np.sign(yl))) == 2:
-        # Yscale crosses zero
-        ymx = np.max(np.abs(yl))
-        yl = (-ymx, ymx)
-        yl2 = (yl[0], yl[1]*(1+topo_prop*2))
-        ax.set_ylim(*yl2)
-        ax.spines['left'].set_bounds(*yl)
+    yl = main_ax.get_ylim()
+    main_ax.set_ylim(yl[0], 1.2*yl[1])
 
     yt = ax.get_yticks()
     inds = yt < yl[1]
@@ -808,17 +793,22 @@ def plot_joint_spectrum(xvect, psd, info, ax=None, freqs='auto', base=1,
     topos = []
     for idx in range(len(freqs)):
         # Create topomap axis
-        topo_pos = [topo_centres[idx] - 0.2, 1-topo_prop/2, 0.4, 0.2]
-        topo = ax.inset_axes(topo_pos)
+        topo_pos = [topo_centres[idx] - 0.2, 1-title_prop-topo_prop, 0.4, topo_prop]
+        topo_ax = ax.inset_axes(topo_pos)
 
         topo_idx = fx[0][topo_freq_inds[idx]]
-        plt.plot((topo_idx, topo_idx), yl, color=[0.7, 0.7, 0.7])
-        yy = (yl[1], yl2[1]*(1-topo_prop/2))
-        xx = fx[0][-1] * topo_centres[idx]
-        plt.plot((topo_idx, xx), yy, color=[0.7, 0.7, 0.7])
+        main_ax.plot((topo_idx, topo_idx), yl, color=[0.7, 0.7, 0.7])
+
+        xy_main = (topo_idx, yl[1])
+        xy_topo = (0.5, 0)
+        con = ConnectionPatch(
+            xyA=xy_main, coordsA=main_ax.transData,
+            xyB=xy_topo, coordsB=topo_ax.transAxes,
+            arrowstyle="-", color=[0.7, 0.7, 0.7])
+        ax.figure.add_artist(con)
 
         dat = psd[topo_freq_inds[idx], :]
-        im, cn = mne.viz.plot_topomap(dat, info, axes=topo, show=False)
+        im, cn = mne.viz.plot_topomap(dat, info, axes=topo_ax, show=False)
         topos.append(im)
 
     if topo_scale == 'joint':
@@ -831,13 +821,12 @@ def plot_joint_spectrum(xvect, psd, info, ax=None, freqs='auto', base=1,
         vmin = 0
         vmax = 1
 
-    cb_pos = [0.95, 1-topo_prop/2, 0.025, topo_prop/2]
+    cb_pos = [0.95, 1-title_prop-topo_prop, 0.025, topo_prop]
     cax =  ax.inset_axes(cb_pos)
 
     plt.colorbar(topos[0], cax=cax)
 
-    ax.set_title(title)
-    ax.set_ylim(*yl2)
+    ax.set_title(title, x=0.5, y=1-title_prop)
 
 
 def plot_sensor_spectrum(xvect, psd, info, ax=None, sensor_proj=False,
