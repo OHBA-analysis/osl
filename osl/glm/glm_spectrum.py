@@ -112,6 +112,9 @@ class SensorGLMSpectrum(GLMSpectrumResult):
         if metric == 'copes':
             spec = self.model.copes[contrast, :, :].T
             ylabel = 'Power' if ylabel is None else ylabel
+        elif metric == 'varcopes':
+            spec = self.model.varcopes[contrast, :, :].T
+            ylabel = 'Standard-Error' if ylabel is None else ylabel
         elif metric == 'tstats':
             spec = self.model.tstats[contrast, :, :].T
             ylabel = 't-statistics' if ylabel is None else ylabel
@@ -278,6 +281,9 @@ class GroupSensorGLMSpectrum:
         """
         if metric == 'copes':
             spec = self.model.copes[gcontrast, fcontrast, :, :].T
+        elif metric == 'varcopes':
+            spec = self.model.varcopes[gcontrast, fcontrast, :, :].T
+            ylabel = 'Standard-Error' if ylabel is None else ylabel
         elif metric == 'tstats':
             spec = self.model.tstats[gcontrast, fcontrast, :, :].T
         else:
@@ -387,7 +393,7 @@ class SensorClusterPerm:
         title = 'group-con: {}\nfirst-level-con: {}'
         title = title.format(self.gl_contrast_name, self.fl_contrast_name)
 
-        clu, obs = self.perms.get_sig_clusters([99], self.perm_data)
+        clu, obs = self.perms.get_sig_clusters(thresh, self.perm_data)
         plot_joint_spectrum_clusters(self.f, obs, clu, self.info, base=base, ax=ax, title=title)
 
 
@@ -577,7 +583,7 @@ def read_glm_spectrum(infile):
 
 def plot_joint_spectrum_clusters(xvect, psd, clusters, info, ax=None, freqs='auto', base=1,
                                  topo_scale='joint', lw=0.5, ylabel='Power', title='', ylim=None,
-                                 xtick_skip=1, topo_prop=1/3):
+                                 xtick_skip=1, topo_prop=1/5):
     """
 
     Parameters
@@ -615,40 +621,22 @@ def plot_joint_spectrum_clusters(xvect, psd, clusters, info, ax=None, freqs='aut
     -------
 
     """
-
     if ax is None:
         fig = plt.figure()
+        fig.subplots_adjust(top=0.8)
         ax = plt.subplot(111)
 
-    plot_sensor_spectrum(xvect, psd, info, ax=ax, base=base, lw=0.25)
+    ax.set_axis_off()
+
+    title_prop = 0.1
+    main_prop = 1-title_prop-topo_prop
+    main_ax = ax.inset_axes((0, 0, 1, main_prop))
+
+    plot_sensor_spectrum(xvect, psd, info, ax=main_ax, base=base, lw=0.25, ylabel=ylabel)
     fx = prep_scaled_freq(base, xvect)
 
-    # ylims are abit complicated...
-    #  yl2[1] | Topos...
-    #         | Topos....
-    #   yl[1] |
-    #         |
-    #         |
-    #         | --------------
-    #         |
-    #         |
-    #   yl[0] |
-    # Remove top third of y-axis and set limits
-    yl = ax.get_ylim()
-    if np.all(np.sign(yl) > -1):
-        # Yscale all positive
-        yl2 = (yl[0], yl[1]*(1+topo_prop))
-        ax.set_ylim(*yl2)
-        ax.spines['left'].set_bounds(*yl)
-
-    elif len(np.unique(np.sign(yl))) == 2:
-        # Yscale crosses zero
-        ymx = np.max(np.abs(yl))
-        yl = (-ymx, ymx)
-        yl2 = (yl[0], yl[1]*(1+topo_prop*2))
-        ax.set_ylim(*yl2)
-        ax.spines['left'].set_bounds(*yl)
-    box_prop = np.ptp(yl) / np.ptp(yl2)
+    yl = main_ax.get_ylim()
+    main_ax.set_ylim(yl[0], 1.2*yl[1])
 
     yt = ax.get_yticks()
     inds = yt < yl[1]
@@ -659,9 +647,6 @@ def plot_joint_spectrum_clusters(xvect, psd, clusters, info, ax=None, freqs='aut
     ax.yaxis.offsetText.set_visible(False)
     ax.text(0, yl[1], offset, ha='right')
 
-    topo_centres = np.linspace(0, 1, len(freqs)+2)[1:-1]
-    topo_width = 0.4
-
     if len(clusters) == 0:
         # put up an empty axes anyway
         topo_pos = [0.3, 1.2, 0.4, 0.4]
@@ -669,33 +654,59 @@ def plot_joint_spectrum_clusters(xvect, psd, clusters, info, ax=None, freqs='aut
         topo.set_xticks([])
         topo.set_yticks([])
 
-    shade = [0.7, 0.7, 0.7]
+    # Reorder clusters in ascending frequency
+    clu_order = []
+    for clu in clusters:
+        clu_order.append(clu[2][0].min())
+    clusters = [clusters[ii] for ii in np.argsort(clu_order)]
 
+    print('\n')
+    table_header = '{0:12s}{1:16s}{2:12s}{3:12s}{4:14s}'
+    print(table_header.format('Cluster', 'Statistic', 'Freq Min', 'Freq Max', 'Num Channels'))
+    table_template = '{0:<12d}{1:<16.3f}{2:<12.2f}{3:<12.2f}{4:<14d}'
+
+    topo_centres = np.linspace(0, 1, len(clusters)+2)[1:-1]
+    topo_width = 0.4
     topos = []
-    for c in range(len(clusters)):
-        print(c)
-        inds = np.where(clusters==c+1)[0]
+    ymax_span = (np.abs(yl[0]) + yl[1]) / (np.abs(yl[0]) + yl[1]*1.2)
+    for idx in range(len(clusters)):
+        clu = clusters[idx]
+
+        # Create topomap axis
+        topo_pos = [topo_centres[idx] - 0.2, 1-title_prop-topo_prop, 0.4, topo_prop]
+        topo_ax = ax.inset_axes(topo_pos)
+
+        # Extract cluster location in space and frequency
         channels = np.zeros((psd.shape[1], ))
-        channels[clusters[c][2][1]] = 1
+        channels[clu[2][1]] = 1
         if len(channels) == 204:
             channels = np.logical_or(channels[::2], channels[1::2])
         freqs = np.zeros((psd.shape[0], ))
-        freqs[clusters[c][2][0]] = 1
+        freqs[clu[2][0]] = 1
         finds = np.where(freqs)[0]
         if len(finds) == 1:
-            finds = [finds[0], finds[0]+1]
-        ax.axvspan(fx[0][finds[0]], fx[0][finds[-1]], facecolor=shade, alpha=0.5, ymax=box_prop)
+            finds = np.array([finds[0], finds[0]+1])
+
+        msg = 'Cluster {} - stat: {}, freq range: {}, num channels {}'
+        freq_range = (fx[0][finds[0]], fx[0][finds[-1]])
+        print(table_template.format(idx+1, clu[0], freq_range[0], freq_range[1], int(channels.sum())))
+
+        # Plot cluster span overlay on spectrum
+        main_ax.axvspan(fx[0][finds[0]], fx[0][finds[-1]], facecolor=[0.7, 0.7, 0.7], alpha=0.5, ymax=ymax_span)
         fmid = int(np.floor(finds.mean()))
 
-        topo_idx = fx[0][fmid]
-        yy = (yl[1], yl2[1]*(1-topo_prop/2))
-        xx = fx[0][-1] * topo_centres[c]
-        plt.plot((topo_idx, xx), yy, color=[0.7, 0.7, 0.7])
+        # Plot connecting line to topo
+        xy_main = (fx[0][fmid], yl[1])
+        xy_topo = (0.5, 0)
+        con = ConnectionPatch(
+            xyA=xy_main, coordsA=main_ax.transData,
+            xyB=xy_topo, coordsB=topo_ax.transAxes,
+            arrowstyle="-", color=[0.7, 0.7, 0.7])
+        main_ax.figure.add_artist(con)
 
+        # Plot topo
         dat = psd[fmid, :]
-        topo_pos = [topo_centres[c] - 0.2, 1-topo_prop/2, 0.4, 0.2]
-        topo = ax.inset_axes(topo_pos)
-        im, cn = mne.viz.plot_topomap(dat, info, axes=topo, show=False, mask=channels)
+        im, cn = mne.viz.plot_topomap(dat, info, axes=topo_ax, show=False, mask=channels)
         topos.append(im)
 
     if topo_scale == 'joint':
@@ -707,14 +718,14 @@ def plot_joint_spectrum_clusters(xvect, psd, clusters, info, ax=None, freqs='aut
     else:
         vmin = 0
         vmax = 1
+    print('\n')  # End table
 
-    cb_pos = [0.95, 1-topo_prop/2, 0.025, topo_prop/2]
+    cb_pos = [0.95, 1-title_prop-topo_prop, 0.025, topo_prop]
     cax =  ax.inset_axes(cb_pos)
 
     plt.colorbar(topos[0], cax=cax)
 
-    ax.set_title(title)
-    ax.set_ylim(*yl2)
+    ax.set_title(title, x=0.5, y=1-title_prop)
 
 
 def plot_joint_spectrum(xvect, psd, info, ax=None, freqs='auto', base=1,
