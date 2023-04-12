@@ -846,18 +846,23 @@ def convert2mne_raw(parc_data, raw, parcel_names=None):
     parc_raw : mne.Raw
         Generated parcellation in mne.Raw format.
     """
-    # Get Info object from the sensor-level Raw object
-    info = raw.info
+    # parc_data is missing bad segments
+    # We insert these before creating the new MNE object
+    _, times = raw.get_data(reject_by_annotation="omit", return_times=True)
+    indices = raw.time_as_index(times)
+    data = np.zeros([parc_data.shape[0], len(raw.times)], dtype=np.float32)
+    data[:, indices] = parc_data
 
     # Create Info object
+    info = raw.info
     if parcel_names is None:
-        parcel_names = [str(i) for i in range(parc_data.shape[0])]
+        parcel_names = [str(i) for i in range(data.shape[0])]
     parc_info = mne.create_info(
         ch_names=parcel_names, ch_types="misc", sfreq=info["sfreq"]
     )
 
     # Create Raw object
-    parc_raw = mne.io.RawArray(parc_data, parc_info)
+    parc_raw = mne.io.RawArray(data, parc_info)
 
     # Copy timing info
     parc_raw.set_meas_date(raw.info["meas_date"])
@@ -922,7 +927,9 @@ def convert2mne_epochs(parc_data, epochs, parcel_names=None):
         parcel_names = [str(i) for i in range(parc_data.shape[0])]
 
     parc_info = mne.create_info(
-        ch_names=parcel_names, ch_types="misc", sfreq=info["sfreq"],
+        ch_names=parcel_names,
+        ch_types="misc",
+        sfreq=info["sfreq"],
     )
     parc_events = epochs.events
 
