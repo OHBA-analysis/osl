@@ -7,8 +7,7 @@ import glmtools as glm
 import matplotlib.pyplot as plt
 import mne
 import numpy as np
-from glmtools.design import DesignConfig
-from sails.stft import GLMSpectrumResult, glm_periodogram
+from sails.stft import glm_periodogram
 from scipy import signal, stats
 from .glm_base import GLMBaseResult, GroupGLMBaseResult, SensorClusterPerm
 
@@ -19,7 +18,7 @@ from matplotlib.patches import ConnectionPatch
 # GLM-Spectrum classes designed to work with GLM-Spectra computed from  MNE
 # format sensorspace data
 
-class RawGLMSpectrum(GLMBaseResult):
+class SensorGLMSpectrum(GLMBaseResult):
     """A class for GLM-Spectra fitted from MNE-Python Raw objects."""
 
     def __init__(self, glmsp, info):
@@ -29,8 +28,8 @@ class RawGLMSpectrum(GLMBaseResult):
         super().__init__(glmsp.model, glmsp.design, info, data=glmsp.data)
 
     def plot_joint_spectrum(self, contrast=0, freqs='auto', base=1, ax=None,
-                       topo_scale='joint', lw=0.5,  ylabel=None, title=None,
-                       ylim=None, xtick_skip=1, topo_prop=1/5, metric='copes'):
+                            topo_scale='joint', lw=0.5,  ylabel=None, title=None,
+                            ylim=None, xtick_skip=1, topo_prop=1/5, metric='copes'):
         """Plot a GLM-Spectrum contrast with spatial line colouring and topograpies.
 
         Parameters
@@ -78,12 +77,12 @@ class RawGLMSpectrum(GLMBaseResult):
             title = 'C {} : {}'.format(contrast, self.design.contrast_names[contrast])
 
         plot_joint_spectrum(self.f, spec, self.info, freqs=freqs, base=base,
-                topo_scale=topo_scale, lw=lw, ylabel=ylabel, title=title,
-                ylim=ylim, xtick_skip=xtick_skip, topo_prop=topo_prop, ax=ax)
+                            topo_scale=topo_scale, lw=lw, ylabel=ylabel, title=title,
+                            ylim=ylim, xtick_skip=xtick_skip, topo_prop=topo_prop, ax=ax)
 
     def plot_sensor_spectrum(self, contrast, sensor_proj=False,
-                         xticks=None, xticklabels=None, lw=0.5, ax=None, title=None,
-                         sensor_cols=True, base=1, ylabel=None, xtick_skip=1, metric='copes'):
+                             xticks=None, xticklabels=None, lw=0.5, ax=None, title=None,
+                             sensor_cols=True, base=1, ylabel=None, xtick_skip=1, metric='copes'):
         """Plot a GLM-Spectrum contrast with spatial line colouring.
 
         Parameters
@@ -124,11 +123,11 @@ class RawGLMSpectrum(GLMBaseResult):
             title = 'C {} : {}'.format(contrast, self.design.contrast_names[contrast])
 
         plot_sensor_spectrum(self.f, spec, self.info, ax=ax, sensor_proj=sensor_proj,
-                            xticks=xticks, xticklabels=xticklabels, lw=lw, title=title,
-                            sensor_cols=sensor_cols, base=base, ylabel=ylabel, xtick_skip=xtick_skip)
+                             xticks=xticks, xticklabels=xticklabels, lw=lw, title=title,
+                             sensor_cols=sensor_cols, base=base, ylabel=ylabel, xtick_skip=xtick_skip)
 
 
-class GroupGLMSpectrum(GroupGLMBaseResult):
+class GroupSensorGLMSpectrum(GroupGLMBaseResult):
     """A class for group level GLM-Spectra fitted across mmultiple first-level
     GLM-Spectra computed from MNE-Python Raw objects"""
 
@@ -184,8 +183,8 @@ class GroupGLMSpectrum(GroupGLMBaseResult):
             self.data = dd
 
     def plot_joint_spectrum(self, gcontrast=0, fcontrast=0, freqs='auto', base=1, ax=None,
-                       topo_scale='joint', lw=0.5,  ylabel='Power', title=None,
-                       ylim=None, xtick_skip=1, topo_prop=1/5, metric='copes'):
+                            topo_scale='joint', lw=0.5,  ylabel='Power', title=None,
+                            ylim=None, xtick_skip=1, topo_prop=1/5, metric='copes'):
         """
 
         Parameters
@@ -236,8 +235,8 @@ class GroupGLMSpectrum(GroupGLMBaseResult):
             title = gtitle + '\n' + ftitle
 
         plot_joint_spectrum(self.f, spec, self.info, freqs=freqs, base=base,
-                topo_scale=topo_scale, lw=lw, ylabel=ylabel, title=title,
-                ylim=ylim, xtick_skip=xtick_skip, topo_prop=topo_prop, ax=ax)
+                            topo_scale=topo_scale, lw=lw, ylabel=ylabel, title=title,
+                            ylim=ylim, xtick_skip=xtick_skip, topo_prop=topo_prop, ax=ax)
 
     def get_fl_contrast(self, fl_con):
         """Get the data from a single first level contrast.
@@ -437,27 +436,27 @@ def glm_spectrum(XX, reg_categorical=None, reg_ztrans=None, reg_unitmax=None,
 
     # sails.sftf.config freqvals isn't right when frange is trimmed!
     glmsp = glm_periodogram(YY, axis=axis,
-                              reg_categorical=reg_categorical,
-                              reg_ztrans=reg_ztrans,
-                              reg_unitmax=reg_unitmax,
-                              contrasts=contrasts,
-                              fit_intercept=fit_intercept,
-                              window_type=window_type,
-                              fs=fs,
-                              nperseg=nperseg,
-                              noverlap=noverlap,
-                              nfft=nfft,
-                              detrend=detrend,
-                              return_onesided=return_onesided,
-                              scaling=scaling,
-                              mode=mode,
-                              fmin=fmin,
-                              fmax=fmax,
-                              ret_class=True,
-                              fit_method='glmtools')
+                            reg_categorical=reg_categorical,
+                            reg_ztrans=reg_ztrans,
+                            reg_unitmax=reg_unitmax,
+                            contrasts=contrasts,
+                            fit_intercept=fit_intercept,
+                            window_type=window_type,
+                            fs=fs,
+                            nperseg=nperseg,
+                            noverlap=noverlap,
+                            nfft=nfft,
+                            detrend=detrend,
+                            return_onesided=return_onesided,
+                            scaling=scaling,
+                            mode=mode,
+                            fmin=fmin,
+                            fmax=fmax,
+                            ret_class=True,
+                            fit_method='glmtools')
 
     if isinstance(XX, mne.io.base.BaseRaw):
-        return RawGLMSpectrum(glmsp, XX.info)
+        return SensorGLMSpectrum(glmsp, XX.info)
     else:
         return glmsp
 
@@ -870,7 +869,6 @@ def prep_scaled_freq(base, freq_vect):
     fx = freq_vect**base
     if base < 1:
         nticks = int(np.floor(np.sqrt(freq_vect[-1])))
-        #ftick = np.array([2**ii for ii in range(6)])
         ftick = np.array([ii**2 for ii in range(1,nticks+1)])
         ftickscaled = ftick**base
     else:

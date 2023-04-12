@@ -2,13 +2,10 @@
 import os
 import pickle
 from copy import deepcopy
-from pathlib import Path
 
 import glmtools as glm
-import matplotlib.pyplot as plt
 import mne
 import numpy as np
-from scipy import signal, stats
 
 from .glm_base import GLMBaseResult, GroupGLMBaseResult, SensorClusterPerm
 
@@ -96,6 +93,10 @@ class GroupGLMEpochs(GroupGLMBaseResult):
 
         return ret_con
 
+
+#%% ------------------------------------------------------
+
+
 def glm_epochs(config, epochs):
 
     data = read_mne_epochs(epochs)
@@ -104,7 +105,6 @@ def glm_epochs(config, epochs):
     model = glm.fit.OLSModel(design, data)
 
     return GLMEpochsResult(model, design, epochs.info, tmin=epochs.tmin, data=data)
-
 
 def group_glm_epochs(inspectra, design_config=None, datainfo=None, metric='copes', baseline=None):
     """Compute a group GLM-Epochs from a set of first-level GLM-Epochs.
@@ -153,6 +153,8 @@ def group_glm_epochs(inspectra, design_config=None, datainfo=None, metric='copes
     model = glm.fit.OLSModel(design, group_data)
 
     return GroupGLMEpochs(model, design, glmep.info, data=group_data, fl_contrast_names=fl_contrast_names, tmin=glmep.tmin)
+
+#%% ------------------------------------------------------
 
 def read_mne_epochs(X):
 

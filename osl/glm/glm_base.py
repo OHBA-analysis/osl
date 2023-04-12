@@ -1,15 +1,10 @@
 
 import pickle
-from copy import deepcopy
 from pathlib import Path
 
 import glmtools as glm
-import matplotlib.pyplot as plt
 import mne
 import numpy as np
-from glmtools.design import DesignConfig
-from sails.stft import GLMSpectrumResult, glm_periodogram
-from scipy import signal, stats
 
 
 class GLMBaseResult:
