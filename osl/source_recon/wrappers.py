@@ -26,6 +26,7 @@ from . import rhino, beamforming, parcellation, sign_flipping
 from ..report import src_report
 
 import logging
+
 logger = logging.getLogger(__name__)
 
 
@@ -397,8 +398,6 @@ def beamform(
     freq_range,
     chantypes,
     rank,
-    spatial_resolution=None,
-    reference_brain="mni",
 ):
     """Wrapper function for beamforming.
 
@@ -421,20 +420,6 @@ def beamform(
         Channel types to use in beamforming.
     rank : dict
         Keys should be the channel types and the value should be the rank to use.
-    spatial_resolution : int
-        Resolution for beamforming to use for the reference brain in mm
-        (must be an integer, or will be cast to nearest int)
-        If None, then the gridstep used in coreg_filenames['forward_model_file']
-        is used.
-    reference_brain : string
-        'mni' indicates that the reference_brain is the stdbrain in MNI space
-        'mri' indicates that the reference_brain is the subject's sMRI in
-            the scaled native/mri space. "
-        'unscaled_mri' indicates that the reference_brain is the subject's sMRI in
-            unscaled native/mri space.
-        Note that Scaled/unscaled relates to the allow_smri_scaling option in coreg.
-        If allow_scaling was False, then the unscaled MRI will be the same as the scaled.
-        MRI.
     """
     logger.info("beamforming")
 
@@ -504,6 +489,7 @@ def parcellate(
     orthogonalisation,
     spatial_resolution=None,
     reference_brain="mni",
+    extra_chans="stim",
 ):
     """Wrapper function for parcellation.
 
@@ -539,6 +525,9 @@ def parcellate(
         Note that Scaled/unscaled relates to the allow_smri_scaling option in coreg.
         If allow_scaling was False, then the unscaled MRI will be the same as the
         scaled MRI.
+    extra_chans : str or list of str
+        Extra channels to include in the parc-raw.fif file. Defaults to 'stim'.
+        Stim channels are always added to parc-raw.fif in addition to extra_chans.
     """
     logger.info("parcellate")
 
@@ -614,7 +603,9 @@ def parcellate(
         # Save parcellated data as a MNE Raw object
         parc_fif_file = src_dir / subject / "rhino/parc-raw.fif"
         logger.info(f"saving {parc_fif_file}")
-        parc_raw = parcellation.convert2mne_raw(parcel_data, data)
+        parc_raw = parcellation.convert2mne_raw(
+            parcel_data, data, extra_chans=extra_chans
+        )
         parc_raw.save(parc_fif_file, overwrite=True)
     else:
         # Save parcellated data as a MNE Epochs object
@@ -666,6 +657,7 @@ def beamform_and_parcellate(
     orthogonalisation,
     spatial_resolution=None,
     reference_brain="mni",
+    extra_chans="stim",
 ):
     """Wrapper function for beamforming and parcellation.
 
@@ -708,6 +700,9 @@ def beamform_and_parcellate(
         Note that Scaled/unscaled relates to the allow_smri_scaling option in coreg.
         If allow_scaling was False, then the unscaled MRI will be the same as the
         scaled MRI.
+    extra_chans : str or list of str
+        Extra channels to include in the parc-raw.fif file. Defaults to 'stim'.
+        Stim channels are always added to parc-raw.fif in addition to extra_chans.
     """
     logger.info("beamform_and_parcellate")
 
@@ -793,7 +788,9 @@ def beamform_and_parcellate(
         # Save parcellated data as a MNE Raw object
         parc_fif_file = src_dir / subject / "rhino/parc-raw.fif"
         logger.info(f"saving {parc_fif_file}")
-        parc_raw = parcellation.convert2mne_raw(parcel_data, data)
+        parc_raw = parcellation.convert2mne_raw(
+            parcel_data, data, extra_chans=extra_chans
+        )
         parc_raw.save(parc_fif_file, overwrite=True)
     else:
         # Save parcellated data as a MNE Epochs object
