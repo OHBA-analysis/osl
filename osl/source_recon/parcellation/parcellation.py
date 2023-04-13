@@ -883,6 +883,8 @@ def convert2mne_raw(parc_data, raw, parcel_names=None, extra_chans="stim"):
     parc_raw.set_annotations(raw._annotations)
 
     # Add extra channels
+    if "stim" not in raw:
+        log_or_print("No stim channel to add to parc-raw.fif", warning=True)
     for extra_chan in extra_chans:
         if extra_chan in raw:
             chan_raw = raw.copy().pick(extra_chan)
