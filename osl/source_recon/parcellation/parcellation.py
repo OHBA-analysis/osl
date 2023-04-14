@@ -827,7 +827,7 @@ def convert2niftii(parc_data, parcellation_file, mask_file, tres=1, tmin=0):
     return nii
 
 
-def convert2mne_raw(parc_data, raw, parcel_names=None):
+def convert2mne_raw(parc_data, raw, parcel_names=None, extra_chans="stim"):
     """Create and returns an MNE raw object that contains parcellated data.
 
     Parameters
@@ -839,25 +839,39 @@ def convert2mne_raw(parc_data, raw, parcel_names=None):
         Info such as timings and bad segments will be copied from this to parc_raw.
     parcel_names : list of str
         List of strings indicating names of parcels.
-        If None then names are set to be 0 to n_parcels-1.
+        If None then names are set to be parcel_0,...,parcel_{n_parcels-1}.
+    extra_chans : str or list of str
+        Extra channels, e.g. 'stim' or 'emg', to include in the parc_raw object.
+        Defaults to 'stim'. stim channels are always added to parc_raw if they are
+        present in raw.
 
     Returns
     -------
     parc_raw : mne.Raw
         Generated parcellation in mne.Raw format.
     """
-    # Get Info object from the sensor-level Raw object
-    info = raw.info
+    # What extra channels should we add to the parc_raw object?
+    if isinstance(extra_chans, str):
+        extra_chans = [extra_chans]
+    extra_chans = np.unique(["stim"] + extra_chans)
+
+    # parc_data is missing bad segments
+    # We insert these before creating the new MNE object
+    _, times = raw.get_data(reject_by_annotation="omit", return_times=True)
+    indices = raw.time_as_index(times)
+    data = np.zeros([parc_data.shape[0], len(raw.times)], dtype=np.float32)
+    data[:, indices] = parc_data
 
     # Create Info object
+    info = raw.info
     if parcel_names is None:
-        parcel_names = [str(i) for i in range(parc_data.shape[0])]
+        parcel_names = [f"parcel_{i}" for i in range(data.shape[0])]
     parc_info = mne.create_info(
         ch_names=parcel_names, ch_types="misc", sfreq=info["sfreq"]
     )
 
     # Create Raw object
-    parc_raw = mne.io.RawArray(parc_data, parc_info)
+    parc_raw = mne.io.RawArray(data, parc_info)
 
     # Copy timing info
     parc_raw.set_meas_date(raw.info["meas_date"])
@@ -868,25 +882,20 @@ def convert2mne_raw(parc_data, raw, parcel_names=None):
     # Copy annotations from raw
     parc_raw.set_annotations(raw._annotations)
 
-    # Add stim channel
-    if "stim" in raw:
-        stim_raw = raw.copy().pick_types(stim=True)
-        stim_data = stim_raw.get_data()
-        stim_info = mne.create_info(
-            stim_raw.ch_names, raw.info["sfreq"], ["stim"] * stim_data.shape[0]
-        )
-        stim_raw = mne.io.RawArray(stim_data, stim_info)
-        parc_raw.add_channels([stim_raw], force_update_info=True)
-
-    # Add EMG channel
-    if "emg" in raw:
-        emg_raw = raw.copy().pick_types(emg=True)
-        emg_data = emg_raw.get_data()
-        emg_info = mne.create_info(
-            emg_raw.ch_names, raw.info["sfreq"], ["emg"] * emg_data.shape[0]
-        )
-        emg_raw = mne.io.RawArray(emg_data, emg_info)
-        parc_raw.add_channels([emg_raw], force_update_info=True)
+    # Add extra channels
+    if "stim" not in raw:
+        log_or_print("No stim channel to add to parc-raw.fif", warning=True)
+    for extra_chan in extra_chans:
+        if extra_chan in raw:
+            chan_raw = raw.copy().pick(extra_chan)
+            chan_data = chan_raw.get_data()
+            chan_info = mne.create_info(
+                chan_raw.ch_names,
+                raw.info["sfreq"],
+                [extra_chan] * chan_data.shape[0],
+            )
+            chan_raw = mne.io.RawArray(chan_data, chan_info)
+            parc_raw.add_channels([chan_raw], force_update_info=True)
 
     # Copy the description from the sensor-level Raw object
     parc_raw.info["description"] = raw.info["description"]
@@ -906,7 +915,7 @@ def convert2mne_epochs(parc_data, epochs, parcel_names=None):
         Info such as timings and bad segments will be copied from this to parc_raw.
     parcel_names : list(str)
         List of strings indicating names of parcels.
-        If None then names are set to be 0 to n_parcels-1.
+        If None then names are set to be parcel_0,...,parcel_{n_parcels-1}.
 
     Returns
     -------
@@ -919,10 +928,12 @@ def convert2mne_epochs(parc_data, epochs, parcel_names=None):
 
     # Create parc info
     if parcel_names is None:
-        parcel_names = [str(i) for i in range(parc_data.shape[0])]
+        parcel_names = [f"parcel_{i}" for i in range(data.shape[0])]
 
     parc_info = mne.create_info(
-        ch_names=parcel_names, ch_types="misc", sfreq=info["sfreq"],
+        ch_names=parcel_names,
+        ch_types="misc",
+        sfreq=info["sfreq"],
     )
     parc_events = epochs.events
 

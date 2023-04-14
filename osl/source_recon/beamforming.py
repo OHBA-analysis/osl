@@ -200,7 +200,7 @@ def make_lcmv(
     return filters
 
 
-def apply_lcmv(data, filters, reject_by_annotation=None):
+def apply_lcmv(data, filters, reject_by_annotation="omit"):
     """Apply a LCMV filter to an MNE Raw or Epochs object."""
     if isinstance(data, mne.io.Raw):
         return apply_lcmv_raw(data, filters, reject_by_annotation)
@@ -208,7 +208,7 @@ def apply_lcmv(data, filters, reject_by_annotation=None):
         return mne.beamformer.apply_lcmv_epochs(data, filters)
 
 
-def apply_lcmv_raw(raw, filters, reject_by_annotation=None):
+def apply_lcmv_raw(raw, filters, reject_by_annotation="omit"):
     """Modified version of mne.beamformer.apply_lcmv_raw."""
 
     _check_reference(raw)
