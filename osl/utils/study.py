@@ -20,6 +20,9 @@ class Study:
         self.match_files = sorted(glob.glob(self.globdir))
         print('found {} files'.format(len(self.match_files)))
 
+        self.match_files = [ff for ff in self.match_files if parse.parse(self.studydir, ff) is not None]
+        print('keeping {} consistent files'.format(len(self.match_files)))
+
         self.match_values = []
         for fname in self.match_files:
             self.match_values.append(parse.parse(self.studydir, fname).named)

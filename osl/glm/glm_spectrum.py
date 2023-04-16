@@ -7,66 +7,29 @@ import glmtools as glm
 import matplotlib.pyplot as plt
 import mne
 import numpy as np
-from glmtools.design import DesignConfig
-from sails.stft import GLMSpectrumResult, glm_periodogram
+from sails.stft import glm_periodogram
 from scipy import signal, stats
+from .glm_base import GLMBaseResult, GroupGLMBaseResult, SensorClusterPerm
+
+from matplotlib.patches import ConnectionPatch
 
 #%% ---------------------------------------
 #
 # GLM-Spectrum classes designed to work with GLM-Spectra computed from  MNE
 # format sensorspace data
 
-class RawGLMSpectrum(GLMSpectrumResult):
+class SensorGLMSpectrum(GLMBaseResult):
     """A class for GLM-Spectra fitted from MNE-Python Raw objects."""
 
-    def __init__(self, glmspec, info):
+    def __init__(self, glmsp, info):
 
-        self.f = glmspec.f
-        self.config = glmspec.config
-
-        self.model = glmspec.model
-        self.design = glmspec.design
-        self.data = glmspec.data
-
-        self.info = info
-
-    def save_pkl(self, outname, overwrite=True, save_data=False):
-        """Save GLM-Spectrum result to a pickle file.
-
-        Parameters
-        ----------
-        outname : str
-             Filename or full file path to write pickle to
-        overwrite : bool
-             Overwrite previous file if one exists? (Default value = True)
-        save_data : bool
-             Save STFT data in pickle? This is omitted by default to save disk
-             space (Default value = False)
-
-        """
-        if Path(outname).exists() and not overwrite:
-            msg = "{} already exists. Please delete or do use overwrite=True."
-            raise ValueError(msg.format(outname))
-
-        self.config.detrend_func = None  # Have to drop this to pickle
-
-        # This is hacky - but pickles are all or nothing and I don't know how
-        # else to do it. HDF5 would be better longer term
-        if save_data == False:
-            # Temporarily remove data before saving
-            dd = self.data
-            self.data = None
-
-        with open(outname, 'bw') as outp:
-            pickle.dump(self, outp)
-
-        # Put data back
-        if save_data == False:
-            self.data = dd
+        self.f = glmsp.f
+        self.config = glmsp.config
+        super().__init__(glmsp.model, glmsp.design, info, data=glmsp.data)
 
     def plot_joint_spectrum(self, contrast=0, freqs='auto', base=1, ax=None,
-                       topo_scale='joint', lw=0.5,  ylabel=None, title=None,
-                       ylim=None, xtick_skip=1, topo_prop=1/3, metric='copes'):
+                            topo_scale='joint', lw=0.5,  ylabel=None, title=None,
+                            ylim=None, xtick_skip=1, topo_prop=1/5, metric='copes'):
         """Plot a GLM-Spectrum contrast with spatial line colouring and topograpies.
 
         Parameters
@@ -101,6 +64,9 @@ class RawGLMSpectrum(GLMSpectrumResult):
         if metric == 'copes':
             spec = self.model.copes[contrast, :, :].T
             ylabel = 'Power' if ylabel is None else ylabel
+        elif metric == 'varcopes':
+            spec = self.model.varcopes[contrast, :, :].T
+            ylabel = 'Standard-Error' if ylabel is None else ylabel
         elif metric == 'tstats':
             spec = self.model.tstats[contrast, :, :].T
             ylabel = 't-statistics' if ylabel is None else ylabel
@@ -111,12 +77,12 @@ class RawGLMSpectrum(GLMSpectrumResult):
             title = 'C {} : {}'.format(contrast, self.design.contrast_names[contrast])
 
         plot_joint_spectrum(self.f, spec, self.info, freqs=freqs, base=base,
-                topo_scale=topo_scale, lw=lw, ylabel=ylabel, title=title,
-                ylim=ylim, xtick_skip=xtick_skip, topo_prop=topo_prop, ax=ax)
+                            topo_scale=topo_scale, lw=lw, ylabel=ylabel, title=title,
+                            ylim=ylim, xtick_skip=xtick_skip, topo_prop=topo_prop, ax=ax)
 
     def plot_sensor_spectrum(self, contrast, sensor_proj=False,
-                         xticks=None, xticklabels=None, lw=0.5, ax=None, title=None,
-                         sensor_cols=True, base=1, ylabel=None, xtick_skip=1, metric='copes'):
+                             xticks=None, xticklabels=None, lw=0.5, ax=None, title=None,
+                             sensor_cols=True, base=1, ylabel=None, xtick_skip=1, metric='copes'):
         """Plot a GLM-Spectrum contrast with spatial line colouring.
 
         Parameters
@@ -157,35 +123,68 @@ class RawGLMSpectrum(GLMSpectrumResult):
             title = 'C {} : {}'.format(contrast, self.design.contrast_names[contrast])
 
         plot_sensor_spectrum(self.f, spec, self.info, ax=ax, sensor_proj=sensor_proj,
-                            xticks=xticks, xticklabels=xticklabels, lw=lw, title=title,
-                            sensor_cols=sensor_cols, base=base, ylabel=ylabel, xtick_skip=xtick_skip)
+                             xticks=xticks, xticklabels=xticklabels, lw=lw, title=title,
+                             sensor_cols=sensor_cols, base=base, ylabel=ylabel, xtick_skip=xtick_skip)
 
 
-class GroupGLMSpectrum:
+class GroupSensorGLMSpectrum(GroupGLMBaseResult):
     """A class for group level GLM-Spectra fitted across mmultiple first-level
     GLM-Spectra computed from MNE-Python Raw objects"""
 
     def __init__(self, model, design, config, info, fl_contrast_names=None, data=None):
 
         self.f = config.freqvals
-        self.config = config
+        super().__init__(model, design, info, fl_contrast_names=fl_contrast_names, data=data)
 
-        self.model = model
-        self.design = design
-        self.data = data
+    def __str__(self):
+        msg = 'GroupSensorGLMSpectrum\n'
+        line = '\tData - {} Inputs, {} Channels and {} Frequencies\n'
+        msg += line.format(self.design.design_matrix.shape[0], self.model.copes.shape[2], self.model.copes.shape[3])
 
-        self.info = info
+        line = '\tFirst-Level - {} Regressors and {} Contrasts\n'
+        msg += line.format(self.design.design_matrix.shape[1], self.model.copes.shape[1])
 
-        # A proper group-model in glmtools will simplify this
-        self.contrast_names = self.model.contrast_names
-        if fl_contrast_names is None:
-            self.fl_contrast_names = [chr(65 + ii) for ii in range(self.model.copes.shape[1])]
-        else:
-            self.fl_contrast_names = fl_contrast_names
+        line = '\tGroup-Level - {} Regressors and {} Contrasts\n'
+        msg += line.format(self.design.design_matrix.shape[1], self.model.copes.shape[0])
+        return msg
+
+    def save_pkl(self, outname, overwrite=True, save_data=False):
+        """Save GLM-Spectrum result to a pickle file.
+
+        Parameters
+        ----------
+        outname : str
+             Filename or full file path to write pickle to
+        overwrite : bool
+             Overwrite previous file if one exists? (Default value = True)
+        save_data : bool
+             Save STFT data in pickle? This is omitted by default to save disk
+             space (Default value = False)
+
+        """
+        if Path(outname).exists() and not overwrite:
+            msg = "{} already exists. Please delete or do use overwrite=True."
+            raise ValueError(msg.format(outname))
+
+        self.config.detrend_func = None  # Have to drop this to pickle
+
+        # This is hacky - but pickles are all or nothing and I don't know how
+        # else to do it. HDF5 would be better longer term
+        if save_data == False:
+            # Temporarily remove data before saving
+            dd = self.data
+            self.data = None
+
+        with open(outname, 'bw') as outp:
+            pickle.dump(self, outp)
+
+        # Put data back
+        if save_data == False:
+            self.data = dd
 
     def plot_joint_spectrum(self, gcontrast=0, fcontrast=0, freqs='auto', base=1, ax=None,
-                       topo_scale='joint', lw=0.5,  ylabel='Power', title=None,
-                       ylim=None, xtick_skip=1, topo_prop=1/3, metric='copes'):
+                            topo_scale='joint', lw=0.5,  ylabel='Power', title=None,
+                            ylim=None, xtick_skip=1, topo_prop=1/5, metric='copes'):
         """
 
         Parameters
@@ -221,6 +220,9 @@ class GroupGLMSpectrum:
         """
         if metric == 'copes':
             spec = self.model.copes[gcontrast, fcontrast, :, :].T
+        elif metric == 'varcopes':
+            spec = self.model.varcopes[gcontrast, fcontrast, :, :].T
+            ylabel = 'Standard-Error' if ylabel is None else ylabel
         elif metric == 'tstats':
             spec = self.model.tstats[gcontrast, fcontrast, :, :].T
         else:
@@ -233,17 +235,8 @@ class GroupGLMSpectrum:
             title = gtitle + '\n' + ftitle
 
         plot_joint_spectrum(self.f, spec, self.info, freqs=freqs, base=base,
-                topo_scale=topo_scale, lw=lw, ylabel=ylabel, title=title,
-                ylim=ylim, xtick_skip=xtick_skip, topo_prop=topo_prop, ax=ax)
-
-    def get_channel_adjacency(self):
-        """Return adjacency matrix of channels."""
-        ch_type =  mne.io.meas_info._get_channel_types(self.info)[0]  # Assuming these are all the same!
-        adjacency, ch_names = mne.channels.channels._compute_ch_adjacency(self.info, ch_type)
-        ntests = np.prod(self.data.data.shape[2:])
-        ntimes = self.data.data.shape[3]
-        print('{} : {}'.format(ntimes, ntests))
-        return mne.stats.cluster_level._setup_adjacency(adjacency, ntests, ntimes)
+                            topo_scale=topo_scale, lw=lw, ylabel=ylabel, title=title,
+                            ylim=ylim, xtick_skip=xtick_skip, topo_prop=topo_prop, ax=ax)
 
     def get_fl_contrast(self, fl_con):
         """Get the data from a single first level contrast.
@@ -253,10 +246,9 @@ class GroupGLMSpectrum:
         fl_con : int
             First level contrast data index to return
 
-
         Returns
         -------
-        GroupGLMSpectrum instance containing a single first level contrast.
+        GroupSensorGLMSpectrum instance containing a single first level contrast.
 
         """
         ret_con = deepcopy(self.data)
@@ -265,51 +257,9 @@ class GroupGLMSpectrum:
         return ret_con
 
 
-class SensorClusterPerm:
+class ClusterPermuteGLMSpectrum(SensorClusterPerm):
     """A class holding the result for sensor x frequency cluster stats computed
     from a group level GLM-Spectrum"""
-
-    def __init__(self, glmsp, gl_con, fl_con=0, nperms=1000,
-                    cluster_forming_threshold=3, tstat_args=None,
-                    metric='tstats', nprocesses=1):
-
-
-        # There is a major pain here in that MNE stores raw data in [channels x time]
-        # but builds adjacencies in [time x channels]
-        self.perm_data = glmsp.get_fl_contrast(fl_con)
-        self.perm_data.data = np.swapaxes(self.perm_data.data, 1, 2)
-
-        self.gl_contrast_name = glmsp.contrast_names[gl_con]
-        self.fl_contrast_name = glmsp.fl_contrast_names[fl_con]
-        self.info = glmsp.info
-        self.f = glmsp.f
-
-        self.perms = glm.permutations.MNEClusterPermutation(glmsp.design, self.perm_data, gl_con, nperms,
-                                                        nprocesses=nprocesses,
-                                                        metric=metric,
-                                                        cluster_forming_threshold=cluster_forming_threshold,
-                                                        tstat_args=tstat_args,
-                                                        adjacency=glmsp.get_channel_adjacency())
-
-    def get_sig_clusters(self, thresh):
-        """Return the significant clusters at a given threshold.
-
-        Parameters
-        ----------
-        thresh : float
-            The threshold to consider a cluster significant eg 95 or 99
-
-        Returns
-        -------
-        clusters
-            A list containing the significant clusters. Each list item contains
-            a tuple of three items - the cluster statistic, the cluster
-            percentile relative to the null and the spatial/spectral indices of
-            the cluster.
-
-        """
-        clusters, obs_stat =  self.perms.get_sig_clusters(thresh, self.perm_data)
-        return clusters, obs_stat
 
     def plot_sig_clusters(self, thresh, ax=None, base=1):
         """Plot the significant clusters at a given threshold.
@@ -330,7 +280,7 @@ class SensorClusterPerm:
         title = 'group-con: {}\nfirst-level-con: {}'
         title = title.format(self.gl_contrast_name, self.fl_contrast_name)
 
-        clu, obs = self.perms.get_sig_clusters([99], self.perm_data)
+        clu, obs = self.perms.get_sig_clusters(thresh, self.perm_data)
         plot_joint_spectrum_clusters(self.f, obs, clu, self.info, base=base, ax=ax, title=title)
 
 
@@ -359,7 +309,15 @@ def group_glm_spectrum(inspectra, design_config=None, datainfo=None, metric='cop
 
     Returns
     -------
-    GroupGLMSpectrum
+    GroupSensorGLMSpectrum
+
+    References
+    ----------
+    .. [1] Quinn, A. J., Atkinson, L., Gohil, C., Kohl, O., Pitt, J., Zich, C., Nobre,
+       A. C., & Woolrich, M. W. (2022). The GLM-Spectrum: A multilevel framework
+       for spectrum analysis with covariate and confound modelling. Cold Spring
+       Harbor Laboratory. https://doi.org/10.1101/2022.11.14.516449
+
 
     """
     datainfo = {} if datainfo is None else datainfo
@@ -372,7 +330,7 @@ def group_glm_spectrum(inspectra, design_config=None, datainfo=None, metric='cop
         else:
             glmsp = inspectra[ii]
 
-        fl_data.append(getattr(glmsp, metric)[np.newaxis, ...])
+        fl_data.append(getattr(glmsp.model, metric)[np.newaxis, ...])
         fl_contrast_names = glmsp.design.contrast_names
 
     fl_data = np.concatenate(fl_data, axis=0)
@@ -386,7 +344,7 @@ def group_glm_spectrum(inspectra, design_config=None, datainfo=None, metric='cop
     design = design_config.design_from_datainfo(group_data.info)
     model = glm.fit.OLSModel(design, group_data)
 
-    return GroupGLMSpectrum(model, design, glmsp.config, glmsp.info, data=group_data, fl_contrast_names=fl_contrast_names)
+    return GroupSensorGLMSpectrum(model, design, glmsp.config, glmsp.info, data=group_data, fl_contrast_names=fl_contrast_names)
 
 
 def glm_spectrum(XX, reg_categorical=None, reg_ztrans=None, reg_unitmax=None,
@@ -455,7 +413,14 @@ def glm_spectrum(XX, reg_categorical=None, reg_ztrans=None, reg_unitmax=None,
 
     Returns
     -------
-    RawGLMSpectrum
+    SensorGLMSpectrum
+
+    References
+    ----------
+    .. [1] Quinn, A. J., Atkinson, L., Gohil, C., Kohl, O., Pitt, J., Zich, C., Nobre,
+       A. C., & Woolrich, M. W. (2022). The GLM-Spectrum: A multilevel framework
+       for spectrum analysis with covariate and confound modelling. Cold Spring
+       Harbor Laboratory. https://doi.org/10.1101/2022.11.14.516449
 
     """
     if isinstance(XX, mne.io.base.BaseRaw):
@@ -470,30 +435,30 @@ def glm_spectrum(XX, reg_categorical=None, reg_ztrans=None, reg_unitmax=None,
         YY = stats.zscore(YY, axis=axis)
 
     # sails.sftf.config freqvals isn't right when frange is trimmed!
-    glmspec = glm_periodogram(YY, axis=axis,
-                              reg_categorical=reg_categorical,
-                              reg_ztrans=reg_ztrans,
-                              reg_unitmax=reg_unitmax,
-                              contrasts=contrasts,
-                              fit_intercept=fit_intercept,
-                              window_type=window_type,
-                              fs=fs,
-                              nperseg=nperseg,
-                              noverlap=noverlap,
-                              nfft=nfft,
-                              detrend=detrend,
-                              return_onesided=return_onesided,
-                              scaling=scaling,
-                              mode=mode,
-                              fmin=fmin,
-                              fmax=fmax,
-                              ret_class=True,
-                              fit_method='glmtools')
+    glmsp = glm_periodogram(YY, axis=axis,
+                            reg_categorical=reg_categorical,
+                            reg_ztrans=reg_ztrans,
+                            reg_unitmax=reg_unitmax,
+                            contrasts=contrasts,
+                            fit_intercept=fit_intercept,
+                            window_type=window_type,
+                            fs=fs,
+                            nperseg=nperseg,
+                            noverlap=noverlap,
+                            nfft=nfft,
+                            detrend=detrend,
+                            return_onesided=return_onesided,
+                            scaling=scaling,
+                            mode=mode,
+                            fmin=fmin,
+                            fmax=fmax,
+                            ret_class=True,
+                            fit_method='glmtools')
 
     if isinstance(XX, mne.io.base.BaseRaw):
-        return RawGLMSpectrum(glmspec, XX.info)
+        return SensorGLMSpectrum(glmsp, XX.info)
     else:
-        return glmspec
+        return glmsp
 
 
 def read_glm_spectrum(infile):
@@ -506,12 +471,12 @@ def read_glm_spectrum(infile):
 
     Returns
     -------
-    RawGLMSpectrum
+    SensorGLMSpectrum
 
     """
     with open(infile, 'rb') as outp:
-        glmspec = pickle.load(outp)
-    return glmspec
+        glmsp = pickle.load(outp)
+    return glmsp
 
 ##% ---------------------------
 #
@@ -520,7 +485,7 @@ def read_glm_spectrum(infile):
 
 def plot_joint_spectrum_clusters(xvect, psd, clusters, info, ax=None, freqs='auto', base=1,
                                  topo_scale='joint', lw=0.5, ylabel='Power', title='', ylim=None,
-                                 xtick_skip=1, topo_prop=1/3):
+                                 xtick_skip=1, topo_prop=1/5):
     """
 
     Parameters
@@ -558,40 +523,22 @@ def plot_joint_spectrum_clusters(xvect, psd, clusters, info, ax=None, freqs='aut
     -------
 
     """
-
     if ax is None:
         fig = plt.figure()
+        fig.subplots_adjust(top=0.8)
         ax = plt.subplot(111)
 
-    plot_sensor_spectrum(xvect, psd, info, ax=ax, base=base, lw=0.25)
+    ax.set_axis_off()
+
+    title_prop = 0.1
+    main_prop = 1-title_prop-topo_prop
+    main_ax = ax.inset_axes((0, 0, 1, main_prop))
+
+    plot_sensor_spectrum(xvect, psd, info, ax=main_ax, base=base, lw=0.25, ylabel=ylabel)
     fx = prep_scaled_freq(base, xvect)
 
-    # ylims are abit complicated...
-    #  yl2[1] | Topos...
-    #         | Topos....
-    #   yl[1] |
-    #         |
-    #         |
-    #         | --------------
-    #         |
-    #         |
-    #   yl[0] |
-    # Remove top third of y-axis and set limits
-    yl = ax.get_ylim()
-    if np.all(np.sign(yl) > -1):
-        # Yscale all positive
-        yl2 = (yl[0], yl[1]*(1+topo_prop))
-        ax.set_ylim(*yl2)
-        ax.spines['left'].set_bounds(*yl)
-
-    elif len(np.unique(np.sign(yl))) == 2:
-        # Yscale crosses zero
-        ymx = np.max(np.abs(yl))
-        yl = (-ymx, ymx)
-        yl2 = (yl[0], yl[1]*(1+topo_prop*2))
-        ax.set_ylim(*yl2)
-        ax.spines['left'].set_bounds(*yl)
-    box_prop = np.ptp(yl) / np.ptp(yl2)
+    yl = main_ax.get_ylim()
+    main_ax.set_ylim(yl[0], 1.2*yl[1])
 
     yt = ax.get_yticks()
     inds = yt < yl[1]
@@ -602,9 +549,6 @@ def plot_joint_spectrum_clusters(xvect, psd, clusters, info, ax=None, freqs='aut
     ax.yaxis.offsetText.set_visible(False)
     ax.text(0, yl[1], offset, ha='right')
 
-    topo_centres = np.linspace(0, 1, len(freqs)+2)[1:-1]
-    topo_width = 0.4
-
     if len(clusters) == 0:
         # put up an empty axes anyway
         topo_pos = [0.3, 1.2, 0.4, 0.4]
@@ -612,33 +556,59 @@ def plot_joint_spectrum_clusters(xvect, psd, clusters, info, ax=None, freqs='aut
         topo.set_xticks([])
         topo.set_yticks([])
 
-    shade = [0.7, 0.7, 0.7]
+    # Reorder clusters in ascending frequency
+    clu_order = []
+    for clu in clusters:
+        clu_order.append(clu[2][0].min())
+    clusters = [clusters[ii] for ii in np.argsort(clu_order)]
 
+    print('\n')
+    table_header = '{0:12s}{1:16s}{2:12s}{3:12s}{4:14s}'
+    print(table_header.format('Cluster', 'Statistic', 'Freq Min', 'Freq Max', 'Num Channels'))
+    table_template = '{0:<12d}{1:<16.3f}{2:<12.2f}{3:<12.2f}{4:<14d}'
+
+    topo_centres = np.linspace(0, 1, len(clusters)+2)[1:-1]
+    topo_width = 0.4
     topos = []
-    for c in range(len(clusters)):
-        print(c)
-        inds = np.where(clusters==c+1)[0]
+    ymax_span = (np.abs(yl[0]) + yl[1]) / (np.abs(yl[0]) + yl[1]*1.2)
+    for idx in range(len(clusters)):
+        clu = clusters[idx]
+
+        # Create topomap axis
+        topo_pos = [topo_centres[idx] - 0.2, 1-title_prop-topo_prop, 0.4, topo_prop]
+        topo_ax = ax.inset_axes(topo_pos)
+
+        # Extract cluster location in space and frequency
         channels = np.zeros((psd.shape[1], ))
-        channels[clusters[c][2][1]] = 1
+        channels[clu[2][1]] = 1
         if len(channels) == 204:
             channels = np.logical_or(channels[::2], channels[1::2])
         freqs = np.zeros((psd.shape[0], ))
-        freqs[clusters[c][2][0]] = 1
+        freqs[clu[2][0]] = 1
         finds = np.where(freqs)[0]
         if len(finds) == 1:
-            finds = [finds[0], finds[0]+1]
-        ax.axvspan(fx[0][finds[0]], fx[0][finds[-1]], facecolor=shade, alpha=0.5, ymax=box_prop)
+            finds = np.array([finds[0], finds[0]+1])
+
+        msg = 'Cluster {} - stat: {}, freq range: {}, num channels {}'
+        freq_range = (fx[0][finds[0]], fx[0][finds[-1]])
+        print(table_template.format(idx+1, clu[0], freq_range[0], freq_range[1], int(channels.sum())))
+
+        # Plot cluster span overlay on spectrum
+        main_ax.axvspan(fx[0][finds[0]], fx[0][finds[-1]], facecolor=[0.7, 0.7, 0.7], alpha=0.5, ymax=ymax_span)
         fmid = int(np.floor(finds.mean()))
 
-        topo_idx = fx[0][fmid]
-        yy = (yl[1], yl2[1]*(1-topo_prop/2))
-        xx = fx[0][-1] * topo_centres[c]
-        plt.plot((topo_idx, xx), yy, color=[0.7, 0.7, 0.7])
+        # Plot connecting line to topo
+        xy_main = (fx[0][fmid], yl[1])
+        xy_topo = (0.5, 0)
+        con = ConnectionPatch(
+            xyA=xy_main, coordsA=main_ax.transData,
+            xyB=xy_topo, coordsB=topo_ax.transAxes,
+            arrowstyle="-", color=[0.7, 0.7, 0.7])
+        main_ax.figure.add_artist(con)
 
+        # Plot topo
         dat = psd[fmid, :]
-        topo_pos = [topo_centres[c] - 0.2, 1-topo_prop/2, 0.4, 0.2]
-        topo = ax.inset_axes(topo_pos)
-        im, cn = mne.viz.plot_topomap(dat, info, axes=topo, show=False, mask=channels)
+        im, cn = mne.viz.plot_topomap(dat, info, axes=topo_ax, show=False, mask=channels)
         topos.append(im)
 
     if topo_scale == 'joint':
@@ -650,19 +620,19 @@ def plot_joint_spectrum_clusters(xvect, psd, clusters, info, ax=None, freqs='aut
     else:
         vmin = 0
         vmax = 1
+    print('\n')  # End table
 
-    cb_pos = [0.95, 1-topo_prop/2, 0.025, topo_prop/2]
+    cb_pos = [0.95, 1-title_prop-topo_prop, 0.025, topo_prop]
     cax =  ax.inset_axes(cb_pos)
 
     plt.colorbar(topos[0], cax=cax)
 
-    ax.set_title(title)
-    ax.set_ylim(*yl2)
+    ax.set_title(title, x=0.5, y=1-title_prop)
 
 
 def plot_joint_spectrum(xvect, psd, info, ax=None, freqs='auto', base=1,
         topo_scale='joint', lw=0.5, ylabel='Power', title='', ylim=None,
-        xtick_skip=1, topo_prop=1/3):
+        xtick_skip=1, topo_prop=1/5):
     """Plot a GLM-Spectrum contrast with spatial line colouring and topograpies.
 
     Parameters
@@ -698,9 +668,16 @@ def plot_joint_spectrum(xvect, psd, info, ax=None, freqs='auto', base=1,
     """
     if ax is None:
         fig = plt.figure()
+        fig.subplots_adjust(top=0.8)
         ax = plt.subplot(111)
 
-    plot_sensor_spectrum(xvect, psd, info, ax=ax, base=base, lw=0.25, ylabel=ylabel)
+    ax.set_axis_off()
+
+    title_prop = 0.1
+    main_prop = 1-title_prop-topo_prop
+    main_ax = ax.inset_axes((0, 0, 1, main_prop))
+
+    plot_sensor_spectrum(xvect, psd, info, ax=main_ax, base=base, lw=0.25, ylabel=ylabel)
     fx = prep_scaled_freq(base, xvect)
 
     if freqs == 'auto':
@@ -712,32 +689,8 @@ def plot_joint_spectrum(xvect, psd, info, ax=None, freqs='auto', base=1,
     else:
         topo_freq_inds = [np.argmin(np.abs(xvect - ff)) for ff in freqs]
 
-
-    # ylims are abit complicated...
-    #  yl2[1] | Topos...
-    #         | Topos....
-    #   yl[1] |
-    #         |
-    #         |
-    #         | --------------
-    #         |
-    #         |
-    #   yl[0] |
-    # Remove top third of y-axis and set limits
-    yl = ax.get_ylim()
-    if np.all(np.sign(yl) > -1):
-        # Yscale all positive
-        yl2 = (yl[0], yl[1]*(1+topo_prop))
-        ax.set_ylim(*yl2)
-        ax.spines['left'].set_bounds(*yl)
-
-    elif len(np.unique(np.sign(yl))) == 2:
-        # Yscale crosses zero
-        ymx = np.max(np.abs(yl))
-        yl = (-ymx, ymx)
-        yl2 = (yl[0], yl[1]*(1+topo_prop*2))
-        ax.set_ylim(*yl2)
-        ax.spines['left'].set_bounds(*yl)
+    yl = main_ax.get_ylim()
+    main_ax.set_ylim(yl[0], 1.2*yl[1])
 
     yt = ax.get_yticks()
     inds = yt < yl[1]
@@ -753,17 +706,22 @@ def plot_joint_spectrum(xvect, psd, info, ax=None, freqs='auto', base=1,
     topos = []
     for idx in range(len(freqs)):
         # Create topomap axis
-        topo_pos = [topo_centres[idx] - 0.2, 1-topo_prop/2, 0.4, 0.2]
-        topo = ax.inset_axes(topo_pos)
+        topo_pos = [topo_centres[idx] - 0.2, 1-title_prop-topo_prop, 0.4, topo_prop]
+        topo_ax = ax.inset_axes(topo_pos)
 
         topo_idx = fx[0][topo_freq_inds[idx]]
-        plt.plot((topo_idx, topo_idx), yl, color=[0.7, 0.7, 0.7])
-        yy = (yl[1], yl2[1]*(1-topo_prop/2))
-        xx = fx[0][-1] * topo_centres[idx]
-        plt.plot((topo_idx, xx), yy, color=[0.7, 0.7, 0.7])
+        main_ax.plot((topo_idx, topo_idx), yl, color=[0.7, 0.7, 0.7])
+
+        xy_main = (topo_idx, yl[1])
+        xy_topo = (0.5, 0)
+        con = ConnectionPatch(
+            xyA=xy_main, coordsA=main_ax.transData,
+            xyB=xy_topo, coordsB=topo_ax.transAxes,
+            arrowstyle="-", color=[0.7, 0.7, 0.7])
+        ax.figure.add_artist(con)
 
         dat = psd[topo_freq_inds[idx], :]
-        im, cn = mne.viz.plot_topomap(dat, info, axes=topo, show=False)
+        im, cn = mne.viz.plot_topomap(dat, info, axes=topo_ax, show=False)
         topos.append(im)
 
     if topo_scale == 'joint':
@@ -776,13 +734,12 @@ def plot_joint_spectrum(xvect, psd, info, ax=None, freqs='auto', base=1,
         vmin = 0
         vmax = 1
 
-    cb_pos = [0.95, 1-topo_prop/2, 0.025, topo_prop/2]
+    cb_pos = [0.95, 1-title_prop-topo_prop, 0.025, topo_prop]
     cax =  ax.inset_axes(cb_pos)
 
     plt.colorbar(topos[0], cax=cax)
 
-    ax.set_title(title)
-    ax.set_ylim(*yl2)
+    ax.set_title(title, x=0.5, y=1-title_prop)
 
 
 def plot_sensor_spectrum(xvect, psd, info, ax=None, sensor_proj=False,
@@ -912,7 +869,6 @@ def prep_scaled_freq(base, freq_vect):
     fx = freq_vect**base
     if base < 1:
         nticks = int(np.floor(np.sqrt(freq_vect[-1])))
-        #ftick = np.array([2**ii for ii in range(6)])
         ftick = np.array([ii**2 for ii in range(1,nticks+1)])
         ftickscaled = ftick**base
     else:
