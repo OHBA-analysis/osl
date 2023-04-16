@@ -12,9 +12,10 @@ from .glm_base import GLMBaseResult, GroupGLMBaseResult, SensorClusterPerm
 
 class GLMEpochsResult(GLMBaseResult):
 
-    def __init__(self, model, design, info, tmin=0, data=None):
+    def __init__(self, model, design, info, tmin=0, data=None, times=None):
 
         self.tmin = tmin
+        self.times = times
         super().__init__(model, design, info, data=data)
 
     def get_evoked_contrast(self, contrast=0, metric='copes'):
@@ -40,9 +41,10 @@ class GroupGLMEpochs(GroupGLMBaseResult):
     """A class for group level GLM-Spectra fitted across mmultiple first-level
     GLM-Spectra computed from MNE-Python Raw objects"""
 
-    def __init__(self, model, design, info, fl_contrast_names=None, data=None, tmin=0):
+    def __init__(self, model, design, info, fl_contrast_names=None, data=None, tmin=0, times=None):
 
         self.tmin = tmin
+        self.times = times
         super().__init__(model, design, info, fl_contrast_names=fl_contrast_names, data=data)
 
     def get_evoked_contrast(self, gcontrast=0, fcontrast=0, metric='copes'):
@@ -54,17 +56,22 @@ class GroupGLMEpochs(GroupGLMBaseResult):
 
         return mne.EvokedArray(erf, self.info, tmin=self.tmin)
 
-    def plot_joint_contrast(self, gcontrast=0, fcontrast=0, metric='copes', title=None):
+    def plot_joint_contrast(self, gcontrast=0, fcontrast=0, metric='copes', title=None, joint_args=None):
 
         evo = self.get_evoked_contrast(gcontrast=0, fcontrast=0, metric=metric)
 
+        joint_args = {} if joint_args is None else joint_args
         if title is None:
             gtitle = 'gC {} : {}'.format(gcontrast, self.contrast_names[gcontrast])
             ftitle = 'flC {} : {}'.format(fcontrast, self.fl_contrast_names[fcontrast])
 
             title = gtitle + '\n' + ftitle
 
-        evo.plot_joint(title=title)
+        if metric == 'tstats':
+            joint_args['ts_args'] = {'scalings': dict(eeg=1, grad=1, mag=1),
+                                     'units': dict(eeg='tstats', grad='tstats', mag='tstats')}
+
+        evo.plot_joint(title=title, **joint_args)
 
     def get_channel_adjacency(self):
         """Return adjacency matrix of channels."""
@@ -104,7 +111,7 @@ def glm_epochs(config, epochs):
 
     model = glm.fit.OLSModel(design, data)
 
-    return GLMEpochsResult(model, design, epochs.info, tmin=epochs.tmin, data=data)
+    return GLMEpochsResult(model, design, epochs.info, tmin=epochs.tmin, data=data, times=epochs.times)
 
 def group_glm_epochs(inspectra, design_config=None, datainfo=None, metric='copes', baseline=None):
     """Compute a group GLM-Epochs from a set of first-level GLM-Epochs.
@@ -152,11 +159,11 @@ def group_glm_epochs(inspectra, design_config=None, datainfo=None, metric='copes
     design = design_config.design_from_datainfo(group_data.info)
     model = glm.fit.OLSModel(design, group_data)
 
-    return GroupGLMEpochs(model, design, glmep.info, data=group_data, fl_contrast_names=fl_contrast_names, tmin=glmep.tmin)
+    return GroupGLMEpochs(model, design, glmep.info, data=group_data, fl_contrast_names=fl_contrast_names, tmin=glmep.tmin, times=glmep.times)
 
 #%% ------------------------------------------------------
 
-def read_mne_epochs(X):
+def read_mne_epochs(X, picks=None):
 
     import mne
     if isinstance(X, str) and os.path.isfile(X):
@@ -164,7 +171,7 @@ def read_mne_epochs(X):
     elif isinstance(X, (mne.epochs.EpochsFIF, mne.Epochs)):
         epochs = X
 
-    d = glm.data.TrialGLMData(data=epochs.get_data(),
+    d = glm.data.TrialGLMData(data=epochs.get_data(picks=picks),
                               category_list=epochs.events[:, 2],
                               sample_rate=epochs.info['sfreq'],
                               time_dim=2,
