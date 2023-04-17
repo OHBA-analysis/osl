@@ -42,4 +42,4 @@ dependencies:
   - tqdm==4.65.0
   - osfclient==0.0.5
   - osl==0.3.0
-  - osl-dynamics==1.2.1
+  - osl-dynamics==1.2.2
