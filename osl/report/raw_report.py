@@ -424,7 +424,7 @@ def plot_channel_time_series(raw, savebase=None, exclude_bads=False):
         ss = np.sum(x[chan_inds] ** 2, axis=0)
 
         # calculate ss value to give to bad segments for plotting purposes
-        good_data = raw.get_data(picks=['meg', 'eeg'], reject_by_annotation='NaN')
+        good_data = raw.get_data(picks=chan_inds, reject_by_annotation='NaN')
         # get indices of good data
         good_inds = np.where(~np.isnan(good_data[0,:]))[0]
         ss_bad_value = np.mean(ss[good_inds])
