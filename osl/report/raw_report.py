@@ -150,10 +150,11 @@ def gen_html_data(raw, outdir, ica=None, preproc_fif_filename=None):
         mod_dur = np.sum(durs[inds])
         pc = (mod_dur / full_dur) * 100
         s = 'Modality {0} - {1:.2f}/{2} seconds rejected     ({3:.2f}%)'
-        if mod_dur > 0:
+        if full_dur > 0:
             data['bad_seg'].append(s.format(modality, mod_dur, full_dur, pc))
             # For summary report:
             data['bad_seg_pc_' + modality] = pc
+
 
     # Bad channels
     bad_chans = raw.info['bads']
@@ -948,10 +949,15 @@ def plot_summary_bad_segs(subject_data, reportdir):
 
         if 'bad_seg_pc_' + modality in subject_data[0].keys():
             pc_segs = []
-
             for data in subject_data:
-                pc = data['bad_seg_pc_' + modality]
-                pc_segs.append(pc)
+
+                # check if key exists data
+                if 'bad_seg_pc_' + modality in data.keys():
+                    pc = data['bad_seg_pc_' + modality]
+                    pc_segs.append(pc)
+                else:
+                    print('Session {} missing bad_seg_pc_{}'.format(data['filename'], modality))
+                    pc_segs.append(0)
 
             ax.plot(
                 range(1, len(subject_data) + 1),
