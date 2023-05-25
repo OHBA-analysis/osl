@@ -422,12 +422,19 @@ def plot_channel_time_series(raw, savebase=None, exclude_bads=False):
         if len(chan_inds) == 0:
             continue
         ss = np.sum(x[chan_inds] ** 2, axis=0)
+
+        # calculate ss value to give to bad segments for plotting purposes
+        good_data = raw.get_data(picks=['meg', 'eeg'], reject_by_annotation='NaN')
+        # get indices of good data
+        good_inds = np.where(~np.isnan(good_data[0,:]))[0]
+        ss_bad_value = np.mean(ss[good_inds])
+
         if exclude_bads:
             # set bad segs to mean
             for aa in raw.annotations:
                 if "bad_segment" in aa["description"]:
                     time_inds = np.where((raw.times >= aa["onset"]-raw.first_time) & (raw.times <= (aa["onset"] + aa["duration"] - raw.first_time)))[0]
-                    ss[time_inds] = np.mean(ss)
+                    ss[time_inds] = ss_bad_value
 
         ss = uniform_filter1d(ss, int(raw.info['sfreq']))
 
