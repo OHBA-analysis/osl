@@ -11,9 +11,7 @@ import matplotlib.pyplot as plt
 from mne.io import read_info
 from mne.io.constants import FIFF
 
-import os.path as op
 import sys
-from osl import utils, source_recon
 from osl.source_recon.rhino.coreg import get_coreg_filenames
 
 def extract_polhemus_from_info(
@@ -178,13 +176,7 @@ def delete_headshape_points(recon_dir=None, subject=None, polhemus_headshape_fil
     def scatter_headshapes(ax, x, y, z):
         # Polhemus-derived headshape points
         color, scale, alpha, marker = "red", 8, 0.7, "o"
-        ax.scatter(x,y,z,
-            color=color,
-            marker=marker,
-            s=scale,
-            alpha=alpha,
-            picker=5,
-        )
+        ax.scatter(x, y, z, color=color, marker=marker, s=scale, alpha=alpha, picker=5)
         plt.draw()
 
     x=list(polhemus_headshape_polhemus[0,:])

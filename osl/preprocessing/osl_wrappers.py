@@ -229,7 +229,7 @@ def detect_badchannels(raw, picks, ref_meg="auto", significance_level=0.05):
 
     bdinds = sails.utils.detect_artefacts(
         raw.get_data(picks=chinds),
-        0,
+        axis=0,
         reject_mode="dim",
         ret_mode="bad_inds",
         gesd_args=gesd_args,
