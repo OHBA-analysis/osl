@@ -1,4 +1,6 @@
-# Authors: Andrew Quinn <a.quinn@bham.ac.uk>
+# Authors: 
+# Andrew Quinn <a.quinn@bham.ac.uk>
+# Mats van Es <mats.vanes@psych.ox.ac.uk>
 
 import re
 import glob
@@ -40,5 +42,7 @@ class Study:
             keywords[key] = kwargs.get(key, '*')
 
         fname = self.studydir.format(**keywords)
-
-        return sorted(glob.glob(fname))
+        
+        # we only want the valid files
+        out = [ff for ff in glob.glob(fname) if any(ff in ff_valid for ff_valid in self.match_files)]
+        return out
