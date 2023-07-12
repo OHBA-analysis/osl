@@ -144,18 +144,25 @@ def gen_html_data(raw, outdir, ica=None, preproc_fif_filename=None):
     types = [r['description'] for r in raw.annotations]
 
     data['bad_seg'] = []
+    
     for modality in ['grad', 'mag', 'eeg']:
 
-        inds = [s.find(modality) > 0 for s in types]
-        mod_dur = np.sum(durs[inds])
-        pc = (mod_dur / full_dur) * 100
+        # set bad segs to mean
+        bad_tc = np.zeros(raw.n_times)
+        for aa in raw.annotations:
+            if "bad_segment" in aa["description"] and aa["description"].find(modality) > 0:
+                time_inds = np.where((raw.times >= aa["onset"]-raw.first_time) & (raw.times <= (aa["onset"] + aa["duration"] - raw.first_time)))[0]
+                bad_tc[time_inds] = 1
+        
+        mod_dur = np.sum(bad_tc)/raw.info['sfreq']
+        pc = np.sum(bad_tc) / len(bad_tc) * 100
+
         s = 'Modality {0} - {1:.2f}/{2} seconds rejected     ({3:.2f}%)'
         if full_dur > 0:
             data['bad_seg'].append(s.format(modality, mod_dur, full_dur, pc))
             # For summary report:
-            data['bad_seg_pc_' + modality] = pc
-
-
+            data['bad_seg_pc_' + modality] = pc        
+                
     # Bad channels
     bad_chans = raw.info['bads']
     if len(bad_chans) == 0:
