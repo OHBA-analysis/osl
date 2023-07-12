@@ -85,6 +85,7 @@ def compute_surfaces(
     epoch_file,
     include_nose=True,
     recompute_surfaces=False,
+    do_mri2mniaxes_xform=True,
 ):
     """Wrapper for computing surfaces.
 
@@ -105,6 +106,11 @@ def compute_surfaces(
     recompute_surfaces : bool
         Specifies whether or not to run compute_surfaces, if the passed in
         options have already been run
+    do_mri2mniaxes_xform : bool
+        Specifies whether to do step 1) of compute_surfaces, i.e. transform 
+        sMRI to be aligned with the MNI axes. 
+        Sometimes needed when the sMRI goes out of the MNI FOV after step 1).
+
     """
     # Compute surfaces
     rhino.compute_surfaces(
@@ -113,6 +119,7 @@ def compute_surfaces(
         subject=subject,
         include_nose=include_nose,
         recompute_surfaces=recompute_surfaces,
+        do_mri2mniaxes_xform=do_mri2mniaxes_xform,
     )
 
     # Save info for the report
@@ -121,6 +128,8 @@ def compute_surfaces(
         {
             "compute_surfaces": True,
             "include_nose": include_nose,
+            "do_mri2mniaxes_xform": do_mri2mniaxes_xform,
+        
         },
     )
 
@@ -272,6 +281,7 @@ def compute_surfaces_coregister_and_forward_model(
     smri_file,
     epoch_file,
     include_nose=True,
+    do_mri2mniaxes_xform=True,
     use_nose=True,
     use_headshape=True,
     model="Single Layer",
@@ -297,6 +307,10 @@ def compute_surfaces_coregister_and_forward_model(
         Path to epoched preprocessed fif file.
     include_nose : bool
         Should we include the nose when we're extracting the surfaces?
+    do_mri2mniaxes_xform : bool
+        Specifies whether to do step 1) of compute_surfaces, i.e. transform 
+        sMRI to be aligned with the MNI axes. 
+        Sometimes needed when the sMRI goes out of the MNI FOV after step 1).        
     use_nose : bool
         Should we use the nose in the coregistration?
     use_headshape : bool
@@ -327,6 +341,7 @@ def compute_surfaces_coregister_and_forward_model(
         subject=subject,
         include_nose=include_nose,
         recompute_surfaces=recompute_surfaces,
+        do_mri2mniaxes_xform=do_mri2mniaxes_xform,
     )
 
     # Run coregistration
@@ -371,6 +386,7 @@ def compute_surfaces_coregister_and_forward_model(
             "coregister": True,
             "forward_model": True,
             "include_nose": include_nose,
+            "do_mri2mniaxes_xform": do_mri2mniaxes_xform,
             "use_nose": use_nose,
             "use_headshape": use_headshape,
             "already_coregistered": already_coregistered,

@@ -927,7 +927,7 @@ def coreg_display(
 
             # Polhemus-derived nasion, rpa, lpa
             if polhemus_nasion_meg is not None and len(polhemus_nasion_meg.T) > 0:
-                color, scale, alpha = "pink", 0.012, 1.5
+                color, scale, alpha = "pink", 0.012, 1
                 for data in [
                     polhemus_nasion_meg.T,
                     polhemus_rpa_meg.T,

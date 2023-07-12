@@ -90,6 +90,7 @@ def compute_surfaces(
     include_nose=True,
     cleanup_files=True,
     recompute_surfaces=False,
+    do_mri2mniaxes_xform=True,
 ):
     """Compute surfaces.
 
@@ -146,6 +147,10 @@ def compute_surfaces(
     recompute_surfaces : bool
         Specifies whether or not to run compute_surfaces if the passed in
         options have already been run.
+    do_mri2mniaxes_xform : bool
+        Specifies whether to do step 1) above, i.e. transform sMRI to be
+        aligned with the MNI axes. Sometimes needed when the sMRI goes out
+        of the MNI FOV after step 1).
     """
 
     # Note the jargon used varies for xforms and coord spaces, e.g.:
@@ -243,9 +248,12 @@ please check output of:\n fslorient -getorient {}".format(
     # so that its voxel indices axes are aligned to MNI's
     # This helps BET work.
     # CALCULATE mri2mniaxes
-    flirt_mri2mniaxes_xform = rhino_utils._get_flirt_xform_between_axes(
-        filenames["smri_file"], filenames["std_brain"]
-    )
+    if do_mri2mniaxes_xform:
+        flirt_mri2mniaxes_xform = rhino_utils._get_flirt_xform_between_axes(
+            filenames["smri_file"], filenames["std_brain"]
+        )
+    else:
+        flirt_mri2mniaxes_xform = np.eye(4)
 
     # Write xform to disk so flirt can use it
     flirt_mri2mniaxes_xform_file = op.join(
@@ -603,7 +611,7 @@ please check output of:\n fslorient -getorient {}".format(
         )
 
     log_or_print(
-        'rhino.surfaces_display("{}", "{}") can be used to check the result'.format(
+        'rhino.surfaces.surfaces_display("{}", "{}") can be used to check the result'.format(
             subjects_dir, subject
         )
     )
