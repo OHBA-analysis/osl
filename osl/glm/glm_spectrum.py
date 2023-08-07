@@ -354,6 +354,27 @@ class SensorClusterPerm:
                                                         tstat_args=tstat_args,
                                                         adjacency=glmsp.get_channel_adjacency())
 
+    def save_pkl(self, outname, overwrite=True, save_data=False):
+        """Save GLM-Spectrum result to a pickle file.
+
+        Parameters
+        ----------
+        outname : str
+             Filename or full file path to write pickle to
+        overwrite : bool
+             Overwrite previous file if one exists? (Default value = True)
+        save_data : bool
+             Save STFT data in pickle? This is omitted by default to save disk
+             space (Default value = False)
+
+        """
+        if Path(outname).exists() and not overwrite:
+            msg = "{} already exists. Please delete or do use overwrite=True."
+            raise ValueError(msg.format(outname))
+
+        with open(outname, 'bw') as outp:
+            pickle.dump(self, outp)
+
     def get_sig_clusters(self, thresh):
         """Return the significant clusters at a given threshold.
 
@@ -706,24 +727,21 @@ def plot_joint_spectrum_clusters(xvect, psd, clusters, info, ax=None, freqs='aut
 
         # Plot topo
         dat = psd[fmid, :]
-        im, cn = mne.viz.plot_topomap(dat, info, axes=topo_ax, show=False, mask=channels)
+        im, cn = mne.viz.plot_topomap(dat, info, axes=topo_ax, show=False, mask=channels, ch_type='planar1')
         topos.append(im)
 
-    if topo_scale == 'joint':
+    if topo_scale == 'joint' and len(topos) > 0:
         vmin = np.min([t.get_clim()[0] for t in topos])
         vmax = np.max([t.get_clim()[1] for t in topos])
 
         for t in topos:
             t.set_clim(vmin, vmax)
-    else:
-        vmin = 0
-        vmax = 1
+
+        cb_pos = [0.95, 1-title_prop-topo_prop, 0.025, topo_prop]
+        cax =  ax.inset_axes(cb_pos)
+        plt.colorbar(topos[0], cax=cax)
+
     print('\n')  # End table
-
-    cb_pos = [0.95, 1-title_prop-topo_prop, 0.025, topo_prop]
-    cax =  ax.inset_axes(cb_pos)
-
-    plt.colorbar(topos[0], cax=cax)
 
     ax.set_title(title, x=0.5, y=1-title_prop)
 
