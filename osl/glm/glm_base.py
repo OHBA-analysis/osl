@@ -57,11 +57,12 @@ class GroupGLMBaseResult:
     """A class for group level GLM-Epochs fitted across mmultiple first-level
     GLM-Epochs computed from MNE-Python Raw objects"""
 
-    def __init__(self, model, design, info, fl_contrast_names=None, data=None):
+    def __init__(self, model, design, info, config, fl_contrast_names=None, data=None):
 
         self.model = model
         self.design = design
         self.data = data
+        self.config = config
 
         self.info = info
 
@@ -80,6 +81,62 @@ class GroupGLMBaseResult:
         ntimes = self.data.data.shape[3]
         print('{} : {}'.format(ntimes, ntests))
         return mne.stats.cluster_level._setup_adjacency(adjacency, ntests, ntimes)
+
+
+class SensorMaxStatPerm:
+    """A class holding the result for sensor x frequency max-stat permutation test computed
+    from a group level GLM-Spectrum"""
+
+    def __init__(self, glmsp, gl_con, fl_con=0, nperms=1000,
+                    tstat_args=None,  metric='tstats', nprocesses=1,
+                    pooled_dims=(1,2)):
+
+        # There is a major pain here in that MNE stores raw data in [channels x time]
+        # but builds adjacencies in [time x channels] - we don't need adjacencies for perms
+        # but we do for making clusters for plotting, so here we are
+        self.adjacency = glmsp.get_channel_adjacency()
+        self.perm_data = glmsp.get_fl_contrast(fl_con)
+        self.perm_data.data = np.swapaxes(self.perm_data.data, 1, 2)
+
+        self.gl_con = gl_con
+        self.fl_con = fl_con
+        self.gl_contrast_name = glmsp.contrast_names[gl_con]
+        self.fl_contrast_name = glmsp.fl_contrast_names[fl_con]
+        self.info = glmsp.info
+        self.f = glmsp.f
+
+        self.perms = glm.permutations.MaxStatPermutation(glmsp.design, self.perm_data, gl_con, nperms,
+                                                        nprocesses=nprocesses,
+                                                        metric=metric,
+                                                        pooled_dims=pooled_dims,
+                                                        tstat_args=tstat_args)
+
+    def get_sig_clusters(self, thresh):
+        """sigh"""
+        obs = glm.fit.OLSModel(self.perms._design, self.perm_data)
+        obs = obs.get_tstats(**self.perms.tstat_args)[self.gl_con, :, :]
+        thresh = self.perms.get_thresh(thresh)
+
+        obs_up = obs.flatten() > thresh
+        obs_down = obs.flatten() < -thresh
+
+        from mne.stats.cluster_level import _find_clusters as mne_find_clusters
+        from mne.stats.cluster_level import _reshape_clusters as mne_reshape_clusters
+
+        clus_up, cstat_up = mne_find_clusters(obs_up, 0.5, adjacency=self.adjacency)
+        clus_up = mne_reshape_clusters(clus_up, obs.shape)
+
+        clus_down, cstat_down = mne_find_clusters(obs_down, 0.5, adjacency=self.adjacency)
+        clus_down = mne_reshape_clusters(clus_down, obs.shape)
+
+        # cstat, pval, clu - match cluster stat output
+        clusters = []
+        for ii in range(len(cstat_down)):
+            clusters.append([cstat_down[ii], 0, clus_down[ii]])
+        for ii in range(len(cstat_up)):
+            clusters.append([cstat_up[ii], 0, clus_up[ii]])
+
+        return clusters, obs
 
 
 class SensorClusterPerm:
