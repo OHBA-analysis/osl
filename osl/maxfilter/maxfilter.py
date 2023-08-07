@@ -450,7 +450,7 @@ def run_multistage_maxfilter(infif, outbase, args):
             os.remove(outfif)
 
         # Fixed Args
-        stage3_args = {'autobad': None}
+        stage3_args = {'autobad': None, 'force': True}
         # User args
         for key in ['maxpath', 'scanner', 'ctc', 'cal',
                     'dryrun', 'overwrite', 'trans', 'outdir']:

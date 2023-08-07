@@ -124,10 +124,12 @@ def detect_badsegments(
             bdinds_maxfilt = detect_maxfilt_zeros(raw)
         else:
             bdinds_maxfilt = None
-        XX = raw.get_data(picks=chinds)
+        XX, XX_times = raw.get_data(picks=chinds, reject_by_annotation='omit', return_times=True)
     elif mode == "diff":
         bdinds_maxfilt = None
-        XX = np.diff(raw.get_data(picks=chinds), axis=1)
+        XX, XX_times = raw.get_data(picks=chinds, reject_by_annotation='omit', return_times=True)
+        XX = np.diff(XX, axis=1)
+        XX_times = XX_times[1:] # remove the first time point
 
     allowed_metrics = ["std", "var", "kurtosis"]
     if metric not in allowed_metrics:
@@ -140,7 +142,7 @@ def detect_badsegments(
         def kurtosis(inputs):
             return stats.kurtosis(inputs, axis=None)
         metric_func = kurtosis
-
+    
     bdinds = sails.utils.detect_artefacts(
         XX,
         axis=1,
@@ -150,6 +152,7 @@ def detect_badsegments(
         ret_mode="bad_inds",
         gesd_args=gesd_args,
     )
+
     for count, bdinds in enumerate([bdinds, bdinds_maxfilt]):
         if bdinds is None:
             continue
@@ -160,6 +163,7 @@ def detect_badsegments(
             descp1 = ''
             descp2 = ''
         onsets = np.where(np.diff(bdinds.astype(float)) == 1)[0]
+
         if bdinds[0]:
             onsets = np.r_[0, onsets]
         offsets = np.where(np.diff(bdinds.astype(float)) == -1)[0]
@@ -167,16 +171,16 @@ def detect_badsegments(
         if bdinds[-1]:
             offsets = np.r_[offsets, len(bdinds) - 1]
         assert len(onsets) == len(offsets)
-        durations = offsets - onsets
         descriptions = np.repeat("{0}bad_segment_{1}".format(descp1, picks), len(onsets))
         logger.info("Found {0} bad segments".format(len(onsets)))
 
-        onsets = (onsets + raw.first_samp) / raw.info["sfreq"]
-        durations = durations / raw.info["sfreq"]
+        onsets_secs = raw.first_samp/raw.info["sfreq"] + XX_times[onsets.astype(int)]
+        offsets_secs = raw.first_samp/raw.info["sfreq"] + XX_times[offsets.astype(int)]
+        durations_secs = offsets_secs - onsets_secs
 
-        raw.annotations.append(onsets, durations, descriptions)
+        raw.annotations.append(onsets_secs, durations_secs, descriptions)
 
-        mod_dur = durations.sum()
+        mod_dur = durations_secs.sum()
         full_dur = raw.n_times / raw.info["sfreq"]
         pc = (mod_dur / full_dur) * 100
         s = "Modality {0}{1} - {2:02f}/{3} seconds rejected     ({4:02f}%)"
@@ -225,7 +229,7 @@ def detect_badchannels(raw, picks, ref_meg="auto", significance_level=0.05):
 
     bdinds = sails.utils.detect_artefacts(
         raw.get_data(picks=chinds),
-        0,
+        axis=0,
         reject_mode="dim",
         ret_mode="bad_inds",
         gesd_args=gesd_args,

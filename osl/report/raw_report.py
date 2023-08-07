@@ -144,17 +144,25 @@ def gen_html_data(raw, outdir, ica=None, preproc_fif_filename=None):
     types = [r['description'] for r in raw.annotations]
 
     data['bad_seg'] = []
+    
     for modality in ['grad', 'mag', 'eeg']:
 
-        inds = [s.find(modality) > 0 for s in types]
-        mod_dur = np.sum(durs[inds])
-        pc = (mod_dur / full_dur) * 100
+        # set bad segs to mean
+        bad_tc = np.zeros(raw.n_times)
+        for aa in raw.annotations:
+            if "bad_segment" in aa["description"] and aa["description"].find(modality) > 0:
+                time_inds = np.where((raw.times >= aa["onset"]-raw.first_time) & (raw.times <= (aa["onset"] + aa["duration"] - raw.first_time)))[0]
+                bad_tc[time_inds] = 1
+        
+        mod_dur = np.sum(bad_tc)/raw.info['sfreq']
+        pc = np.sum(bad_tc) / len(bad_tc) * 100
+
         s = 'Modality {0} - {1:.2f}/{2} seconds rejected     ({3:.2f}%)'
-        if mod_dur > 0:
+        if full_dur > 0:
             data['bad_seg'].append(s.format(modality, mod_dur, full_dur, pc))
             # For summary report:
-            data['bad_seg_pc_' + modality] = pc
-
+            data['bad_seg_pc_' + modality] = pc        
+                
     # Bad channels
     bad_chans = raw.info['bads']
     if len(bad_chans) == 0:
@@ -422,12 +430,19 @@ def plot_channel_time_series(raw, savebase=None, exclude_bads=False):
         if len(chan_inds) == 0:
             continue
         ss = np.sum(x[chan_inds] ** 2, axis=0)
+
+        # calculate ss value to give to bad segments for plotting purposes
+        good_data = raw.get_data(picks=chan_inds, reject_by_annotation='NaN')
+        # get indices of good data
+        good_inds = np.where(~np.isnan(good_data[0,:]))[0]
+        ss_bad_value = np.mean(ss[good_inds])
+
         if exclude_bads:
             # set bad segs to mean
             for aa in raw.annotations:
                 if "bad_segment" in aa["description"]:
                     time_inds = np.where((raw.times >= aa["onset"]-raw.first_time) & (raw.times <= (aa["onset"] + aa["duration"] - raw.first_time)))[0]
-                    ss[time_inds] = np.mean(ss)
+                    ss[time_inds] = ss_bad_value
 
         ss = uniform_filter1d(ss, int(raw.info['sfreq']))
 
@@ -941,10 +956,15 @@ def plot_summary_bad_segs(subject_data, reportdir):
 
         if 'bad_seg_pc_' + modality in subject_data[0].keys():
             pc_segs = []
-
             for data in subject_data:
-                pc = data['bad_seg_pc_' + modality]
-                pc_segs.append(pc)
+
+                # check if key exists data
+                if 'bad_seg_pc_' + modality in data.keys():
+                    pc = data['bad_seg_pc_' + modality]
+                    pc_segs.append(pc)
+                else:
+                    print('Session {} missing bad_seg_pc_{}'.format(data['filename'], modality))
+                    pc_segs.append(0)
 
             ax.plot(
                 range(1, len(subject_data) + 1),

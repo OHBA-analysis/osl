@@ -353,14 +353,12 @@ def write_dataset(dataset, outbase, run_id, overwrite=False):
         The saved fif file name
     """
 
-    if "preproc_raw" in run_id:
-        fif_outname = outbase.format(
-            run_id=run_id.replace("_preproc_raw", ""), ftype="preproc_raw", fext="fif"
-        )
-    else:
-        fif_outname = outbase.format(
-            run_id=run_id.replace("_raw", ""), ftype="preproc_raw", fext="fif"
-        )
+    # Strip "_preproc_raw" or "_raw" from the run id
+    for string in ["_preproc_raw", "_raw"]:
+        if string in run_id:
+            run_id = run_id.replace(string, "")
+
+    fif_outname = outbase.format(run_id=run_id, ftype="preproc_raw", fext="fif")
     if Path(fif_outname).exists() and not overwrite:
         raise ValueError(
             "{} already exists. Please delete or do use overwrite=True.".format(fif_outname)

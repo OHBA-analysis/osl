@@ -7,9 +7,9 @@ import glmtools as glm
 import matplotlib.pyplot as plt
 import mne
 import numpy as np
-from glmtools.design import DesignConfig
-from sails.stft import GLMSpectrumResult, glm_periodogram
+from sails.stft import glm_periodogram
 from scipy import signal, stats
+from .glm_base import GLMBaseResult, GroupGLMBaseResult, SensorClusterPerm
 
 from matplotlib.patches import ConnectionPatch
 
@@ -18,66 +18,18 @@ from matplotlib.patches import ConnectionPatch
 # GLM-Spectrum classes designed to work with GLM-Spectra computed from  MNE
 # format sensorspace data
 
-class SensorGLMSpectrum(GLMSpectrumResult):
+class SensorGLMSpectrum(GLMBaseResult):
     """A class for GLM-Spectra fitted from MNE-Python Raw objects."""
 
-    def __init__(self, glmspec, info):
+    def __init__(self, glmsp, info):
 
-        self.f = glmspec.f
-        self.config = glmspec.config
-
-        self.model = glmspec.model
-        self.design = glmspec.design
-        self.data = glmspec.data
-
-        self.info = info
-
-    def __str__(self):
-        msg = 'SensorGLMSpectrum\n'
-        line = '\tData - {} Segments, {} Channels and {} Frequencies\n'
-        msg += line.format(self.design.design_matrix.shape[0], self.model.copes.shape[2], self.model.copes.shape[3])
-
-        line = '\tFirst-Level - {} Regressors and {} Contrasts\n'
-        msg += line.format(self.design.design_matrix.shape[1], self.model.copes.shape[1])
-        return msg
-
-    def save_pkl(self, outname, overwrite=True, save_data=False):
-        """Save GLM-Spectrum result to a pickle file.
-
-        Parameters
-        ----------
-        outname : str
-             Filename or full file path to write pickle to
-        overwrite : bool
-             Overwrite previous file if one exists? (Default value = True)
-        save_data : bool
-             Save STFT data in pickle? This is omitted by default to save disk
-             space (Default value = False)
-
-        """
-        if Path(outname).exists() and not overwrite:
-            msg = "{} already exists. Please delete or do use overwrite=True."
-            raise ValueError(msg.format(outname))
-
-        self.config.detrend_func = None  # Have to drop this to pickle
-
-        # This is hacky - but pickles are all or nothing and I don't know how
-        # else to do it. HDF5 would be better longer term
-        if save_data == False:
-            # Temporarily remove data before saving
-            dd = self.data
-            self.data = None
-
-        with open(outname, 'bw') as outp:
-            pickle.dump(self, outp)
-
-        # Put data back
-        if save_data == False:
-            self.data = dd
+        self.f = glmsp.f
+        self.config = glmsp.config
+        super().__init__(glmsp.model, glmsp.design, info, data=glmsp.data)
 
     def plot_joint_spectrum(self, contrast=0, freqs='auto', base=1, ax=None,
-                       topo_scale='joint', lw=0.5,  ylabel=None, title=None,
-                       ylim=None, xtick_skip=1, topo_prop=1/5, metric='copes'):
+                            topo_scale='joint', lw=0.5,  ylabel=None, title=None,
+                            ylim=None, xtick_skip=1, topo_prop=1/5, metric='copes'):
         """Plot a GLM-Spectrum contrast with spatial line colouring and topograpies.
 
         Parameters
@@ -125,12 +77,12 @@ class SensorGLMSpectrum(GLMSpectrumResult):
             title = 'C {} : {}'.format(contrast, self.design.contrast_names[contrast])
 
         plot_joint_spectrum(self.f, spec, self.info, freqs=freqs, base=base,
-                topo_scale=topo_scale, lw=lw, ylabel=ylabel, title=title,
-                ylim=ylim, xtick_skip=xtick_skip, topo_prop=topo_prop, ax=ax)
+                            topo_scale=topo_scale, lw=lw, ylabel=ylabel, title=title,
+                            ylim=ylim, xtick_skip=xtick_skip, topo_prop=topo_prop, ax=ax)
 
     def plot_sensor_spectrum(self, contrast, sensor_proj=False,
-                         xticks=None, xticklabels=None, lw=0.5, ax=None, title=None,
-                         sensor_cols=True, base=1, ylabel=None, xtick_skip=1, metric='copes'):
+                             xticks=None, xticklabels=None, lw=0.5, ax=None, title=None,
+                             sensor_cols=True, base=1, ylabel=None, xtick_skip=1, metric='copes'):
         """Plot a GLM-Spectrum contrast with spatial line colouring.
 
         Parameters
@@ -171,31 +123,18 @@ class SensorGLMSpectrum(GLMSpectrumResult):
             title = 'C {} : {}'.format(contrast, self.design.contrast_names[contrast])
 
         plot_sensor_spectrum(self.f, spec, self.info, ax=ax, sensor_proj=sensor_proj,
-                            xticks=xticks, xticklabels=xticklabels, lw=lw, title=title,
-                            sensor_cols=sensor_cols, base=base, ylabel=ylabel, xtick_skip=xtick_skip)
+                             xticks=xticks, xticklabels=xticklabels, lw=lw, title=title,
+                             sensor_cols=sensor_cols, base=base, ylabel=ylabel, xtick_skip=xtick_skip)
 
 
-class GroupSensorGLMSpectrum:
+class GroupSensorGLMSpectrum(GroupGLMBaseResult):
     """A class for group level GLM-Spectra fitted across mmultiple first-level
     GLM-Spectra computed from MNE-Python Raw objects"""
 
     def __init__(self, model, design, config, info, fl_contrast_names=None, data=None):
 
         self.f = config.freqvals
-        self.config = config
-
-        self.model = model
-        self.design = design
-        self.data = data
-
-        self.info = info
-
-        # A proper group-model in glmtools will simplify this
-        self.contrast_names = self.model.contrast_names
-        if fl_contrast_names is None:
-            self.fl_contrast_names = [chr(65 + ii) for ii in range(self.model.copes.shape[1])]
-        else:
-            self.fl_contrast_names = fl_contrast_names
+        super().__init__(model, design, info, fl_contrast_names=fl_contrast_names, data=data)
 
     def __str__(self):
         msg = 'GroupSensorGLMSpectrum\n'
@@ -244,8 +183,8 @@ class GroupSensorGLMSpectrum:
             self.data = dd
 
     def plot_joint_spectrum(self, gcontrast=0, fcontrast=0, freqs='auto', base=1, ax=None,
-                       topo_scale='joint', lw=0.5,  ylabel='Power', title=None,
-                       ylim=None, xtick_skip=1, topo_prop=1/5, metric='copes'):
+                            topo_scale='joint', lw=0.5,  ylabel='Power', title=None,
+                            ylim=None, xtick_skip=1, topo_prop=1/5, metric='copes'):
         """
 
         Parameters
@@ -296,17 +235,8 @@ class GroupSensorGLMSpectrum:
             title = gtitle + '\n' + ftitle
 
         plot_joint_spectrum(self.f, spec, self.info, freqs=freqs, base=base,
-                topo_scale=topo_scale, lw=lw, ylabel=ylabel, title=title,
-                ylim=ylim, xtick_skip=xtick_skip, topo_prop=topo_prop, ax=ax)
-
-    def get_channel_adjacency(self):
-        """Return adjacency matrix of channels."""
-        ch_type =  mne.io.meas_info._get_channel_types(self.info)[0]  # Assuming these are all the same!
-        adjacency, ch_names = mne.channels.channels._compute_ch_adjacency(self.info, ch_type)
-        ntests = np.prod(self.data.data.shape[2:])
-        ntimes = self.data.data.shape[3]
-        print('{} : {}'.format(ntimes, ntests))
-        return mne.stats.cluster_level._setup_adjacency(adjacency, ntests, ntimes)
+                            topo_scale=topo_scale, lw=lw, ylabel=ylabel, title=title,
+                            ylim=ylim, xtick_skip=xtick_skip, topo_prop=topo_prop, ax=ax)
 
     def get_fl_contrast(self, fl_con):
         """Get the data from a single first level contrast.
@@ -315,7 +245,6 @@ class GroupSensorGLMSpectrum:
         ----------
         fl_con : int
             First level contrast data index to return
-
 
         Returns
         -------
@@ -328,72 +257,9 @@ class GroupSensorGLMSpectrum:
         return ret_con
 
 
-class SensorClusterPerm:
+class ClusterPermuteGLMSpectrum(SensorClusterPerm):
     """A class holding the result for sensor x frequency cluster stats computed
     from a group level GLM-Spectrum"""
-
-    def __init__(self, glmsp, gl_con, fl_con=0, nperms=1000,
-                    cluster_forming_threshold=3, tstat_args=None,
-                    metric='tstats', nprocesses=1):
-
-
-        # There is a major pain here in that MNE stores raw data in [channels x time]
-        # but builds adjacencies in [time x channels]
-        self.perm_data = glmsp.get_fl_contrast(fl_con)
-        self.perm_data.data = np.swapaxes(self.perm_data.data, 1, 2)
-
-        self.gl_contrast_name = glmsp.contrast_names[gl_con]
-        self.fl_contrast_name = glmsp.fl_contrast_names[fl_con]
-        self.info = glmsp.info
-        self.f = glmsp.f
-
-        self.perms = glm.permutations.MNEClusterPermutation(glmsp.design, self.perm_data, gl_con, nperms,
-                                                        nprocesses=nprocesses,
-                                                        metric=metric,
-                                                        cluster_forming_threshold=cluster_forming_threshold,
-                                                        tstat_args=tstat_args,
-                                                        adjacency=glmsp.get_channel_adjacency())
-
-    def save_pkl(self, outname, overwrite=True, save_data=False):
-        """Save GLM-Spectrum result to a pickle file.
-
-        Parameters
-        ----------
-        outname : str
-             Filename or full file path to write pickle to
-        overwrite : bool
-             Overwrite previous file if one exists? (Default value = True)
-        save_data : bool
-             Save STFT data in pickle? This is omitted by default to save disk
-             space (Default value = False)
-
-        """
-        if Path(outname).exists() and not overwrite:
-            msg = "{} already exists. Please delete or do use overwrite=True."
-            raise ValueError(msg.format(outname))
-
-        with open(outname, 'bw') as outp:
-            pickle.dump(self, outp)
-
-    def get_sig_clusters(self, thresh):
-        """Return the significant clusters at a given threshold.
-
-        Parameters
-        ----------
-        thresh : float
-            The threshold to consider a cluster significant eg 95 or 99
-
-        Returns
-        -------
-        clusters
-            A list containing the significant clusters. Each list item contains
-            a tuple of three items - the cluster statistic, the cluster
-            percentile relative to the null and the spatial/spectral indices of
-            the cluster.
-
-        """
-        clusters, obs_stat =  self.perms.get_sig_clusters(thresh, self.perm_data)
-        return clusters, obs_stat
 
     def plot_sig_clusters(self, thresh, ax=None, base=1):
         """Plot the significant clusters at a given threshold.
@@ -445,6 +311,14 @@ def group_glm_spectrum(inspectra, design_config=None, datainfo=None, metric='cop
     -------
     GroupSensorGLMSpectrum
 
+    References
+    ----------
+    .. [1] Quinn, A. J., Atkinson, L., Gohil, C., Kohl, O., Pitt, J., Zich, C., Nobre,
+       A. C., & Woolrich, M. W. (2022). The GLM-Spectrum: A multilevel framework
+       for spectrum analysis with covariate and confound modelling. Cold Spring
+       Harbor Laboratory. https://doi.org/10.1101/2022.11.14.516449
+
+
     """
     datainfo = {} if datainfo is None else datainfo
 
@@ -456,7 +330,7 @@ def group_glm_spectrum(inspectra, design_config=None, datainfo=None, metric='cop
         else:
             glmsp = inspectra[ii]
 
-        fl_data.append(getattr(glmsp, metric)[np.newaxis, ...])
+        fl_data.append(getattr(glmsp.model, metric)[np.newaxis, ...])
         fl_contrast_names = glmsp.design.contrast_names
 
     fl_data = np.concatenate(fl_data, axis=0)
@@ -541,6 +415,13 @@ def glm_spectrum(XX, reg_categorical=None, reg_ztrans=None, reg_unitmax=None,
     -------
     SensorGLMSpectrum
 
+    References
+    ----------
+    .. [1] Quinn, A. J., Atkinson, L., Gohil, C., Kohl, O., Pitt, J., Zich, C., Nobre,
+       A. C., & Woolrich, M. W. (2022). The GLM-Spectrum: A multilevel framework
+       for spectrum analysis with covariate and confound modelling. Cold Spring
+       Harbor Laboratory. https://doi.org/10.1101/2022.11.14.516449
+
     """
     if isinstance(XX, mne.io.base.BaseRaw):
         fs = XX.info['sfreq']
@@ -554,30 +435,30 @@ def glm_spectrum(XX, reg_categorical=None, reg_ztrans=None, reg_unitmax=None,
         YY = stats.zscore(YY, axis=axis)
 
     # sails.sftf.config freqvals isn't right when frange is trimmed!
-    glmspec = glm_periodogram(YY, axis=axis,
-                              reg_categorical=reg_categorical,
-                              reg_ztrans=reg_ztrans,
-                              reg_unitmax=reg_unitmax,
-                              contrasts=contrasts,
-                              fit_intercept=fit_intercept,
-                              window_type=window_type,
-                              fs=fs,
-                              nperseg=nperseg,
-                              noverlap=noverlap,
-                              nfft=nfft,
-                              detrend=detrend,
-                              return_onesided=return_onesided,
-                              scaling=scaling,
-                              mode=mode,
-                              fmin=fmin,
-                              fmax=fmax,
-                              ret_class=True,
-                              fit_method='glmtools')
+    glmsp = glm_periodogram(YY, axis=axis,
+                            reg_categorical=reg_categorical,
+                            reg_ztrans=reg_ztrans,
+                            reg_unitmax=reg_unitmax,
+                            contrasts=contrasts,
+                            fit_intercept=fit_intercept,
+                            window_type=window_type,
+                            fs=fs,
+                            nperseg=nperseg,
+                            noverlap=noverlap,
+                            nfft=nfft,
+                            detrend=detrend,
+                            return_onesided=return_onesided,
+                            scaling=scaling,
+                            mode=mode,
+                            fmin=fmin,
+                            fmax=fmax,
+                            ret_class=True,
+                            fit_method='glmtools')
 
     if isinstance(XX, mne.io.base.BaseRaw):
-        return SensorGLMSpectrum(glmspec, XX.info)
+        return SensorGLMSpectrum(glmsp, XX.info)
     else:
-        return glmspec
+        return glmsp
 
 
 def read_glm_spectrum(infile):
@@ -594,8 +475,8 @@ def read_glm_spectrum(infile):
 
     """
     with open(infile, 'rb') as outp:
-        glmspec = pickle.load(outp)
-    return glmspec
+        glmsp = pickle.load(outp)
+    return glmsp
 
 ##% ---------------------------
 #
@@ -985,7 +866,6 @@ def prep_scaled_freq(base, freq_vect):
     fx = freq_vect**base
     if base < 1:
         nticks = int(np.floor(np.sqrt(freq_vect[-1])))
-        #ftick = np.array([2**ii for ii in range(6)])
         ftick = np.array([ii**2 for ii in range(1,nticks+1)])
         ftickscaled = ftick**base
     else:

@@ -123,14 +123,18 @@ def get_level(handler='console'):
             return handler.level
 
 
-def log_or_print(msg):
+def log_or_print(msg, warning=False):
     """Execute logger.info if an OSL logger has been setup, otherwise print.
 
     Parameters
     ----------
     msg : str
         Message to log/print.
+    warning : bool
+        Is the msg a warning? Defaults to False, which will print info.
     """
+    if warning:
+        msg = f"WARNING: {msg}"
     if hasattr(osl_logger, "already_setup"):
         osl_logger.info(msg)
     else:

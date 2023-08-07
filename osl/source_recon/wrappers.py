@@ -26,6 +26,7 @@ from . import rhino, beamforming, parcellation, sign_flipping
 from ..report import src_report
 
 import logging
+
 logger = logging.getLogger(__name__)
 
 
@@ -84,6 +85,7 @@ def compute_surfaces(
     epoch_file,
     include_nose=True,
     recompute_surfaces=False,
+    do_mri2mniaxes_xform=True,
 ):
     """Wrapper for computing surfaces.
 
@@ -104,6 +106,11 @@ def compute_surfaces(
     recompute_surfaces : bool
         Specifies whether or not to run compute_surfaces, if the passed in
         options have already been run
+    do_mri2mniaxes_xform : bool
+        Specifies whether to do step 1) of compute_surfaces, i.e. transform 
+        sMRI to be aligned with the MNI axes. 
+        Sometimes needed when the sMRI goes out of the MNI FOV after step 1).
+
     """
     # Compute surfaces
     rhino.compute_surfaces(
@@ -112,6 +119,7 @@ def compute_surfaces(
         subject=subject,
         include_nose=include_nose,
         recompute_surfaces=recompute_surfaces,
+        do_mri2mniaxes_xform=do_mri2mniaxes_xform,
     )
 
     # Save info for the report
@@ -120,6 +128,8 @@ def compute_surfaces(
         {
             "compute_surfaces": True,
             "include_nose": include_nose,
+            "do_mri2mniaxes_xform": do_mri2mniaxes_xform,
+        
         },
     )
 
@@ -271,6 +281,7 @@ def compute_surfaces_coregister_and_forward_model(
     smri_file,
     epoch_file,
     include_nose=True,
+    do_mri2mniaxes_xform=True,
     use_nose=True,
     use_headshape=True,
     model="Single Layer",
@@ -296,6 +307,10 @@ def compute_surfaces_coregister_and_forward_model(
         Path to epoched preprocessed fif file.
     include_nose : bool
         Should we include the nose when we're extracting the surfaces?
+    do_mri2mniaxes_xform : bool
+        Specifies whether to do step 1) of compute_surfaces, i.e. transform 
+        sMRI to be aligned with the MNI axes. 
+        Sometimes needed when the sMRI goes out of the MNI FOV after step 1).        
     use_nose : bool
         Should we use the nose in the coregistration?
     use_headshape : bool
@@ -326,6 +341,7 @@ def compute_surfaces_coregister_and_forward_model(
         subject=subject,
         include_nose=include_nose,
         recompute_surfaces=recompute_surfaces,
+        do_mri2mniaxes_xform=do_mri2mniaxes_xform,
     )
 
     # Run coregistration
@@ -370,6 +386,7 @@ def compute_surfaces_coregister_and_forward_model(
             "coregister": True,
             "forward_model": True,
             "include_nose": include_nose,
+            "do_mri2mniaxes_xform": do_mri2mniaxes_xform,
             "use_nose": use_nose,
             "use_headshape": use_headshape,
             "already_coregistered": already_coregistered,
@@ -397,8 +414,6 @@ def beamform(
     freq_range,
     chantypes,
     rank,
-    spatial_resolution=None,
-    reference_brain="mni",
 ):
     """Wrapper function for beamforming.
 
@@ -421,20 +436,6 @@ def beamform(
         Channel types to use in beamforming.
     rank : dict
         Keys should be the channel types and the value should be the rank to use.
-    spatial_resolution : int
-        Resolution for beamforming to use for the reference brain in mm
-        (must be an integer, or will be cast to nearest int)
-        If None, then the gridstep used in coreg_filenames['forward_model_file']
-        is used.
-    reference_brain : string
-        'mni' indicates that the reference_brain is the stdbrain in MNI space
-        'mri' indicates that the reference_brain is the subject's sMRI in
-            the scaled native/mri space. "
-        'unscaled_mri' indicates that the reference_brain is the subject's sMRI in
-            unscaled native/mri space.
-        Note that Scaled/unscaled relates to the allow_smri_scaling option in coreg.
-        If allow_scaling was False, then the unscaled MRI will be the same as the scaled.
-        MRI.
     """
     logger.info("beamforming")
 
@@ -504,6 +505,7 @@ def parcellate(
     orthogonalisation,
     spatial_resolution=None,
     reference_brain="mni",
+    extra_chans="stim",
 ):
     """Wrapper function for parcellation.
 
@@ -539,6 +541,9 @@ def parcellate(
         Note that Scaled/unscaled relates to the allow_smri_scaling option in coreg.
         If allow_scaling was False, then the unscaled MRI will be the same as the
         scaled MRI.
+    extra_chans : str or list of str
+        Extra channels to include in the parc-raw.fif file. Defaults to 'stim'.
+        Stim channels are always added to parc-raw.fif in addition to extra_chans.
     """
     logger.info("parcellate")
 
@@ -614,7 +619,9 @@ def parcellate(
         # Save parcellated data as a MNE Raw object
         parc_fif_file = src_dir / subject / "rhino/parc-raw.fif"
         logger.info(f"saving {parc_fif_file}")
-        parc_raw = parcellation.convert2mne_raw(parcel_data, data)
+        parc_raw = parcellation.convert2mne_raw(
+            parcel_data, data, extra_chans=extra_chans
+        )
         parc_raw.save(parc_fif_file, overwrite=True)
     else:
         # Save parcellated data as a MNE Epochs object
@@ -666,6 +673,7 @@ def beamform_and_parcellate(
     orthogonalisation,
     spatial_resolution=None,
     reference_brain="mni",
+    extra_chans="stim",
 ):
     """Wrapper function for beamforming and parcellation.
 
@@ -708,6 +716,9 @@ def beamform_and_parcellate(
         Note that Scaled/unscaled relates to the allow_smri_scaling option in coreg.
         If allow_scaling was False, then the unscaled MRI will be the same as the
         scaled MRI.
+    extra_chans : str or list of str
+        Extra channels to include in the parc-raw.fif file. Defaults to 'stim'.
+        Stim channels are always added to parc-raw.fif in addition to extra_chans.
     """
     logger.info("beamform_and_parcellate")
 
@@ -793,7 +804,9 @@ def beamform_and_parcellate(
         # Save parcellated data as a MNE Raw object
         parc_fif_file = src_dir / subject / "rhino/parc-raw.fif"
         logger.info(f"saving {parc_fif_file}")
-        parc_raw = parcellation.convert2mne_raw(parcel_data, data)
+        parc_raw = parcellation.convert2mne_raw(
+            parcel_data, data, extra_chans=extra_chans
+        )
         parc_raw.save(parc_fif_file, overwrite=True)
     else:
         # Save parcellated data as a MNE Epochs object

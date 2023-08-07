@@ -13,6 +13,30 @@ from tqdm import trange
 from osl.utils.logger import log_or_print
 
 
+def _get_parc_chans(raw):
+    """Get parcel channels names in an mne.Raw or mne.Epochs object.
+
+    Parameters
+    ----------
+    raw : mne.Raw or mne.Epochs
+        Raw or Epochs object.
+
+    Returns
+    -------
+    parc_chans : list of str or str
+        Parcel channel names. If no channels called 'parcel_X' are found in the
+        raw object then we return 'misc'.
+    """
+    # Parcel channels are those called 'parcel_X'
+    parc_chans = [ch for ch in raw.ch_names if "parcel" in ch]
+    if len(parc_chans) == 0:
+        # Old parc-raw.fif didn't use the 'parcel_X' naming convention
+        # for parcel channels, so we select all misc channels for
+        # backwards compatibility
+        parc_chans = "misc"
+    return parc_chans
+
+
 def find_flips(
     cov,
     template_cov,
@@ -140,12 +164,16 @@ def load_covariances(
         elif "raw.fif" in parc_files[i]:
             # We assume this is a parc-raw.fif file created in beamform_and_parcellated
             raw = mne.io.read_raw_fif(parc_files[i], verbose=False)
-            x = raw.get_data(picks="misc", reject_by_annotation="omit", verbose=False)
+            x = raw.get_data(
+                picks=_get_parc_chans(raw), reject_by_annotation="omit", verbose=False
+            )
             x = x.T  # (channels, time) -> (time, channels)
         elif "epo.fif" in parc_files[i]:
             # We assume this is a parc-epo.fif file created in beamform_and_parcellated
             epochs = mne.read_epochs(parc_files[i], verbose=False)
-            x = epochs.get_data(picks="misc")  # (epochs, channels, time)
+            x = epochs.get_data(
+                picks=_get_parc_chans(epochs)
+            )  # (epochs, channels, time)
             x = np.swapaxes(x, 1, 2)
             x = x.reshape(-1, x.shape[-1])  # (time, channels)
         else:
@@ -315,7 +343,9 @@ def apply_flips(src_dir, subject, flips, epoched=False):
         def flip(data):
             return data * flips[np.newaxis, :, np.newaxis]
 
-        sflip_epochs.apply_function(flip, picks="misc", channel_wise=False)
+        sflip_epochs.apply_function(
+            flip, picks=_get_parc_chans(epochs), channel_wise=False
+        )
 
         # Save
         outfile = op.join(src_dir, str(subject), "sflip_parc-epo.fif")
@@ -333,7 +363,7 @@ def apply_flips(src_dir, subject, flips, epoched=False):
         def flip(data):
             return data * flips[:, np.newaxis]
 
-        sflip_raw.apply_function(flip, picks="misc", channel_wise=False)
+        sflip_raw.apply_function(flip, picks=_get_parc_chans(raw), channel_wise=False)
 
         # Save
         outfile = op.join(src_dir, str(subject), "sflip_parc-raw.fif")

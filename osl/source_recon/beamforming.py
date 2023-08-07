@@ -200,21 +200,23 @@ def make_lcmv(
     return filters
 
 
-def apply_lcmv(data, filters):
+def apply_lcmv(data, filters, reject_by_annotation="omit"):
     """Apply a LCMV filter to an MNE Raw or Epochs object."""
     if isinstance(data, mne.io.Raw):
-        return apply_lcmv_raw(data, filters)
+        return apply_lcmv_raw(data, filters, reject_by_annotation)
     else:
         return mne.beamformer.apply_lcmv_epochs(data, filters)
 
 
-def apply_lcmv_raw(raw, filters):
+def apply_lcmv_raw(raw, filters, reject_by_annotation="omit"):
     """Modified version of mne.beamformer.apply_lcmv_raw."""
 
     _check_reference(raw)
 
     # Get data from the mne.Raw object
-    data, times = raw.get_data(return_times=True)
+    data, times = raw.get_data(
+        return_times=True, reject_by_annotation=reject_by_annotation
+    )
 
     # Select channels
     chan_inds = _check_channels_spatial_filter(raw.ch_names, filters)
@@ -1104,7 +1106,7 @@ def voxel_timeseries(
     freq_range=None,
     spatial_resolution=None,
     reference_brain="mni",
-    reject_by_annotations=None,
+    reject_by_annotation=None,
 ):
     """Get the voxel time series of beamformed data.
 
@@ -1135,7 +1137,7 @@ def voxel_timeseries(
         Note that Scaled/unscaled relates to the allow_smri_scaling option in coreg.
         If allow_scaling was False, then the unscaled MRI will be the same as the
         scaled MRI.
-    reject_by_annotations : str
+    reject_by_annotation : str
         Argument passed to .get_data() if the preproc file contains an MNE
         Raw object.
 
@@ -1147,7 +1149,7 @@ def voxel_timeseries(
         Voxel coordinates in MNI space.
     """
 
-    # Load sensor data
+    # Load sensor data
     if "raw.fif" in preproc_file:
         # Load preprocessed data
         data = mne.io.read_raw_fif(preproc_file, preload=True)
@@ -1179,7 +1181,7 @@ def voxel_timeseries(
 
     # Apply the beamformer
     log_or_print("applying beamformer")
-    bf_data = apply_lcmv(data, filters, reject_by_annotations)
+    bf_data = apply_lcmv(data, filters, reject_by_annotation)
 
     # Transform to MNI space
     if "epo.fif" in preproc_file:

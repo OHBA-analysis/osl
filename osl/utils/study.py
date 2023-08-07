@@ -1,4 +1,6 @@
-# Authors: Andrew Quinn <a.quinn@bham.ac.uk>
+# Authors: 
+# Andrew Quinn <a.quinn@bham.ac.uk>
+# Mats van Es <mats.vanes@psych.ox.ac.uk>
 
 import re
 import glob
@@ -20,6 +22,9 @@ class Study:
         self.match_files = sorted(glob.glob(self.globdir))
         print('found {} files'.format(len(self.match_files)))
 
+        self.match_files = [ff for ff in self.match_files if parse.parse(self.studydir, ff) is not None]
+        print('keeping {} consistent files'.format(len(self.match_files)))
+
         self.match_values = []
         for fname in self.match_files:
             self.match_values.append(parse.parse(self.studydir, fname).named)
@@ -37,5 +42,7 @@ class Study:
             keywords[key] = kwargs.get(key, '*')
 
         fname = self.studydir.format(**keywords)
-
-        return sorted(glob.glob(fname))
+        
+        # we only want the valid files
+        out = [ff for ff in glob.glob(fname) if any(ff in ff_valid for ff_valid in self.match_files)]
+        return out
