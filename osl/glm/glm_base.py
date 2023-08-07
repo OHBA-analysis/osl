@@ -83,7 +83,31 @@ class GroupGLMBaseResult:
         return mne.stats.cluster_level._setup_adjacency(adjacency, ntests, ntimes)
 
 
-class SensorMaxStatPerm:
+class BaseSensorPerm:
+
+    def save_pkl(self, outname, overwrite=True, save_data=False):
+        """Save GLM-Epochs result to a pickle file.
+
+        Parameters
+        ----------
+        outname : str
+                Filename or full file path to write pickle to
+        overwrite : bool
+                Overwrite previous file if one exists? (Default value = True)
+        save_data : bool
+                Save epoch data in pickle? This is omitted by default to save disk
+                space (Default value = False)
+
+        """
+        if Path(outname).exists() and not overwrite:
+            msg = "{} already exists. Please delete or do use overwrite=True."
+            raise ValueError(msg.format(outname))
+
+        with open(outname, 'bw') as outp:
+            pickle.dump(self, outp)
+
+
+class SensorMaxStatPerm(BaseSensorPerm):
     """A class holding the result for sensor x frequency max-stat permutation test computed
     from a group level GLM-Spectrum"""
 
@@ -139,7 +163,7 @@ class SensorMaxStatPerm:
         return clusters, obs
 
 
-class SensorClusterPerm:
+class SensorClusterPerm(BaseSensorPerm):
     """A class holding the result for sensor x frequency cluster stats computed
     from a group level GLM-Spectrum"""
 
