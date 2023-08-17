@@ -862,7 +862,7 @@ def convert2mne_raw(parc_data, raw, parcel_names=None, extra_chans="stim"):
     # parc_data is missing bad segments
     # We insert these before creating the new MNE object
     _, times = raw.get_data(reject_by_annotation="omit", return_times=True)
-    indices = raw.time_as_index(times)
+    indices = raw.time_as_index(times, use_rounding=True)
     data = np.zeros([parc_data.shape[0], len(raw.times)], dtype=np.float32)
     data[:, indices] = parc_data
 
