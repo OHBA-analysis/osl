@@ -771,6 +771,10 @@ def convert2niftii(parc_data, parcellation_file, mask_file, tres=1, tmin=0):
     if len(parc_data.shape) == 1:
         parc_data = np.reshape(parc_data, [1, -1])
 
+    # Find files within the package
+    parcellation_file = find_file(parcellation_file)
+    mask_file = find_file(mask_file)
+
     # Load the mask
     mask = nib.load(mask_file)
     mask_grid = mask.get_fdata()
@@ -858,7 +862,7 @@ def convert2mne_raw(parc_data, raw, parcel_names=None, extra_chans="stim"):
     # parc_data is missing bad segments
     # We insert these before creating the new MNE object
     _, times = raw.get_data(reject_by_annotation="omit", return_times=True)
-    indices = raw.time_as_index(times)
+    indices = raw.time_as_index(times, use_rounding=True)
     data = np.zeros([parc_data.shape[0], len(raw.times)], dtype=np.float32)
     data[:, indices] = parc_data
 
