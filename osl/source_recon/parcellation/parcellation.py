@@ -771,6 +771,10 @@ def convert2niftii(parc_data, parcellation_file, mask_file, tres=1, tmin=0):
     if len(parc_data.shape) == 1:
         parc_data = np.reshape(parc_data, [1, -1])
 
+    # Find files within the package
+    parcellation_file = find_file(parcellation_file)
+    mask_file = find_file(mask_file)
+
     # Load the mask
     mask = nib.load(mask_file)
     mask_grid = mask.get_fdata()
