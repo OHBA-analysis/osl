@@ -117,7 +117,7 @@ def coreg(
     use_dev_ctf_t=True,
     already_coregistered=False,
     allow_smri_scaling=False,
-    n_init=30,
+    n_init=1,
 ):
     """Coregistration.
 
