@@ -144,7 +144,7 @@ def coregister(
     use_headshape=True,
     already_coregistered=False,
     allow_smri_scaling=False,
-    n_init=30,
+    n_init=1,
 ):
     """Wrapper for coregistration.
 
@@ -288,7 +288,7 @@ def compute_surfaces_coregister_and_forward_model(
     recompute_surfaces=False,
     already_coregistered=False,
     allow_smri_scaling=False,
-    n_init=30,
+    n_init=1,
     eeg=False,
 ):
     """Wrapper for: compute_surfaces, coregister and forward_model.
