@@ -7,7 +7,7 @@
 from osl import preprocessing
 
 # Setup paths to preprocessed data files
-preproc_dir = "/ohba/pi/knobre/cgohil/dg_int_ext/preproc"
+preproc_dir = "/ohba/pi/knobre/cgohil/int_ext/preproc"
 subjects = ["s01_block_01", "s01_block_02"]
 
 run_ids = []

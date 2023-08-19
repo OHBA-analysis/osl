@@ -10,7 +10,7 @@ from osl.source_recon import find_template_subject, run_src_batch
 
 # Setup paths to epoched data files
 event_type = "internal_disp"
-src_dir = f"/ohba/pi/knobre/cgohil/dg_int_ext/src/{event_type}"
+src_dir = f"/ohba/pi/knobre/cgohil/int_ext/src/{event_type}"
 
 # Subjects to sign flip
 # We create a list by looking for subjects that have a rhino/parc-epo.fif file

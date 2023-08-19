@@ -7,7 +7,7 @@
 from osl import preprocessing
 
 # Setup paths to preprocessed data files
-preproc_dir = "/ohba/pi/knobre/cgohil/dg_int_ext/preproc"
+preproc_dir = "/ohba/pi/knobre/cgohil/int_ext/preproc"
 subjects = ["s01_block_01", "s01_block_02"]
 
 run_ids = []
@@ -84,7 +84,7 @@ def crop_ends(dataset, userargs):
     return dataset
 
 # Output directory
-epoch_dir = f"/ohba/pi/knobre/cgohil/dg_int_ext/epoch/{event_type}"
+epoch_dir = f"/ohba/pi/knobre/cgohil/int_ext/epoch/{event_type}"
 
 # Run epoching
 preprocessing.run_proc_batch(
