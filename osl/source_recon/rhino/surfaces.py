@@ -86,6 +86,38 @@ def get_surfaces_filenames(subjects_dir, subject):
     return filenames
 
 
+def check_if_already_computed(subjects_dir, subject, include_nose):
+    """Checks if surfaces have already been computed.
+
+    Parameters
+    ----------
+    subjects_dir : string
+        Directory to put RHINO subject directories in.
+        Files will be in subjects_dir/subject/surfaces.
+    subject : string
+        Subject name directory to put RHINO files in.
+        Files will be in subjects_dir/subject/surfaces.
+    include_nose : bool
+        Specifies whether to add the nose to the outer skin (scalp) surface.
+
+    Returns
+    -------
+    already_computed : bool
+        Flag indicating if surfaces have been computed.
+    """
+    filenames = get_surfaces_filenames(subjects_dir, subject)
+    if Path(filenames["completed"]).exists():
+        with open(filenames["completed"], "r") as file:
+            lines = file.readlines()
+            completed_mri_file = lines[1].split(":")[1].strip()
+            completed_include_nose = lines[2].split(":")[1].strip() == "True"
+            is_same_mri = completed_mri_file == filenames["smri_file"]
+            is_same_include_nose = completed_include_nose == include_nose
+            if is_same_mri and is_same_include_nose:
+                return True
+    return False
+
+
 def compute_surfaces(
     smri_file,
     subjects_dir,
@@ -154,6 +186,11 @@ def compute_surfaces(
         Specifies whether to do step 1) above, i.e. transform sMRI to be
         aligned with the MNI axes. Sometimes needed when the sMRI goes out
         of the MNI FOV after step 1).
+
+    Returns
+    -------
+    already_computed : bool
+        Flag indicating if we're using previously computed surfaces.
     """
 
     # Note the jargon used varies for xforms and coord spaces, e.g.:
@@ -168,18 +205,11 @@ def compute_surfaces(
 
     if not recompute_surfaces:
         # Check if surfaces have already been computed
-        if Path(filenames["completed"]).exists():
-            with open(filenames["completed"], "r") as file:
-                lines = file.readlines()
-                completed_mri_file = lines[1].split(":")[1].strip()
-                completed_include_nose = lines[2].split(":")[1].strip() == "True"
-                is_same_mri = completed_mri_file == filenames["smri_file"]
-                is_same_include_nose = completed_include_nose == include_nose
-                if is_same_mri and is_same_include_nose:
-                    log_or_print("*** OSL RHINO: USING PREVIOUSLY COMPUTED SURFACES ***")
-                    log_or_print(f"Surfaces directory: {filenames['basedir']}")
-                    log_or_print(f"include_nose={completed_include_nose}")
-                    return
+        if check_if_already_computed(subjects_dir, subject, include_nose):
+            log_or_print("*** OSL RHINO: USING PREVIOUSLY COMPUTED SURFACES ***")
+            log_or_print(f"Surfaces directory: {filenames['basedir']}")
+            log_or_print(f"include_nose={include_nose}")
+            return True
 
     log_or_print("*** RUNNING OSL RHINO COMPUTE SURFACES ***")
     if include_nose:
@@ -620,6 +650,8 @@ please check output of:\n fslorient -getorient {}".format(
     )
     log_or_print("*** OSL RHINO COMPUTE SURFACES COMPLETE ***")
 
+    return False
+
 
 def surfaces_display(subjects_dir, subject):
     """Display surfaces.
@@ -658,7 +690,7 @@ def surfaces_display(subjects_dir, subject):
     )
 
 
-def plot_surfaces(subjects_dir, subject, include_nose):
+def plot_surfaces(subjects_dir, subject, include_nose, already_computed=False):
     """Plot a structural MRI and extracted surfaces.
 
     Parameters
@@ -670,7 +702,9 @@ def plot_surfaces(subjects_dir, subject, include_nose):
         Subject name directory to put RHINO files in.
         Files will be in subjects_dir/subject/surfaces.
     include_nose : bool
-        Should we also plot the surface extracted including the nose?
+        Specifies whether to add the nose to the outer skin (scalp) surface.
+    already_computed : bool, optional
+        Have the surfaces (and plots) already been computed?
 
     Returns
     -------
@@ -685,32 +719,36 @@ def plot_surfaces(subjects_dir, subject, include_nose):
     if include_nose:
         surfaces.append("outskin_plus_nose")
 
+    # Check surfaces exist
+    for surface in surfaces:
+        file = Path(filenames[f"bet_{surface}_mesh_file"])
+        if not file.exists():
+            raise ValueError(f"{file} does not exist")
+
+    # Images to save
+    output_files = [f"{filenames['basedir']}/{surface}.png" for surface in surfaces]
+
+    # Check if we need to make plots
+    if already_computed:
+        if all([Path(file).exists() for file in output_files]):
+            return output_files
+
     # Plot the structural MRI
     with warnings.catch_warnings():
         warnings.simplefilter("ignore")  # suppress warnings from plotting
         display = nil.plotting.plot_anat(filenames["smri_file"])
 
-    # Plot each surface (in separate images)
-    output_files = []
-    for surface in surfaces:
-
-        # Get path to the nifti file containing the surface
-        file = Path(filenames[f"bet_{surface}_mesh_file"])
-        if not file.exists():
-            raise ValueError(f"{file} does not exist")
-
-        # Plot surface
+    # Plot each surface
+    for surface, output_file in zip(surfaces, output_files):
         display_copy = deepcopy(display)
-        img = nil._utils.check_niimg_3d(file)
+        nii_file = filenames[f"bet_{surface}_mesh_file"]
+        img = nil._utils.check_niimg_3d(nii_file)
         data = nil._utils.niimg._safe_get_data(img, ensure_finite=True)
         vmin = np.nanmin(data)
         vmax = np.nanmax(data)
         display_copy.add_overlay(img, vmin=vmin, vmax=vmax)
 
-        # Save
-        filename = f"{filenames['basedir']}/{surface}.png"
-        log_or_print(f"Saving {filename}")
-        display_copy.savefig(filename)
-        output_files.append(filename)
+        log_or_print(f"Saving {output_file}")
+        display_copy.savefig(output_file)
 
     return output_files

@@ -113,7 +113,7 @@ def compute_surfaces(
 
     """
     # Compute surfaces
-    rhino.compute_surfaces(
+    already_computed = rhino.compute_surfaces(
         smri_file=smri_file,
         subjects_dir=src_dir,
         subject=subject,
@@ -123,11 +123,7 @@ def compute_surfaces(
     )
 
     # Plot surfaces
-    surface_plots = rhino.plot_surfaces(
-        subjects_dir=src_dir,
-        subject=subject,
-        include_nose=include_nose,
-    )
+    surface_plots = rhino.plot_surfaces(src_dir, subject, include_nose, already_computed)
 
     # Save info for the report
     src_report.add_to_data(
@@ -343,7 +339,7 @@ def compute_surfaces_coregister_and_forward_model(
         Number of initialisation for coregistration.
     """
     # Compute surfaces
-    rhino.compute_surfaces(
+    already_computed = rhino.compute_surfaces(
         smri_file=smri_file,
         subjects_dir=src_dir,
         subject=subject,
@@ -353,11 +349,7 @@ def compute_surfaces_coregister_and_forward_model(
     )
 
     # Plot surfaces
-    surface_plots = rhino.plot_surfaces(
-        subjects_dir=src_dir,
-        subject=subject,
-        include_nose=include_nose,
-    )
+    surface_plots = rhino.plot_surfaces(src_dir, subject, include_nose, already_computed)
 
     # Run coregistration
     rhino.coreg(
