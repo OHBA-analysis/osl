@@ -1,15 +1,12 @@
 """Wrappers for source reconstruction.
 
-This module contains the functions callable using a 'source_recon'
-section of a config.
+This module contains the functions callable using a 'source_recon' section of a config.
 
-All functions in this module accept the following arguments for
-consistency:
+All functions in this module accept the following arguments for consistency:
 
     func(src_dir, subject, preproc_file, smri_file, epoch_file, *userargs)
 
-Custom functions (i.e. functions passed via the extra_funcs argument)
-must also conform to this.
+Custom functions (i.e. functions passed via the extra_funcs argument) must also conform to this.
 """
 
 # Authors: Chetan Gohil <chetan.gohil@psych.ox.ac.uk>
@@ -30,7 +27,7 @@ import logging
 logger = logging.getLogger(__name__)
 
 
-# ------------------------------------------------------------------
+# --------------
 # RHINO wrappers
 
 
@@ -57,8 +54,7 @@ def extract_fiducials_from_fif(
     epoch_file : str
         Path to epoched preprocessed fif file.
     userargs : keyword arguments
-        Keyword arguments to pass to
-        osl.source_recon.rhino.extract_polhemus_from_info.
+        Keyword arguments to pass to osl.source_recon.rhino.extract_polhemus_from_info.
     """
     filenames = rhino.get_coreg_filenames(src_dir, subject)
 
@@ -104,11 +100,9 @@ def compute_surfaces(
     include_nose : bool
         Should we include the nose when we're extracting the surfaces?
     recompute_surfaces : bool
-        Specifies whether or not to run compute_surfaces, if the passed in
-        options have already been run
+        Specifies whether or not to run compute_surfaces, if the passed in options have already been run.
     do_mri2mniaxes_xform : bool
-        Specifies whether to do step 1) of compute_surfaces, i.e. transform 
-        sMRI to be aligned with the MNI axes. 
+        Specifies whether to do step 1) of compute_surfaces, i.e. transform sMRI to be aligned with the MNI axes. 
         Sometimes needed when the sMRI goes out of the MNI FOV after step 1).
 
     """
@@ -170,12 +164,9 @@ def coregister(
     already_coregistered : bool
         Indicates that the data is already coregistered.
     allow_smri_scaling : bool
-        Indicates if we are to allow scaling of the sMRI, such that the sMRI-derived fids
-        are scaled in size to better match the polhemus-derived fids.
-        This assumes that we trust the size (e.g. in mm) of the polhemus-derived fids,
-        but not the size of the sMRI-derived fids.
-        E.g. this might be the case if we do not trust the size (e.g. in mm) of the sMRI,
-        or if we are using a template sMRI that has not come from this subject.
+        Indicates if we are to allow scaling of the sMRI, such that the sMRI-derived fids are scaled in size to better match the polhemus-derived fids.
+        This assumes that we trust the size (e.g. in mm) of the polhemus-derived fids, but not the size of the sMRI-derived fids. E.g. this might be the
+        case if we do not trust the size (e.g. in mm) of the sMRI, or if we are using a template sMRI that has not come from this subject.
     n_init : int
         Number of initialisation for coregistration.
     """
@@ -247,13 +238,11 @@ def forward_model(
     epoch_file : str
         Path to epoched preprocessed fif file.
     gridstep : int
-        A grid will be constructed with the spacing given by ``gridstep`` in mm,
-        generating a volume source space.
+        A grid will be constructed with the spacing given by ``gridstep`` in mm, generating a volume source space.
     model : str
-        Type of forward model to use.
-        Can be 'Single Layer' or 'Triple Layer', where:
-          'Single Layer' use a single layer (brain/cortex)
-          'Triple Layer' uses three layers (scalp, inner skull, brain/cortex)
+        Type of forward model to use. Can be 'Single Layer' or 'Triple Layer', where:
+        'Single Layer' use a single layer (brain/cortex)
+        'Triple Layer' uses three layers (scalp, inner skull, brain/cortex)
     eeg : bool
         Are we using EEG channels in the source reconstruction?
     """
@@ -312,8 +301,7 @@ def compute_surfaces_coregister_and_forward_model(
     include_nose : bool
         Should we include the nose when we're extracting the surfaces?
     do_mri2mniaxes_xform : bool
-        Specifies whether to do step 1) of compute_surfaces, i.e. transform 
-        sMRI to be aligned with the MNI axes. 
+        Specifies whether to do step 1) of compute_surfaces, i.e. transform sMRI to be aligned with the MNI axes.
         Sometimes needed when the sMRI goes out of the MNI FOV after step 1).        
     use_nose : bool
         Should we use the nose in the coregistration?
@@ -322,17 +310,13 @@ def compute_surfaces_coregister_and_forward_model(
     model : str
         Forward model to use.
     recompute_surfaces : bool
-        Specifies whether or not to run compute_surfaces, if the passed in
-        options have already been run
+        Specifies whether or not to run compute_surfaces, if the passed in options have already been run.
     already_coregistered : bool
         Indicates that the data is already coregistered.
     allow_smri_scaling : bool
-        Indicates if we are to allow scaling of the sMRI, such that the sMRI-derived fids
-        are scaled in size to better match the polhemus-derived fids.
-        This assumes that we trust the size (e.g. in mm) of the polhemus-derived fids,
-        but not the size of the sMRI-derived fids.
-        E.g. this might be the case if we do not trust the size (e.g. in mm) of the sMRI,
-        or if we are using a template sMRI that has not come from this subject.
+        Indicates if we are to allow scaling of the sMRI, such that the sMRI-derived fids are scaled in size to better match the polhemus-derived fids.
+        This assumes that we trust the size (e.g. in mm) of the polhemus-derived fids, but not the size of the sMRI-derived fids. E.g. this might be the case
+        if we do not trust the size (e.g. in mm) of the sMRI, or if we are using a template sMRI that has not come from this subject.
     eeg : bool
         Are we using EEG channels in the source reconstruction?
     n_init : int
@@ -410,7 +394,7 @@ def compute_surfaces_coregister_and_forward_model(
     )
 
 
-# ------------------------------------------------------------------
+# -------------------------------------
 # Beamforming and parcellation wrappers
 
 
@@ -537,19 +521,14 @@ def parcellate(
     orthogonalisation : bool
         Should we do orthogonalisation?
     spatial_resolution : int
-        Resolution for beamforming to use for the reference brain in mm
-        (must be an integer, or will be cast to nearest int)
-        If None, then the gridstep used in coreg_filenames['forward_model_file']
-        is used.
+        Resolution for beamforming to use for the reference brain in mm (must be an integer, or will be cast to nearest int).
+        If None, then the gridstep used in coreg_filenames['forward_model_file'] is used.
     reference_brain : string
-        'mni' indicates that the reference_brain is the stdbrain in MNI space
-        'mri' indicates that the reference_brain is the subject's sMRI in
-            the scaled native/mri space. "
-        'unscaled_mri' indicates that the reference_brain is the subject's sMRI in
-            unscaled native/mri space.
-        Note that Scaled/unscaled relates to the allow_smri_scaling option in coreg.
-        If allow_scaling was False, then the unscaled MRI will be the same as the
-        scaled MRI.
+        'mni' indicates that the reference_brain is the stdbrain in MNI space.
+        'mri' indicates that the reference_brain is the subject's sMRI in the scaled native/mri space.
+        'unscaled_mri' indicates that the reference_brain is the subject's sMRI in unscaled native/mri space.
+        Note that Scaled/unscaled relates to the allow_smri_scaling option in coreg. If allow_scaling was False,
+        then the unscaled MRI will be the same as the scaled MRI.
     extra_chans : str or list of str
         Extra channels to include in the parc-raw.fif file. Defaults to 'stim'.
         Stim channels are always added to parc-raw.fif in addition to extra_chans.
@@ -620,17 +599,13 @@ def parcellate(
 
     if orthogonalisation == "symmetric":
         logger.info(f"{orthogonalisation} orthogonalisation")
-        parcel_data = parcellation.symmetric_orthogonalise(
-            parcel_data, maintain_magnitudes=True
-        )
+        parcel_data = parcellation.symmetric_orthogonalise(parcel_data, maintain_magnitudes=True)
 
     if epoch_file is None:
         # Save parcellated data as a MNE Raw object
         parc_fif_file = src_dir / subject / "rhino/parc-raw.fif"
         logger.info(f"saving {parc_fif_file}")
-        parc_raw = parcellation.convert2mne_raw(
-            parcel_data, data, extra_chans=extra_chans
-        )
+        parc_raw = parcellation.convert2mne_raw(parcel_data, data, extra_chans=extra_chans)
         parc_raw.save(parc_fif_file, overwrite=True)
     else:
         # Save parcellated data as a MNE Epochs object
@@ -640,10 +615,16 @@ def parcellate(
         parc_epo.save(parc_fif_file, overwrite=True)
 
     # Save plots
-    parcellation.plot_correlation(
+    parc_psd_plot = f"{src_dir}/{subject}/rhino/parc_psd.png"
+    parcellation.plot_psd(
         parcel_data,
-        filename=f"{src_dir}/{subject}/rhino/parc_corr.png",
+        fs=data.info["sfreq"],
+        freq_range=freq_range,
+        parcellation_file=parcellation_file,
+        filename=parc_psd_plot,
     )
+    parc_corr_plot = f"{src_dir}/{subject}/rhino/parc_corr.png"
+    parcellation.plot_correlation(parcel_data, filename=parc_corr_plot)
 
     # Save info for the report
     n_parcels = parcel_data.shape[0]
@@ -663,7 +644,8 @@ def parcellate(
             "n_samples": n_samples,
             "n_parcels": n_parcels,
             "n_epochs": n_epochs,
-            "parc_corr_plot": f"{src_dir}/{subject}/rhino/parc_corr.png",
+            "parc_psd_plot": parc_psd_plot,
+            "parc_corr_plot": parc_corr_plot,
         },
     )
 
@@ -703,8 +685,7 @@ def beamform_and_parcellate(
     rank : dict
         Keys should be the channel types and the value should be the rank to use.
     freq_range : list
-        Lower and upper band to bandpass filter before beamforming. If None,
-        no filtering is done.
+        Lower and upper band to bandpass filter before beamforming. If None, no filtering is done.
     parcellation_file : str
         Path to the parcellation file to use.
     method : str
@@ -712,19 +693,14 @@ def beamform_and_parcellate(
     orthogonalisation : bool
         Should we do orthogonalisation?
     spatial_resolution : int
-        Resolution for beamforming to use for the reference brain in mm
-        (must be an integer, or will be cast to nearest int)
-        If None, then the gridstep used in coreg_filenames['forward_model_file']
-        is used.
+        Resolution for beamforming to use for the reference brain in mm (must be an integer, or will be cast to nearest int)
+        If None, then the gridstep used in coreg_filenames['forward_model_file'] is used.
     reference_brain : string
-        'mni' indicates that the reference_brain is the stdbrain in MNI space
-        'mri' indicates that the reference_brain is the subject's sMRI in
-            the scaled native/mri space. "
-        'unscaled_mri' indicates that the reference_brain is the subject's sMRI in
-            unscaled native/mri space.
+        'mni' indicates that the reference_brain is the stdbrain in MNI space.
+        'mri' indicates that the reference_brain is the subject's sMRI in the scaled native/mri space.
+        'unscaled_mri' indicates that the reference_brain is the subject's sMRI in unscaled native/mri space.
         Note that Scaled/unscaled relates to the allow_smri_scaling option in coreg.
-        If allow_scaling was False, then the unscaled MRI will be the same as the
-        scaled MRI.
+        If allow_scaling was False, then the unscaled MRI will be the same as the scaled MRI.
     extra_chans : str or list of str
         Extra channels to include in the parc-raw.fif file. Defaults to 'stim'.
         Stim channels are always added to parc-raw.fif in addition to extra_chans.
@@ -805,17 +781,13 @@ def beamform_and_parcellate(
 
     if orthogonalisation == "symmetric":
         logger.info(f"{orthogonalisation} orthogonalisation")
-        parcel_data = parcellation.symmetric_orthogonalise(
-            parcel_data, maintain_magnitudes=True
-        )
+        parcel_data = parcellation.symmetric_orthogonalise(parcel_data, maintain_magnitudes=True)
 
     if epoch_file is None:
         # Save parcellated data as a MNE Raw object
         parc_fif_file = src_dir / subject / "rhino/parc-raw.fif"
         logger.info(f"saving {parc_fif_file}")
-        parc_raw = parcellation.convert2mne_raw(
-            parcel_data, data, extra_chans=extra_chans
-        )
+        parc_raw = parcellation.convert2mne_raw(parcel_data, data, extra_chans=extra_chans)
         parc_raw.save(parc_fif_file, overwrite=True)
     else:
         # Save parcellated data as a MNE Epochs object
@@ -867,7 +839,7 @@ def beamform_and_parcellate(
     )
 
 
-# ------------------------------------------------------------------
+# ----------------------
 # Sign flipping wrappers
 
 
@@ -894,8 +866,7 @@ def find_template_subject(
     standardize : bool
         Should we standardize (z-transform) the data before sign flipping?
     epoched : bool
-        Are we performing sign flipping on parc-raw.fif (epoched=False) or
-        parc-epo.fif files (epoched=True)?
+        Are we performing sign flipping on parc-raw.fif (epoched=False) or parc-epo.fif files (epoched=True)?
 
     Returns
     -------
@@ -919,10 +890,7 @@ def find_template_subject(
     # Validation
     n_parc_files = len(parc_files)
     if n_parc_files < 2:
-        raise ValueError(
-            "two or more parcellated data files are needed to perform "
-            + f"sign flipping, got {n_parc_files}"
-        )
+        raise ValueError(f"two or more parcellated data files are needed to perform sign flipping, got {n_parc_files}")
 
     # Calculate the covariance matrix of each subject
     covs = sign_flipping.load_covariances(parc_files, n_embeddings, standardize)
@@ -976,8 +944,7 @@ def fix_sign_ambiguity(
     max_flips : int
         Maximum number of channels to flip in an iteration.
     epoched : bool
-        Are we performing sign flipping on parc-raw.fif (epoched=False) or
-        parc-epo.fif files (epoched=True)?
+        Are we performing sign flipping on parc-raw.fif (epoched=False) or parc-epo.fif files (epoched=True)?
     """
     logger.info("fix_sign_ambiguity")
     logger.info(f"using template: {template}")
@@ -994,9 +961,7 @@ def fix_sign_ambiguity(
         parc_files.append(parc_file)
 
     # Calculate the covariance of this subject and the template
-    [cov, template_cov] = sign_flipping.load_covariances(
-        parc_files, n_embeddings, standardize, use_tqdm=False
-    )
+    [cov, template_cov] = sign_flipping.load_covariances(parc_files, n_embeddings, standardize, use_tqdm=False)
 
     # Find the channels to flip
     flips, metrics = sign_flipping.find_flips(

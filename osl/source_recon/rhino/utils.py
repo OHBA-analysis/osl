@@ -62,8 +62,7 @@ def get_gridstep(coords):
 
 
 def niimask2indexpointcloud(nii_fname, volindex=None):
-    """Takes in a nii.gz mask file name (which equals zero for background and
-    != zero for the mask) and returns the mask as a 3 x npoints point cloud.
+    """Takes in a nii.gz mask file name (which equals zero for background and != zero for the mask) and returns the mask as a 3 x npoints point cloud.
 
     Parameters
     ----------
@@ -84,9 +83,7 @@ def niimask2indexpointcloud(nii_fname, volindex=None):
         vol = vol[:, :, :, volindex]
 
     if not len(vol.shape) == 3:
-        Exception(
-            "nii_mask must be a 3D volume, or nii_mask must be a 4D volume with volindex specifying a volume index"
-        )
+        Exception("nii_mask must be a 3D volume, or nii_mask must be a 4D volume with volindex specifying a volume index")
 
     # Turn the nvoxx x nvoxy x nvoxz volume into a 3 x npoints point cloud
     pc = np.asarray(np.where(vol != 0))
@@ -95,15 +92,12 @@ def niimask2indexpointcloud(nii_fname, volindex=None):
 
 
 def niimask2mmpointcloud(nii_mask, volindex=None):
-    """Takes in a nii.gz mask (which equals zero for background and neq zero for
-    the mask) and returns the mask as a 3 x npoints point cloud in native space
-    in mm's.
+    """Takes in a nii.gz mask (which equals zero for background and neq zero for the mask) and returns the mask as a 3 x npoints point cloud in native space in mm's.
 
     Parameters
     ----------
     nii_mask : string
-        A nii.gz mask file name or the [x,y,z] volume
-        (with zero for background, and !=0 for the mask).
+        A nii.gz mask file name or the [x,y,z] volume (with zero for background, and !=0 for the mask).
     volindex : int
         Volume index, used if nii_mask is a 4D file.
 
@@ -121,9 +115,7 @@ def niimask2mmpointcloud(nii_mask, volindex=None):
         vol = vol[:, :, :, volindex]
 
     if not len(vol.shape) == 3:
-        Exception(
-            "nii_mask must be a 3D volume, or nii_mask must be a 4D volume with volindex specifying a volume index"
-        )
+        Exception("nii_mask must be a 3D volume, or nii_mask must be a 4D volume with volindex specifying a volume index")
 
     # Turn the nvoxx x nvoxy x nvoxz volume into a 3 x npoints point cloud
     pc_nativeindex = np.asarray(np.where(vol != 0))
@@ -167,26 +159,18 @@ def _get_vol_info_from_nii(mri):
     Returns
     -------
     out : dict
-        Dictionary with keys 'mri_width', 'mri_height', 'mri_depth'
-        and 'mri_volume_name'.
+        Dictionary with keys 'mri_width', 'mri_height', 'mri_depth' and 'mri_volume_name'.
     """
     dims = nib.load(mri).get_fdata().shape
-    out = dict(
-        mri_width=dims[0],
-        mri_height=dims[1],
-        mri_depth=dims[2],
-        mri_volume_name=mri,
-    )
+    out = dict(mri_width=dims[0], mri_height=dims[1], mri_depth=dims[2], mri_volume_name=mri)
     return out
 
 
 def _get_sform(nii_file):
     """
-    sform allows mapping from simple voxel index cordinates
-    (e.g. from 0 to 256) in scanner space to continuous coordinates (in mm)
+    sform allows mapping from simple voxel index cordinates (e.g. from 0 to 256) in scanner space to continuous coordinates (in mm)
 
-    sformcode = os.popen('fslorient -getsformcode {}'.format(
-    nii_file)).read().strip()
+    sformcode = os.popen('fslorient -getsformcode {}'.format(nii_file)).read().strip()
     """
 
     sformcode = int(nib.load(nii_file).header["sform_code"])
@@ -194,11 +178,7 @@ def _get_sform(nii_file):
     if sformcode == 1 or sformcode == 4:
         sform = nib.load(nii_file).header.get_sform()
     else:
-        raise ValueError(
-            "sform code for {} is {}, and needs to be 4 or 1".format(
-                nii_file, sformcode
-            )
-        )
+        raise ValueError("sform code for {} is {}, and needs to be 4 or 1".format(nii_file, sformcode))
 
     sform = Transform("mri_voxel", "mri", sform)
     return sform
@@ -206,11 +186,9 @@ def _get_sform(nii_file):
 
 def _get_mni_sform(nii_file):
     """
-    sform allows mapping from simple voxel index cordinates
-    (e.g. from 0 to 256) in scanner space to continuous coordinates (in mm)
+    sform allows mapping from simple voxel index cordinates (e.g. from 0 to 256) in scanner space to continuous coordinates (in mm)
 
-    sformcode = os.popen('fslorient -getsformcode {}'.format(
-    nii_file)).read().strip()
+    sformcode = os.popen('fslorient -getsformcode {}'.format(nii_file)).read().strip()
     """
 
     sformcode = int(nib.load(nii_file).header["sform_code"])
@@ -218,11 +196,7 @@ def _get_mni_sform(nii_file):
     if sformcode == 1 or sformcode == 4:
         sform = nib.load(nii_file).header.get_sform()
     else:
-        raise ValueError(
-            "sform code for {} is {}, and needs to be 4 or 1".format(
-                nii_file, sformcode
-            )
-        )
+        raise ValueError("sform code for {} is {}, and needs to be 4 or 1".format(nii_file, sformcode))
 
     sform = Transform("unknown", "mni_tal", sform)
     return sform
@@ -231,10 +205,8 @@ def _get_mni_sform(nii_file):
 def _get_orient(nii_file):
     cmd = "fslorient -getorient {}".format(nii_file)
 
-    # use os.popen rather than os.system as we want to return a value,
-    # note that this will wait until the read() works before continuing.
-    # Without the read() the code will continue without waiting for the
-    # system call to finish
+    # use os.popen rather than os.system as we want to return a value, note that this will wait until the read() works before continuing.
+    # Without the read() the code will continue without waiting for the system call to finish
     orient = os.popen(cmd).read().strip()
 
     return orient
@@ -246,7 +218,8 @@ def majority(values_ptr, len_values, result, data):
     def _majority(buffer, required_majority):
        return buffer.sum() >= required_majority
 
-    See https://ilovesymposia.com/2017/03/12/scipys-new-lowlevelcallable-is-a-game-changer/
+    See: https://ilovesymposia.com/2017/03/12/scipys-new-lowlevelcallable-is-a-game-changer/
+
     Numba cfunc that takes in:
     a double pointer pointing to the values within the footprint,
     a pointer-sized integer that specifies the number of values in the footprint,
@@ -261,9 +234,7 @@ def majority(values_ptr, len_values, result, data):
 
 def _binary_majority3d(img):
     """
-    Set a pixel to 1 if a required majority (default=14) or more pixels
-    in its 3x3x3 neighborhood are 1, otherwise, set the pixel to 0.
-    img is a 3D binary image
+    Set a pixel to 1 if a required majority (default=14) or more pixels in its 3x3x3 neighborhood are 1, otherwise, set the pixel to 0. img is a 3D binary image
     """
 
     if img.dtype != "bool":
@@ -272,11 +243,7 @@ def _binary_majority3d(img):
     if len(img.shape) != 3:
         raise ValueError("binary_majority3d(img) requires img to be 3D")
 
-    imgout = generic_filter(
-        img,
-        LowLevelCallable(majority.ctypes),
-        size=3,
-    ).astype(int)
+    imgout = generic_filter(img, LowLevelCallable(majority.ctypes), size=3).astype(int)
 
     return imgout
 
@@ -299,8 +266,7 @@ def rigid_transform_3D(B, A, compute_scaling=False):
     xform : numpy.ndarray
         Calculated affine transform, does not include scaling.
     scaling_xform : numpy.ndarray
-        Calculated scaling transform (a diagonal 4x4 matrix),
-        does not include rotation or translation.
+        Calculated scaling transform (a diagonal 4x4 matrix), does not include rotation or translation.
 
     see http://nghiaho.com/?page_id=671
     """
@@ -396,8 +362,7 @@ def xform_points(xform, pnts):
 
 
 def best_fit_transform(A, B):
-    """Calculates the least-squares best-fit transform that maps corresponding
-    points A to B in m spatial dimensions.
+    """Calculates the least-squares best-fit transform that maps corresponding points A to B in m spatial dimensions.
 
     Parameters
     ----------
@@ -469,8 +434,7 @@ def nearest_neighbor(src, dst):
 
 
 def icp(A, B, init_pose=None, max_iterations=50, tolerance=0.0001):
-    """The Iterative Closest Point method: finds best-fit transform that maps
-    points A on to points B.
+    """The Iterative Closest Point method: finds best-fit transform that maps points A on to points B.
 
     Parameters
     ----------
@@ -499,16 +463,16 @@ def icp(A, B, init_pose=None, max_iterations=50, tolerance=0.0001):
     From: https://github.com/ClayFlannigan/icp/blob/master/icp.py
     """
 
-    # get number of dimensions
+    # Get number of dimensions
     m = A.shape[1]
 
-    # make points homogeneous, copy them to maintain the originals
+    # Make points homogeneous, copy them to maintain the originals
     src = np.ones((m + 1, A.shape[0]))
     dst = np.ones((m + 1, B.shape[0]))
     src[:m, :] = np.copy(A.T)
     dst[:m, :] = np.copy(B.T)
 
-    # apply the initial pose estimation
+    # Apply the initial pose estimation
     if init_pose is not None:
         src = np.dot(init_pose, src)
 
@@ -517,26 +481,24 @@ def icp(A, B, init_pose=None, max_iterations=50, tolerance=0.0001):
     kdtree = KDTree(dst[:m, :].T)
 
     for i in range(max_iterations):
-        # find the nearest neighbors between the current source and destination points
-        # distances, indices = nearest_neighbor(src[:m,:].T, dst[:m,:].T)
-
+        # Find the nearest neighbors between the current source and destination points
+        #distances, indices = nearest_neighbor(src[:m,:].T, dst[:m,:].T)
         distances, indices = kdtree.query(src[:m, :].T)
 
-        # compute the transformation between the current source and nearest
-        # destination points
+        # Compute the transformation between the current source and nearest # destination points
         T = best_fit_transform(src[:m, :].T, dst[:m, indices].T)
 
-        # update the current source
+        # Update the current source
         src = np.dot(T, src)
 
-        # check RMS error
+        # Check RMS error
         mean_error = np.sqrt(np.mean(np.square(distances)))
 
         if np.abs(prev_error - mean_error) < tolerance:
             break
         prev_error = mean_error
 
-    # calculate final transformation
+    # Calculate final transformation
     T = best_fit_transform(A, src[:m, :].T)
 
     return T, distances, i
@@ -548,8 +510,7 @@ def rhino_icp(smri_headshape_polhemus, polhemus_headshape_polhemus, n_init=10):
     Parameters
     ----------
     smri_headshape_polhemus : numpy.ndarray
-        [3 x N] locations of the Headshape points in polehumus space
-        (i.e. MRI scalp surface).
+        [3 x N] locations of the Headshape points in polehumus space (i.e. MRI scalp surface).
     polhemus_headshape_polhemus : numpy.ndarray
         [3 x N] locations of the Polhemus headshape points in polhemus space.
     n_init : int
@@ -609,28 +570,10 @@ def rhino_icp(smri_headshape_polhemus, polhemus_headshape_polhemus, n_init=10):
                 data2r_icp = xform_points(xform, data2)
                 plt.figure(frameon=False)
                 ax = plt.axes(projection="3d")
-                ax.scatter(
-                    data1[0, 0:-1:10],
-                    data1[1, 0:-1:10],
-                    data1[2, 0:-1:10],
-                    c="blue",
-                    marker=".",
-                    s=1,
-                )
-                ax.scatter(
-                    data2[0, :], data2[1, :], data2[2, :], c="red", marker="o", s=5
-                )
-                ax.scatter(
-                    data2r[0, :], data2r[1, :], data2r[2, :], c="green", marker="o", s=5
-                )
-                ax.scatter(
-                    data2r_icp[0, :],
-                    data2r_icp[1, :],
-                    data2r_icp[2, :],
-                    c="yellow",
-                    marker="o",
-                    s=5,
-                )
+                ax.scatter(data1[0, 0:-1:10], data1[1, 0:-1:10], data1[2, 0:-1:10], c="blue", marker=".", s=1)
+                ax.scatter(data2[0, :], data2[1, :], data2[2, :], c="red", marker="o", s=5)
+                ax.scatter(data2r[0, :], data2r[1, :], data2r[2, :], c="green", marker="o", s=5)
+                ax.scatter(data2r_icp[0, :], data2r_icp[1, :], data2r_icp[2, :], c="yellow", marker="o", s=5)
                 plt.show()
                 plt.draw()
 
@@ -639,23 +582,11 @@ def rhino_icp(smri_headshape_polhemus, polhemus_headshape_polhemus, n_init=10):
         b = (np.random.uniform() - 0.5) * np.pi / 6
         c = (np.random.uniform() - 0.5) * np.pi / 6
 
-        Rx = np.array(
-            [(1, 0, 0), (0, np.cos(a), -np.sin(a)), (0, np.sin(a), np.cos(a))]
-        )
-        Ry = np.array(
-            [(np.cos(b), 0, np.sin(b)), (0, 1, 0), (-np.sin(b), 0, np.cos(b))]
-        )
-        Rz = np.array(
-            [(np.cos(c), -np.sin(c), 0), (np.sin(c), np.cos(c), 0), (0, 0, 1)]
-        )
+        Rx = np.array([(1, 0, 0), (0, np.cos(a), -np.sin(a)), (0, np.sin(a), np.cos(a))])
+        Ry = np.array([(np.cos(b), 0, np.sin(b)), (0, 1, 0), (-np.sin(b), 0, np.cos(b))])
+        Rz = np.array([(np.cos(c), -np.sin(c), 0), (np.sin(c), np.cos(c), 0), (0, 0, 1)])
 
-        T = 10 * np.array(
-            (
-                np.random.uniform() - 0.5,
-                np.random.uniform() - 0.5,
-                np.random.uniform() - 0.5,
-            )
-        )
+        T = 10 * np.array([np.random.uniform() - 0.5, np.random.uniform() - 0.5, np.random.uniform() - 0.5])
         Mr = np.eye(4)
         Mr[0:3, 0:3] = Rx @ Ry @ Rz
         Mr[0:3, -1] = np.reshape(T, (1, -1))
@@ -672,11 +603,9 @@ def rhino_icp(smri_headshape_polhemus, polhemus_headshape_polhemus, n_init=10):
 
 def _get_vtk_mesh_native(vtk_mesh_file, nii_mesh_file):
     """
-    Returns mesh rrs in native space in mm and the mesh tris for the passed
-    in vtk_mesh_file
+    Returns mesh rrs in native space in mm and the mesh tris for the passed in vtk_mesh_file
 
-    nii_mesh_file needs to be the corresponding niftii file from bet
-    that corresponds to the same mesh as in vtk_mesh_file
+    nii_mesh_file needs to be the corresponding niftii file from bet that corresponds to the same mesh as in vtk_mesh_file
     """
 
     data = pd.read_csv(vtk_mesh_file, delim_whitespace=True)
@@ -691,47 +620,31 @@ def _get_vtk_mesh_native(vtk_mesh_file, nii_mesh_file):
     rrs_nii = xform_points(xform_flirtcoords2nii, rrs_flirtcoords.T).T
 
     num_tris = int(data.iloc[num_rrs + 4, 1])
-    tris_nii = (
-        data.iloc[num_rrs + 5 : num_rrs + 5 + num_tris, 1:4].to_numpy().astype(int)
-    )
+    tris_nii = data.iloc[num_rrs + 5 : num_rrs + 5 + num_tris, 1:4].to_numpy().astype(int)
 
     return rrs_nii, tris_nii
 
 
 def _get_flirtcoords2native_xform(nii_mesh_file):
     """
-    Returns xform_flirtcoords2native transform that transforms from
-    flirtcoords space in mm into native space in mm, where the passed in
-    nii_mesh_file specifies the native space
+    Returns xform_flirtcoords2native transform that transforms from flirtcoords space in mm into native space in mm, where the passed in nii_mesh_file specifies the native space
 
-    Note that for some reason flirt outputs transforms of the form:
-    flirt_mni2mri = mri2flirtcoords x mni2mri x flirtcoords2mni
+    Note that for some reason flirt outputs transforms of the form: flirt_mni2mri = mri2flirtcoords x mni2mri x flirtcoords2mni
 
-    and bet_surf outputs the .vtk file vertex values
-    in the same flirtcoords mm coordinate system.
+    and bet_surf outputs the .vtk file vertex values in the same flirtcoords mm coordinate system.
 
-    See the bet_surf manual
-    https://fsl.fmrib.ox.ac.uk/fsl/fslwiki/BET/UserGuide#betsurf
+    See the bet_surf manual: https://fsl.fmrib.ox.ac.uk/fsl/fslwiki/BET/UserGuide#betsurf
 
-    If the image has radiological ordering ( see fslorient ) then the mm
-    co-ordinates are the voxel co-ordinates scaled by the mm voxel sizes.
+    If the image has radiological ordering (see fslorient) then the mm co-ordinates are the voxel co-ordinates scaled by the mm voxel sizes.
 
-    i.e. ( x_mm = x_dim * x )
-    where x_mm are the flirtcoords coords in mm,
-    x is the voxel co-ordinate and x_dim is the voxel size in mm."
+    i.e. (x_mm = x_dim * x) where x_mm are the flirtcoords coords in mm, x is the voxel co-ordinate and x_dim is the voxel size in mm.
     """
 
-    # We will assume orientation of the smri is RADIOLOGICAL as RHINO will have
-    # made the smri the same orientation as the standard brain nii.
+    # We will assume orientation of the smri is RADIOLOGICAL as RHINO will have made the smri the same orientation as the standard brain nii.
     # But let's just double check that is the case:
     smri_orient = _get_orient(nii_mesh_file)
     if smri_orient != "RADIOLOGICAL":
-        raise ValueError(
-            "Orientation of file must be RADIOLOGICAL,\
-please check output of: fslorient -getorient {}".format(
-                nii_mesh_file
-            )
-        )
+        raise ValueError("Orientation of file must be RADIOLOGICAL, please check output of: fslorient -getorient {}".format(nii_mesh_file))
 
     xform_nativevox2native = _get_sform(nii_mesh_file)["trans"]
     dims = np.append(nib.load(nii_mesh_file).header.get_zooms(), 1)
@@ -747,14 +660,11 @@ def _transform_vtk_mesh(
     vtk_mesh_file_in, nii_mesh_file_in, out_vtk_file, nii_mesh_file_out, xform_file
 ):
     """
-    Outputs mesh to out_vtk_file, which is the result of applying the
-    transform xform to vtk_mesh_file_in
+    Outputs mesh to out_vtk_file, which is the result of applying the transform xform to vtk_mesh_file_in
 
-    nii_mesh_file_in needs to be the corresponding niftii file from bet
-    that corresponds to the same mesh as in vtk_mesh_file_in
+    nii_mesh_file_in needs to be the corresponding niftii file from bet that corresponds to the same mesh as in vtk_mesh_file_in
 
-    nii_mesh_file_out needs to be the corresponding niftii file from bet
-    that corresponds to the same mesh as in out_vtk_file
+    nii_mesh_file_out needs to be the corresponding niftii file from bet that corresponds to the same mesh as in out_vtk_file
     """
 
     rrs_in, tris_in = _get_vtk_mesh_native(vtk_mesh_file_in, nii_mesh_file_in)
@@ -783,54 +693,46 @@ def _transform_vtk_mesh(
 
 def _get_mne_xform_from_flirt_xform(flirt_xform, nii_mesh_file_in, nii_mesh_file_out):
     """
-    Returns a mm coordinates to mm coordinates MNE xform that corresponds to the
-    passed in flirt xform.
+    Returns a mm coordinates to mm coordinates MNE xform that corresponds to the passed in flirt xform.
 
-    Note that we need to do this as flirt xforms include an extra xform
-    based on the voxel dimensions (see _get_flirtcoords2native_xform).
+    Note that we need to do this as flirt xforms include an extra xform based on the voxel dimensions (see _get_flirtcoords2native_xform).
     """
 
     flirtcoords2native_xform_in = _get_flirtcoords2native_xform(nii_mesh_file_in)
     flirtcoords2native_xform_out = _get_flirtcoords2native_xform(nii_mesh_file_out)
 
-    xform = (
-        flirtcoords2native_xform_out
-        @ flirt_xform
-        @ np.linalg.inv(flirtcoords2native_xform_in)
-    )
+    xform = flirtcoords2native_xform_out @ flirt_xform @ np.linalg.inv(flirtcoords2native_xform_in)
 
     return xform
 
 
 def _get_flirt_xform_between_axes(from_nii, target_nii):
     """
-    Computes flirt xform that moves from_nii to have voxel indices on the
-    same axis as  the voxel indices for target_nii.
+    Computes flirt xform that moves from_nii to have voxel indices on the same axis as  the voxel indices for target_nii.
 
-    Note that this is NOT the same as registration, i.e. the images are not
-    aligned. In fact the actual coordinates (in mm) are unchanged.
-    It is instead about putting from_nii onto the same axes
-    so that the voxel INDICES are comparable. This is achieved by using a
-    transform that sets the sform of from_nii to be the same as target_nii
-    without changing the actual coordinates (in mm).
-    Transform needed to do this is:
+    Note that this is NOT the same as registration, i.e. the images are not aligned. In fact the actual coordinates (in mm) are unchanged.
+    It is instead about putting from_nii onto the same axes so that the voxel INDICES are comparable. This is achieved by using a transform
+    that sets the sform of from_nii to be the same as target_nii without changing the actual coordinates (in mm). Transform needed to do this is:
+
       from2targetaxes = inv(targetvox2target) * fromvox2from
 
     In more detail:
-    We need the sform for the transformed from_nii to be the same as the sform
-    for the target_nii, without changing the actual coordinates (in mm).
+    We need the sform for the transformed from_nii to be the same as the sform for the target_nii, without changing the actual coordinates (in mm).
     In other words, we need:
-    fromvox2from * from_nii_vox = targetvox2target * from_nii_target_vox
+
+        fromvox2from * from_nii_vox = targetvox2target * from_nii_target_vox
+
     where
       fromvox2from is sform for from_nii (i.e. converts from voxel indices to
           voxel coords in mm)
       and targetvox2target is sform for target_nii
       and from_nii_vox are the voxel indices for from_nii
-      and from_nii_target_vox are the voxel indices for from_nii when
-          transformed onto the target axis.
+      and from_nii_target_vox are the voxel indices for from_nii when transformed onto the target axis.
 
     => from_nii_target_vox = from2targetaxes * from_nii_vox
+
     where
+
       from2targetaxes = inv(targetvox2target) * fromvox2from
     """
 
@@ -842,35 +744,24 @@ def _get_flirt_xform_between_axes(from_nii, target_nii):
     return from2to
 
 
-def _timeseries2nii(
-    timeseries, timeseries_coords, reference_mask_fname, out_nii_fname, times=None
-):
-    """Maps the (ndipoles,tpts) array of timeseries to the grid defined by
-    reference_mask_fname and outputs them as a niftii file.
+def _timeseries2nii(timeseries, timeseries_coords, reference_mask_fname, out_nii_fname, times=None):
+    """Maps the (ndipoles,tpts) array of timeseries to the grid defined by reference_mask_fname and outputs them as a niftii file.
 
-    Assumes the timeseries' dipoles correspond to those in reference_mask_fname.
-    Both timeseries and reference_mask_fname are often output from
-    rhino.transform_recon_timeseries.
+    Assumes the timeseries' dipoles correspond to those in reference_mask_fname. Both timeseries and reference_mask_fname are often output from rhino.transform_recon_timeseries.
 
     Parameters
     ----------
     timeseries : (ndipoles, ntpts) numpy.ndarray
-        Time courses.
-        Assumes the timeseries' dipoles correspond to those in reference_mask_fname.
-        Typically derives from rhino.transform_recon_timeseries
+        Time courses. Assumes the timeseries' dipoles correspond to those in reference_mask_fname. Typically derives from rhino.transform_recon_timeseries
     timeseries_coords : (ndipoles, 3) numpy.ndarray
         Coords in mm for dipoles corresponding to passed in timeseries
     reference_mask_fname : string
-        A nii.gz mask file name
-        (with zero for background, and !=0 for the mask)
-        Assumes the mask was used to set dipoles for timeseries,
-        typically derived from rhino.transform_recon_timeseries
+        A nii.gz mask file name (with zero for background, and !=0 for the mask). Assumes the mask was used to set dipoles for timeseries, typically derived from
+        rhino.transform_recon_timeseries
     out_nii_fname : string
         output name of niftii file
     times : (ntpts, ) numpy.ndarray
-        Times points in seconds.
-        Assume that times are regularly spaced.
-        Used to set nii file up correctly.
+        Times points in seconds. Assume that times are regularly spaced. Used to set nii file up correctly.
 
     Returns
     -------
@@ -896,9 +787,7 @@ def _timeseries2nii(
         # Exclude any timeseries_coords that are further than gridstep away
         # from the best matching coords_mni
         if distance < gridstep:
-            mni_nii_values[
-                coords_ind[ind, 0], coords_ind[ind, 1], coords_ind[ind, 2], :
-            ] = timeseries[ind, :]
+            mni_nii_values[coords_ind[ind, 0], coords_ind[ind, 1], coords_ind[ind, 2], :] = timeseries[ind, :]
 
     # SAVE AS NIFTI
     vol_nii = nib.Nifti1Image(mni_nii_values, mni_nii_nib.affine)
@@ -923,9 +812,8 @@ def recon_timeseries2niftii(
     reference_brain="mni",
     times=None,
 ):
-    """Converts a (ndipoles,tpts) array of reconstructed timeseries (in
-    head/polhemus space) to the corresponding dipoles in a standard brain
-    grid in MNI space and outputs them as a niftii file.
+    """Converts a (ndipoles,tpts) array of reconstructed timeseries (in head/polhemus space) to the corresponding dipoles in a standard brain grid in MNI space
+    and outputs them as a niftii file.
 
     Parameters
     ----------
@@ -934,17 +822,12 @@ def recon_timeseries2niftii(
     subject : string
         Subject name directory to find RHINO files in.
     recon_timeseries : (ndipoles, ntpts) np.ndarray
-        Reconstructed time courses (in head (polhemus) space).
-        Assumes that the dipoles are the same (and in the same order)
-        as those in the forward model, coreg_filenames['forward_model_file'].
-        Typically derive from the VolSourceEstimate's output by
-        MNE source recon methods, e.g. mne.beamformer.apply_lcmv, obtained
-        using a forward model generated by RHINO.
+        Reconstructed time courses (in head (polhemus) space). Assumes that the dipoles are the same (and in the same order) as those in the forward model,
+        coreg_filenames['forward_model_file']. Typically derive from the VolSourceEstimate's output by MNE source recon methods, e.g. mne.beamformer.apply_lcmv,
+        obtained using a forward model generated by RHINO.
     spatial_resolution : int
-        Resolution to use for the reference brain in mm
-        (must be an integer, or will be cast to nearest int)
-        If None, then the gridstep used in coreg_filenames['forward_model_file']
-        is used.
+        Resolution to use for the reference brain in mm (must be an integer, or will be cast to nearest int). If None, then the gridstep used in
+        coreg_filenames['forward_model_file'] is used.
     reference_brain : string, 'mni' or 'mri'
         'mni' indicates that the reference_brain is the stdbrain in MNI space.
         'mri' indicates that the reference_brain is the sMRI in native/mri space.
@@ -956,39 +839,23 @@ def recon_timeseries2niftii(
     out_nii_fname : string
         Name of output niftii file.
     reference_brain_fname : string
-        Niftii file name of standard brain mask in MNI space at requested
-        resolution, int(stdbrain_resolution) (with zero for background, and
-        !=0 for the mask).
+        Niftii file name of standard brain mask in MNI space at requested resolution, int(stdbrain_resolution) (with zero for background, and !=0 for the mask).
     """
 
     if len(recon_timeseries.shape) == 1:
         recon_timeseries = np.reshape(recon_timeseries, [recon_timeseries.shape[0], 1])
 
-    # ---------------------------------------------------
-    # convert the recon_timeseries to the standard
-    # space brain dipole grid at the specified resolution
-    (
-        recon_ts_out,
-        reference_brain_fname,
-        recon_coords_out,
-        recon_indices,
-    ) = transform_recon_timeseries(
-        subjects_dir,
-        subject,
-        recon_timeseries=recon_timeseries,
-        spatial_resolution=spatial_resolution,
-        reference_brain=reference_brain,
+    # ------------------------------------------------------------------------------------------------
+    # Convert the recon_timeseries to the standard space brain dipole grid at the specified resolution
+
+    recon_ts_out, reference_brain_fname, recon_coords_out, recon_indices = transform_recon_timeseries(
+        subjects_dir, subject, recon_timeseries=recon_timeseries, spatial_resolution=spatial_resolution, reference_brain=reference_brain,
     )
 
     # ----------------------------------
-    # output recon_ts_out as niftii file
-    out_nii_fname = _timeseries2nii(
-        recon_ts_out,
-        recon_coords_out,
-        reference_brain_fname,
-        out_nii_fname,
-        times=times,
-    )
+    # Output recon_ts_out as niftii file
+
+    out_nii_fname = _timeseries2nii(recon_ts_out, recon_coords_out, reference_brain_fname, out_nii_fname, times=times)
 
     return out_nii_fname, reference_brain_fname
 
@@ -1001,8 +868,7 @@ def save_or_show_renderer(renderer, filename):
     renderer : mne.viz.backends._notebook._Renderer Object
         MNE renderer object.
     filename : str
-        Filename to save display to (as an interactive html).
-        Must have extension .html. If None we display the renderer.
+        Filename to save display to (as an interactive html). Must have extension .html. If None we display the renderer.
     """
     if filename is None:
         renderer.show()
@@ -1010,10 +876,7 @@ def save_or_show_renderer(renderer, filename):
         allowed_extensions = [".html", ".pdf", ".svg", ".eps", ".ps", ".tex"]
         ext = Path(filename).suffix
         if ext not in allowed_extensions:
-            raise ValueError(
-                f"{ext} not allowed, please use one of the following: "
-                + " ".join(allowed_extensions)
-            )
+            raise ValueError(f"{ext} not allowed, please use one of the following: {allowed_extensions}")
 
         log_or_print(f"saving {filename}")
         if ext == ".html":
@@ -1024,8 +887,7 @@ def save_or_show_renderer(renderer, filename):
 
 def _create_freesurfer_meshes_from_bet_surfaces(filenames, xform_mri_voxel2mri):
 
-    # Create sMRI-derived freesurfer surfaces in native/mri space in mm,
-    # for use by forward modelling
+    # Create sMRI-derived freesurfer surfaces in native/mri space in mm, for use by forward modelling
 
     _create_freesurfer_mesh_from_bet_surface(
         infile=filenames["bet_inskull_mesh_vtk_file"],
@@ -1049,29 +911,22 @@ def _create_freesurfer_meshes_from_bet_surfaces(filenames, xform_mri_voxel2mri):
     )
 
 
-def _create_freesurfer_mesh_from_bet_surface(
-    infile, surf_outfile, xform_mri_voxel2mri, nii_mesh_file=None
-):
-    """Creates surface mesh in .surf format and in native mri space in mm
-    from infile.
+def _create_freesurfer_mesh_from_bet_surface(infile, surf_outfile, xform_mri_voxel2mri, nii_mesh_file=None):
+    """Creates surface mesh in .surf format and in native mri space in mm from infile.
 
     Parameters
     ----------
     infile : string
-    Either:
-        1) .nii.gz file containing zero's for background and one's for surface
-        2) .vtk file generated by bet_surf (in which case the path to the
-        structural MRI, smri_file, must be included as an input)
+        Either:
+            1) .nii.gz file containing zero's for background and one's for surface
+            2) .vtk file generated by bet_surf (in which case the path to the
+            structural MRI, smri_file, must be included as an input)
     surf_outfile : string
-        Path to the .surf file generated, containing the surface
-        mesh in mm
+        Path to the .surf file generated, containing the surface mesh in mm
     xform_mri_voxel2mri : numpy.ndarray
-        4x4 array
-        Transform from voxel indices to native/mri mm
+        4x4 array. Transform from voxel indices to native/mri mm.
     nii_mesh_file : string
-        Path to the niftii mesh file that is the niftii equivalent
-        of vtk file passed in as infile (only needed if infile
-        is a vtk file)
+        Path to the niftii mesh file that is the niftii equivalent of vtk file passed in as infile (only needed if infile is a vtk file).
     """
 
     pth, name = op.split(infile)
@@ -1102,36 +957,23 @@ def _create_freesurfer_mesh_from_bet_surface(
         # or you might want to flip the normals to make them point outward, not mandatory
         pcd.normals = o3d.utility.Vector3dVector(-np.asarray(pcd.normals))
 
-        mesh = o3d.geometry.TriangleMesh.create_from_point_cloud_poisson(pcd, depth=8)[
-            0
-        ]
+        mesh = o3d.geometry.TriangleMesh.create_from_point_cloud_poisson(pcd, depth=8)[0]
 
-        # mesh = mesh.simplify_quadric_decimation(nii_nativeindex.shape[1])
+        #mesh = mesh.simplify_quadric_decimation(nii_nativeindex.shape[1])
 
         verts = np.asarray(mesh.vertices)
         tris = np.asarray(mesh.triangles).astype(int)
 
         # output in freesurfer file format
-        write_surface(
-            surf_outfile, verts, tris, file_format="freesurfer", overwrite=True
-        )
+        write_surface(surf_outfile, verts, tris, file_format="freesurfer", overwrite=True)
 
     elif ext == ".vtk":
         if nii_mesh_file is None:
-            raise ValueError(
-                "You must specify a nii_mesh_file (niftii format), "
-                + "if infile format is vtk"
-            )
+            raise ValueError("You must specify a nii_mesh_file (niftii format), if infile format is vtk")
 
         rrs_native, tris_native = _get_vtk_mesh_native(infile, nii_mesh_file)
 
-        write_surface(
-            surf_outfile,
-            rrs_native,
-            tris_native,
-            file_format="freesurfer",
-            overwrite=True,
-        )
+        write_surface(surf_outfile, rrs_native, tris_native, file_format="freesurfer", overwrite=True)
 
     else:
         raise ValueError("Invalid infile. Needs to be a .nii.gz or .vtk file")
@@ -1142,8 +984,7 @@ def _transform_bet_surfaces(flirt_xform_file, mne_xform_file, filenames, smri_fi
     # Transform betsurf mask/mesh using passed in flirt transform and mne transform
     for mesh_name in {"outskin_mesh", "inskull_mesh", "outskull_mesh"}:
         # xform mask
-        system_call(
-            "flirt -interp nearestneighbour -in {} -ref {} -applyxfm -init {} -out {}".format(
+        system_call("flirt -interp nearestneighbour -in {} -ref {} -applyxfm -init {} -out {}".format(
                 op.join(filenames["basedir"], "flirt_" + mesh_name + ".nii.gz"),
                 smri_file,
                 flirt_xform_file,
