@@ -7,13 +7,16 @@
 
 import os
 import os.path as op
+import warnings
 from pathlib import Path
 from shutil import copyfile
 from datetime import datetime
+from copy import deepcopy
 
 import cv2
 import numpy as np
 import nibabel as nib
+import nilearn as nil
 from scipy.ndimage import morphology
 from sklearn.mixture import GaussianMixture
 
@@ -653,3 +656,61 @@ def surfaces_display(subjects_dir, subject):
             filenames["bet_outskin_plus_nose_mesh_file"],
         )
     )
+
+
+def plot_surfaces(subjects_dir, subject, include_nose):
+    """Plot a structural MRI and extracted surfaces.
+
+    Parameters
+    ----------
+    subjects_dir : str
+        Directory to put RHINO subject directories in.
+        Files will be in subjects_dir/subject/surfaces.
+    subject : str
+        Subject name directory to put RHINO files in.
+        Files will be in subjects_dir/subject/surfaces.
+    include_nose : bool
+        Should we also plot the surface extracted including the nose?
+
+    Returns
+    -------
+    output_files : list of str
+        Paths to image files saved by this function.
+    """
+    # Get paths to surface files
+    filenames = get_surfaces_filenames(subjects_dir, subject)
+
+    # Surfaces to plot
+    surfaces = ["inskull", "outskull", "outskin"]
+    if include_nose:
+        surfaces.append("outskin_plus_nose")
+
+    # Plot the structural MRI
+    with warnings.catch_warnings():
+        warnings.simplefilter("ignore")  # suppress warnings from plotting
+        display = nil.plotting.plot_anat(filenames["smri_file"])
+
+    # Plot each surface (in separate images)
+    output_files = []
+    for surface in surfaces:
+
+        # Get path to the nifti file containing the surface
+        file = Path(filenames[f"bet_{surface}_mesh_file"])
+        if not file.exists():
+            raise ValueError(f"{file} does not exist")
+
+        # Plot surface
+        display_copy = deepcopy(display)
+        img = nil._utils.check_niimg_3d(file)
+        data = nil._utils.niimg._safe_get_data(img, ensure_finite=True)
+        vmin = np.nanmin(data)
+        vmax = np.nanmax(data)
+        display_copy.add_overlay(img, vmin=vmin, vmax=vmax)
+
+        # Save
+        filename = f"{filenames['basedir']}/{surface}.png"
+        log_or_print(f"Saving {filename}")
+        display_copy.savefig(filename)
+        output_files.append(filename)
+
+    return output_files

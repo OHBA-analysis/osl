@@ -122,6 +122,13 @@ def compute_surfaces(
         do_mri2mniaxes_xform=do_mri2mniaxes_xform,
     )
 
+    # Plot surfaces
+    surface_plots = rhino.plot_surfaces(
+        subjects_dir=src_dir,
+        subject=subject,
+        include_nose=include_nose,
+    )
+
     # Save info for the report
     src_report.add_to_data(
         f"{src_dir}/{subject}/report_data.pkl",
@@ -129,7 +136,7 @@ def compute_surfaces(
             "compute_surfaces": True,
             "include_nose": include_nose,
             "do_mri2mniaxes_xform": do_mri2mniaxes_xform,
-        
+            "surface_plots": surface_plots,
         },
     )
 
@@ -195,11 +202,12 @@ def coregister(
         fid_err = rhino.coreg_metrics(subjects_dir=src_dir, subject=subject)
 
     # Save plots
+    coreg_filename = f"{src_dir}/{subject}/rhino/coreg.html"
     rhino.coreg_display(
         subjects_dir=src_dir,
         subject=subject,
         display_outskin_with_nose=False,
-        filename=f"{src_dir}/{subject}/rhino/coreg.html",
+        filename=coreg_filename,
     )
 
     # Save info for the report
@@ -213,7 +221,7 @@ def coregister(
             "allow_smri_scaling": allow_smri_scaling,
             "n_init_coreg": n_init,
             "fid_err": fid_err,
-            "coreg_plot": f"{src_dir}/{subject}/rhino/coreg.html",
+            "coreg_plot": coreg_filename,
         },
     )
 
@@ -344,6 +352,13 @@ def compute_surfaces_coregister_and_forward_model(
         do_mri2mniaxes_xform=do_mri2mniaxes_xform,
     )
 
+    # Plot surfaces
+    surface_plots = rhino.plot_surfaces(
+        subjects_dir=src_dir,
+        subject=subject,
+        include_nose=include_nose,
+    )
+
     # Run coregistration
     rhino.coreg(
         fif_file=preproc_file,
@@ -363,11 +378,12 @@ def compute_surfaces_coregister_and_forward_model(
         fid_err = rhino.coreg_metrics(subjects_dir=src_dir, subject=subject)
 
     # Save plots
+    coreg_filename = f"{src_dir}/{subject}/rhino/coreg.html"
     rhino.coreg_display(
         subjects_dir=src_dir,
         subject=subject,
         display_outskin_with_nose=False,
-        filename=f"{src_dir}/{subject}/rhino/coreg.html",
+        filename=coreg_filename,
     )
 
     # Compute forward model
@@ -396,7 +412,8 @@ def compute_surfaces_coregister_and_forward_model(
             "model": model,
             "eeg": eeg,
             "fid_err": fid_err,
-            "coreg_plot": f"{src_dir}/{subject}/rhino/coreg.html",
+            "surface_plots": surface_plots,
+            "coreg_plot": coreg_filename,
         },
     )
 

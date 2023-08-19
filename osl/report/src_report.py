@@ -67,6 +67,7 @@ def gen_html_data(config, src_dir, subject, reportdir, logger=None):
     data["filename"] = subject
 
     # What have we done for this subject?
+    data["compute_surfaces"] = subject_data.pop("compute_surfaces", False)
     data["coregister"] = subject_data.pop("coregister", False)
     data["beamform"] = subject_data.pop("beamform", False)
     data["beamform_and_parcellate"] = subject_data.pop("beamform_and_parcellate", False)
@@ -85,6 +86,12 @@ def gen_html_data(config, src_dir, subject, reportdir, logger=None):
         data["metrics"] = subject_data["metrics"]
 
     # Copy plots
+    if "surface_plots" in subject_data:
+        for plot in subject_data["surface_plots"]:
+            surface = "surfaces_" + Path(plot).stem
+            data[f"plt_{surface}"] = f"{subject}/{surface}.png"
+            copy(plot, f"{reportdir}/{subject}/{surface}.png")
+
     if "coreg_plot" in subject_data:
         data["plt_coreg"] = f"{subject}/coreg.html"
         copy(subject_data["coreg_plot"], f"{reportdir}/{subject}/coreg.html")
