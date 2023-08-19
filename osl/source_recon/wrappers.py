@@ -168,7 +168,7 @@ def coregister(
         This assumes that we trust the size (e.g. in mm) of the polhemus-derived fids, but not the size of the sMRI-derived fids. E.g. this might be the
         case if we do not trust the size (e.g. in mm) of the sMRI, or if we are using a template sMRI that has not come from this subject.
     n_init : int
-        Number of initialisation for coregistration.
+        Number of initialisations for coregistration.
     """
     # Run coregistration
     rhino.coreg(
@@ -320,7 +320,7 @@ def compute_surfaces_coregister_and_forward_model(
     eeg : bool
         Are we using EEG channels in the source reconstruction?
     n_init : int
-        Number of initialisation for coregistration.
+        Number of initialisations for coregistration.
     """
     # Compute surfaces
     already_computed = rhino.compute_surfaces(

@@ -72,7 +72,6 @@ def fsleyes_overlay(background_img, overlay_img):
     overlay_img : string
         Overlay niftii filename
     """
-
     if type(background_img) is str:
         if background_img == "mni":
             mni_resolution = int(nib.load(overlay_img).header.get_zooms()[0])
@@ -81,9 +80,5 @@ def fsleyes_overlay(background_img, overlay_img):
             mni_resolution = int(background_img[3])
             background_img = op.join(os.environ["FSLDIR"], "data/standard/MNI152_T1_{}mm_brain.nii.gz".format(mni_resolution))
 
-    cmd = (
-        "fsleyes {} --volume 0 {} --alpha 100.0 ".format(background_img, overlay_img)
-        + "--cmap red-yellow --negativeCmap blue-lightblue --useNegativeCmap &"
-    )
-
+    cmd = "fsleyes {} --volume 0 {} --alpha 100.0 --cmap red-yellow --negativeCmap blue-lightblue --useNegativeCmap &".format(background_img, overlay_img)
     rhino_utils.system_call(cmd)

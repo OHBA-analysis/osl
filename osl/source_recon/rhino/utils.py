@@ -29,6 +29,8 @@ from numba.types import CPointer
 import logging
 logging.getLogger("numba").setLevel(logging.WARNING)
 
+from fsl import wrappers as fsl_wrappers
+
 from osl.source_recon.beamforming import transform_recon_timeseries
 from osl.utils.logger import log_or_print
 from osl.utils import soft_import
@@ -984,12 +986,14 @@ def _transform_bet_surfaces(flirt_xform_file, mne_xform_file, filenames, smri_fi
     # Transform betsurf mask/mesh using passed in flirt transform and mne transform
     for mesh_name in {"outskin_mesh", "inskull_mesh", "outskull_mesh"}:
         # xform mask
-        system_call("flirt -interp nearestneighbour -in {} -ref {} -applyxfm -init {} -out {}".format(
-                op.join(filenames["basedir"], "flirt_" + mesh_name + ".nii.gz"),
-                smri_file,
-                flirt_xform_file,
-                op.join(filenames["basedir"], mesh_name),
-            )
+        # Command: flirt -in <flirt_mesh_file> -ref <smri_file> -interp nearestneighbour -applyxfm -init <flirt_xform_file> -out <out_file>
+        fsl_wrappers.flirt(
+            op.join(filenames["basedir"], "flirt_" + mesh_name + ".nii.gz"),
+            smri_file,
+            interp="nearestneighbour",
+            applyxfm=True,
+            init=flirt_xform_file,
+            out=op.join(filenames["basedir"], mesh_name),
         )
 
         # xform vtk mesh

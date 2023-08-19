@@ -23,6 +23,8 @@ from mne.forward import _create_meg_coils
 from mne.io import _loc_to_coil_trans, read_info, read_raw, RawArray
 from mne.io.pick import pick_types
 
+from fsl import wrappers as fsl_wrappers
+
 import osl.source_recon.rhino.utils as rhino_utils
 from osl.source_recon.rhino.surfaces import get_surfaces_filenames
 from osl.utils.logger import log_or_print
@@ -296,7 +298,9 @@ def coreg(
         xform_nativeindex2scalednative = xform_native2scalednative @ xform_nativeindex2native
         for filename in ["smri_file", "bet_outskin_mesh_file", "bet_outskin_plus_nose_mesh_file", "bet_inskull_mesh_file", "bet_outskull_mesh_file"]:
             copyfile(surfaces_filenames[filename], filenames[filename])
-            rhino_utils.system_call("fslorient -setsform {} {}".format(" ".join(map(str, xform_nativeindex2scalednative.flatten())), filenames[filename]))
+            # Command: fslorient -setsform <sform> <smri_file>
+            sform = xform_nativeindex2scalednative.flatten()
+            fsl_wrappers.misc.fslorient(filenames[filename], setsform=tuple(sform))
 
         # Scale vtk meshes
         for mesh_fname, vtk_fname in zip(

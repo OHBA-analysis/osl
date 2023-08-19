@@ -25,9 +25,9 @@ config = """
     source_recon:
     - extract_fiducials_from_fif: {}
     - compute_surfaces_coregister_and_forward_model:
-        include_nose: false
-        use_nose: false
-        use_headshape: true
+        include_nose: True
+        use_nose: True
+        use_headshape: True
         model: Single Layer
     - beamform_and_parcellate:
         freq_range: [1, 45]

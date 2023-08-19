@@ -9,7 +9,6 @@ import os
 import os.path as op
 import warnings
 from pathlib import Path
-from shutil import copyfile
 from datetime import datetime
 from copy import deepcopy
 
@@ -19,8 +18,8 @@ import nibabel as nib
 import nilearn as nil
 from scipy.ndimage import morphology
 from sklearn.mixture import GaussianMixture
-
 from mne.transforms import write_trans, Transform
+from fsl import wrappers as fsl_wrappers
 
 import osl.source_recon.rhino.utils as rhino_utils
 from osl.utils.logger import log_or_print
@@ -54,7 +53,7 @@ def get_surfaces_filenames(subjects_dir, subject):
     filenames = {
         "basedir": basedir,
         "smri_file": op.join(basedir, "smri.nii.gz"),
-        "mni2mri_flirt_xform_file": op.join(basedir, "mni2mri_flirt_xform_file.txt"),
+        "mni2mri_flirt_xform_file": op.join(basedir, "flirt_mniaxes2mri_xform.txt"),
         "mni_mri_t_file": op.join(basedir, "mni_mri-trans.fif"),
         "bet_outskin_mesh_vtk_file": op.join(basedir, "outskin_mesh.vtk"),  # BET output
         "bet_inskull_mesh_vtk_file": op.join(basedir, "inskull_mesh.vtk"),  # BET output
@@ -185,13 +184,15 @@ def compute_surfaces(
     if smri_ext not in [".nii", ".nii.gz"]:
         raise ValueError("smri_file needs to be a niftii file with a .nii or .nii.gz extension")
 
-    # Copy smri_name to new file for modification
-    copyfile(smri_file, filenames["smri_file"])
+    # Copy smri to new file for modification
+    img = nib.load(smri_file)
+    nib.save(img, filenames["smri_file"])
 
     # RHINO will always use the sform, and so we will set the qform to be same as sform for sMRI,
     # to stop the original qform from being used by mistake (e.g. by flirt)
-    cmd = "fslorient -copysform2qform {}".format(filenames["smri_file"])
-    rhino_utils.system_call(cmd)
+    #
+    # Command: fslorient -copysform2qform <smri_file>
+    fsl_wrappers.misc.fslorient(filenames['smri_file'], copysform2qform=True)
 
     # We will assume orientation of standard brain is RADIOLOGICAL. But let's check that is the case:
     std_orient = rhino_utils._get_orient(filenames["std_brain"])
@@ -207,7 +208,9 @@ def compute_surfaces(
     # If orientation is not RADIOLOGICAL then force it to be RADIOLOGICAL
     if smri_orient != "RADIOLOGICAL":
         log_or_print("reorienting subject brain to be RADIOLOGICAL")
-        rhino_utils.system_call("fslorient -forceradiological {}".format(filenames["smri_file"]))
+
+        # Command: fslorient -forceradiological <smri_file>
+        fsl_wrappers.misc.fslorient(filenames["smri_file"], forceradiological=True)
 
     log_or_print("You can use the following call to check the passed in structural MRI is appropriate,")
     log_or_print("including checking that the L-R, S-I, A-P labels are sensible:")
@@ -222,8 +225,7 @@ def compute_surfaces(
     img = nib.load(filenames["smri_file"])
     img_density = np.sum(img.get_fdata()) / np.prod(img.get_fdata().shape)
 
-    # We will start by transforming sMRI so that its voxel indices axes are aligned to MNI's.
-    # This helps BET work.
+    # We will start by transforming sMRI so that its voxel indices axes are aligned to MNI's. This helps BET work.
 
     # Calculate mri2mniaxes
     if do_mri2mniaxes_xform:
@@ -236,10 +238,9 @@ def compute_surfaces(
     np.savetxt(flirt_mri2mniaxes_xform_file, flirt_mri2mniaxes_xform)
 
     # Apply mri2mniaxes xform to smri to get smri_mniaxes, which means sMRIs voxel indices axes are aligned to be the same as MNI's
+    # Command: flirt -in <smri_file> -ref <std_brain> -applyxfm -init <mri2mniaxes_xform_file> -out <smri_mni_axes_file>
     flirt_smri_mniaxes_file = op.join(filenames["basedir"], "flirt_smri_mniaxes.nii.gz")
-    rhino_utils.system_call(
-        "flirt -in {} -ref {} -applyxfm -init {} -out {}".format(filenames["smri_file"], filenames["std_brain"], flirt_mri2mniaxes_xform_file, flirt_smri_mniaxes_file)
-    )
+    fsl_wrappers.flirt(filenames["smri_file"], filenames["std_brain"], applyxfm=True, init=flirt_mri2mniaxes_xform_file, out=flirt_smri_mniaxes_file)
 
     img = nib.load(flirt_smri_mniaxes_file)
     img_latest_density = np.sum(img.get_fdata()) / np.prod(img.get_fdata().shape)
@@ -256,8 +257,9 @@ def compute_surfaces(
 
     log_or_print("Running BET pre-FLIRT...")
 
+    # Command: bet <flirt_smri_mniaxes_file> <flirt_smri_mniaxes_bet_file>
     flirt_smri_mniaxes_bet_file = op.join(filenames["basedir"], "flirt_smri_mniaxes_bet")
-    rhino_utils.system_call("bet2 {} {}".format(flirt_smri_mniaxes_file, flirt_smri_mniaxes_bet_file))
+    fsl_wrappers.bet(flirt_smri_mniaxes_file, flirt_smri_mniaxes_bet_file)
 
     # ---------------------------------------------------------
     # 3) Use flirt to register skull stripped sMRI to MNI space
@@ -265,23 +267,29 @@ def compute_surfaces(
     log_or_print("Running FLIRT...")
 
     # Flirt is run on the skull stripped brains to register the smri_mniaxes to the MNI standard brain
-
+    #
+    # Command: flirt -in <flirt_smri_mniaxes_bet_file> -ref <std_brain> -omat <flirt_mniaxes2mni_file> -o <flirt_smri_mni_bet_file>
     flirt_mniaxes2mni_file = op.join(filenames["basedir"], "flirt_mniaxes2mni.txt")
     flirt_smri_mni_bet_file = op.join(filenames["basedir"], "flirt_smri_mni_bet.nii.gz")
-    rhino_utils.system_call("flirt -in {} -ref {} -omat {} -o {}".format(flirt_smri_mniaxes_bet_file, filenames["std_brain"], flirt_mniaxes2mni_file, flirt_smri_mni_bet_file))
+    fsl_wrappers.flirt(flirt_smri_mniaxes_bet_file, filenames["std_brain"], omat=flirt_mniaxes2mni_file, o=flirt_smri_mni_bet_file)
 
     # Calculate overall flirt transform, from mri to MNI
-    mri2mni_flirt_xform_file = op.join(filenames["basedir"], "flirt_mri2mni_flirt_xform.txt")
-    rhino_utils.system_call("convert_xfm -omat {} -concat {} {}".format(mri2mni_flirt_xform_file, flirt_mniaxes2mni_file, flirt_mri2mniaxes_xform_file))
+    #
+    # Command: convert_xfm -omat <mri2mni_flirt_xform_file> -concat <flirt_mniaxes2mni_file> <flirt_mri2mniaxes_xform_file>
+    mri2mni_flirt_xform_file = op.join(filenames["basedir"], "flirt_mri2mniaxes_xform.txt")
+    fsl_wrappers.concatxfm(flirt_mri2mniaxes_xform_file, flirt_mniaxes2mni_file, mri2mni_flirt_xform_file)  # Note, the wrapper reverses the order of arguments
 
     # and also calculate its inverse, from MNI to mri
+    #
+    # Command: convert_xfm -omat <mni2mri_flirt_xform_file>  -inverse <mri2mni_flirt_xform_file>
     mni2mri_flirt_xform_file = filenames["mni2mri_flirt_xform_file"]
+    fsl_wrappers.invxfm(mri2mni_flirt_xform_file, mni2mri_flirt_xform_file)  # Note, the wrapper reverses the order of arguments
 
-    rhino_utils.system_call("convert_xfm -omat {}  -inverse {}".format( mni2mri_flirt_xform_file, mri2mni_flirt_xform_file))
-
-    # move full smri into MNI space to do full bet and betsurf
+    # Move full smri into MNI space to do full bet and betsurf
+    #
+    # Command: flirt -in <smri_file> -ref <std_brain> -applyxfm -init <mri2mni_flirt_xform_file> -out <flirt_smri_mni_file>
     flirt_smri_mni_file = op.join(filenames["basedir"], "flirt_smri_mni.nii.gz")
-    rhino_utils.system_call("flirt -in {} -ref {} -applyxfm -init {} -out {}".format(filenames["smri_file"], filenames["std_brain"], mri2mni_flirt_xform_file, flirt_smri_mni_file))
+    fsl_wrappers.flirt(filenames["smri_file"], filenames["std_brain"], applyxfm=True, init=mri2mni_flirt_xform_file, out=flirt_smri_mni_file)
 
     # --------------------------
     # 4) Use BET/BETSURF to get:
@@ -291,22 +299,13 @@ def compute_surfaces(
     #    - bet_outskull_mesh_file is actually the inner skull surface
     #    - bet_outskin_mesh_file is the outer skin/scalp surface
 
-    # Run BET on smri to get the surface mesh (in MNI space), as BETSURF needs this
-    log_or_print("Running BET pre-BETSURF...")
+    log_or_print("Running BET and BETSURF...")
 
-    flirt_smri_mni_bet_file = op.join(filenames["basedir"], "flirt_smri_mni_bet")
-    rhino_utils.system_call("bet2 {} {} --mesh".format(flirt_smri_mni_file, flirt_smri_mni_bet_file))
-
-    # Run BETSURF - to get the head surfaces in MNI space
-    log_or_print("Running BETSURF...")
-
-    # Need to provide BETSURF with transform to MNI space. Since flirt_smri_mni_file is already in MNI space, this will just be the identity matrix
-
-    flirt_identity_xform_file = op.join(filenames["basedir"], "flirt_identity_xform.txt")
-    np.savetxt(flirt_identity_xform_file, np.eye(4))
-
-    bet_mesh_file = op.join(flirt_smri_mni_bet_file + "_mesh.vtk")
-    rhino_utils.system_call("betsurf --t1only -o {} {} {} {}".format( flirt_smri_mni_file, bet_mesh_file, flirt_identity_xform_file, op.join(filenames["basedir"], "flirt")))
+    # Run BET and BETSURF on smri to get the surface mesh (in MNI space)
+    #
+    # Command: bet <flirt_smri_mni_file> <flirt_smri_mni_bet_file> -A
+    flirt_smri_mni_bet_file = op.join(filenames["basedir"], "flirt")
+    fsl_wrappers.bet(flirt_smri_mni_file, flirt_smri_mni_bet_file, A=True)
 
     # ----------------------------------------------------------------
     # 5) Refine scalp outline, adding nose to scalp surface (optional)
@@ -317,57 +316,57 @@ def compute_surfaces(
 
     # Calculate flirt_mni2mnibigfov_xform
     mni2mnibigfov_xform = rhino_utils._get_flirt_xform_between_axes(from_nii=flirt_smri_mni_file, target_nii=filenames["std_brain_bigfov"])
-
     flirt_mni2mnibigfov_xform_file = op.join(filenames["basedir"], "flirt_mni2mnibigfov_xform.txt")
     np.savetxt(flirt_mni2mnibigfov_xform_file, mni2mnibigfov_xform)
 
     # Calculate overall transform, from smri to MNI big fov
+    #
+    # Command: convert_xfm -omat <flirt_mri2mnibigfov_xform_file> -concat <flirt_mni2mnibigfov_xform_file> <mri2mni_flirt_xform_file>"
     flirt_mri2mnibigfov_xform_file = op.join(filenames["basedir"], "flirt_mri2mnibigfov_xform.txt")
-    rhino_utils.system_call("convert_xfm -omat {} -concat {} {}".format( flirt_mri2mnibigfov_xform_file, flirt_mni2mnibigfov_xform_file, mri2mni_flirt_xform_file))
+    fsl_wrappers.concatxfm(mri2mni_flirt_xform_file, flirt_mni2mnibigfov_xform_file, flirt_mri2mnibigfov_xform_file)  # Note, the wrapper reverses the order of arguments
 
-    # move MRI to MNI big FOV space and load in
+    # Move MRI to MNI big FOV space and load in
+    #
+    # Command: flirt -in <smri_file> -ref <std_brain_bigfov> -applyxfm -init <flirt_mri2mnibigfov_xform_file> -out <flirt_smri_mni_bigfov_file>
     flirt_smri_mni_bigfov_file = op.join(filenames["basedir"], "flirt_smri_mni_bigfov")
-    rhino_utils.system_call(
-        "flirt -in {} -ref {} -applyxfm -init {} -out {}".format(filenames["smri_file"], filenames["std_brain_bigfov"], flirt_mri2mnibigfov_xform_file, flirt_smri_mni_bigfov_file)
-    )
-    vol = nib.load(flirt_smri_mni_bigfov_file + ".nii.gz")
+    fsl_wrappers.flirt(filenames["smri_file"], filenames["std_brain_bigfov"], applyxfm=True, init=flirt_mri2mnibigfov_xform_file, out=flirt_smri_mni_bigfov_file)
 
-    # move scalp to MNI big FOV space and load in
+    # Move scalp to MNI big FOV space and load in
+    #
+    # Command: flirt -in <flirt_outskin_file> -ref <std_brain_bigfov> -applyxfm -init <flirt_mni2mnibigfov_xform_file> -out <flirt_outskin_bigfov_file>
     flirt_outskin_file = op.join(filenames["basedir"], "flirt_outskin_mesh")
     flirt_outskin_bigfov_file = op.join(filenames["basedir"], "flirt_outskin_mesh_bigfov")
-    rhino_utils.system_call(
-        "flirt -in {} -ref {} -applyxfm -init {} -out {}".format(flirt_outskin_file, filenames["std_brain_bigfov"], flirt_mni2mnibigfov_xform_file, flirt_outskin_bigfov_file)
-    )
+    fsl_wrappers.flirt(flirt_outskin_file, filenames["std_brain_bigfov"], applyxfm=True, init=flirt_mni2mnibigfov_xform_file, out=flirt_outskin_bigfov_file)
     scalp = nib.load(flirt_outskin_bigfov_file + ".nii.gz")
 
-    # CREATE MASK BY FILLING OUTLINE
+    # Create mask by filling outline
 
-    # add a border of ones to the mask, in case the complete head is not in the FOV, without this binary_fill_holes will not work
+    # Add a border of ones to the mask, in case the complete head is not in the FOV, without this binary_fill_holes will not work
     mask = np.ones(np.add(scalp.shape, 2))
-    # note that z=100 is where the standard MNI FOV starts in the big FOV
+
+    # Note that z=100 is where the standard MNI FOV starts in the big FOV
     mask[1:-1, 1:-1, 102:-1] = scalp.get_fdata()[:, :, 101:]
     mask[:, :, :101] = 0
 
     # We assume that the top of the head is not cutoff by the FOV, we need to assume this so that binary_fill_holes works:
     mask[:, :, -1] = 0
-
     mask = morphology.binary_fill_holes(mask)
 
-    # remove added border
+    # Remove added border
     mask[:, :, :102] = 0
     mask = mask[1:-1, 1:-1, 1:-1]
 
     if include_nose:
         log_or_print("Adding nose to scalp surface...")
 
-        # RECLASSIFY BRIGHT VOXELS OUTSIDE OF MASK (TO PUT NOSE INSIDE THE MASK SINCE BET WILL HAVE EXCLUDED IT)
-
+        # Reclassify bright voxels outside of mask (to put nose inside the mask since bet will have excluded it)
+        vol = nib.load(flirt_smri_mni_bigfov_file + ".nii.gz")
         vol_data = vol.get_fdata()
 
-        # normalise vol data
+        # Normalise vol data
         vol_data = vol_data / np.max(vol_data.flatten())
 
-        # estimate observation model params of 2 class GMM with diagonal cov matrix where the two classes correspond to inside and outside the bet mask
+        # Estimate observation model params of 2 class GMM with diagonal cov matrix where the two classes correspond to inside and outside the bet mask
         means = np.zeros([2, 1])
         means[0] = np.mean(vol_data[np.where(mask == 0)])
         means[1] = np.mean(vol_data[np.where(mask == 1)])
@@ -385,17 +384,17 @@ def compute_surfaces(
         gm.precisions_cholesky_ = np.sqrt(precisions)
         gm.weights_ = weights
 
-        # classify voxels outside BET mask with GMM
+        # Classify voxels outside BET mask with GMM
         labels = gm.predict(vol_data[np.where(mask == 0)].reshape(-1, 1))
 
-        # insert new labels for voxels outside BET mask into mask
+        # Insert new labels for voxels outside BET mask into mask
         mask[np.where(mask == 0)] = labels
 
-        # ignore anything that is well below the nose and above top of head
+        # Ignore anything that is well below the nose and above top of head
         mask[:, :, 0:50] = 0
         mask[:, :, 300:] = 0
 
-        # CLEAN UP MASK
+        # Clean up mask
         mask[:, :, 50:300] = morphology.binary_fill_holes(mask[:, :, 50:300])
         mask[:, :, 50:300] = rhino_utils._binary_majority3d(mask[:, :, 50:300])
         mask[:, :, 50:300] = morphology.binary_fill_holes(mask[:, :, 50:300])
@@ -407,7 +406,7 @@ def compute_surfaces(
         for i in range(50, 300, 1):
             mask[:, :, i] = morphology.binary_fill_holes(mask[:, :, i])
 
-    # EXTRACT OUTLINE
+    # Extract outline
     outline = np.zeros(mask.shape)
     kernel = cv2.getStructuringElement(cv2.MORPH_RECT, (3, 3))
     mask = mask.astype(np.uint8)
@@ -425,34 +424,35 @@ def compute_surfaces(
     outline[np.where(outline <= 0.6)] = 0
     outline = outline.astype(np.uint8)
 
-    # SAVE AS NIFTI
+    # Save as NIFTI
     outline_nii = nib.Nifti1Image(outline, scalp.affine)
-
     nib.save(outline_nii, op.join(flirt_outskin_bigfov_file + "_plus_nose.nii.gz"))
 
-    rhino_utils.system_call("fslcpgeom {} {}".format(op.join(flirt_outskin_bigfov_file + ".nii.gz"), op.join(flirt_outskin_bigfov_file + "_plus_nose.nii.gz")))
+    # Command: fslcpgeom <src> <dest>
+    fsl_wrappers.fslcpgeom(op.join(flirt_outskin_bigfov_file + ".nii.gz"), op.join(flirt_outskin_bigfov_file + "_plus_nose.nii.gz"))
 
     # Transform outskin plus nose nii mesh from MNI big FOV to MRI space
 
-    # first we need to invert the flirt_mri2mnibigfov_xform_file xform:
+    # First we need to invert the flirt_mri2mnibigfov_xform_file xform:
+    #
+    # Command: convert_xfm -omat <flirt_mnibigfov2mri_xform_file> -inverse <flirt_mri2mnibigfov_xform_file>
     flirt_mnibigfov2mri_xform_file = op.join(filenames["basedir"], "flirt_mnibigfov2mri_xform.txt")
-    rhino_utils.system_call("convert_xfm -omat {} -inverse {}".format(flirt_mnibigfov2mri_xform_file, flirt_mri2mnibigfov_xform_file))
+    fsl_wrappers.invxfm(flirt_mri2mnibigfov_xform_file, flirt_mnibigfov2mri_xform_file)  # Note, the wrapper reverses the order of arguments
 
-    rhino_utils.system_call("flirt -in {} -ref {} -applyxfm -init {} -out {}".format(
-            op.join(flirt_outskin_bigfov_file + "_plus_nose.nii.gz"),
-            filenames["smri_file"],
-            flirt_mnibigfov2mri_xform_file,
-            filenames["bet_outskin_plus_nose_mesh_file"],
-        )
+    # Command: flirt -in <dest> -ref <smri_file> -applyxfm -init <flirt_mnibigfov2mri_xform_file> -out <bet_outskin_plus_nose_mesh_file>
+    fsl_wrappers.flirt(
+        op.join(flirt_outskin_bigfov_file + "_plus_nose.nii.gz"),
+        filenames["smri_file"],
+        applyxfm=True,
+        init=flirt_mnibigfov2mri_xform_file,
+        out=filenames["bet_outskin_plus_nose_mesh_file"],
     )
 
     # ----------------------------------------------
     # 6) Output the transform from sMRI space to MNI
 
     flirt_mni2mri = np.loadtxt(mni2mri_flirt_xform_file)
-
     xform_mni2mri = rhino_utils._get_mne_xform_from_flirt_xform(flirt_mni2mri, filenames["std_brain"], filenames["smri_file"])
-
     mni_mri_t = Transform("mni_tal", "mri", xform_mni2mri)
     write_trans(filenames["mni_mri_t_file"], mni_mri_t, overwrite=True)
 
@@ -474,7 +474,6 @@ def compute_surfaces(
     # Clean up
 
     if cleanup_files:
-        # CLEAN UP FILES ON DISK
         rhino_utils.system_call("rm -f {}".format(op.join(filenames["basedir"], "flirt*")))
 
     log_or_print('rhino.surfaces.surfaces_display("{}", "{}") can be used to check the result'.format(subjects_dir, subject))
