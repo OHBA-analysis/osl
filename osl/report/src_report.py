@@ -108,6 +108,10 @@ def gen_html_data(config, src_dir, subject, reportdir, logger=None):
         data["plt_filter_svd"] = f"{subject}/filter_svd.png"
         copy(subject_data["filter_svd_plot"], f"{reportdir}/{subject}/filter_svd.png")
 
+    if "parc_psd_plot" in subject_data:
+        data["plt_parc_psd"] = f"{subject}/parc_psd.png"
+        copy(subject_data["parc_psd_plot"], f"{reportdir}/{subject}/parc_psd.png")
+
     if "parc_corr_plot" in subject_data:
         data["plt_parc_corr"] = f"{subject}/parc_corr.png"
         copy(subject_data["parc_corr_plot"], f"{reportdir}/{subject}/parc_corr.png")

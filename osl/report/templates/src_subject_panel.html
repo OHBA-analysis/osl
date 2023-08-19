@@ -70,9 +70,7 @@
     {% if data.beamform or data.beamform_and_parcellate %}
         <div class="tabpage" style='width: 100%; display: none' id={{ data.fif_id }}_beamforming>
             <h3>Beamforming</h3>
-            <div>
-                LCMV Filter
-            </div>
+            <div>LCMV Filter</div>
             <div style="width: 70%; margin: auto">
                 <img src="{{ data.plt_filter_cov }}" alt="" style='max-width: 100%'/>
                 <img src="{{ data.plt_filter_svd }}" alt="" style='max-width: 100%'/>
@@ -83,7 +81,12 @@
     {% if data.beamform_and_parcellate %}
         <div class="tabpage" style='width: 100%; display: none' id={{ data.fif_id }}_parcellation>
             <h3>Parcellation</h3>
-            <div style="width: 70%; margin: auto">
+            <div style="width: 50%; float: left">
+                <div>Power Spectral Density</div>
+                <img src="{{ data.plt_parc_psd }}" alt="" style='max-width: 100%'/>
+            </div>
+            <div style="width: 50%; float: right">
+                <div>Correlation</div>
                 <img src="{{ data.plt_parc_corr }}" alt="" style='max-width: 100%'/>
             </div>
         </div>

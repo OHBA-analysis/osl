@@ -14,6 +14,7 @@ import nibabel as nib
 import matplotlib.pyplot as plt
 import scipy.sparse.linalg
 from scipy.spatial import KDTree
+from scipy.signal import welch
 from nilearn.plotting import plot_markers
 from mpl_toolkits.axes_grid1 import make_axes_locatable
 
@@ -576,31 +577,96 @@ def plot_parcellation(parcellation_file, **kwargs):
     )
 
 
+def plot_psd(parc_ts, fs, freq_range, parcellation_file, filename):
+    """Plot PSD of each parcel time course.
+
+    Parameters
+    ---------- 
+    parc_ts : np.ndarray
+        (parcels, time) or (parcels, time, epochs) time series.
+    fs : float
+        Sampling frequency in Hz.
+    freq_range : list of len 2
+        Low and high frequency in Hz.
+    parcellation_file : str
+        Path to parcellation file.
+    filename : str
+        Output filename.
+    """
+    if parc_ts.ndim == 3:
+        # (parcels, time, epochs) -> (parcels, time)
+        shape = parc_ts.shape
+        parc_ts = parc_ts.reshape(shape[0], shape[1] * shape[2])
+
+    # Calculate PSD
+    f, psd = welch(parc_ts, fs=fs)
+    n_parcels = psd.shape[0]
+
+    # Re-order to use colour to indicate anterior->posterior location
+    parc_centers = parcel_centers(parcellation_file)
+    order = np.argsort(parc_centers[:, 1])
+    parc_centers = parc_centers[order]
+    psd = psd[order]
+
+    # Plot PSD
+    fig, ax = plt.subplots()
+    cmap = plt.cm.viridis_r
+    for i in reversed(range(n_parcels)):
+        ax.plot(f, psd[i], c=cmap(i / n_parcels))
+    ax.set_xlabel("Frequency (Hz)", fontsize=14)
+    ax.set_ylabel("PSD (a.u.)", fontsize=14)
+    ax.set_xlim(freq_range[0], freq_range[1])
+    ax.tick_params(axis="both", labelsize=14)
+    plt.tight_layout()
+
+    # Plot parcel topomap
+    inside_ax = ax.inset_axes([0.45, 0.55, 0.5, 0.55])
+    plot_markers(
+        np.arange(n_parcels),
+        parc_centers,
+        node_size=12,
+        colorbar=False,
+        axes=inside_ax,
+    )
+
+    # Save
+    log_or_print(f"saving {filename}")
+    plt.savefig(filename)
+    plt.close()
+
+
 def plot_correlation(parc_ts, filename):
     """Plot correlation between parcel time courses.
 
     Parameters
     ----------
     parc_ts : np.ndarray
-        (n_samples, n_parcels) time series.
+        (parcels, time) or (parcels, time, epochs) time series.
     filename : str
         Output filename.
     """
     if parc_ts.ndim == 3:
+        # (parcels, time, epochs) -> (parcels, time)
         shape = parc_ts.shape
         parc_ts = parc_ts.reshape(shape[0], shape[1] * shape[2])
+
+    # Calculate correlation
     corr = np.corrcoef(parc_ts)
     np.fill_diagonal(corr, 0)
+
+    # Plot
     fig, ax = plt.subplots()
     divider = make_axes_locatable(ax)
     cax = divider.append_axes("right", size="5%", pad=0.05)
     im = ax.imshow(corr)
-    ax.set_title("Correlation")
-    ax.set_xlabel("Parcel")
-    ax.set_ylabel("Parcel")
+    ax.set_xlabel("Parcel", fontsize=14)
+    ax.set_ylabel("Parcel", fontsize=14)
+    ax.tick_params(axis="both", labelsize=14)
     fig.colorbar(im, cax=cax, orientation="vertical")
+
+    # Save
     log_or_print(f"saving {filename}")
-    fig.savefig(filename)
+    plt.savefig(filename)
     plt.close(fig)
 
 

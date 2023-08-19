@@ -825,10 +825,16 @@ def beamform_and_parcellate(
         parc_epo.save(parc_fif_file, overwrite=True)
 
     # Save plots
-    parcellation.plot_correlation(
+    parc_psd_plot = f"{src_dir}/{subject}/rhino/parc_psd.png"
+    parcellation.plot_psd(
         parcel_data,
-        filename=f"{src_dir}/{subject}/rhino/parc_corr.png",
+        fs=data.info["sfreq"],
+        freq_range=freq_range,
+        parcellation_file=parcellation_file,
+        filename=parc_psd_plot,
     )
+    parc_corr_plot = f"{src_dir}/{subject}/rhino/parc_corr.png"
+    parcellation.plot_correlation(parcel_data, filename=parc_corr_plot)
 
     # Save info for the report
     n_parcels = parcel_data.shape[0]
@@ -855,7 +861,8 @@ def beamform_and_parcellate(
             "n_samples": n_samples,
             "n_parcels": n_parcels,
             "n_epochs": n_epochs,
-            "parc_corr_plot": f"{src_dir}/{subject}/rhino/parc_corr.png",
+            "parc_psd_plot": parc_psd_plot,
+            "parc_corr_plot": parc_corr_plot,
         },
     )
 
