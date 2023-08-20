@@ -131,9 +131,7 @@ def gen_html_page(reportdir):
     reportdir = Path(reportdir)
 
     # Subdirectories which contains plots for each fif file
-    subdirs = sorted(
-        [d.stem for d in Path(reportdir).iterdir() if d.is_dir()]
-    )
+    subdirs = sorted([d.stem for d in Path(reportdir).iterdir() if d.is_dir()])
 
     # Load HTML data
     data = []
@@ -191,9 +189,7 @@ def gen_html_summary(reportdir):
     reportdir = Path(reportdir)
 
     # Subdirectories which contains plots for each fif file
-    subdirs = sorted(
-        [d.stem for d in Path(reportdir).iterdir() if d.is_dir()]
-    )
+    subdirs = sorted([d.stem for d in Path(reportdir).iterdir() if d.is_dir()])
 
     # Load HTML data
     subject_data = []
@@ -201,9 +197,7 @@ def gen_html_summary(reportdir):
         subdir = Path(subdir)
         # Just generate the html page with the successful runs
         try:
-            subject_data.append(
-                pickle.load(open(reportdir / subdir / "data.pkl", "rb"))
-            )
+            subject_data.append(pickle.load(open(reportdir / subdir / "data.pkl", "rb")))
         except:
             pass
 
@@ -223,9 +217,7 @@ def gen_html_summary(reportdir):
     if data["coregister"]:
         subjects = np.array([d["filename"] for d in subject_data])
 
-        fid_err_table = {
-            "subjects": [], "nas_err": [], "lpa_err": [], "rpa_err": [],
-        }
+        fid_err_table = {"subjects": [], "nas_err": [], "lpa_err": [], "rpa_err": []}
         for d in subject_data:
             if "fid_err" in d:
                 if d["fid_err"] is not None:
@@ -233,7 +225,7 @@ def gen_html_summary(reportdir):
                     fid_err_table["nas_err"].append(np.round(d["fid_err"][0], decimals=2))
                     fid_err_table["lpa_err"].append(np.round(d["fid_err"][1], decimals=2))
                     fid_err_table["rpa_err"].append(np.round(d["fid_err"][2], decimals=2))
-        if len(fid_err_table["subjects"]) > 1:
+        if len(fid_err_table["subjects"]) > 0:
             data["coreg_table"] = tabulate(
                 np.c_[
                     fid_err_table["subjects"],
