@@ -90,31 +90,31 @@ def gen_html_data(config, src_dir, subject, reportdir, logger=None):
         for plot in subject_data["surface_plots"]:
             surface = "surfaces_" + Path(plot).stem
             data[f"plt_{surface}"] = f"{subject}/{surface}.png"
-            copy(plot, f"{reportdir}/{subject}/{surface}.png")
+            copy("{}/{}".format(src_dir, plot), "{}/{}/{}.png".format(reportdir, subject, surface))
 
     if "coreg_plot" in subject_data:
         data["plt_coreg"] = f"{subject}/coreg.html"
-        copy(subject_data["coreg_plot"], f"{reportdir}/{subject}/coreg.html")
+        copy("{}/{}".format(src_dir, subject_data["coreg_plot"]), "{}/{}/coreg.html".format(reportdir, subject))
 
     if "filter_cov_plot" in subject_data:
         data["plt_filter_cov"] = f"{subject}/filter_cov.png"
-        copy(subject_data["filter_cov_plot"], f"{reportdir}/{subject}/filter_cov.png")
+        copy("{}/{}".format(src_dir, subject_data["filter_cov_plot"]), "{}/{}/filter_cov.png".format(reportdir, subject))
 
     if "filter_svd_plot" in subject_data:
         data["plt_filter_svd"] = f"{subject}/filter_svd.png"
-        copy(subject_data["filter_svd_plot"], f"{reportdir}/{subject}/filter_svd.png")
+        copy("{}/{}".format(src_dir, subject_data["filter_svd_plot"]), "{}/{}/filter_svd.png".format(reportdir, subject))
 
     if "filter_svd_plot" in subject_data:
         data["plt_filter_svd"] = f"{subject}/filter_svd.png"
-        copy(subject_data["filter_svd_plot"], f"{reportdir}/{subject}/filter_svd.png")
+        copy("{}/{}".format(src_dir, subject_data["filter_svd_plot"]), "{}/{}/filter_svd.png".format(reportdir, subject))
 
     if "parc_psd_plot" in subject_data:
         data["plt_parc_psd"] = f"{subject}/parc_psd.png"
-        copy(subject_data["parc_psd_plot"], f"{reportdir}/{subject}/parc_psd.png")
+        copy("{}/{}".format(src_dir, subject_data["parc_psd_plot"]), "{}/{}/parc_psd.png".format(reportdir, subject))
 
     if "parc_corr_plot" in subject_data:
         data["plt_parc_corr"] = f"{subject}/parc_corr.png"
-        copy(subject_data["parc_corr_plot"], f"{reportdir}/{subject}/parc_corr.png")
+        copy("{}/{}".format(src_dir, subject_data["parc_corr_plot"]), "{}/{}/parc_corr.png".format(reportdir, subject))
 
     # Save data in the report directory
     pickle.dump(data, open(f"{reportdir}/{subject}/data.pkl", "wb"))

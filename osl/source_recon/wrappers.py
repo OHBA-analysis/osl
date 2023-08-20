@@ -118,6 +118,7 @@ def compute_surfaces(
 
     # Plot surfaces
     surface_plots = rhino.plot_surfaces(src_dir, subject, include_nose, already_computed)
+    surface_plots = [s.replace(f"{src_dir}/", "") for s in surface_plots]
 
     # Save info for the report
     src_report.add_to_data(
@@ -189,12 +190,12 @@ def coregister(
         fid_err = rhino.coreg_metrics(subjects_dir=src_dir, subject=subject)
 
     # Save plots
-    coreg_filename = f"{src_dir}/{subject}/rhino/coreg.html"
+    coreg_filename = f"{subject}/rhino/coreg.html"
     rhino.coreg_display(
         subjects_dir=src_dir,
         subject=subject,
         display_outskin_with_nose=False,
-        filename=coreg_filename,
+        filename=f"{src_dir}/{coreg_filename}",
     )
 
     # Save info for the report
@@ -334,6 +335,7 @@ def compute_surfaces_coregister_and_forward_model(
 
     # Plot surfaces
     surface_plots = rhino.plot_surfaces(src_dir, subject, include_nose, already_computed)
+    surface_plots = [s.replace(f"{src_dir}/", "") for s in surface_plots]
 
     # Run coregistration
     rhino.coreg(
@@ -354,12 +356,12 @@ def compute_surfaces_coregister_and_forward_model(
         fid_err = rhino.coreg_metrics(subjects_dir=src_dir, subject=subject)
 
     # Save plots
-    coreg_filename = f"{src_dir}/{subject}/rhino/coreg.html"
+    coreg_filename = f"{subject}/rhino/coreg.html"
     rhino.coreg_display(
         subjects_dir=src_dir,
         subject=subject,
         display_outskin_with_nose=False,
-        filename=coreg_filename,
+        filename=f"{src_dir}/{coreg_filename}",
     )
 
     # Compute forward model
@@ -481,8 +483,8 @@ def beamform(
             "chantypes": chantypes,
             "rank": rank,
             "freq_range": freq_range,
-            "filter_cov_plot": f"{src_dir}/{subject}/rhino/filter_cov.png",
-            "filter_svd_plot": f"{src_dir}/{subject}/rhino/filter_svd.png",
+            "filter_cov_plot": f"{subject}/rhino/filter_cov.png",
+            "filter_svd_plot": f"{subject}/rhino/filter_svd.png",
         },
     )
 
@@ -615,16 +617,16 @@ def parcellate(
         parc_epo.save(parc_fif_file, overwrite=True)
 
     # Save plots
-    parc_psd_plot = f"{src_dir}/{subject}/rhino/parc_psd.png"
+    parc_psd_plot = f"{subject}/rhino/parc_psd.png"
     parcellation.plot_psd(
         parcel_data,
         fs=data.info["sfreq"],
         freq_range=freq_range,
         parcellation_file=parcellation_file,
-        filename=parc_psd_plot,
+        filename=f"{src_dir}/{parc_psd_plot}",
     )
-    parc_corr_plot = f"{src_dir}/{subject}/rhino/parc_corr.png"
-    parcellation.plot_correlation(parcel_data, filename=parc_corr_plot)
+    parc_corr_plot = f"{subject}/rhino/parc_corr.png"
+    parcellation.plot_correlation(parcel_data, filename=f"{src_dir}/{parc_corr_plot}")
 
     # Save info for the report
     n_parcels = parcel_data.shape[0]
@@ -797,16 +799,16 @@ def beamform_and_parcellate(
         parc_epo.save(parc_fif_file, overwrite=True)
 
     # Save plots
-    parc_psd_plot = f"{src_dir}/{subject}/rhino/parc_psd.png"
+    parc_psd_plot = f"{subject}/rhino/parc_psd.png"
     parcellation.plot_psd(
         parcel_data,
         fs=data.info["sfreq"],
         freq_range=freq_range,
         parcellation_file=parcellation_file,
-        filename=parc_psd_plot,
+        filename=f"{src_dir}/{parc_psd_plot}",
     )
-    parc_corr_plot = f"{src_dir}/{subject}/rhino/parc_corr.png"
-    parcellation.plot_correlation(parcel_data, filename=parc_corr_plot)
+    parc_corr_plot = f"{subject}/rhino/parc_corr.png"
+    parcellation.plot_correlation(parcel_data, filename=f"{src_dir}/{parc_corr_plot}")
 
     # Save info for the report
     n_parcels = parcel_data.shape[0]
@@ -824,8 +826,8 @@ def beamform_and_parcellate(
             "chantypes": chantypes,
             "rank": rank,
             "freq_range": freq_range,
-            "filter_cov_plot": f"{src_dir}/{subject}/rhino/filter_cov.png",
-            "filter_svd_plot": f"{src_dir}/{subject}/rhino/filter_svd.png",
+            "filter_cov_plot": f"{subject}/rhino/filter_cov.png",
+            "filter_svd_plot": f"{subject}/rhino/filter_svd.png",
             "parcellation_file": parcellation_file,
             "method": method,
             "orthogonalisation": orthogonalisation,
