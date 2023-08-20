@@ -53,7 +53,7 @@ def get_surfaces_filenames(subjects_dir, subject):
     filenames = {
         "basedir": basedir,
         "smri_file": op.join(basedir, "smri.nii.gz"),
-        "mni2mri_flirt_xform_file": op.join(basedir, "flirt_mniaxes2mri_xform.txt"),
+        "mni2mri_flirt_xform_file": op.join(basedir, "mni2mri_flirt_xform.txt"),
         "mni_mri_t_file": op.join(basedir, "mni_mri-trans.fif"),
         "bet_outskin_mesh_vtk_file": op.join(basedir, "outskin_mesh.vtk"),  # BET output
         "bet_inskull_mesh_vtk_file": op.join(basedir, "inskull_mesh.vtk"),  # BET output
