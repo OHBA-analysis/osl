@@ -96,17 +96,13 @@ def gen_html_data(config, src_dir, subject, reportdir, logger=None):
         data["plt_coreg"] = f"{subject}/coreg.html"
         copy("{}/{}".format(src_dir, subject_data["coreg_plot"]), "{}/{}/coreg.html".format(reportdir, subject))
 
-    if "filter_cov_plot" in subject_data:
-        data["plt_filter_cov"] = f"{subject}/filter_cov.png"
-        copy("{}/{}".format(src_dir, subject_data["filter_cov_plot"]), "{}/{}/filter_cov.png".format(reportdir, subject))
+    if "filters_cov_plot" in subject_data:
+        data["plt_filters_cov"] = f"{subject}/filters_cov.png"
+        copy("{}/{}".format(src_dir, subject_data["filters_cov_plot"]), "{}/{}/filters_cov.png".format(reportdir, subject))
 
-    if "filter_svd_plot" in subject_data:
-        data["plt_filter_svd"] = f"{subject}/filter_svd.png"
-        copy("{}/{}".format(src_dir, subject_data["filter_svd_plot"]), "{}/{}/filter_svd.png".format(reportdir, subject))
-
-    if "filter_svd_plot" in subject_data:
-        data["plt_filter_svd"] = f"{subject}/filter_svd.png"
-        copy("{}/{}".format(src_dir, subject_data["filter_svd_plot"]), "{}/{}/filter_svd.png".format(reportdir, subject))
+    if "filters_svd_plot" in subject_data:
+        data["plt_filters_svd"] = f"{subject}/filters_svd.png"
+        copy("{}/{}".format(src_dir, subject_data["filters_svd_plot"]), "{}/{}/filters_svd.png".format(reportdir, subject))
 
     if "parc_psd_plot" in subject_data:
         data["plt_parc_psd"] = f"{subject}/parc_psd.png"

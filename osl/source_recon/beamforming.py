@@ -43,6 +43,36 @@ from osl.source_recon import rhino
 from osl.source_recon.rhino import utils as rhino_utils
 from osl.utils.logger import log_or_print
 
+def get_beamforming_filenames(subjects_dir, subject):
+    """Get beamforming filenames.
+
+    Files will be in subjects_dir/subject/beamforming
+
+    Parameters
+    ----------
+    subjects_dir : string
+        Directory containing the subject directories.
+    subject : string
+        Subject name.
+
+    Returns
+    -------
+    filenames : dict
+        A dict of files.
+    """
+    basedir = op.join(subjects_dir, subject, "beamform")
+    if " " in basedir:
+        raise ValueError("subjects_dir/src_dir cannot contain spaces.")
+    os.makedirs(basedir, exist_ok=True)
+    
+    filenames = {
+        "basedir": basedir,
+        "filters_file": op.join(basedir, "filters-lcmv.h5"),
+        "filters_plot_cov": op.join(basedir, "filters_cov.png"),
+        "filters_plot_svd": op.join(basedir, "filters_svd.png"),
+    }
+    return filenames
+
 
 def make_lcmv(
     subjects_dir,
@@ -61,18 +91,19 @@ def make_lcmv(
     depth=None,
     inversion="matrix",
     verbose=None,
+    save_filters=False,
     save_figs=False,
 ):
     """Compute LCMV spatial filter.
 
-    Wrapper for RHINO version of mne.beamformer.make_lcmv.
+    Modified version of mne.beamformer.make_lcmv.
 
     Parameters
     ----------
     subjects_dir : string
-        Directory to find RHINO subject directories in.
+        Directory to find subject directories in.
     subject : string
-        Subject name directory to find RHINO fwd model file in.
+        Subject name.
     data : instance of mne.Raw | mne.Epochs
         The measurement data to specify the channels to include. Bad channels in info['bads'] are not used. Will also be used to calculate data_cov.
     data_cov : instance of mne.Covariance | None
@@ -85,6 +116,8 @@ def make_lcmv(
         The regularization for the whitened data covariance.
     label : instance of Label
         Restricts the LCMV solution to a given label.
+    save_filters : bool
+        Should we save the LCMV beamforming filter?
     save_figs : bool
         Should we save figures?
 
@@ -95,8 +128,11 @@ def make_lcmv(
     """
     log_or_print("*** RUNNING OSL MAKE LCMV ***")
 
+    rhino_files = rhino_utils.get_rhino_files(subjects_dir, subject)
+    beamforming_files = get_beamforming_filenames(subjects_dir, subject)
+
     # load forward solution
-    fwd_fname = rhino.get_coreg_filenames(subjects_dir, subject)["forward_model_file"]
+    fwd_fname = rhino_files["fwd_model"]
     fwd = read_forward_solution(fwd_fname)
 
     if data_cov is None:
@@ -154,11 +190,14 @@ def make_lcmv(
         verbose=verbose,
     )
 
+    if save_filters:
+        log_or_print(f"saving {beamforming_files['filters_file']}")
+        filters.save(beamforming_files["filters_file"], overwrite=True)
+
     if save_figs:
-        # Plot covariances
         fig_cov, fig_svd = filters["data_cov"].plot(data.info, show=False, verbose=verbose)
-        fig_cov.savefig(op.join(subjects_dir, subject, "rhino", "filter_cov.png"), dpi=150)
-        fig_svd.savefig(op.join(subjects_dir, subject, "rhino", "filter_svd.png"), dpi=150)
+        fig_cov.savefig(beamforming_files["filters_plot_cov"], dpi=150)
+        fig_svd.savefig(beamforming_files["filters_plot_svd"], dpi=150)
         plt.close("all")
 
     log_or_print("*** OSL MAKE LCMV COMPLETE ***")
@@ -166,8 +205,29 @@ def make_lcmv(
     return filters
 
 
+def load_lcmv(subjects_dir, subject):
+    """Load LCMV beamforming filters.
+
+    Parameters
+    ----------
+    subjects_dir : string
+        Directory containing the subject directories.
+    subject : string
+        Subject name.
+
+    Returns
+    -------
+    filters : instance of mne.beamformer.Beamformer
+        Dictionary containing filter weights from LCMV beamformer. See MNE docs.
+    """
+    filenames = get_beamforming_filenames(subjects_dir, subject)
+    log_or_print(f"loading {filenames['filters_file']}")
+    return read_beamformer(filenames["filters_file"])
+
+
 def apply_lcmv(data, filters, reject_by_annotation="omit"):
     """Apply a LCMV filter to an MNE Raw or Epochs object."""
+    log_or_print("beamforming.apply_lcmv")
     if isinstance(data, mne.io.Raw):
         return apply_lcmv_raw(data, filters, reject_by_annotation)
     else:
@@ -198,14 +258,13 @@ def get_recon_timeseries(subjects_dir, subject, coord_mni, recon_timeseries_head
     Parameters
     ----------
     subjects_dir : string
-        Directory to find RHINO subject directories in.
+        Directory to find subject directories in.
     subject : string
-        Subject name directory to find RHINO files in.
+        Subject name.
     coord_mni : (3,) numpy.ndarray
         3D coordinate in MNI space to get timeseries for
     recon_timeseries_head : (ndipoles, ntpts) np.array
-        Reconstructed time courses in head (polhemus) space. Assumes that the dipoles are the same (and in the same order) as those in the forward model,
-        coreg_filenames['forward_model_file'].
+        Reconstructed time courses in head (polhemus) space. Assumes that the dipoles are the same (and in the same order) as those in the forward model, rhino_files['fwd_model'].
 
     Returns
     -------
@@ -213,8 +272,9 @@ def get_recon_timeseries(subjects_dir, subject, coord_mni, recon_timeseries_head
         The timecourse in recon_timeseries_head nearest to coord_mni.
     """
 
-    surfaces_filenames = rhino.get_surfaces_filenames(subjects_dir, subject)
-    coreg_filenames = rhino.get_coreg_filenames(subjects_dir, subject)
+    rhino_files = rhino_utils.get_rhino_files(subjects_dir, subjects)
+    surfaces_filenames = rhino_files["surf"]
+    coreg_filenames = rhino_files["coreg"]
 
     # get coord_mni in mri space
     mni_mri_t = rhino_utils.read_trans(surfaces_filenames["mni_mri_t_file"])
@@ -223,12 +283,11 @@ def get_recon_timeseries(subjects_dir, subject, coord_mni, recon_timeseries_head
     # Get hold of coords of points reconstructed to.
     # Note, MNE forward model is done in head space in metres.
     # RHINO does everything in mm
-    fwd = read_forward_solution(coreg_filenames["forward_model_file"])
+    fwd = read_forward_solution(rhino_files["fwd_model"])
     vs = fwd["src"][0]
     recon_coords_head = vs["rr"][vs["vertno"]] * 1000  # in mm
 
-    # convert coords_head from head to mri space to get index of reconstructed
-    # coordinate nearest to coord_mni
+    # convert coords_head from head to mri space to get index of reconstructed coordinate nearest to coord_mni
     head_scaledmri_t = rhino_utils.read_trans(coreg_filenames["head_scaledmri_t_file"])
     recon_coords_scaledmri = rhino_utils.xform_points(head_scaledmri_t["trans"], recon_coords_head.T).T
 
@@ -251,16 +310,15 @@ def transform_recon_timeseries(
     Parameters
     ----------
     subjects_dir : string
-        Directory to find RHINO subject directories in.
+        Directory to find subject directories in.
     subject : string
-        Subject name directory to find RHINO files in.
+        Subject name.
     recon_timeseries : numpy.ndarray
         (ndipoles, ntpts) or (ndipoles, ntpts, ntrials) of reconstructed time courses (in head (polhemus) space). Assumes that the dipoles are the same (and in the
-        same order) as those in the forward model, coreg_filenames['forward_model_file']. Typically derive from the VolSourceEstimate's output by MNE source recon methods,
+        same order) as those in the forward model, rhino_files['fwd_model']. Typically derive from the VolSourceEstimate's output by MNE source recon methods,
         e.g. mne.beamformer.apply_lcmv, obtained using a forward model generated by RHINO.
     spatial_resolution : int
-        Resolution to use for the reference brain in mm (must be an integer, or will be cast to nearest int). If None, then the gridstep used in
-        coreg_filenames['forward_model_file'] is used.
+        Resolution to use for the reference brain in mm (must be an integer, or will be cast to nearest int). If None, then the gridstep used in rhino_files['fwd_model'] is used.
     reference_brain : string
         'mni' indicates that the reference_brain is the stdbrain in MNI space.
         'mri' indicates that the reference_brain is the subject's sMRI in the scaled native/mri space.
@@ -277,13 +335,14 @@ def transform_recon_timeseries(
         Array of coordinates (in mm) of dipoles in recon_timeseries_out in "reference_brain" space.
     """
 
-    surfaces_filenames = rhino.get_surfaces_filenames(subjects_dir, subject)
-    coreg_filenames = rhino.get_coreg_filenames(subjects_dir, subject)
+    rhino_files = rhino_utils.get_rhino_files(subjects_dir, subject)
+    surfaces_filenames = rhino_files["surf"]
+    coreg_filenames = rhino_files["coreg"]
 
     # -------------------------------------------------------------------------------------
     # Get hold of coords of points reconstructed to
     # Note, MNE forward model is done in head space in metres. RHINO does everything in mm.
-    fwd = read_forward_solution(coreg_filenames["forward_model_file"])
+    fwd = read_forward_solution(rhino_files["fwd_model"])
     vs = fwd["src"][0]
     recon_coords_head = vs["rr"][vs["vertno"]] * 1000  # in mm
 
@@ -383,16 +442,15 @@ def transform_leadfield(
     Parameters
     ----------
     subjects_dir : string
-        Directory to find RHINO subject directories in.
+        Directory to find subject directories in.
     subject : string
-        Subject name directory to find RHINO files in.
+        Subject name.
     leadfield : numpy.ndarray
         (nsensors, ndipoles) containing the lead field of each dipole (in head (polhemus) space). Assumes that the dipoles are the same (and in the same order)
-        as those in the forward model, coreg_filenames['forward_model_file']. Typically derive from the VolSourceEstimate's output by MNE source recon methods,
+        as those in the forward model, rhino_files['fwd_model']. Typically derive from the VolSourceEstimate's output by MNE source recon methods,
         e.g. mne.beamformer.apply_lcmv, obtained using a forward model generated by RHINO.
     spatial_resolution : int
-        Resolution to use for the reference brain in mm (must be an integer, or will be cast to nearest int). If None, then the gridstep used in
-        coreg_filenames['forward_model_file'] is used.
+        Resolution to use for the reference brain in mm (must be an integer, or will be cast to nearest int). If None, then the gridstep used in rhino_files['fwd_model'] is used.
     reference_brain : string
         'mni' indicates that the reference_brain is the stdbrain in MNI space.
         'mri' indicates that the reference_brain is the subject's sMRI in the scaled native/mri space.
@@ -405,13 +463,14 @@ def transform_leadfield(
         (nsensors, ndipoles) np.array of lead fields resampled on the reference brain grid.
     """
 
-    surfaces_filenames = rhino.get_surfaces_filenames(subjects_dir, subject)
-    coreg_filenames = rhino.get_coreg_filenames(subjects_dir, subject)
+    rhino_files = rhino_utils.get_rhino_files(subjects_dir, subject)
+    surfaces_filenames = rhino_files["surf"]
+    coreg_filenames = rhino_files["coreg"]
 
     # -------------------------------------------------------------------------------------
     # Get hold of coords of points reconstructed to.
     # Note, MNE forward model is done in head space in metres. RHINO does everything in mm.
-    fwd = read_forward_solution(coreg_filenames["forward_model_file"], verbose = verbose)
+    fwd = read_forward_solution(rhino_files["fwd_model"], verbose = verbose)
     vs = fwd["src"][0]
     recon_coords_head = vs["rr"][vs["vertno"]] * 1000  # in mm
 
@@ -516,7 +575,7 @@ def _make_lcmv(
 ):
     """Compute LCMV spatial filter.
 
-    RHINO version of mne.beamformer.make_lcmv.
+    Modified version of mne.beamformer._make_lcmv.
     """
     # Code that is different to mne.beamformer.make_lcmv is labelled with MWW
 
@@ -525,7 +584,7 @@ def _make_lcmv(
     noise_cov, _, allow_mismatch = _check_one_ch_type("lcmv", info, forward, data_cov, noise_cov)
 
     # NOTE: we need this extra picking step (can't just rely on minimum norm's because there can be a mismatch.
-    #Should probably add an extra arg to _prepare_beamformer_input at some point (later)
+    # Should probably add an extra arg to _prepare_beamformer_input at some point (later)
     picks = _check_info_inv(info, forward, data_cov, noise_cov)
     info = pick_info(info, picks)
 
@@ -610,7 +669,7 @@ def _compute_beamformer(G, Cm, reg, n_orient, weight_norm, pick_ori, reduce_rank
 
     For more detailed information on the parameters, see the docstrings of `make_lcmv` and `make_dics`.
 
-    RHINO version of mne.beamformer._compute_beamformer.
+    Modified version of mne.beamformer._compute_beamformer.
 
     Parameters
     ----------
@@ -661,8 +720,7 @@ def _compute_beamformer(G, Cm, reg, n_orient, weight_norm, pick_ori, reduce_rank
         # This shouldn't ever happen, but just in case
         warn("data covariance does not appear to be positive semidefinite, results will likely be incorrect")
 
-    # Tikhonov regularization using reg parameter to control for
-    # trade-off between spatial resolution and noise sensitivity
+    # Tikhonov regularization using reg parameter to control for trade-off between spatial resolution and noise sensitivity
     # eq. 25 in Gross and Ioannides, 1999 Phys. Med. Biol. 44 2081
     Cm_inv, loading_factor, rank = _reg_pinv(Cm, reg, rank)
 
@@ -883,7 +941,7 @@ def _prepare_beamformer_input(
 ):
     """Input preparation common for LCMV, DICS, and RAP-MUSIC.
 
-    RHINO version of mne.beamformer._prepare_beamformer_input.
+    Modified version of mne.beamformer._prepare_beamformer_input.
     """
     # Lines marked MWW or CG for where code has been changed.
 
@@ -963,9 +1021,9 @@ def voxel_timeseries(
     Parameters
     ----------
     subjects_dir : string
-        Directory to find RHINO subject directories in.
+        Directory to find subject directories in.
     subject : string
-        Subject name directory to find RHINO fwd model file in.
+        Subject name.
     preproc_file : str
         Path to the preprocessed fif file.
     chantypes : list of str
@@ -973,8 +1031,8 @@ def voxel_timeseries(
     freq_range : list
         Lower and upper band to bandpass filter before beamforming. If None, no filtering is done.
     spatial_resolution : int
-        Resolution for beamforming to use for the reference brain in mm (must be an integer, or will be cast to nearest int). If None, then the gridstep used in
-        coreg_filenames['forward_model_file'] is used.
+        Resolution for beamforming to use for the reference brain in mm (must be an integer, or will be cast to nearest int).
+        If None, then the gridstep used in rhino_files['fwd_model'] is used.
     reference_brain : string
         'mni' indicates that the reference_brain is the stdbrain in MNI space.
         'mri' indicates that the reference_brain is the subject's sMRI in the scaled native/mri space.
@@ -1012,9 +1070,7 @@ def voxel_timeseries(
         data = data.filter(l_freq=freq_range[0], h_freq=freq_range[1], method="iir", iir_params={"order": 5, "ftype": "butter"})
 
     # Load the beamformer
-    filters_file = f"{subjects_dir}/{subject}/rhino/filters-lcmv.h5"
-    log_or_print(f"loading {filters_file}")
-    filters = read_beamformer(filters_file)
+    filters = load_lcmv(subjects_dir, subject)
 
     # Apply the beamformer
     log_or_print("applying beamformer")

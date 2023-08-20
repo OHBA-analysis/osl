@@ -31,7 +31,7 @@ from osl.utils.logger import log_or_print
 
 
 def get_coreg_filenames(subjects_dir, subject):
-    """Generates a dict of files generated and used by RHINO.
+    """Files used in coregistration by RHINO.
 
     Files will be in subjects_dir/subject/rhino/coreg.
 
@@ -47,47 +47,8 @@ def get_coreg_filenames(subjects_dir, subject):
     filenames : dict
         A dict of files generated and used by RHINO.
     """
-    basedir = op.join(subjects_dir, subject, "rhino", "coreg")
-    if " " in basedir:
-        raise ValueError("subjects_dir/src_dir cannot contain spaces.")
-    os.makedirs(basedir, exist_ok=True)
-
-    filenames = {
-        "basedir": basedir,
-        "info_fif_file": op.join(basedir, "info-raw.fif"),
-        "smri_file": op.join(basedir, "scaled_smri.nii.gz"),
-        "head_scaledmri_t_file": op.join(basedir, "head_scaledmri-trans.fif"),
-        "head_mri_t_file": op.join(basedir, "head_mri-trans.fif"),
-        "ctf_head_mri_t_file": op.join(basedir, "ctf_head_mri-trans.fif"),
-        "mrivoxel_scaledmri_t_file": op.join(basedir, "mrivoxel_scaledmri_t_file-trans.fif"),
-        "smri_nasion_file": op.join(basedir, "smri_nasion.txt"),
-        "smri_rpa_file": op.join(basedir, "smri_rpa.txt"),
-        "smri_lpa_file": op.join(basedir, "smri_lpa.txt"),
-        "polhemus_nasion_file": op.join(basedir, "polhemus_nasion.txt"),
-        "polhemus_rpa_file": op.join(basedir, "polhemus_rpa.txt"),
-        "polhemus_lpa_file": op.join(basedir, "polhemus_lpa.txt"),
-        "polhemus_headshape_file": op.join(basedir, "polhemus_headshape.txt"),
-        "forward_model_file": op.join(basedir, "forward-fwd.fif"),
-        # BET mesh output in native space
-        "bet_outskin_mesh_vtk_file": op.join(basedir, "scaled_outskin_mesh.vtk"),
-        "bet_inskull_mesh_vtk_file": op.join(basedir, "scaled_inskull_mesh.vtk"),
-        "bet_outskull_mesh_vtk_file": op.join(basedir, "scaled_outskull_mesh.vtk"),
-        # Freesurfer mesh in native space
-        # - these are the ones shown in coreg_display() if doing surf plot
-        # - these are also used by MNE forward modelling
-        "bet_outskin_surf_file": op.join(basedir, "scaled_outskin_surf.surf"),
-        "bet_inskull_surf_file": op.join(basedir, "scaled_inskull_surf.surf"),
-        "bet_outskull_surf_file": op.join(basedir, "scaled_outskull_surf.surf"),
-        "bet_outskin_plus_nose_surf_file": op.join(basedir, "scaled_outskin_plus_nose_surf.surf"),
-        # BET output surface mask as nii in native space
-        "bet_outskin_mesh_file": op.join(basedir, "scaled_outskin_mesh.nii.gz"),
-        "bet_outskin_plus_nose_mesh_file": op.join(basedir, "scaled_outskin_plus_nose_mesh.nii.gz"),
-        "bet_inskull_mesh_file": op.join(basedir, "scaled_inskull_mesh.nii.gz"),
-        "bet_outskull_mesh_file": op.join(basedir, "scaled_outskull_mesh.nii.gz"),
-        "std_brain": op.join(os.environ["FSLDIR"], "data", "standard", "MNI152_T1_1mm_brain.nii.gz"),
-    }
-
-    return filenames
+    rhino_files = rhino_utils.get_rhino_files(subjects_dir, subject)
+    return rhino_files["coreg"]
 
 
 def coreg(
@@ -894,7 +855,8 @@ def bem_display(
     #
     # RHINO does everthing in mm
 
-    filenames = get_coreg_filenames(subjects_dir, subject)
+    rhino_files = rhino_utils.get_rhino_files(subjects_dir, subject)
+    filenames = rhino_files["coreg"]
 
     bet_outskin_plus_nose_mesh_file = filenames["bet_outskin_plus_nose_mesh_file"]
     bet_outskin_plus_nose_surf_file = filenames["bet_outskin_plus_nose_surf_file"]
@@ -918,7 +880,7 @@ def bem_display(
         outskin_mesh_4surf_file = bet_outskin_mesh_vtk_file
         outskin_surf_file = bet_outskin_surf_file
 
-    fwd_fname = filenames["forward_model_file"]
+    fwd_fname = rhino_files["fwd_model"]
     if Path(fwd_fname).exists():
         forward = read_forward_solution(fwd_fname)
         src = forward["src"]

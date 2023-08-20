@@ -5,6 +5,7 @@
 # Authors: Mark Woolrich <mark.woolrich@ohba.ox.ac.uk>
 #          Chetan Gohil <chetan.gohil@psych.ox.ac.uk>
 
+import os
 import os.path as op
 from pathlib import Path
 
@@ -295,6 +296,8 @@ def _resample_parcellation(parcellation_file, voxel_coords, working_dir=None):
 
     if working_dir is None:
         working_dir = pth
+    else:
+        os.makedirs(working_dir, exist_ok=True)
 
     parcellation_resampled = op.join(working_dir, parcellation_name + "_{}mm.nii.gz".format(gridstep))
 

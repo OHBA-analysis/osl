@@ -13,9 +13,9 @@ event_type = "internal_disp"
 src_dir = f"/ohba/pi/knobre/cgohil/int_ext/src/{event_type}"
 
 # Subjects to sign flip
-# We create a list by looking for subjects that have a rhino/parc-epo.fif file
+# We create a list by looking for subjects that have a parc/parc-epo.fif file
 subjects = []
-for path in sorted(glob(src_dir + "/*/rhino/parc-epo.fif")):
+for path in sorted(glob(src_dir + "/*/parc/parc-epo.fif")):
     subject = path.split("/")[-3]
     subjects.append(subject)
 

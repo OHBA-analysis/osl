@@ -60,7 +60,7 @@ def forward_model(
     """
     log_or_print("*** RUNNING OSL RHINO FORWARD MODEL ***")
 
-    filenames = get_coreg_filenames(subjects_dir, subject)
+    filenames = rhino_utils.get_rhino_files(subjects_dir, subject)
 
     # Compute MNE bem solution
     if model == "Single Layer":
@@ -83,7 +83,7 @@ def forward_model(
     model = make_bem_model(subjects_dir=subjects_dir, subject=subject, ico=None, conductivity=conductivity, verbose=verbose)
     bem = make_bem_solution(model)
     fwd = make_fwd_solution(subjects_dir, subject, src=vol_src, ignore_ref=True, bem=bem, eeg=eeg, meg=meg, verbose=verbose)
-    write_forward_solution(filenames["forward_model_file"], fwd, overwrite=True)
+    write_forward_solution(filenames["fwd_model"], fwd, overwrite=True)
 
     log_or_print("*** OSL RHINO FORWARD MODEL COMPLETE ***")
 

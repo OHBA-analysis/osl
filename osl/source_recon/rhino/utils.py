@@ -36,6 +36,95 @@ from osl.utils.logger import log_or_print
 from osl.utils import soft_import
 
 
+def get_rhino_files(subjects_dir, subject):
+    """Get paths to all RHINO files.
+
+    Files will be in subjects_dir/subject/rhino.
+
+    Parameters
+    ----------
+    subjects_dir : string
+        Directory containing the subject directories.
+    subject : string
+        Subject directory name to put the coregistration files in.
+
+    Returns
+    -------
+    files : dict
+        A dict of files generated and used by RHINO. Contains three keys:
+        - 'surf': containing surface extraction file paths.
+        - 'coreg': containing coregistration file paths.
+        - 'fwd_model': containing the forward model file path.
+    """
+
+    # Base RHINO directory
+    rhino_dir = op.join(subjects_dir, subject, "rhino")
+    if " " in rhino_dir:
+        raise ValueError("subjects_dir/src_dir cannot contain spaces.")
+
+    # Surfaces files
+    surfaces_dir = op.join(rhino_dir, "surfaces")
+    os.makedirs(surfaces_dir, exist_ok=True)
+    surf_files = {
+        "basedir": surfaces_dir,
+        "smri_file": op.join(surfaces_dir, "smri.nii.gz"),
+        "mni2mri_flirt_xform_file": op.join(surfaces_dir, "mni2mri_flirt_xform.txt"),
+        "mni_mri_t_file": op.join(surfaces_dir, "mni_mri-trans.fif"),
+        "bet_outskin_mesh_vtk_file": op.join(surfaces_dir, "outskin_mesh.vtk"),  # BET output
+        "bet_inskull_mesh_vtk_file": op.join(surfaces_dir, "inskull_mesh.vtk"),  # BET output
+        "bet_outskull_mesh_vtk_file": op.join(surfaces_dir, "outskull_mesh.vtk"),  # BET output
+        "bet_outskin_mesh_file": op.join(surfaces_dir, "outskin_mesh.nii.gz"),
+        "bet_outskin_plus_nose_mesh_file": op.join(surfaces_dir, "outskin_plus_nose_mesh.nii.gz"),
+        "bet_inskull_mesh_file": op.join(surfaces_dir, "inskull_mesh.nii.gz"),
+        "bet_outskull_mesh_file": op.join(surfaces_dir, "outskull_mesh.nii.gz"),
+        "std_brain": op.join(os.environ["FSLDIR"], "data", "standard", "MNI152_T1_1mm_brain.nii.gz"),
+        "std_brain_bigfov": op.join(os.environ["FSLDIR"], "data", "standard", "MNI152_T1_1mm_BigFoV_facemask.nii.gz"),
+        "completed": op.join(surfaces_dir, "completed.txt"),
+    }
+
+    # Coregistration files
+    coreg_dir = op.join(rhino_dir, "coreg")
+    os.makedirs(coreg_dir, exist_ok=True)
+    coreg_files = {
+        "basedir": coreg_dir,
+        "info_fif_file": op.join(coreg_dir, "info-raw.fif"),
+        "smri_file": op.join(coreg_dir, "scaled_smri.nii.gz"),
+        "head_scaledmri_t_file": op.join(coreg_dir, "head_scaledmri-trans.fif"),
+        "head_mri_t_file": op.join(coreg_dir, "head_mri-trans.fif"),
+        "ctf_head_mri_t_file": op.join(coreg_dir, "ctf_head_mri-trans.fif"),
+        "mrivoxel_scaledmri_t_file": op.join(coreg_dir, "mrivoxel_scaledmri_t_file-trans.fif"),
+        "smri_nasion_file": op.join(coreg_dir, "smri_nasion.txt"),
+        "smri_rpa_file": op.join(coreg_dir, "smri_rpa.txt"),
+        "smri_lpa_file": op.join(coreg_dir, "smri_lpa.txt"),
+        "polhemus_nasion_file": op.join(coreg_dir, "polhemus_nasion.txt"),
+        "polhemus_rpa_file": op.join(coreg_dir, "polhemus_rpa.txt"),
+        "polhemus_lpa_file": op.join(coreg_dir, "polhemus_lpa.txt"),
+        "polhemus_headshape_file": op.join(coreg_dir, "polhemus_headshape.txt"),
+        # BET mesh output in native space
+        "bet_outskin_mesh_vtk_file": op.join(coreg_dir, "scaled_outskin_mesh.vtk"),
+        "bet_inskull_mesh_vtk_file": op.join(coreg_dir, "scaled_inskull_mesh.vtk"),
+        "bet_outskull_mesh_vtk_file": op.join(coreg_dir, "scaled_outskull_mesh.vtk"),
+        # Freesurfer mesh in native space
+        # - these are the ones shown in coreg_display() if doing surf plot
+        # - these are also used by MNE forward modelling
+        "bet_outskin_surf_file": op.join(coreg_dir, "scaled_outskin_surf.surf"),
+        "bet_inskull_surf_file": op.join(coreg_dir, "scaled_inskull_surf.surf"),
+        "bet_outskull_surf_file": op.join(coreg_dir, "scaled_outskull_surf.surf"),
+        "bet_outskin_plus_nose_surf_file": op.join(coreg_dir, "scaled_outskin_plus_nose_surf.surf"),
+        # BET output surface mask as nii in native space
+        "bet_outskin_mesh_file": op.join(coreg_dir, "scaled_outskin_mesh.nii.gz"),
+        "bet_outskin_plus_nose_mesh_file": op.join(coreg_dir, "scaled_outskin_plus_nose_mesh.nii.gz"),
+        "bet_inskull_mesh_file": op.join(coreg_dir, "scaled_inskull_mesh.nii.gz"),
+        "bet_outskull_mesh_file": op.join(coreg_dir, "scaled_outskull_mesh.nii.gz"),
+        "std_brain": op.join(os.environ["FSLDIR"], "data", "standard", "MNI152_T1_1mm_brain.nii.gz"),
+    }
+
+    # All RHINO files
+    files = {"surf": surf_files, "coreg": coreg_files, "fwd_model": op.join(rhino_dir, "model-fwd.fif")}
+
+    return files
+
+
 def system_call(cmd, verbose=False):
     if verbose:
         log_or_print(cmd)
@@ -825,11 +914,10 @@ def recon_timeseries2niftii(
         Subject name directory to find RHINO files in.
     recon_timeseries : (ndipoles, ntpts) np.ndarray
         Reconstructed time courses (in head (polhemus) space). Assumes that the dipoles are the same (and in the same order) as those in the forward model,
-        coreg_filenames['forward_model_file']. Typically derive from the VolSourceEstimate's output by MNE source recon methods, e.g. mne.beamformer.apply_lcmv,
+        rhino_files['fwd_model']. Typically derive from the VolSourceEstimate's output by MNE source recon methods, e.g. mne.beamformer.apply_lcmv,
         obtained using a forward model generated by RHINO.
     spatial_resolution : int
-        Resolution to use for the reference brain in mm (must be an integer, or will be cast to nearest int). If None, then the gridstep used in
-        coreg_filenames['forward_model_file'] is used.
+        Resolution to use for the reference brain in mm (must be an integer, or will be cast to nearest int). If None, then the gridstep used in rhino_files['fwd_model'] is used.
     reference_brain : string, 'mni' or 'mri'
         'mni' indicates that the reference_brain is the stdbrain in MNI space.
         'mri' indicates that the reference_brain is the sMRI in native/mri space.

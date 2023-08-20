@@ -190,13 +190,14 @@ def coregister(
         fid_err = rhino.coreg_metrics(subjects_dir=src_dir, subject=subject)
 
     # Save plots
-    coreg_filename = f"{subject}/rhino/coreg.html"
+    coreg_dir = rhino.get_coreg_filenames(src_dir, subject)["basedir"]
     rhino.coreg_display(
         subjects_dir=src_dir,
         subject=subject,
         display_outskin_with_nose=False,
-        filename=f"{src_dir}/{coreg_filename}",
+        filename=f"{coreg_dir}/coreg.html",
     )
+    coreg_filename = f"{coreg_dir}/coreg.html".replace("{src_dir}/", "")
 
     # Save info for the report
     src_report.add_to_data(
@@ -356,13 +357,14 @@ def compute_surfaces_coregister_and_forward_model(
         fid_err = rhino.coreg_metrics(subjects_dir=src_dir, subject=subject)
 
     # Save plots
-    coreg_filename = f"{subject}/rhino/coreg.html"
+    coreg_dir = rhino.get_coreg_filenames(src_dir, subject)["basedir"]
     rhino.coreg_display(
         subjects_dir=src_dir,
         subject=subject,
         display_outskin_with_nose=False,
-        filename=f"{src_dir}/{coreg_filename}",
+        filename=f"{coreg_dir}/coreg.html",
     )
+    coreg_filename = f"{coreg_dir}/coreg.html".replace(f"{src_dir}/", "")
 
     # Compute forward model
     rhino.forward_model(
@@ -461,19 +463,16 @@ def beamform(
     logger.info("beamforming.make_lcmv")
     logger.info(f"chantypes: {chantypes}")
     logger.info(f"rank: {rank}")
-    filters = beamforming.make_lcmv(
+    beamforming.make_lcmv(
         subjects_dir=src_dir,
         subject=subject,
         data=data,
         chantypes=chantypes,
         weight_norm="nai",
         rank=rank,
+        save_filters=True,
         save_figs=True,
     )
-
-    # Save the beamforming filter
-    filters_file = src_dir / subject / "rhino/filters-lcmv.h5"
-    filters.save(filters_file, overwrite=True)
 
     # Save info for the report
     src_report.add_to_data(
@@ -483,8 +482,8 @@ def beamform(
             "chantypes": chantypes,
             "rank": rank,
             "freq_range": freq_range,
-            "filter_cov_plot": f"{subject}/rhino/filter_cov.png",
-            "filter_svd_plot": f"{subject}/rhino/filter_svd.png",
+            "filters_cov_plot": f"{subject}/beamform/filters_cov.png",
+            "filters_svd_plot": f"{subject}/beamform/filters_svd.png",
         },
     )
 
@@ -564,13 +563,8 @@ def parcellate(
     # Pick channels
     chantype_data = data.copy().pick(chantypes)
 
-    # Load the beamforming filter
-    filters_file = src_dir / subject / "rhino/filters-lcmv.h5"
-    logger.info(f"loading {filters_file}")
-    filters = mne.beamformer.read_beamformer(filters_file)
-
-    # Apply beamforming
-    logger.info("beamforming.apply_lcmv")
+    # Load beamforming filter and apply
+    filters = beamforming.load_lcmv(src_dir, subject)
     bf_data = beamforming.apply_lcmv(chantype_data, filters)
 
     if epoch_file is not None:
@@ -592,7 +586,7 @@ def parcellate(
         voxel_timeseries=bf_data_mni,
         voxel_coords=coords_mni,
         method=method,
-        working_dir=src_dir / subject / "rhino",
+        working_dir=src_dir / subject / "parc",
     )
 
     # Orthogonalisation
@@ -605,19 +599,19 @@ def parcellate(
 
     if epoch_file is None:
         # Save parcellated data as a MNE Raw object
-        parc_fif_file = src_dir / subject / "rhino/parc-raw.fif"
+        parc_fif_file = src_dir / subject / "parc/parc-raw.fif"
         logger.info(f"saving {parc_fif_file}")
         parc_raw = parcellation.convert2mne_raw(parcel_data, data, extra_chans=extra_chans)
         parc_raw.save(parc_fif_file, overwrite=True)
     else:
         # Save parcellated data as a MNE Epochs object
-        parc_fif_file = src_dir / subject / "rhino/parc-epo.fif"
+        parc_fif_file = src_dir / subject / "parc/parc-epo.fif"
         logger.info(f"saving {parc_fif_file}")
         parc_epo = parcellation.convert2mne_epochs(parcel_data, data)
         parc_epo.save(parc_fif_file, overwrite=True)
 
     # Save plots
-    parc_psd_plot = f"{subject}/rhino/parc_psd.png"
+    parc_psd_plot = f"{subject}/parc/psd.png"
     parcellation.plot_psd(
         parcel_data,
         fs=data.info["sfreq"],
@@ -625,7 +619,7 @@ def parcellate(
         parcellation_file=parcellation_file,
         filename=f"{src_dir}/{parc_psd_plot}",
     )
-    parc_corr_plot = f"{subject}/rhino/parc_corr.png"
+    parc_corr_plot = f"{subject}/parc/corr.png"
     parcellation.plot_correlation(parcel_data, filename=f"{src_dir}/{parc_corr_plot}")
 
     # Save info for the report
@@ -743,15 +737,11 @@ def beamform_and_parcellate(
         chantypes=chantypes,
         weight_norm="nai",
         rank=rank,
+        save_filters=True,
         save_figs=True,
     )
 
-    # Save the beamforming filter
-    filters_file = src_dir / subject / "rhino/filters-lcmv.h5"
-    filters.save(filters_file, overwrite=True)
-
     # Apply beamforming
-    logger.info("beamforming.apply_lcmv")
     bf_data = beamforming.apply_lcmv(chantype_data, filters)
 
     if epoch_file is not None:
@@ -774,7 +764,7 @@ def beamform_and_parcellate(
         voxel_timeseries=bf_data_mni,
         voxel_coords=coords_mni,
         method=method,
-        working_dir=src_dir / subject / "rhino",
+        working_dir=src_dir / subject / "parc",
     )
 
     # Orthogonalisation
@@ -787,19 +777,19 @@ def beamform_and_parcellate(
 
     if epoch_file is None:
         # Save parcellated data as a MNE Raw object
-        parc_fif_file = src_dir / subject / "rhino/parc-raw.fif"
+        parc_fif_file = src_dir / subject / "parc/parc-raw.fif"
         logger.info(f"saving {parc_fif_file}")
         parc_raw = parcellation.convert2mne_raw(parcel_data, data, extra_chans=extra_chans)
         parc_raw.save(parc_fif_file, overwrite=True)
     else:
         # Save parcellated data as a MNE Epochs object
-        parc_fif_file = src_dir / subject / "rhino/parc-epo.fif"
+        parc_fif_file = src_dir / subject / "parc/parc-epo.fif"
         logger.info(f"saving {parc_fif_file}")
         parc_epo = parcellation.convert2mne_epochs(parcel_data, data)
         parc_epo.save(parc_fif_file, overwrite=True)
 
     # Save plots
-    parc_psd_plot = f"{subject}/rhino/parc_psd.png"
+    parc_psd_plot = f"{subject}/parc/psd.png"
     parcellation.plot_psd(
         parcel_data,
         fs=data.info["sfreq"],
@@ -807,7 +797,7 @@ def beamform_and_parcellate(
         parcellation_file=parcellation_file,
         filename=f"{src_dir}/{parc_psd_plot}",
     )
-    parc_corr_plot = f"{subject}/rhino/parc_corr.png"
+    parc_corr_plot = f"{subject}/parc/corr.png"
     parcellation.plot_correlation(parcel_data, filename=f"{src_dir}/{parc_corr_plot}")
 
     # Save info for the report
@@ -826,8 +816,8 @@ def beamform_and_parcellate(
             "chantypes": chantypes,
             "rank": rank,
             "freq_range": freq_range,
-            "filter_cov_plot": f"{subject}/rhino/filter_cov.png",
-            "filter_svd_plot": f"{subject}/rhino/filter_svd.png",
+            "filters_cov_plot": f"{subject}/beamform/filters_cov.png",
+            "filters_svd_plot": f"{subject}/beamform/filters_svd.png",
             "parcellation_file": parcellation_file,
             "method": method,
             "orthogonalisation": orthogonalisation,
@@ -855,7 +845,7 @@ def find_template_subject(
     """Function to find a good subject to align other subjects to in the sign flipping.
 
     Note, this function expects parcellated data to exist in the following location:
-    src_dir/*/rhino/parc-*.fif, the * here represents subject directories or 'raw' vs 'epo'.
+    src_dir/*/parc/parc-*.fif, the * here represents subject directories or 'raw' vs 'epo'.
 
     Parameters
     ----------
@@ -881,9 +871,9 @@ def find_template_subject(
     parc_files = []
     for subject in subjects:
         if epoched:
-            parc_file = op.join(src_dir, subject, "rhino", "parc-epo.fif")
+            parc_file = op.join(src_dir, subject, "parc", "parc-epo.fif")
         else:
-            parc_file = op.join(src_dir, subject, "rhino", "parc-raw.fif")
+            parc_file = op.join(src_dir, subject, "parc", "parc-raw.fif")
         if Path(parc_file).exists():
             parc_files.append(parc_file)
         else:
@@ -955,9 +945,9 @@ def fix_sign_ambiguity(
     parc_files = []
     for sub in [subject, template]:
         if epoched:
-            parc_file = op.join(src_dir, str(sub), "rhino", "parc-epo.fif")
+            parc_file = op.join(src_dir, str(sub), "parc", "parc-epo.fif")
         else:
-            parc_file = op.join(src_dir, str(sub), "rhino", "parc-raw.fif")
+            parc_file = op.join(src_dir, str(sub), "parc", "parc-raw.fif")
         if not Path(parc_file).exists():
             raise ValueError(f"{parc_file} not found")
         parc_files.append(parc_file)

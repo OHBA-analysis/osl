@@ -16,7 +16,7 @@ if __name__ == "__main__":
 
     # Subjects to sign flip
     subjects = []
-    for path in sorted(glob(SRC_DIR + "/*/rhino/parc-raw.fif")):
+    for path in sorted(glob(SRC_DIR + "/*/parc/parc-raw.fif")):
         subject = path.split("/")[-3]
         subjects.append(subject)
 

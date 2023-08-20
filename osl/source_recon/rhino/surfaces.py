@@ -45,29 +45,8 @@ def get_surfaces_filenames(subjects_dir, subject):
         - bet_outskull_*_file is actually the inner skull surface
         - bet_outskin_*_file is the outer skin/scalp surface
     """
-    basedir = op.join(subjects_dir, subject, "rhino", "surfaces")
-    if " " in basedir:
-        raise ValueError("subjects_dir/src_dir cannot contain spaces.")
-    os.makedirs(basedir, exist_ok=True)
-
-    filenames = {
-        "basedir": basedir,
-        "smri_file": op.join(basedir, "smri.nii.gz"),
-        "mni2mri_flirt_xform_file": op.join(basedir, "mni2mri_flirt_xform.txt"),
-        "mni_mri_t_file": op.join(basedir, "mni_mri-trans.fif"),
-        "bet_outskin_mesh_vtk_file": op.join(basedir, "outskin_mesh.vtk"),  # BET output
-        "bet_inskull_mesh_vtk_file": op.join(basedir, "inskull_mesh.vtk"),  # BET output
-        "bet_outskull_mesh_vtk_file": op.join(basedir, "outskull_mesh.vtk"),  # BET output
-        "bet_outskin_mesh_file": op.join(basedir, "outskin_mesh.nii.gz"),
-        "bet_outskin_plus_nose_mesh_file": op.join(basedir, "outskin_plus_nose_mesh.nii.gz"),
-        "bet_inskull_mesh_file": op.join(basedir, "inskull_mesh.nii.gz"),
-        "bet_outskull_mesh_file": op.join(basedir, "outskull_mesh.nii.gz"),
-        "std_brain": op.join(os.environ["FSLDIR"], "data", "standard", "MNI152_T1_1mm_brain.nii.gz"),
-        "std_brain_bigfov": op.join(os.environ["FSLDIR"], "data", "standard", "MNI152_T1_1mm_BigFoV_facemask.nii.gz"),
-        "completed": op.join(basedir, "completed.txt"),
-    }
-
-    return filenames
+    rhino_files = rhino_utils.get_rhino_files(subjects_dir, subject)
+    return rhino_files["surf"]
 
 
 def check_if_already_computed(subjects_dir, subject, include_nose):

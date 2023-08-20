@@ -306,7 +306,7 @@ def apply_flips(src_dir, subject, flips, epoched=False):
         Are we performing sign flipping on parc-raw.fif (epoched=False) or parc-epo.fif files (epoched=True)?
     """
     if epoched:
-        parc_file = op.join(src_dir, str(subject), "rhino", "parc-epo.fif")
+        parc_file = op.join(src_dir, str(subject), "parc", "parc-epo.fif")
         epochs = mne.read_epochs(parc_file, verbose=False)
         sflip_epochs = epochs.copy()
         sflip_epochs.load_data()
@@ -324,7 +324,7 @@ def apply_flips(src_dir, subject, flips, epoched=False):
 
     else:
         # Load parcellated data
-        parc_file = op.join(src_dir, str(subject), "rhino", "parc-raw.fif")
+        parc_file = op.join(src_dir, str(subject), "parc", "parc-raw.fif")
         raw = mne.io.read_raw_fif(parc_file, verbose=False)
         sflip_raw = raw.copy()
         sflip_raw.load_data()
