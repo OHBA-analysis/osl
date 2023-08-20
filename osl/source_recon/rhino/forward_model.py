@@ -60,7 +60,9 @@ def forward_model(
     """
     log_or_print("*** RUNNING OSL RHINO FORWARD MODEL ***")
 
-    # compute MNE bem solution
+    filenames = get_coreg_filenames(subjects_dir, subject)
+
+    # Compute MNE bem solution
     if model == "Single Layer":
         conductivity = (0.3,)  # for single layer
     elif model == "Triple Layer":
@@ -79,12 +81,8 @@ def forward_model(
     # This will get the surfaces from: subjects_dir/subject/bem/inner_skull.surf, which is where rhino.setup_volume_source_space will have put it.
 
     model = make_bem_model(subjects_dir=subjects_dir, subject=subject, ico=None, conductivity=conductivity, verbose=verbose)
-
     bem = make_bem_solution(model)
-
     fwd = make_fwd_solution(subjects_dir, subject, src=vol_src, ignore_ref=True, bem=bem, eeg=eeg, meg=meg, verbose=verbose)
-
-    filenames = get_coreg_filenames(subjects_dir, subject)
     write_forward_solution(filenames["forward_model_file"], fwd, overwrite=True)
 
     log_or_print("*** OSL RHINO FORWARD MODEL COMPLETE ***")
@@ -134,41 +132,45 @@ def make_fwd_solution(
 
     where they are in native MRI space in metres.
     """
+    filenames = get_coreg_filenames(subjects_dir, subject)
 
-    info_fif_file = get_coreg_filenames(subjects_dir, subject)["info_fif_file"]
-
-    # Note, forward model is done in head space:
-    head_scaledmri_trans_file = get_coreg_filenames(subjects_dir, subject)["head_scaledmri_t_file" ]
-
-    # Src should be in MRI space. Let's just check that is the case
+    # src should be in MRI space. Let's just check that is the case
     if src[0]["coord_frame"] != FIFF.FIFFV_COORD_MRI:
         raise RuntimeError("src is not in MRI coordinates")
 
+    # --------------------------------------------
+    # Setup main MNE call to make_forward_solution
+
+    # The forward model is done in head space
     # We need the transformation from MRI to HEAD coordinates (or vice versa)
+    head_scaledmri_trans_file = filenames["head_scaledmri_t_file" ]
     if isinstance(head_scaledmri_trans_file, str):
         head_mri_t = read_trans(head_scaledmri_trans_file)
     else:
         head_mri_t = head_scaledmri_trans_file
 
     # RHINO does everything in mm, so need to convert it to metres which is what MNE expects.
-    # To change units on an xform, just need to change the translation part and leave the rotation alone:
+    # To change units on an xform, just need to change the translation part and leave the rotation alone
     head_mri_t["trans"][0:3, -1] = head_mri_t["trans"][0:3, -1] / 1000
 
+    # Get bem solution
     if isinstance(bem, str):
         bem = read_bem_solution(bem)
     else:
         if not isinstance(bem, ConductorModel):
             raise TypeError("bem must be a string or ConductorModel")
-
         bem = bem.copy()
 
-    for ii in range(len(bem["surfs"])):
-        bem["surfs"][ii]["tris"] = bem["surfs"][ii]["tris"].astype(int)
+    for i in range(len(bem["surfs"])):
+        bem["surfs"][i]["tris"] = bem["surfs"][i]["tris"].astype(int)
 
+    # Load fif info
+    info_fif_file = filenames["info_fif_file"]
     info = read_info(info_fif_file)
 
     # -------------
     # Main MNE call
+
     fwd = make_forward_solution(
         info,
         trans=head_mri_t,
@@ -241,17 +243,7 @@ def setup_volume_source_space(subjects_dir, subject, gridstep=5, mindist=5.0, ex
 
     where they are in native MRI space in metres.
     """
-
-    pos = int(gridstep)
-
-    coreg_filenames = get_coreg_filenames(subjects_dir, subject)
-
-    # ---------------------------------------------------------------------------------------------------------------
-    # Move the surfaces to where MNE expects to find them for the forward modelling, see make_bem_model in mne/bem.py
-
-    # First make sure bem directory exists:
-    bem_dir_name = op.join(subjects_dir, subject, "bem")
-    os.makedirs(bem_dir_name, exist_ok=True)
+    filenames = get_coreg_filenames(subjects_dir, subject)
 
     # Note that due to the unusal naming conventions used by BET and MNE:
     # - bet_inskull_*_file is actually the brain surface
@@ -274,40 +266,44 @@ def setup_volume_source_space(subjects_dir, subject, gridstep=5, mindist=5.0, ex
     #
     # To be continued... ?
 
+    # ---------------------------------------------------------------------------------------------------------------
+    # Move the surfaces to where MNE expects to find them for the forward modelling, see make_bem_model in mne/bem.py
+
+    # First make sure bem directory exists
+    bem_dir = op.join(subjects_dir, subject, "bem")
+    os.makedirs(bem_dir, exist_ok=True)
+
     # Note that the coreg surf files are in scaled MRI space
-    verts, tris = read_surface(coreg_filenames["bet_inskull_surf_file"])
+    verts, tris = read_surface(filenames["bet_inskull_surf_file"])
     tris = tris.astype(int)
-    write_surface(op.join(bem_dir_name, "inner_skull.surf"), verts, tris, file_format="freesurfer", overwrite=True)
+    write_surface(op.join(bem_dir, "inner_skull.surf"), verts, tris, file_format="freesurfer", overwrite=True)
     log_or_print("Using bet_inskull_surf_file for single shell surface")
 
-    verts, tris = read_surface(coreg_filenames["bet_outskull_surf_file"])
+    verts, tris = read_surface(filenames["bet_outskull_surf_file"])
     tris = tris.astype(int)
-    write_surface(op.join(bem_dir_name, "outer_skull.surf"), verts, tris, file_format="freesurfer", overwrite=True)
+    write_surface(op.join(bem_dir, "outer_skull.surf"), verts, tris, file_format="freesurfer", overwrite=True)
 
-    verts, tris = read_surface(coreg_filenames["bet_outskin_surf_file"])
+    verts, tris = read_surface(filenames["bet_outskin_surf_file"])
     tris = tris.astype(int)
-    write_surface(op.join(bem_dir_name, "outer_skin.surf"), verts, tris, file_format="freesurfer", overwrite=True)
+    write_surface(op.join(bem_dir, "outer_skin.surf"), verts, tris, file_format="freesurfer", overwrite=True)
 
     # ------------------------------------------------
     # Setup main MNE call to _make_volume_source_space
 
-    surface = op.join(subjects_dir, subject, "bem", "inner_skull.surf")
+    pos = float(int(gridstep))
+    pos /= 1000.0  # convert pos to m from mm for MNE
 
-    pos = float(pos)
-    pos /= 1000.0  # convert pos to m from mm for MNE call
+    vol_info = rhino_utils._get_vol_info_from_nii(filenames["smri_file"])
 
-    # -------------------------------------------------------------------------
-
-    vol_info = rhino_utils._get_vol_info_from_nii(coreg_filenames["smri_file"])
-
+    surface = op.join(bem_dir, "inner_skull.surf")
     surf = read_surface(surface, return_dict=True)[-1]
-
     surf = deepcopy(surf)
     surf["rr"] *= 1e-3  # must be in metres for MNE call
 
-    # Main MNE call to _make_volume_source_space
-    sp = _make_volume_source_space(surf, pos, exclude, mindist, coreg_filenames["smri_file"], None, vol_info=vol_info, single_volume=False)
+    # -------------
+    # Main MNE call
 
+    sp = _make_volume_source_space(surf, pos, exclude, mindist, filenames["smri_file"], None, vol_info=vol_info, single_volume=False)
     sp[0]["type"] = "vol"
 
     # ----------------------
@@ -315,10 +311,8 @@ def setup_volume_source_space(subjects_dir, subject, gridstep=5, mindist=5.0, ex
 
     sp = _complete_vol_src(sp, subject)
 
-    # add dummy mri_ras_t and vox_mri_t transforms as these are needed for the
-    # forward model to be saved (for some reason)
+    # Add dummy mri_ras_t and vox_mri_t transforms as these are needed for the forward model to be saved (for some reason)
     sp[0]["mri_ras_t"] = Transform("mri", "ras")
-
     sp[0]["vox_mri_t"] = Transform("mri_voxel", "mri")
 
     if sp[0]["coord_frame"] != FIFF.FIFFV_COORD_MRI:
