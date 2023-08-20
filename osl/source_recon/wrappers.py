@@ -197,7 +197,7 @@ def coregister(
         display_outskin_with_nose=False,
         filename=f"{coreg_dir}/coreg.html",
     )
-    coreg_filename = f"{coreg_dir}/coreg.html".replace("{src_dir}/", "")
+    coreg_filename = f"{coreg_dir}/coreg.html".replace(f"{src_dir}/", "")
 
     # Save info for the report
     src_report.add_to_data(

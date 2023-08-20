@@ -8,7 +8,10 @@
 import os
 import os.path as op
 import subprocess
+import pickle
 from pathlib import Path
+from glob import glob
+from shutil import copy
 
 import numpy as np
 from sklearn.neighbors import NearestNeighbors
@@ -1092,3 +1095,194 @@ def _transform_bet_surfaces(flirt_xform_file, mne_xform_file, filenames, smri_fi
             op.join(filenames["basedir"], mesh_name + ".nii.gz"),
             mne_xform_file,
         )
+
+
+def extract_rhino_files(old_subjects_dir, new_subjects_dir, subjects="all", exclude=None):
+    """Extract RHINO files.
+
+    This function extracts surfaces and coregistration files calculated in a previous run.
+
+    Parameters
+    ----------
+    old_subjects_dir : str
+        Subjects directory created with an older version of OSL.
+    new_subjects_dir : str
+        New directory to create.
+    subjects : str or list
+        Subjects to include. Defaults to 'all'.
+    exclude : str or list
+        Subjects to exclude.
+    """
+    # Avoid circular imports
+    from osl.source_recon.rhino import plot_surfaces, coreg_display
+    from osl.report import src_report
+
+    # Validation
+    if exclude is None:
+        exclude = []
+
+    if isinstance(exclude, str):
+        exclude = [exclude]
+
+    if isinstance(subjects, str):
+        if subjects != "all":
+            subjects = [subjects]
+
+    # Get subjects to extract RHINO files from
+    subjects_to_copy = []
+    for subject_dir in sorted(glob(old_subjects_dir + "/*")):
+        subject_name = Path(subject_dir).name
+        if (subject_name in ["report", "logs"] + exclude) or (subjects != "all" and subject_name not in subjects):
+            continue
+        subjects_to_copy.append(subject_name)
+
+    # --------
+    # Surfaces
+
+    files = [
+        "completed.txt",
+        "inskull_mesh.vtk",
+        "mni_mri-trans.fif",
+        "outskin_mesh.vtk",
+        "outskull_mesh.nii.gz",
+        "smri.nii.gz",
+        "inskull_mesh.nii.gz",
+        "mni2mri_flirt_xform.txt",
+        "outskin_mesh.nii.gz",
+        "outskin_plus_nose_mesh.nii.gz",
+        "outskull_mesh.vtk",
+    ]
+
+    for subject in subjects_to_copy:
+        old_dir = f"{old_subjects_dir}/{subject}/rhino/surfaces"
+        new_dir = f"{new_subjects_dir}/{subject}/rhino/surfaces"
+        os.makedirs(new_dir, exist_ok=True)
+
+        # Look for each file
+        for file in files:
+            old_file = f"{old_dir}/{file}"
+            new_file = f"{new_dir}/{file}"
+
+            # Copy file if it exists
+            if op.exists(old_file):
+                copy(old_file, new_file)
+
+            # Special case (okay if missing)
+            elif file == "mni2mri_flirt_xform.txt":
+                old_file = old_file.replace("xform", "xform_file")
+                if op.exists(old_file):
+                    copy(old_file, new_file)
+
+            # File is missing
+            else:
+                raise FileNotFoundError(old_file)
+
+        # Data from old report
+        old_report_data = pickle.load(open(f"{old_subjects_dir}/{subject}/report_data.pkl", "rb"))
+
+        # Create surfaces plots
+        include_nose = old_report_data["include_nose"]
+        surface_plots = plot_surfaces(new_subjects_dir, subject, include_nose)
+        surface_plots = [s.replace(f"{new_subjects_dir}/", "") for s in surface_plots]
+
+        # Save info for report
+        src_report.add_to_data(
+            f"{new_subjects_dir}/{subject}/report_data.pkl",
+            {
+                "compute_surfaces": True,
+                "include_nose": include_nose,
+                "do_mri2mniaxes_xform": old_report_data["do_mri2mniaxes_xform"],
+                "surface_plots": surface_plots,
+            },
+        )
+
+    # --------------
+    # Coregistration
+
+    files = [
+        "info-raw.fif",
+        "polhemus_lpa.txt",
+        "polhemus_rpa.txt",
+        "polhemus_nasion.txt",
+        "polhemus_headshape.txt",
+        "smri_lpa.txt",
+        "smri_rpa.txt",
+        "smri_nasion.txt",
+        "head_mri-trans.fif",
+        "head_scaledmri-trans.fif",
+        "mrivoxel_scaledmri_t_file-trans.fif",
+        "scaled_outskin_plus_nose_mesh.nii.gz",
+        "scaled_outskin_mesh.nii.gz",
+        "scaled_outskull_mesh.nii.gz",
+        "scaled_inskull_mesh.nii.gz",
+        "scaled_inskull_surf.surf",
+        "scaled_outskin_surf.surf",
+        "scaled_outskull_surf.surf",
+        "scaled_outskin_mesh.vtk",
+        "scaled_outskull_mesh.vtk",
+        "scaled_inskull_mesh.vtk",
+        "scaled_smri.nii.gz",
+    ]
+
+    for subject in subjects_to_copy:
+        old_dir = f"{old_subjects_dir}/{subject}/rhino/coreg"
+        new_dir = f"{new_subjects_dir}/{subject}/rhino/coreg"
+        os.makedirs(new_dir, exist_ok=True)
+
+        # Copy each file if it exists
+        for file in files:
+            old_file = f"{old_dir}/{file}"
+            new_file = f"{new_dir}/{file}"
+            if op.exists(old_file):
+                copy(old_file, new_file)
+            else:
+                raise FileNotFoundError(old_file)
+
+        # Special case
+        std_brains = glob(f"{old_dir}/MNI152_T1_*_brain.nii.gz")
+        for std_brain in std_brains:
+            copy(std_brain, std_brain.replace(old_dir, new_dir))
+
+        # Save plot
+        coreg_display(
+            subjects_dir=new_subjects_dir,
+            subject=subject,
+            display_outskin_with_nose=False,
+            filename=f"{new_dir}/coreg.html",
+        )
+        coreg_filename = f"{new_dir}/coreg.html".replace(f"{new_subjects_dir}/", "")
+
+        # Data from old report
+        old_report_data = pickle.load(open(f"{old_subjects_dir}/{subject}/report_data.pkl", "rb"))
+
+        # Save info for the report
+        src_report.add_to_data(
+            f"{new_subjects_dir}/{subject}/report_data.pkl",
+            {
+                "coregister": True,
+                "use_headshape": old_report_data["use_headshape"],
+                "use_nose": old_report_data["use_nose"],
+                "already_coregistered": old_report_data.pop("already_coregistered", None),
+                "allow_smri_scaling": old_report_data.pop("allow_smri_scaling", None),
+                "n_init_coreg": old_report_data.pop("n_init", None),
+                "fid_err": old_report_data.pop("fid_err", None),
+                "coreg_plot": coreg_filename,
+            },
+        )
+
+    # ------
+    # Report
+
+    # Generate report data for each subject
+    reportdir = f"{new_subjects_dir}/report"
+    for subject in subjects_to_copy:
+        src_report.gen_html_data({"source_recon": [{"Extracted RHINO Files From": f" {old_subjects_dir} "}]}, new_subjects_dir, subject, reportdir)
+
+    # Generate subjects report
+    src_report.gen_html_page(reportdir)
+
+    # Generate summary report
+    if src_report.gen_html_summary(reportdir):
+        log_or_print("******************************" + "*" * len(str(reportdir)))
+        log_or_print(f"* REMEMBER TO CHECK REPORT: {reportdir} *")
+        log_or_print("******************************" + "*" * len(str(reportdir)))
