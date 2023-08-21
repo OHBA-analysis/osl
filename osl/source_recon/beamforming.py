@@ -296,18 +296,16 @@ def get_recon_timeseries(subjects_dir, subject, coord_mni, recon_timeseries_head
     surfaces_filenames = rhino_files["surf"]
     coreg_filenames = rhino_files["coreg"]
 
-    # get coord_mni in mri space
+    # Get coord_mni in mri space
     mni_mri_t = rhino_utils.read_trans(surfaces_filenames["mni_mri_t_file"])
     coord_mri = rhino_utils.xform_points(mni_mri_t["trans"], coord_mni)
 
-    # Get hold of coords of points reconstructed to.
-    # Note, MNE forward model is done in head space in metres.
-    # RHINO does everything in mm
+    # Get hold of coords of points reconstructed to. Note, MNE forward model is done in head space in metres. RHINO does everything in mm
     fwd = read_forward_solution(rhino_files["fwd_model"])
     vs = fwd["src"][0]
     recon_coords_head = vs["rr"][vs["vertno"]] * 1000  # in mm
 
-    # convert coords_head from head to mri space to get index of reconstructed coordinate nearest to coord_mni
+    # Convert coords_head from head to mri space to get index of reconstructed coordinate nearest to coord_mni
     head_scaledmri_t = rhino_utils.read_trans(coreg_filenames["head_scaledmri_t_file"])
     recon_coords_scaledmri = rhino_utils.xform_points(head_scaledmri_t["trans"], recon_coords_head.T).T
 
@@ -361,6 +359,7 @@ def transform_recon_timeseries(
 
     # -------------------------------------------------------------------------------------
     # Get hold of coords of points reconstructed to
+    #
     # Note, MNE forward model is done in head space in metres. RHINO does everything in mm.
     fwd = read_forward_solution(rhino_files["fwd_model"])
     vs = fwd["src"][0]
@@ -368,7 +367,7 @@ def transform_recon_timeseries(
 
     # ----------------------------
     if spatial_resolution is None:
-        # estimate gridstep from forward model
+        # Estimate gridstep from forward model
         rr = fwd["src"][0]["rr"]
 
         store = []
@@ -381,10 +380,9 @@ def transform_recon_timeseries(
     log_or_print(f"spatial_resolution = {spatial_resolution} mm")
 
     if reference_brain == "mni":
-        # reference is mni stdbrain
+        # Reference is mni stdbrain
 
-        # convert recon_coords_head from head to mni space
-        # head_mri_t_file xform is to unscaled MRI
+        # Convert recon_coords_head from head to mni space, head_mri_t_file xform is to unscaled MRI
         head_mri_t = rhino_utils.read_trans(coreg_filenames["head_mri_t_file"])
         recon_coords_mri = rhino_utils.xform_points(head_mri_t["trans"], recon_coords_head.T).T
 
@@ -398,7 +396,7 @@ def transform_recon_timeseries(
         reference_brain_resampled = op.join(coreg_filenames["basedir"], "MNI152_T1_{}mm_brain.nii.gz".format(spatial_resolution))
 
     elif reference_brain == "unscaled_mri":
-        # reference is unscaled smri
+        # Reference is unscaled smri
 
         # convert recon_coords_head from head to mri space
         head_mri_t = rhino_utils.read_trans(coreg_filenames["head_mri_t_file"])
@@ -410,9 +408,9 @@ def transform_recon_timeseries(
         reference_brain_resampled = reference_brain.replace(".nii.gz", "_{}mm.nii.gz".format(spatial_resolution))
 
     elif reference_brain == "mri":
-        # reference is scaled smri
+        # Reference is scaled smri
 
-        # convert recon_coords_head from head to mri space
+        # Convert recon_coords_head from head to mri space
         head_scaledmri_t = rhino_utils.read_trans(coreg_filenames["head_scaledmri_t_file"])
         recon_coords_out = rhino_utils.xform_points(head_scaledmri_t["trans"], recon_coords_head.T).T
 
@@ -427,13 +425,13 @@ def transform_recon_timeseries(
     # ---------------------------------------------------------------------
     # Get coordinates from reference brain at resolution spatial_resolution
 
-    # create std brain of the required resolution
+    # Create std brain of the required resolution
     rhino_utils.system_call("flirt -in {} -ref {} -out {} -applyisoxfm {}".format(reference_brain, reference_brain, reference_brain_resampled, spatial_resolution))
 
     coords_out, vals = rhino_utils.niimask2mmpointcloud(reference_brain_resampled)
 
     # --------------------------------------------------------------
-    # for each mni_coords_out find nearest coord in recon_coords_out
+    # For each mni_coords_out find nearest coord in recon_coords_out
 
     recon_timeseries_out = np.zeros(np.insert(recon_timeseries.shape[1:], 0, coords_out.shape[1]))
 
@@ -489,6 +487,7 @@ def transform_leadfield(
 
     # -------------------------------------------------------------------------------------
     # Get hold of coords of points reconstructed to.
+    #
     # Note, MNE forward model is done in head space in metres. RHINO does everything in mm.
     fwd = read_forward_solution(rhino_files["fwd_model"], verbose = verbose)
     vs = fwd["src"][0]
@@ -496,7 +495,7 @@ def transform_leadfield(
 
     # ----------------------------
     if spatial_resolution is None:
-        # estimate gridstep from forward model
+        # Estimate gridstep from forward model
         rr = fwd["src"][0]["rr"]
 
         store = []
@@ -510,8 +509,7 @@ def transform_leadfield(
     if reference_brain == "mni":
         # Reference is mni stdbrain
 
-        # Convert recon_coords_head from head to mni space
-        # head_mri_t_file xform is to unscaled MRI
+        # Convert recon_coords_head from head to mni space, head_mri_t_file xform is to unscaled MRI
         head_mri_t = rhino_utils.read_trans(coreg_filenames["head_mri_t_file"])
         recon_coords_mri = rhino_utils.xform_points(head_mri_t["trans"], recon_coords_head.T).T
 

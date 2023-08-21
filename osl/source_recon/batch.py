@@ -81,7 +81,7 @@ def find_func(method, extra_funcs):
         if np.max(func_ind) > -1:
             func = extra_funcs[np.argmax(func_ind)]
 
-    # Look in osl.source_recon.wrappers
+    # Look in osl.source_recon.wrappers
     if func is None and hasattr(wrappers, method):
         func = getattr(wrappers, method)
 
@@ -166,7 +166,7 @@ def run_src_chain(
     if doing_coreg and smri_file is None:
         raise ValueError("smri_file must be passed if we're doing coregistration.")
 
-    # MAIN BLOCK - Run source reconstruction and catch any exceptions
+    # MAIN BLOCK - Run source reconstruction and catch any exceptions
     try:
         for stage in deepcopy(config["source_recon"]):
             method, userargs = next(iter(stage.items()))
