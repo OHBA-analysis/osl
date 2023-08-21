@@ -1191,7 +1191,7 @@ def extract_rhino_files(old_subjects_dir, new_subjects_dir, subjects="all", excl
             {
                 "compute_surfaces": True,
                 "include_nose": include_nose,
-                "do_mri2mniaxes_xform": old_report_data["do_mri2mniaxes_xform"],
+                "do_mri2mniaxes_xform": old_report_data.pop("do_mri2mniaxes_xform", None),
                 "surface_plots": surface_plots,
             },
         )
