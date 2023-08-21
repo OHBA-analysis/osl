@@ -92,7 +92,6 @@ def make_lcmv(
     inversion="matrix",
     verbose=None,
     save_filters=False,
-    save_figs=False,
 ):
     """Compute LCMV spatial filter.
 
@@ -118,8 +117,6 @@ def make_lcmv(
         Restricts the LCMV solution to a given label.
     save_filters : bool
         Should we save the LCMV beamforming filter?
-    save_figs : bool
-        Should we save figures?
 
     Returns
     -------
@@ -194,15 +191,38 @@ def make_lcmv(
         log_or_print(f"saving {beamforming_files['filters_file']}")
         filters.save(beamforming_files["filters_file"], overwrite=True)
 
-    if save_figs:
-        fig_cov, fig_svd = filters["data_cov"].plot(data.info, show=False, verbose=verbose)
-        fig_cov.savefig(beamforming_files["filters_plot_cov"], dpi=150)
-        fig_svd.savefig(beamforming_files["filters_plot_svd"], dpi=150)
-        plt.close("all")
-
     log_or_print("*** OSL MAKE LCMV COMPLETE ***")
 
     return filters
+
+
+def make_plots(subjects_dir, subject, filters, data):
+    """Plot LCMV beamforming filters.
+
+    Parameters
+    ----------
+    subjects_dir : string
+        Directory containing the subject directories.
+    subject : string
+        Subject name.
+    filters : mne.beamformer.Beamformer
+        Filters to plot.
+    data : mne.Raw or mne.Epochs
+        Data used to create the filters.
+
+    Returns
+    -------
+    filters_cov_plot : str
+        Path to covariance plot.
+    filters_svd_plot : str
+        Path to eigenspectrum plot.
+    """
+    beamforming_files = get_beamforming_filenames(subjects_dir, subject)
+    fig_cov, fig_svd = filters["data_cov"].plot(data.info, show=False, verbose=False)
+    fig_cov.savefig(beamforming_files["filters_plot_cov"], dpi=150)
+    fig_svd.savefig(beamforming_files["filters_plot_svd"], dpi=150)
+    plt.close("all")
+    return beamforming_files["filters_plot_cov"], beamforming_files["filters_plot_svd"]
 
 
 def load_lcmv(subjects_dir, subject):

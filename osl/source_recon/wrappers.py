@@ -463,7 +463,7 @@ def beamform(
     logger.info("beamforming.make_lcmv")
     logger.info(f"chantypes: {chantypes}")
     logger.info(f"rank: {rank}")
-    beamforming.make_lcmv(
+    filters = beamforming.make_lcmv(
         subjects_dir=src_dir,
         subject=subject,
         data=data,
@@ -471,8 +471,12 @@ def beamform(
         weight_norm="nai",
         rank=rank,
         save_filters=True,
-        save_figs=True,
     )
+
+    # Make plots
+    filters_cov_plot, filters_svd_plot = beamforming.make_plots(src_dir, subject, filters, data)
+    filters_cov_plot = filters_cov_plot.replace(f"{src_dir}/", "")
+    filters_svd_plot = filters_svd_plot.replace(f"{src_dir}/", "")
 
     # Save info for the report
     src_report.add_to_data(
@@ -482,8 +486,8 @@ def beamform(
             "chantypes": chantypes,
             "rank": rank,
             "freq_range": freq_range,
-            "filters_cov_plot": f"{subject}/beamform/filters_cov.png",
-            "filters_svd_plot": f"{subject}/beamform/filters_svd.png",
+            "filters_cov_plot": filters_cov_plot,
+            "filters_svd_plot": filters_svd_plot,
         },
     )
 
@@ -738,8 +742,12 @@ def beamform_and_parcellate(
         weight_norm="nai",
         rank=rank,
         save_filters=True,
-        save_figs=True,
     )
+
+    # Make plots
+    filters_cov_plot, filters_svd_plot = beamforming.make_plots(src_dir, subject, filters, chantype_data)
+    filters_cov_plot = filters_cov_plot.replace(f"{src_dir}/", "")
+    filters_svd_plot = filters_svd_plot.replace(f"{src_dir}/", "")
 
     # Apply beamforming
     bf_data = beamforming.apply_lcmv(chantype_data, filters)
@@ -816,8 +824,8 @@ def beamform_and_parcellate(
             "chantypes": chantypes,
             "rank": rank,
             "freq_range": freq_range,
-            "filters_cov_plot": f"{subject}/beamform/filters_cov.png",
-            "filters_svd_plot": f"{subject}/beamform/filters_svd.png",
+            "filters_cov_plot": filters_cov_plot,
+            "filters_svd_plot": filters_svd_plot,
             "parcellation_file": parcellation_file,
             "method": method,
             "orthogonalisation": orthogonalisation,
