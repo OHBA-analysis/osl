@@ -1097,7 +1097,7 @@ def _transform_bet_surfaces(flirt_xform_file, mne_xform_file, filenames, smri_fi
         )
 
 
-def extract_rhino_files(old_subjects_dir, new_subjects_dir, subjects="all", exclude=None):
+def extract_rhino_files(old_subjects_dir, new_subjects_dir, subjects="all", exclude=None, gen_report=True):
     """Extract RHINO files.
 
     This function extracts surfaces and coregistration files calculated in a previous run.
@@ -1112,6 +1112,8 @@ def extract_rhino_files(old_subjects_dir, new_subjects_dir, subjects="all", excl
         Subjects to include. Defaults to 'all'.
     exclude : str or list
         Subjects to exclude.
+    gen_report bool
+        Should we generate a report?
     """
     # Avoid circular imports
     from osl.source_recon.rhino import plot_surfaces, coreg_display
@@ -1130,7 +1132,7 @@ def extract_rhino_files(old_subjects_dir, new_subjects_dir, subjects="all", excl
 
     # Get subjects to extract RHINO files from
     subjects_to_copy = []
-    for subject_dir in sorted(glob(old_subjects_dir + "/*")):
+    for subject_dir in sorted(glob(f"{old_subjects_dir}/*")):
         subject_name = Path(subject_dir).name
         if (subject_name in ["report", "logs"] + exclude) or (subjects != "all" and subject_name not in subjects):
             continue
@@ -1273,16 +1275,17 @@ def extract_rhino_files(old_subjects_dir, new_subjects_dir, subjects="all", excl
     # ------
     # Report
 
-    # Generate report data for each subject
-    reportdir = f"{new_subjects_dir}/report"
-    for subject in subjects_to_copy:
-        src_report.gen_html_data({"source_recon": [{"Extracted RHINO Files From": f" {old_subjects_dir} "}]}, new_subjects_dir, subject, reportdir)
+    if gen_report:
+        # Generate report data for each subject
+        reportdir = f"{new_subjects_dir}/report"
+        for subject in subjects_to_copy:
+            src_report.gen_html_data({"source_recon": [{"Extracted RHINO Files From": f" {old_subjects_dir} "}]}, new_subjects_dir, subject, reportdir)
 
-    # Generate subjects report
-    src_report.gen_html_page(reportdir)
+        # Generate subjects report
+        src_report.gen_html_page(reportdir)
 
-    # Generate summary report
-    if src_report.gen_html_summary(reportdir):
-        log_or_print("******************************" + "*" * len(str(reportdir)))
-        log_or_print(f"* REMEMBER TO CHECK REPORT: {reportdir} *")
-        log_or_print("******************************" + "*" * len(str(reportdir)))
+        # Generate summary report
+        if src_report.gen_html_summary(reportdir):
+            log_or_print("******************************" + "*" * len(str(reportdir)))
+            log_or_print(f"* REMEMBER TO CHECK REPORT: {reportdir} *")
+            log_or_print("******************************" + "*" * len(str(reportdir)))

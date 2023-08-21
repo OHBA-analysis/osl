@@ -991,3 +991,35 @@ def fix_sign_ambiguity(
             "metrics": metrics,
         },
     )
+
+
+# --------------
+# Other wrappers
+
+
+def extract_rhino_files(
+    src_dir,
+    subject,
+    preproc_file,
+    smri_file,
+    epoch_file,
+    old_src_dir,
+):
+    """Wrapper function for extracting RHINO files from a previous run.
+
+    Parameters
+    ----------
+    src_dir : str
+        Path to the NEW source reconstruction directory.
+    subject : str
+        Subject name/id.
+    preproc_file : str
+        Path to the preprocessed fif file. Not used.
+    smri_file : str
+        Path to the T1 weighted structural MRI file to use in source reconstruction. Not used.
+    epoch_file : str
+        Path to epoched preprocessed fif file. Not used.
+    old_src_dir : str
+        OLD source reconstruction directory to copy RHINO files to.
+    """
+    rhino.utils.extract_rhino_files(old_src_dir, src_dir, subjects=subject, gen_report=False)
