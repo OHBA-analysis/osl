@@ -9,7 +9,7 @@ from osl import source_recon
 
 # Setup paths to epoched data files
 event_type = "internal_disp"
-epoch_dir = f"/ohba/pi/knobre/cgohil/dg_int_ext/epoch/{event_type}"
+epoch_dir = f"/ohba/pi/knobre/cgohil/int_ext/epoch/{event_type}"
 subjects = ["s01_block_01", "s01_block_02"]
 
 run_ids = []
@@ -51,7 +51,7 @@ config = """
 source_recon.setup_fsl("/opt/ohba/fsl/6.0.5")
 
 # Output directory
-src_dir = f"/ohba/pi/knobre/cgohil/dg_int_ext/src/{event_type}"
+src_dir = f"/ohba/pi/knobre/cgohil/int_ext/src/{event_type}"
 
 # Run source reconstruction
 source_recon.run_src_batch(

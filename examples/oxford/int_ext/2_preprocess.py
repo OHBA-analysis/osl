@@ -19,10 +19,10 @@ config = """
 # Setup paths to maxfiltered data files
 inputs = []
 for subject in ["s01_block_01", "s01_block_02"]:
-    inputs.append(f"/ohba/pi/knobre/cgohil/dg_int_ext/maxfilter/InEx_{subject}_tsss.fif")
+    inputs.append(f"/ohba/pi/knobre/cgohil/int_ext/maxfilter/InEx_{subject}_tsss.fif")
 
 # Directory to save the preprocessed data to
-preproc_dir = "/ohba/pi/knobre/cgohil/dg_int_ext/preproc"
+preproc_dir = "/ohba/pi/knobre/cgohil/int_ext/preproc"
 
 # Run batch preprocessing
 preprocessing.run_proc_batch(

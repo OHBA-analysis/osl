@@ -8,6 +8,9 @@
 
   <div class="flex-child" style="flex: 1">
     <div class="tab" style="display: grid">
+        {% if data.compute_surfaces %}
+            <button class="button1" onclick="openTab(event, '{{ data.fif_id }}_compute_surfaces', this.id)" style="border-top-style: solid">Surfaces</button>
+        {% endif %}
         {% if data.coregister %}
             <button class="button1" onclick="openTab(event, '{{ data.fif_id }}_coregistration', this.id)" style="border-top-style: solid">Coregistration</button>
         {% endif %}
@@ -21,6 +24,33 @@
   </div>
 
   <div class="flex-child" style="flex: 5; padding-left: 25px">
+
+    {% if data.compute_surfaces %}
+        <div class="tabpage" style='width: 100%' id={{ data.fif_id }}_compute_surfaces>
+            <h3>Surfaces</h3>
+            <div>Inskull</div>
+            <div style="width: 70%; margin: auto">
+                <img src="{{ data.plt_surfaces_inskull }}" alt="" style='max-width: 100%'/>
+            </div>
+            <br>
+            <div>Outskull</div>
+            <div style="width: 70%; margin: auto">
+                <img src="{{ data.plt_surfaces_outskull }}" alt="" style='max-width: 100%'/>
+            </div>
+            <br>
+            <div>Outskin</div>
+            <div style="width: 70%; margin: auto">
+                <img src="{{ data.plt_surfaces_outskin }}" alt="" style='max-width: 100%'/>
+            </div>
+            {% if data.plt_surfaces_outskin_plus_nose %}
+                <br>
+                <div>Outskin plus nose</div>
+                <div style="width: 70%; margin: auto">
+                    <img src="{{ data.plt_surfaces_outskin_plus_nose }}" alt="" style='max-width: 100%'/>
+                </div>
+            {% endif %}
+        </div>
+    {% endif %}
 
     {% if data.coregister %}
         <div class="tabpage" style='width: 100%' id={{ data.fif_id }}_coregistration>
@@ -40,12 +70,10 @@
     {% if data.beamform or data.beamform_and_parcellate %}
         <div class="tabpage" style='width: 100%; display: none' id={{ data.fif_id }}_beamforming>
             <h3>Beamforming</h3>
-            <div>
-                LCMV Filter
-            </div>
+            <div>LCMV Filter</div>
             <div style="width: 70%; margin: auto">
-                <img src="{{ data.plt_filter_cov }}" alt="" style='max-width: 100%'/>
-                <img src="{{ data.plt_filter_svd }}" alt="" style='max-width: 100%'/>
+                <img src="{{ data.plt_filters_cov }}" alt="" style='max-width: 100%'/>
+                <img src="{{ data.plt_filters_svd }}" alt="" style='max-width: 100%'/>
             </div>
         </div>
     {% endif %}
@@ -53,7 +81,12 @@
     {% if data.beamform_and_parcellate %}
         <div class="tabpage" style='width: 100%; display: none' id={{ data.fif_id }}_parcellation>
             <h3>Parcellation</h3>
-            <div style="width: 70%; margin: auto">
+            <div style="width: 50%; float: left">
+                <div>Power Spectral Density</div>
+                <img src="{{ data.plt_parc_psd }}" alt="" style='max-width: 100%'/>
+            </div>
+            <div style="width: 50%; float: right">
+                <div>Correlation</div>
                 <img src="{{ data.plt_parc_corr }}" alt="" style='max-width: 100%'/>
             </div>
         </div>
@@ -73,16 +106,19 @@ function openTab(event, figTag, button) {
     }
     // Show the current tab
     document.getElementById(figTag).style.display = "block";
+    if (figTag.includes('compute_surfaces')) {
+        currentButton = 0;
+    }
     if (figTag.includes('coregistration')) {
         iframe = document.getElementById(figTag.concat('_iframe'));
         iframe.src = iframe.getAttribute('data-src');
-        currentButton = 0;
-    }
-    if (figTag.includes('beamforming')) {
         currentButton = 1;
     }
-    if (figTag.includes('parcellation')) {
+    if (figTag.includes('beamforming')) {
         currentButton = 2;
+    }
+    if (figTag.includes('parcellation')) {
+        currentButton = 3;
     }
 }
 

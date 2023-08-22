@@ -25,10 +25,8 @@ def extract_polhemus_from_info(
 ):
     """Extract polhemus from FIF info.
 
-    Extract polhemus fids and headshape points from MNE raw.info and write them out
-    in the required file format for rhino (in head/polhemus space in mm). Should only
-    be used with MNE-derived .fif files that have the expected digitised points held
-    in info['dig'] of fif_file.
+    Extract polhemus fids and headshape points from MNE raw.info and write them out in the required file format for rhino (in head/polhemus space in mm).
+    Should only be used with MNE-derived .fif files that have the expected digitised points held in info['dig'] of fif_file.
 
     Parameters
     ----------
@@ -84,9 +82,7 @@ def extract_polhemus_from_info(
     np.savetxt(headshape_outfile, np.array(polhemus_headshape).T * 1000)
 
 
-def plot_polhemus_points(
-    txt_fnames, colors=None, scales=None, markers=None, alphas=None
-):
+def plot_polhemus_points(txt_fnames, colors=None, scales=None, markers=None, alphas=None):
     plt.figure()
     ax = plt.axes(projection="3d")
     for ss in range(len(txt_fnames)):
@@ -108,54 +104,37 @@ def plot_polhemus_points(
             marker = markers[ss]
 
         pnts = np.loadtxt(txt_fnames[ss])
-        ax.scatter(
-            pnts[0],
-            pnts[1],
-            pnts[2],
-            color=color,
-            s=scale,
-            alpha=alpha,
-            marker=marker,
-        )
+        ax.scatter(pnts[0], pnts[1], pnts[2], color=color, s=scale, alpha=alpha, marker=marker)
 
 def delete_headshape_points(recon_dir=None, subject=None, polhemus_headshape_file=None):
-
     '''
-    Shows an interactive figure of the polhemus derived headshape
-    points in polhemus space.
-    Points can be clicked on to delete them.
-    The figure should be closed upon completion, at which point
-    there is the option to save the deletions.
+    Shows an interactive figure of the polhemus derived headshape points in polhemus space. Points can be clicked on to delete them.
+    The figure should be closed upon completion, at which point there is the option to save the deletions.
 
     Parameters
     ----------
     subjects_dir : string
-        Directory containing the subject directories, in the 
-        directory structure used by RHINO:
+        Directory containing the subject directories, in the directory structure used by RHINO:
     subject : string
-        Subject directory name, in the directory structure used 
-        by RHINO:
+        Subject directory name, in the directory structure used by RHINO.
     polhemus_headshape_file: string
-        Full file path to get the polhemus_headshape_file from, 
-        and to save any changes to. Note that this is an npy file
-        containing the (3 x num_headshapepoints) numpy array of 
-        headshape points.
+        Full file path to get the polhemus_headshape_file from, and to save any changes to. Note that this is an npy file containing the
+        (3 x num_headshapepoints) numpy array of headshape points.
         
     Notes
     -----
     We can call this in two different ways, either:
 
     1) Specify the subjects_dir AND the subject directory in the 
-    directory structure used by RHINO:
+       directory structure used by RHINO:
     
-    delete_headshape_points(recon_dir=recon_dir, subject=subject)
+            delete_headshape_points(recon_dir=recon_dir, subject=subject)
     
     or:
     
-    2) Specify the full path to the .npy file containing the (3 x num_headshapepoints) 
-    numpy array of headshape points:
+    2) Specify the full path to the .npy file containing the (3 x num_headshapepoints) numpy array of headshape points:
     
-    delete_headshape_points(polhemus_headshape_file=polhemus_headshape_file)
+            delete_headshape_points(polhemus_headshape_file=polhemus_headshape_file)
     '''
 
     if recon_dir is not None and subject is not None:
@@ -179,9 +158,9 @@ def delete_headshape_points(recon_dir=None, subject=None, polhemus_headshape_fil
         ax.scatter(x, y, z, color=color, marker=marker, s=scale, alpha=alpha, picker=5)
         plt.draw()
 
-    x=list(polhemus_headshape_polhemus[0,:])
-    y=list(polhemus_headshape_polhemus[1,:])
-    z=list(polhemus_headshape_polhemus[2,:])
+    x = list(polhemus_headshape_polhemus[0,:])
+    y = list(polhemus_headshape_polhemus[1,:])
+    z = list(polhemus_headshape_polhemus[2,:])
 
     # Create scatter plot
     fig = plt.figure()
@@ -192,6 +171,7 @@ def delete_headshape_points(recon_dir=None, subject=None, polhemus_headshape_fil
     def on_click(event):
         # Get index of clicked point
         ind = event.ind
+
         # Remove selected points from data arrays
         print('Deleted: {}, {}, {}'.format(x[ind[0]], y[ind[0]], z[ind[0]]))
         sys.stdout.flush()
@@ -199,12 +179,12 @@ def delete_headshape_points(recon_dir=None, subject=None, polhemus_headshape_fil
         x.pop(ind[0])
         y.pop(ind[0])
         z.pop(ind[0])
+
         # Update scatter plot
         ax.cla()
         scatter_headshapes(ax, x, y, z)
 
     def on_press(event):
-
         if event.key == 'w':
             polhemus_headshape_polhemus_new = np.array([x, y, z])
             print("Num headshape points remaining={}".format(polhemus_headshape_polhemus_new.shape[1]))

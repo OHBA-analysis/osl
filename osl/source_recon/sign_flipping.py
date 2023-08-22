@@ -24,15 +24,13 @@ def _get_parc_chans(raw):
     Returns
     -------
     parc_chans : list of str or str
-        Parcel channel names. If no channels called 'parcel_X' are found in the
-        raw object then we return 'misc'.
+        Parcel channel names. If no channels called 'parcel_X' are found in the raw object then we return 'misc'.
     """
     # Parcel channels are those called 'parcel_X'
     parc_chans = [ch for ch in raw.ch_names if "parcel" in ch]
     if len(parc_chans) == 0:
-        # Old parc-raw.fif didn't use the 'parcel_X' naming convention
-        # for parcel channels, so we select all misc channels for
-        # backwards compatibility
+        # Old parc-raw.fif didn't use the 'parcel_X' naming convention for parcel channels,
+        # so we select all misc channels for backwards compatibility
         parc_chans = "misc"
     return parc_chans
 
@@ -48,8 +46,7 @@ def find_flips(
 ):
     """Find channels to flip.
 
-    We search for the channels to flip by randomly flipping them and saving the
-    flips that maximise the correlation of the covariance matrices between subjects.
+    We search for the channels to flip by randomly flipping them and saving the flips that maximise the correlation of the covariance matrices between subjects.
 
     Parameters
     ----------
@@ -71,11 +68,9 @@ def find_flips(
     Returns
     -------
     best_flips : numpy.ndarray
-        A (n_channels,) array of 1s and -1s indicating whether or not
-        to flip a channels.
+        A (n_channels,) array of 1s and -1s indicating whether or not to flip a channels.
     metrics : numpy.ndarray
-        Evaluation metric (correlation between covariance matrices) as a function
-        of iterations. Shape is (n_iter + 1,).
+        Evaluation metric (correlation between covariance matrices) as a function of iterations. Shape is (n_iter + 1,).
     """
     log_or_print("find_flips")
 
@@ -84,9 +79,7 @@ def find_flips(
 
     # Validation
     if max_flips > n_channels:
-        raise ValueError(
-            f"max_flips ({max_flips}) must be less than the number of channels ({n_channels})"
-        )
+        raise ValueError(f"max_flips ({max_flips}) must be less than the number of channels ({n_channels})")
 
     # Find the best channels to flip
     best_flips = np.ones(n_channels)
@@ -108,9 +101,7 @@ def find_flips(
         for j in iterator:
             new_flips = randomly_flip(flips, max_flips)
             new_cov = apply_flips_to_covariance(cov, new_flips, n_embeddings)
-            new_metric = covariance_matrix_correlation(
-                new_cov, template_cov, n_embeddings
-            )
+            new_metric = covariance_matrix_correlation(new_cov, template_cov, n_embeddings)
             if new_metric > metric:
                 # We've found an improved solution, let's save it
                 flips = new_flips
@@ -128,9 +119,7 @@ def find_flips(
     return best_flips, metrics
 
 
-def load_covariances(
-    parc_files, n_embeddings=1, standardize=True, loader=None, use_tqdm=True
-):
+def load_covariances(parc_files, n_embeddings=1, standardize=True, loader=None, use_tqdm=True):
     """Loads data and returns its covariance matrix.
 
     Parameters
@@ -164,22 +153,16 @@ def load_covariances(
         elif "raw.fif" in parc_files[i]:
             # We assume this is a parc-raw.fif file created in beamform_and_parcellated
             raw = mne.io.read_raw_fif(parc_files[i], verbose=False)
-            x = raw.get_data(
-                picks=_get_parc_chans(raw), reject_by_annotation="omit", verbose=False
-            )
+            x = raw.get_data(picks=_get_parc_chans(raw), reject_by_annotation="omit", verbose=False)
             x = x.T  # (channels, time) -> (time, channels)
         elif "epo.fif" in parc_files[i]:
             # We assume this is a parc-epo.fif file created in beamform_and_parcellated
             epochs = mne.read_epochs(parc_files[i], verbose=False)
-            x = epochs.get_data(
-                picks=_get_parc_chans(epochs)
-            )  # (epochs, channels, time)
+            x = epochs.get_data(picks=_get_parc_chans(epochs))  # (epochs, channels, time)
             x = np.swapaxes(x, 1, 2)
             x = x.reshape(-1, x.shape[-1])  # (time, channels)
         else:
-            raise ValueError(
-                "Don't know how to load the parcellated data. Please pass loader."
-            )
+            raise ValueError("Don't know how to load the parcellated data. Please pass loader.")
 
         # Prepare
         x = time_embed(x, n_embeddings)
@@ -195,17 +178,14 @@ def load_covariances(
 def find_template_subject(covs, diag_offset=0):
     """Find a good template subject to use to align dipoles.
 
-    We select the median subject after calculating the similarity between
-    the covariances of each subject.
+    We select the median subject after calculating the similarity between the covariances of each subject.
 
     Parameters
     ----------
     covs : numpy.ndarray
-        Covariance of each subject.
-        Shape much be (n_subjects, n_channels, n_channels).
+        Covariance of each subject. Shape much be (n_subjects, n_channels, n_channels).
     diag_offset : int
-        Offset to apply when getting the upper triangle of the covariance matrix
-        before calculating the correlation between covariances.
+        Offset to apply when getting the upper triangle of the covariance matrix before calculating the correlation between covariances.
 
     Returns
     -------
@@ -217,9 +197,7 @@ def find_template_subject(covs, diag_offset=0):
     metric = np.zeros([n_subjects, n_subjects])
     for i in trange(n_subjects, desc="Comparing subjects", ncols=98):
         for j in range(i + 1, n_subjects):
-            metric[i, j] = covariance_matrix_correlation(
-                covs[i], covs[j], diag_offset, mode="abs"
-            )
+            metric[i, j] = covariance_matrix_correlation(covs[i], covs[j], diag_offset, mode="abs")
             metric[j, i] = metric[i, j]
 
     # Get the median subject
@@ -282,9 +260,7 @@ def randomly_flip(flips, max_flips):
 
     # Select the channels to flip
     n_channels = flips.shape[0]
-    random_channels_to_flip = np.random.choice(
-        n_channels, size=n_channels_to_flip, replace=False
-    )
+    random_channels_to_flip = np.random.choice(n_channels, size=n_channels_to_flip, replace=False)
     new_flips = np.copy(flips)
     new_flips[random_channels_to_flip] *= -1
 
@@ -297,11 +273,9 @@ def apply_flips_to_covariance(cov, flips, n_embeddings=1):
     Parameters
     ----------
     cov : numpy.ndarray
-        Covariance matrix to apply flips to. Shape must be
-        (n_channels*n_embeddings, n_channels*n_embeddings).
+        Covariance matrix to apply flips to. Shape must be (n_channels*n_embeddings, n_channels*n_embeddings).
     flips : numpy.ndarray
-        Vector of 1s and -1s indicating whether or not to flip
-        a channels. Shape must be (n_channels,).
+        Vector of 1s and -1s indicating whether or not to flip a channels. Shape must be (n_channels,).
     n_embeddings : int
         Number of embeddings used when calculating the covariance.
 
@@ -310,9 +284,8 @@ def apply_flips_to_covariance(cov, flips, n_embeddings=1):
     cov : numpy.ndarray
         Flipped covariance matrix.
     """
-    # flips is a (n_channels,) array however the covariance matrix is
-    # (n_channels*n_embeddings, n_channels*n_embeddings), we repeat the
-    # flips vector to account for the extra channels due to time embedding
+    # flips is a (n_channels,) array however the covariance matrix is (n_channels*n_embeddings, n_channels*n_embeddings),
+    # we repeat the flips vector to account for the extra channels due to time embedding
     flips = np.repeat(flips, n_embeddings)[np.newaxis, ...]
     flips = flips.T @ flips
     return cov * flips
@@ -330,11 +303,10 @@ def apply_flips(src_dir, subject, flips, epoched=False):
     flips : numpy.ndarray
         Flips to apply.
     epoched : bool
-        Are we performing sign flipping on parc-raw.fif (epoched=False) or
-        parc-epo.fif files (epoched=True)?
+        Are we performing sign flipping on parc-raw.fif (epoched=False) or parc-epo.fif files (epoched=True)?
     """
     if epoched:
-        parc_file = op.join(src_dir, str(subject), "rhino", "parc-epo.fif")
+        parc_file = op.join(src_dir, str(subject), "parc", "parc-epo.fif")
         epochs = mne.read_epochs(parc_file, verbose=False)
         sflip_epochs = epochs.copy()
         sflip_epochs.load_data()
@@ -343,9 +315,7 @@ def apply_flips(src_dir, subject, flips, epoched=False):
         def flip(data):
             return data * flips[np.newaxis, :, np.newaxis]
 
-        sflip_epochs.apply_function(
-            flip, picks=_get_parc_chans(epochs), channel_wise=False
-        )
+        sflip_epochs.apply_function(flip, picks=_get_parc_chans(epochs), channel_wise=False)
 
         # Save
         outfile = op.join(src_dir, str(subject), "sflip_parc-epo.fif")
@@ -354,7 +324,7 @@ def apply_flips(src_dir, subject, flips, epoched=False):
 
     else:
         # Load parcellated data
-        parc_file = op.join(src_dir, str(subject), "rhino", "parc-raw.fif")
+        parc_file = op.join(src_dir, str(subject), "parc", "parc-raw.fif")
         raw = mne.io.read_raw_fif(parc_file, verbose=False)
         sflip_raw = raw.copy()
         sflip_raw.load_data()
@@ -389,16 +359,9 @@ def time_embed(x, n_embeddings):
     if n_embeddings % 2 == 0:
         raise ValueError("n_embeddings must be an odd number.")
 
-    te_shape = (
-        x.shape[0] - (n_embeddings - 1),
-        x.shape[1] * n_embeddings,
-    )
+    te_shape = (x.shape[0] - (n_embeddings - 1), x.shape[1] * n_embeddings)
 
-    return (
-        np.lib.stride_tricks.sliding_window_view(x=x, window_shape=te_shape[0], axis=0)
-        .T[..., ::-1]
-        .reshape(te_shape)
-    )
+    return np.lib.stride_tricks.sliding_window_view(x=x, window_shape=te_shape[0], axis=0).T[..., ::-1].reshape(te_shape)
 
 
 def std_data(x):

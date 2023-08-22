@@ -67,6 +67,7 @@ def gen_html_data(config, src_dir, subject, reportdir, logger=None):
     data["filename"] = subject
 
     # What have we done for this subject?
+    data["compute_surfaces"] = subject_data.pop("compute_surfaces", False)
     data["coregister"] = subject_data.pop("coregister", False)
     data["beamform"] = subject_data.pop("beamform", False)
     data["beamform_and_parcellate"] = subject_data.pop("beamform_and_parcellate", False)
@@ -85,25 +86,31 @@ def gen_html_data(config, src_dir, subject, reportdir, logger=None):
         data["metrics"] = subject_data["metrics"]
 
     # Copy plots
+    if "surface_plots" in subject_data:
+        for plot in subject_data["surface_plots"]:
+            surface = "surfaces_" + Path(plot).stem
+            data[f"plt_{surface}"] = f"{subject}/{surface}.png"
+            copy("{}/{}".format(src_dir, plot), "{}/{}/{}.png".format(reportdir, subject, surface))
+
     if "coreg_plot" in subject_data:
         data["plt_coreg"] = f"{subject}/coreg.html"
-        copy(subject_data["coreg_plot"], f"{reportdir}/{subject}/coreg.html")
+        copy("{}/{}".format(src_dir, subject_data["coreg_plot"]), "{}/{}/coreg.html".format(reportdir, subject))
 
-    if "filter_cov_plot" in subject_data:
-        data["plt_filter_cov"] = f"{subject}/filter_cov.png"
-        copy(subject_data["filter_cov_plot"], f"{reportdir}/{subject}/filter_cov.png")
+    if "filters_cov_plot" in subject_data:
+        data["plt_filters_cov"] = f"{subject}/filters_cov.png"
+        copy("{}/{}".format(src_dir, subject_data["filters_cov_plot"]), "{}/{}/filters_cov.png".format(reportdir, subject))
 
-    if "filter_svd_plot" in subject_data:
-        data["plt_filter_svd"] = f"{subject}/filter_svd.png"
-        copy(subject_data["filter_svd_plot"], f"{reportdir}/{subject}/filter_svd.png")
+    if "filters_svd_plot" in subject_data:
+        data["plt_filters_svd"] = f"{subject}/filters_svd.png"
+        copy("{}/{}".format(src_dir, subject_data["filters_svd_plot"]), "{}/{}/filters_svd.png".format(reportdir, subject))
 
-    if "filter_svd_plot" in subject_data:
-        data["plt_filter_svd"] = f"{subject}/filter_svd.png"
-        copy(subject_data["filter_svd_plot"], f"{reportdir}/{subject}/filter_svd.png")
+    if "parc_psd_plot" in subject_data:
+        data["plt_parc_psd"] = f"{subject}/parc_psd.png"
+        copy("{}/{}".format(src_dir, subject_data["parc_psd_plot"]), "{}/{}/parc_psd.png".format(reportdir, subject))
 
     if "parc_corr_plot" in subject_data:
         data["plt_parc_corr"] = f"{subject}/parc_corr.png"
-        copy(subject_data["parc_corr_plot"], f"{reportdir}/{subject}/parc_corr.png")
+        copy("{}/{}".format(src_dir, subject_data["parc_corr_plot"]), "{}/{}/parc_corr.png".format(reportdir, subject))
 
     # Save data in the report directory
     pickle.dump(data, open(f"{reportdir}/{subject}/data.pkl", "wb"))
@@ -120,9 +127,7 @@ def gen_html_page(reportdir):
     reportdir = Path(reportdir)
 
     # Subdirectories which contains plots for each fif file
-    subdirs = sorted(
-        [d.stem for d in Path(reportdir).iterdir() if d.is_dir()]
-    )
+    subdirs = sorted([d.stem for d in Path(reportdir).iterdir() if d.is_dir()])
 
     # Load HTML data
     data = []
@@ -180,9 +185,7 @@ def gen_html_summary(reportdir):
     reportdir = Path(reportdir)
 
     # Subdirectories which contains plots for each fif file
-    subdirs = sorted(
-        [d.stem for d in Path(reportdir).iterdir() if d.is_dir()]
-    )
+    subdirs = sorted([d.stem for d in Path(reportdir).iterdir() if d.is_dir()])
 
     # Load HTML data
     subject_data = []
@@ -190,9 +193,7 @@ def gen_html_summary(reportdir):
         subdir = Path(subdir)
         # Just generate the html page with the successful runs
         try:
-            subject_data.append(
-                pickle.load(open(reportdir / subdir / "data.pkl", "rb"))
-            )
+            subject_data.append(pickle.load(open(reportdir / subdir / "data.pkl", "rb")))
         except:
             pass
 
@@ -212,9 +213,7 @@ def gen_html_summary(reportdir):
     if data["coregister"]:
         subjects = np.array([d["filename"] for d in subject_data])
 
-        fid_err_table = {
-            "subjects": [], "nas_err": [], "lpa_err": [], "rpa_err": [],
-        }
+        fid_err_table = {"subjects": [], "nas_err": [], "lpa_err": [], "rpa_err": []}
         for d in subject_data:
             if "fid_err" in d:
                 if d["fid_err"] is not None:
@@ -222,7 +221,7 @@ def gen_html_summary(reportdir):
                     fid_err_table["nas_err"].append(np.round(d["fid_err"][0], decimals=2))
                     fid_err_table["lpa_err"].append(np.round(d["fid_err"][1], decimals=2))
                     fid_err_table["rpa_err"].append(np.round(d["fid_err"][2], decimals=2))
-        if len(fid_err_table["subjects"]) > 1:
+        if len(fid_err_table["subjects"]) > 0:
             data["coreg_table"] = tabulate(
                 np.c_[
                     fid_err_table["subjects"],

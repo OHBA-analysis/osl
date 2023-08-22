@@ -85,11 +85,7 @@ def convert_3dparc_to_4d(parcel3d_fname, parcel4d_fname, tmpdir, n_parcels):
     for pp in range(n_parcels):
         print(pp)
         vol_fname = op.join(tmpdir, "parc3d_vol" + str(pp) + ".nii.gz")
-        os.system(
-            "fslmaths {} -thr {} -uthr {} -min 1 {}".format(
-                parcel3d_fname, pp + 0.5, pp + 1.5, vol_fname
-            )
-        )
+        os.system("fslmaths {} -thr {} -uthr {} -min 1 {}".format(parcel3d_fname, pp + 0.5, pp + 1.5, vol_fname))
         vol_list_str = vol_list_str + "{} ".format(vol_fname)
 
     os.system("fslmerge -t {} {}".format(parcel4d_fname, vol_list_str))
@@ -108,11 +104,7 @@ def spatially_downsample(file_in, file_out, file_ref, spatial_res):
         new spatial res in mm
 
     """
-    os.system(
-        "flirt -in {} -ref {} -out {} -applyisoxfm {}".format(
-            file_in, file_ref, file_out, spatial_res
-        )
-    )
+    os.system("flirt -in {} -ref {} -out {} -applyisoxfm {}".format(file_in, file_ref, file_out, spatial_res))
 
 
 def append_4d_parcellation(file_in, file_out, file_append, parcel_indices=None):
@@ -124,8 +116,7 @@ def append_4d_parcellation(file_in, file_out, file_append, parcel_indices=None):
     file_out : str
     file_append : str
     parcel_indices : np.ndarray
-        (n_indices) numpy array containing volume indices (starting from 0) of volumes
-        from file_append to append to file_in
+        (n_indices) numpy array containing volume indices (starting from 0) of volumes from file_append to append to file_in
     """
     if parcel_indices is None:
         nparcels = nib.load(file_append).get_fdata().shape[3]
@@ -136,9 +127,5 @@ def append_4d_parcellation(file_in, file_out, file_append, parcel_indices=None):
         print(pp)
         vol_list_str = vol_list_str + "{},".format(pp)
 
-    os.system(
-        "fslselectvols -i {} -o {} --vols={}".format(
-            file_append, file_out, vol_list_str
-        )
-    )
+    os.system("fslselectvols -i {} -o {} --vols={}".format(file_append, file_out, vol_list_str))
     os.system("fslmerge -t {} {} {}".format(file_out, file_in, file_out))

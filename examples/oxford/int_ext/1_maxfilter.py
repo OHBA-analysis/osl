@@ -14,7 +14,7 @@ input_files = [
 ]
 
 # Directory to save the maxfiltered data to
-output_directory = "/ohba/pi/knobre/cgohil/dg_int_ext/maxfilter"
+output_directory = "/ohba/pi/knobre/cgohil/int_ext/maxfilter"
 
 # Run MaxFiltering
 run_maxfilter_batch(

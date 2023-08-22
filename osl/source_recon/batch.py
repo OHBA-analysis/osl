@@ -77,13 +77,11 @@ def find_func(method, extra_funcs):
 
     # Look in custom functions
     if extra_funcs is not None:
-        func_ind = [
-            idx if (f.__name__ == method) else -1 for idx, f in enumerate(extra_funcs)
-        ]
+        func_ind = [idx if (f.__name__ == method) else -1 for idx, f in enumerate(extra_funcs) ]
         if np.max(func_ind) > -1:
             func = extra_funcs[np.argmax(func_ind)]
 
-    # Look in osl.source_recon.wrappers
+    # Look in osl.source_recon.wrappers
     if func is None and hasattr(wrappers, method):
         func = getattr(wrappers, method)
 
@@ -129,7 +127,7 @@ def run_src_chain(
     flag : bool
         Flag indicating whether source reconstruction was successful.
     """
-    rhino.fsl_wrappers.check_fsl()
+    rhino.fsl_utils.check_fsl()
 
     # Directories
     src_dir = validate_outdir(src_dir)
@@ -168,7 +166,7 @@ def run_src_chain(
     if doing_coreg and smri_file is None:
         raise ValueError("smri_file must be passed if we're doing coregistration.")
 
-    # MAIN BLOCK - Run source reconstruction and catch any exceptions
+    # MAIN BLOCK - Run source reconstruction and catch any exceptions
     try:
         for stage in deepcopy(config["source_recon"]):
             method, userargs = next(iter(stage.items()))
@@ -253,7 +251,7 @@ def run_src_batch(
     flags : list of bool
         Flags indicating whether coregistration was successful.
     """
-    rhino.fsl_wrappers.check_fsl()
+    rhino.fsl_utils.check_fsl()
 
     # Directories
     src_dir = validate_outdir(src_dir)
@@ -276,9 +274,7 @@ def run_src_batch(
     if preproc_files is not None:
         n_preproc_files = len(preproc_files)
         if n_subjects != n_preproc_files:
-            raise ValueError(
-                f"Got {n_subjects} subjects and {n_preproc_files} preproc_files."
-            )
+            raise ValueError(f"Got {n_subjects} subjects and {n_preproc_files} preproc_files.")
 
     doing_coreg = (
         any(["compute_surfaces" in method for method in config["source_recon"]]) or
@@ -305,9 +301,7 @@ def run_src_batch(
 
     # Loop through input files to generate arguments for run_coreg_chain
     args = []
-    for subject, preproc_file, smri_file, epoch_file, in zip(
-        subjects, preproc_files, smri_files, epoch_files,
-    ):
+    for subject, preproc_file, smri_file, epoch_file, in zip(subjects, preproc_files, smri_files, epoch_files):
         args.append((config, src_dir, subject, preproc_file, smri_file, epoch_file))
 
     # Actually run the processes
@@ -317,9 +311,7 @@ def run_src_batch(
         flags = [pool_func(*aa) for aa in args]
 
     osl_logger.set_up(log_file=logfile, level=verbose, startup=False)
-    logger.info(
-        "Processed {0}/{1} files successfully".format(int(np.sum(flags)), len(flags))
-    )
+    logger.info("Processed {0}/{1} files successfully".format(int(np.sum(flags)), len(flags)))
 
     if int(np.sum(flags)) > 0:
         # Generate individual subject HTML report
