@@ -1,22 +1,27 @@
+"""Source reconstruction (beamforming and parcellation).
+
+"""
+
 from pathlib import Path
 from glob import glob
 from dask.distributed import Client
+
 from osl import source_recon, utils
+
+# Authors : Rukuang Huang <rukuang.huang@jesus.ox.ac.uk>
+#           Chetan Gohil <chetan.gohil@psych.ox.ac.uk>
+
+TASK = "resteyesopen"  # resteyesopen or resteyesclosed
 
 BASE_DIR = "/well/woolrich/projects/mrc_meguk/cambridge/ec"
 PREPROC_DIR = BASE_DIR + "/preproc"
 SRC_DIR = BASE_DIR + "/src"
-PREPROC_FILE = (
-    PREPROC_DIR
-    + "/{0}_task-resteyesclosed_proc-sss_meg/{0}_task-resteyesclosed_proc-sss_meg_preproc_raw.fif"
-)
+PREPROC_FILE = PREPROC_DIR + "/{0}_task-{1}_proc-sss_meg/{0}_task-{1}_proc-sss_meg_preproc_raw.fif"
 SMRI_FILE = "/well/woolrich/projects/mrc_meguk/raw/Cambridge/{0}/anat/{0}_T1w.nii.gz"
 FSL_DIR = "/well/woolrich/projects/software/fsl"
 
 config = """
     source_recon:
-    - forward_model:
-        model: Single Layer
     - beamform_and_parcellate:
         freq_range: [1, 45]
         chantypes: [mag, grad]
@@ -35,12 +40,12 @@ if __name__ == "__main__":
     preproc_files = []
 
     for directory in sorted(
-        glob(PREPROC_DIR + "/sub*_task-resteyesclosed_proc-sss_meg")
+        glob(PREPROC_DIR + f"/sub*_task-{TASK}_proc-sss_meg")
     ):
         subject = Path(directory).name.split("_")[0]
         subjects.append(subject)
         smri_files.append(SMRI_FILE.format(subject))
-        preproc_files.append(PREPROC_FILE.format(subject))
+        preproc_files.append(PREPROC_FILE.format(subject, task))
 
     client = Client(n_workers=16, threads_per_worker=1)
 

@@ -7,11 +7,16 @@ from dask.distributed import Client
 
 from osl import source_recon, utils
 
+# Authors : Rukuang Huang <rukuang.huang@jesus.ox.ac.uk>
+#           Chetan Gohil <chetan.gohil@psych.ox.ac.uk>
+
+TASK = "resteyesopen"  # resteyesopen or resteyesclosed
+
 # Setup FSL
 source_recon.setup_fsl("/well/woolrich/projects/software/fsl")
 
 # Directories
-SRC_DIR = "/well/woolrich/projects/mrc_meguk/notts/ec/src"
+SRC_DIR = f"/well/woolrich/projects/mrc_meguk/notts/{TASK}/src"
 
 if __name__ == "__main__":
     utils.logger.set_up(level="INFO")
@@ -19,7 +24,7 @@ if __name__ == "__main__":
 
     # Subjects to sign flip
     subjects = []
-    for path in sorted(glob(SRC_DIR + "/*/rhino/parc-raw.fif")):
+    for path in sorted(glob(SRC_DIR + "/*/parc/parc-raw.fif")):
         subject = path.split("/")[-3]
         subjects.append(subject)
 

@@ -1,10 +1,20 @@
+"""Dipole sign flipping.
+
+"""
+
 from glob import glob
 from pathlib import Path
 from dask.distributed import Client
 from osl import utils
+
 from osl.source_recon import find_template_subject, run_src_batch, setup_fsl
 
-BASE_DIR = "/well/woolrich/projects/mrc_meguk/cambridge/eo"
+# Authors : Rukuang Huang <rukuang.huang@jesus.ox.ac.uk>
+#           Chetan Gohil <chetan.gohil@psych.ox.ac.uk>
+
+TASK = "resteyesopen"  # resteyesopen or resteyesclosed
+
+BASE_DIR = f"/well/woolrich/projects/mrc_meguk/cambridge/{TASK}"
 PREPROC_DIR = BASE_DIR + "/preproc"
 SRC_DIR = BASE_DIR + "/src"
 FSL_DIR = "/well/woolrich/projects/software/fsl"
@@ -14,7 +24,9 @@ if __name__ == "__main__":
     setup_fsl(FSL_DIR)
 
     subjects = []
-    for directory in sorted(glob(PREPROC_DIR + "/sub*_task-resteyesopen_proc-sss_meg")):
+    for directory in sorted(
+        glob(PREPROC_DIR + f"/sub*_task-{TASK}_proc-sss_meg")
+    ):
         subject = Path(directory).name.split("_")[0]
         subjects.append(subject)
 

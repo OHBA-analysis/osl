@@ -1,18 +1,22 @@
 """Coregisteration.
+
 """
 from glob import glob
 from pathlib import Path
 import numpy as np
 from dask.distributed import Client
+
 from osl import source_recon, utils
 
-BASE_DIR = "/well/woolrich/projects/mrc_meguk/cambridge/eo"
+# Authors : Rukuang Huang <rukuang.huang@jesus.ox.ac.uk>
+#           Chetan Gohil <chetan.gohil@psych.ox.ac.uk>
+
+TASK = "resteyesopen"  # resteyesopen or resteyesclosed
+
+BASE_DIR = "/well/woolrich/projects/mrc_meguk/cambridge/ec"
 PREPROC_DIR = BASE_DIR + "/preproc"
 SRC_DIR = BASE_DIR + "/src"
-PREPROC_FILE = (
-    PREPROC_DIR
-    + "/{0}_task-resteyesopen_proc-sss_meg/{0}_task-resteyesopen_proc-sss_meg_preproc_raw.fif"
-)
+PREPROC_FILE = PREPROC_DIR + "/{0}_task-{1}_proc-sss_meg/{0}_task-{1}_proc-sss_meg_preproc_raw.fif"
 SMRI_FILE = "/well/woolrich/projects/mrc_meguk/raw/Cambridge/{0}/anat/{0}_T1w.nii.gz"
 FSL_DIR = "/well/woolrich/projects/software/fsl"
 
@@ -42,6 +46,11 @@ def fix_headshape_points(src_dir, subject, preproc_file, smri_file, epoch_file):
     keep = hs[0] > lpa[0]
     hs = hs[:, keep]
 
+    # if subject == "sub-cam056":
+    #     # Remove headshape points that are 1 cm above rpa
+    #     keep = hs[2] > (rpa[2] + 10)
+    #     hs = hs[:, keep]
+
     # Overwrite headshape file
     utils.logger.log_or_print(f"overwritting {filenames['polhemus_headshape_file']}")
     np.savetxt(filenames["polhemus_headshape_file"], hs)
@@ -66,11 +75,13 @@ if __name__ == "__main__":
     smri_files = []
     preproc_files = []
 
-    for directory in sorted(glob(PREPROC_DIR + "/sub*_task-resteyesopen_proc-sss_meg")):
+    for directory in sorted(
+        glob(PREPROC_DIR + f"/sub*_task-{TASK}_proc-sss_meg")
+    ):
         subject = Path(directory).name.split("_")[0]
         subjects.append(subject)
         smri_files.append(SMRI_FILE.format(subject))
-        preproc_files.append(PREPROC_FILE.format(subject))
+        preproc_files.append(PREPROC_FILE.format(subject, TASK))
 
     client = Client(n_workers=16, threads_per_worker=1)
 

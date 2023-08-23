@@ -8,9 +8,14 @@ from dask.distributed import Client
 
 from osl import preprocessing, utils
 
+# Authors : Rukuang Huang <rukuang.huang@jesus.ox.ac.uk>
+#           Chetan Gohil <chetan.gohil@psych.ox.ac.uk>
+
+TASK = "resteyesopen"  # resteyesopen or resteyesclosed
+
 RAW_DIR = "/well/woolrich/projects/mrc_meguk/raw/Nottingham"
-RAW_FILE = RAW_DIR + "/{0}/meg/{0}_task-resteyesopen_meg.ds"
-PREPROC_DIR = "/well/woolrich/projects/mrc_meguk/notts/eo/preproc"
+RAW_FILE = RAW_DIR + "/{0}/meg/{0}_task-{1}_meg.ds"
+PREPROC_DIR = f"/well/woolrich/projects/mrc_meguk/notts/{TASK}/preproc"
 
 config = """
     preproc:
@@ -34,7 +39,7 @@ if __name__ == "__main__":
     inputs = []
     for directory in sorted(glob(RAW_DIR + "/sub-*")):
         subject = Path(directory).name
-        raw_file = RAW_FILE.format(subject)
+        raw_file = RAW_FILE.format(subject, TASK)
         if Path(raw_file).exists():
             inputs.append(raw_file)
 

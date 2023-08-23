@@ -12,21 +12,22 @@ from dask.distributed import Client
 
 from osl import source_recon, utils
 
-# Setup FSL
-source_recon.setup_fsl("/well/woolrich/projects/software/fsl")
+# Authors : Rukuang Huang <rukuang.huang@jesus.ox.ac.uk>
+#           Chetan Gohil <chetan.gohil@psych.ox.ac.uk>
+
+TASK = "resteyesopen"  # resteyesopen or resteyesclosed
 
 # Directories
 RAW_DIR = "/well/woolrich/projects/mrc_meguk/raw/Nottingham"
-PREPROC_DIR = "/well/woolrich/projects/mrc_meguk/notts/ec/preproc"
-SRC_DIR = "/well/woolrich/projects/mrc_meguk/notts/ec/src"
+PREPROC_DIR = f"/well/woolrich/projects/mrc_meguk/notts/{TASK}/preproc"
+SRC_DIR = f"/well/woolrich/projects/mrc_meguk/notts/{TASK}/src"
 
-SMRI_FILE = "/well/woolrich/projects/mrc_meguk/notts/ec/smri/{0}_T1w.nii.gz"
-PREPROC_FILE = (
-    PREPROC_DIR
-    + "/{0}_task-resteyesclosed_meg/{0}_task-resteyesclosed_meg_preproc_raw.fif"
-)
+SMRI_FILE = f"/well/woolrich/projects/mrc_meguk/notts/{TASK}/smri/{0}_T1w.nii.gz"
+PREPROC_FILE = PREPROC_DIR + "/{0}_task-resteyesopen_meg/{0}_task-" + TASK + "_meg_preproc_raw.fif"
 POS_FILE = RAW_DIR + "/{0}/meg/{0}_headshape.pos"
 
+# Setup FSL
+source_recon.setup_fsl("/well/woolrich/projects/software/fsl")
 
 def save_polhemus_from_pos(src_dir, subject, preproc_file, smri_file, epoch_file):
     """Saves fiducials/headshape from a pos file."""

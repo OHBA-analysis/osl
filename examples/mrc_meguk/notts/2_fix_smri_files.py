@@ -12,10 +12,14 @@ import nibabel as nib
 
 from osl import source_recon
 
+# Authors : Rukuang Huang <rukuang.huang@jesus.ox.ac.uk>
+#           Chetan Gohil <chetan.gohil@psych.ox.ac.uk>
 
-PREPROC_DIR = "/well/woolrich/projects/mrc_meguk/notts/ec/preproc"
+TASK = "resteyesopen"  # resteyesopen or resteyesclosed
+
+PREPROC_DIR = f"/well/woolrich/projects/mrc_meguk/notts/{TASK}/preproc"
 SMRI_FILE = "/well/woolrich/projects/mrc_meguk/raw/Nottingham/{0}/anat/{0}_T1w.nii.gz"
-FIXED_SMRI_DIR = "/well/woolrich/projects/mrc_meguk/notts/ec/smri"
+FIXED_SMRI_DIR = f"/well/woolrich/projects/mrc_meguk/notts/{TASK}/smri"
 
 # Setup FSL
 source_recon.setup_fsl("/well/woolrich/projects/software/fsl")
