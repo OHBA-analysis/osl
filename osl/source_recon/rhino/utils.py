@@ -1240,7 +1240,7 @@ def extract_rhino_files(old_subjects_dir, new_subjects_dir, subjects="all", excl
             else:
                 raise FileNotFoundError(old_file)
 
-        # Special case
+        # Special case
         std_brains = glob(f"{old_dir}/MNI152_T1_*_brain.nii.gz")
         for std_brain in std_brains:
             copy(std_brain, std_brain.replace(old_dir, new_dir))

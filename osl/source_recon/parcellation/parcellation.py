@@ -68,11 +68,13 @@ def parcellate_timeseries(parcellation_file, voxel_timeseries, voxel_coords, met
 
     Parameters
     ----------
+    parcellation_file : str
+        Parcellation file (or path to parcellation file).
     voxel_timeseries : numpy.ndarray
-        nvoxels x ntpts, or nvoxels x ntpts x ntrials Data to be parcellated. Data is assumed to be in same space as the parcellation (e.g. typically corresponds
-        to the output from rhino.resample_recon_ts).
+        (nvoxels x ntpts) or (nvoxels x ntpts x ntrials) data to be parcellated.
+        Data is assumed to be in same space as the parcellation (e.g. typically corresponds to the output from beamforming.transform_recon_timeseries).
     voxel_coords : numpy.ndarray
-        (nvoxels x 3) coordinates of voxel_timeseries in mm in same space as parcellation (e.g. typically corresponds to the output from rhino.resample_recon_ts).
+        (nvoxels x 3) coordinates of voxel_timeseries in mm in same space as parcellation (e.g. typically corresponds to the output from beamforming.transform_recon_timeseries).
     method : str
         'pca' - take 1st PC in each parcel
         'spatial_basis' - The parcel time-course for each spatial map is the 1st PC from all voxels, weighted by the spatial map.
@@ -98,10 +100,10 @@ def _get_parcel_timeseries(voxel_timeseries, parcellation_asmatrix, method="spat
 
     Parameters
     ----------
-    parcellation_asmatrix: numpy.ndarray
-        nvoxels x nparcels and is assumed to be on the same grid as voxel_timeseries
     voxel_timeseries : numpy.ndarray
-        nvoxels x ntpts or nvoxels x ntpts x ntrials and is assumed to be on the same grid as parcellation (typically output by rhino.resample_recon_ts)
+        (nvoxels x ntpts) or (nvoxels x ntpts x ntrials) and is assumed to be on the same grid as parcellation (typically output by beamforming.transform_recon_timeseries).
+    parcellation_asmatrix: numpy.ndarray
+        (nvoxels x nparcels) and is assumed to be on the same grid as voxel_timeseries.
     method : str
         'pca' - take 1st PC of voxels
         'spatial_basis' - The parcel time-course for each spatial map is the 1st PC from all voxels, weighted by the spatial map.
@@ -269,10 +271,10 @@ def _get_parcel_timeseries(voxel_timeseries, parcellation_asmatrix, method="spat
 
 
 def _resample_parcellation(parcellation_file, voxel_coords, working_dir=None):
-    """Resample parcellation so that its voxel coords correspond (using nearest neighbour) to passed in voxel_coords. Passed in voxel_coords
-    and parcellation must be in the same space, e.g. MNI.
+    """Resample parcellation so that its voxel coords correspond (using nearest neighbour) to passed in voxel_coords.
+    Passed in voxel_coords and parcellation must be in the same space, e.g. MNI.
 
-    Used to make sure that the parcellation's voxel coords are the same as the voxel coords for some timeseries data, before calling get_parcel_timeseries.
+    Used to make sure that the parcellation's voxel coords are the same as the voxel coords for some timeseries data, before calling _get_parcel_timeseries.
 
     Parameters
     ----------
@@ -292,16 +294,16 @@ def _resample_parcellation(parcellation_file, voxel_coords, working_dir=None):
     log_or_print(f"gridstep = {gridstep} mm")
 
     parcellation_file = find_file(parcellation_file)
-    pth, parcellation_name = op.split(op.splitext(op.splitext(parcellation_file)[0])[0])
+    path, parcellation_name = op.split(op.splitext(op.splitext(parcellation_file)[0])[0])
 
     if working_dir is None:
-        working_dir = pth
+        working_dir = path
     else:
         os.makedirs(working_dir, exist_ok=True)
 
     parcellation_resampled = op.join(working_dir, parcellation_name + "_{}mm.nii.gz".format(gridstep))
 
-    # Create std brain of the required resolution
+    # Create standard brain of the required resolution
     #
     # Command: flirt -in <parcellation_file> -ref <parcellation_file> -out <parcellation_resampled> -applyisoxfm <gridstep>
     #
@@ -566,17 +568,17 @@ def _parcel_timeseries2nii(
     parcel_timeseries_data: numpy.ndarray
         Needs to be nparcels x ntpts
     voxel_weightings : numpy.ndarray
-        nvoxels x nparcels voxel weightings for each parcel to compute parcel_timeseries from voxel_timeseries.
+        (nvoxels x nparcels) voxel weightings for each parcel to compute parcel_timeseries from voxel_timeseries.
     voxel_assignments : bool numpy.ndarray
-        nvoxels x nparcels, Boolean assignments indicating for each voxel the winner takes all parcel it belongs to.
+        (nvoxels x nparcels) boolean assignments indicating for each voxel the winner takes all parcel it belongs to.
     voxel_coords : numpy.ndarray
-        (nvoxels x 3) coordinates of voxel_timeseries in mm in same space as parcellation (e.g. typically corresponds to the output from rhino.resample_recon_ts).
+        (nvoxels x 3) coordinates of voxel_timeseries in mm in same space as parcellation (e.g. typically corresponds to the output from beamforming.transform_recon_timeseries).
     working_dir : str
         Directory name to put files in.
     out_nii_fname : str
         Output name to put files in.
-    times : (ntpts, ) numpy.ndarray
-        Times points in seconds. Will assume that time points are regularly spaced. Used to set nii file up correctly.
+    times : array
+        (ntpts,) times points in seconds. Will assume that time points are regularly spaced. Used to set nii file up correctly.
     method : str
         "weights" or "assignments"
 
@@ -586,10 +588,10 @@ def _parcel_timeseries2nii(
         Output nii filename, will be output at spatial resolution of parcel_timeseries['voxel_coords'].
     """
     parcellation_file = find_file(parcellation_file)
-    pth, parcellation_name = op.split(op.splitext(op.splitext(parcellation_file)[0])[0])
+    path, parcellation_name = op.split(op.splitext(op.splitext(parcellation_file)[0])[0])
 
     if working_dir is None:
-        working_dir = pth
+        working_dir = path
 
     if out_nii_fname is None:
         out_nii_fname = op.join(working_dir, parcellation_name + "_timeseries.nii.gz")
@@ -615,7 +617,7 @@ def _parcel_timeseries2nii(
     gridstep = int(rhino_utils.get_gridstep(voxel_coords.T) / 1000)
 
     # Sample parcellation_mask to the desired resolution
-    pth, ref_brain_name = op.split(op.splitext(op.splitext(parcellation_mask_file)[0])[0])
+    path, ref_brain_name = op.split(op.splitext(op.splitext(parcellation_mask_file)[0])[0])
     parcellation_mask_resampled = op.join(working_dir, ref_brain_name + "_{}mm_brain.nii.gz".format(gridstep))
 
     # create std brain of the required resolution
@@ -659,7 +661,7 @@ def convert2niftii(parc_data, parcellation_file, mask_file, tres=1, tmin=0):
     parc_data : np.ndarray
         (nparcels) or (nvolumes x nparcels) parcel data.
     parcellation_file : str
-        Path to niftii parcellation file..
+        Path to niftii parcellation file.
     mask_file : str
         Path to niftii parcellation mask file.
     tres : float
@@ -736,7 +738,7 @@ def convert2mne_raw(parc_data, raw, parcel_names=None, extra_chans="stim"):
     Parameters
     ----------
     parc_data : np.ndarray
-        nparcels x ntpts parcel data
+        (nparcels x ntpts) parcel data.
     raw : mne.Raw
         mne.io.raw object that produced parc_data via source recon and parcellation. Info such as timings and bad segments will be copied from this to parc_raw.
     parcel_names : list of str
@@ -802,10 +804,10 @@ def convert2mne_epochs(parc_data, epochs, parcel_names=None):
     Parameters
     ----------
     parc_data : np.ndarray
-        nparcels x ntpts x epochs parcel data
+        (nparcels x ntpts x epochs) parcel data.
     epochs : mne.Epochs
         mne.io.raw object that produced parc_data via source recon and parcellation. Info such as timings and bad segments will be copied from this to parc_raw.
-    parcel_names : list(str)
+    parcel_names : list of str
         List of strings indicating names of parcels. If None then names are set to be parcel_0,...,parcel_{n_parcels-1}.
 
     Returns
