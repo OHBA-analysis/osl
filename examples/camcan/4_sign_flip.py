@@ -4,10 +4,12 @@
 
 from glob import glob
 from dask.distributed import Client
+
 from osl import utils
 from osl.source_recon import find_template_subject, run_src_batch, setup_fsl
 
-SRC_DIR = "/well/woolrich/projects/camcan/winter23/src"
+# Directories
+SRC_DIR = "/well/woolrich/projects/camcan/summer23/src"
 FSL_DIR = "/well/woolrich/projects/software/fsl"
 
 if __name__ == "__main__":
@@ -30,8 +32,8 @@ if __name__ == "__main__":
             template: {template}
             n_embeddings: 15
             standardize: True
-            n_init: 3
-            n_iter: 3000
+            n_init: 5
+            n_iter: 5000
             max_flips: 20
     """
 
