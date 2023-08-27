@@ -2,6 +2,8 @@
 
 """
 
+# Authors: Chetan Gohil <chetan.gohil@psych.ox.ac.uk>
+
 from glob import glob
 
 from osl_dynamics.data import Data

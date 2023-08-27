@@ -1,7 +1,7 @@
 Example scripts to preprocess and source reconstruct task data
 --------------------------------------------------------------
 
-These scripts differ from dgresch_int_ext in the order in which we epoch the data. In these example scripts we:
+These scripts differ from int_ext in the order in which we epoch the data. In these example scripts we:
 
 - Preprocess the continuous sensor data: `1_preprocess.py`.
 - Perform manual ICA: `2_manual_ica.py`.

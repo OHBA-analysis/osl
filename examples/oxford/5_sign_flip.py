@@ -1,4 +1,4 @@
-"""Dipole sign flipping.
+"""Performs sign flipping.
 
 """
 
@@ -11,21 +11,24 @@ from osl import utils
 from osl.source_recon import find_template_subject, run_src_batch, setup_fsl
 
 # Directories
-SRC_DIR = "/well/woolrich/projects/camcan/summer23/src"
-FSL_DIR = "/well/woolrich/projects/software/fsl"
+src_dir = "output/src"
+fsl_dir = "/opt/ohba/fsl/6.0.5"  # this is where FSL is installed on hbaws
 
 if __name__ == "__main__":
     utils.logger.set_up(level="INFO")
-    setup_fsl(FSL_DIR)
+    setup_fsl(fsl_dir)
 
     # Subjects to sign flip
+    # We create a list by looking for subjects that have a parc/parc-raw.fif file
     subjects = []
-    for path in sorted(glob(SRC_DIR + "/*/parc/parc-raw.fif")):
+    for path in sorted(glob(src_dir + "/*/parc/parc-raw.fif")):
         subject = path.split("/")[-3]
         subjects.append(subject)
 
     # Find a good template subject to align other subjects to
-    template = find_template_subject(SRC_DIR, subjects, n_embeddings=15, standardize=True)
+    template = find_template_subject(
+        src_dir, subjects, n_embeddings=15, standardize=True
+    )
 
     # Settings for batch processing
     config = f"""
@@ -34,13 +37,21 @@ if __name__ == "__main__":
             template: {template}
             n_embeddings: 15
             standardize: True
-            n_init: 5
-            n_iter: 5000
+            n_init: 3
+            n_iter: 500
             max_flips: 20
     """
 
     # Setup parallel processing
-    client = Client(n_workers=16, threads_per_worker=1)
+    #
+    # n_workers is the number of CPUs to use,
+    # we recommend less than half the total number of CPUs you have
+    client = Client(n_workers=4, threads_per_worker=1)
 
     # Do the sign flipping
-    run_src_batch(config, SRC_DIR, subjects, dask_client=True)
+    run_src_batch(
+        config,
+        src_dir=src_dir,
+        subjects=subjects
+        dask_client=True,
+    )
