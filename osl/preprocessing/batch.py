@@ -333,7 +333,7 @@ def append_preproc_info(dataset, config):
     return dataset
 
 
-def write_dataset(dataset, outbase, run_id, overwrite=False):
+def write_dataset(dataset, outbase, run_id, ftype='preproc_raw', overwrite=False):
     """Write preprocessed data to a file.
 
     Parameters
@@ -344,6 +344,8 @@ def write_dataset(dataset, outbase, run_id, overwrite=False):
         Path to directory to write to.
     run_id : str
         ID for the output file.
+    ftype: str
+        Extension for the fif file (default "preproc_raw")
     overwrite : bool
         Should we overwrite if the file already exists?
 
@@ -358,7 +360,7 @@ def write_dataset(dataset, outbase, run_id, overwrite=False):
         if string in run_id:
             run_id = run_id.replace(string, "")
 
-    fif_outname = outbase.format(run_id=run_id, ftype="preproc_raw", fext="fif")
+    fif_outname = outbase.format(run_id=run_id, ftype=ftype, fext="fif")
     if Path(fif_outname).exists() and not overwrite:
         raise ValueError(
             "{} already exists. Please delete or do use overwrite=True.".format(fif_outname)
@@ -383,7 +385,7 @@ def write_dataset(dataset, outbase, run_id, overwrite=False):
 
     return fif_outname
 
-def read_dataset(fif, preload=False):
+def read_dataset(fif, preload=False, ftype=None):
     """Reads fif/npy/yml files associated with a dataset.
 
     Parameters
@@ -392,6 +394,11 @@ def read_dataset(fif, preload=False):
         Path to raw fif file (can be preprocessed).
     preload : bool
         Should we load the raw fif data?
+    ftype : str
+        Extension for the fif file (will be replaced for e.g. "_events.npy" or 
+        "_ica.fif"). If None, we assume the fif file is preprocessed with 
+        OSL and has the extension "preproc_raw". If this fails, we guess 
+        the extension as whatever comes after the last "_".
 
     Returns
     -------
@@ -403,14 +410,31 @@ def read_dataset(fif, preload=False):
     print("Reading", fif)
     raw = mne.io.read_raw_fif(fif, preload=preload)
 
-    events = Path(fif.replace("preproc_raw.fif", "events.npy"))
+    # Guess extension
+    if ftype is None:
+        logger.info("Guessing the preproc extension")
+        if "preproc_raw" in fif:
+            logger.info('Assuming fif file type is "preproc_raw"')
+            ftype = "preproc_raw"
+        else:
+            if len(fif.split("_"))<2:
+                logger.error("Unable to guess the fif file extension")
+            else:
+                logger.info('Assuming fif file type is the last "_" separated string')
+                ftype = fif.split("_")[-1].split('.')[-2]
+    
+    # add extension to fif file name
+    ftype = ftype + ".fif"
+     
+    
+    events = Path(fif.replace(ftype, "events.npy"))
     if events.exists():
         print("Reading", events)
         events = np.load(events)
     else:
         events = None
 
-    event_id = Path(fif.replace("preproc_raw.fif", "event-id.yml"))
+    event_id = Path(fif.replace(ftype, "event-id.yml"))
     if event_id.exists():
         print("Reading", event_id)
         with open(event_id, "r") as file:
@@ -418,14 +442,14 @@ def read_dataset(fif, preload=False):
     else:
         event_id = None
 
-    epochs = Path(fif.replace("preproc_raw", "epo"))
+    epochs = Path(fif.replace(ftype, "epo.fif"))
     if epochs.exists():
         print("Reading", epochs)
         epochs = mne.read_epochs(epochs)
     else:
         epochs = None
 
-    ica = Path(fif.replace("preproc_raw", "ica"))
+    ica = Path(fif.replace(ftype, "ica.fif"))
     if ica.exists():
         print("Reading", ica)
         ica = mne.preprocessing.read_ica(ica)
@@ -552,6 +576,7 @@ def run_proc_chain(
     config,
     infile,
     outname=None,
+    ftype='preproc_raw',
     outdir=None,
     logsdir=None,
     reportdir=None,
@@ -572,6 +597,8 @@ def run_proc_chain(
         Path to input file.
     outname : str
         Output filename.
+    ftype: str
+        Extension for the fif file (default "preproc_raw")
     outdir : str
         Output directory. If processing multiple files, they can
         be put in unique sub directories by including {x:0} at 
@@ -655,7 +682,7 @@ def run_proc_chain(
     if logsdir is not None:
         logbase = os.path.join(logsdir, name_base)
         logfile = logbase.format(
-            run_id=run_id.replace("_raw", ""), ftype="preproc_raw", fext="log"
+            run_id=run_id.replace("_raw", ""), ftype=ftype, fext="log"
         )
         mne.utils._logging.set_log_file(logfile, overwrite=overwrite)
     else:
@@ -673,7 +700,7 @@ def run_proc_chain(
     if outdir is not None:
         # Check for existing outputs - should be a .fif at least
         fifout = outbase.format(
-            run_id=run_id.replace('_raw', ''), ftype='preproc_raw', fext='fif'
+            run_id=run_id.replace('_raw', ''), ftype=ftype, fext='fif'
         )
         if os.path.exists(fifout) and (overwrite is False):
             logger.critical('Skipping preprocessing - existing output detected')
@@ -795,6 +822,7 @@ def run_proc_batch(
     mneverbose="WARNING",
     strictrun=False,
     dask_client=False,
+    ftype=None,
 ):
     """Run batched preprocessing.
 

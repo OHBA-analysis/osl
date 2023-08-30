@@ -40,7 +40,7 @@ from ..preprocessing import (
 # Report generation
 
 
-def gen_report_from_fif(infiles, outdir):
+def gen_report_from_fif(infiles, outdir, ftype=None):
     """Generate web-report for a set of MNE data objects.
 
     Parameters
@@ -49,6 +49,9 @@ def gen_report_from_fif(infiles, outdir):
         List of paths to fif files.
     outdir : str
         Directory to save HTML report and figures to.
+    ftype : str
+        Type of fif file, e.g., 'raw' or 'preproc_raw'.
+        
     """
 
     # Validate input files and directory to save html file and plots to
@@ -58,7 +61,7 @@ def gen_report_from_fif(infiles, outdir):
     # Generate HTML data
     for infile in infiles:
         print("Generating report for", infile)
-        dataset = read_dataset(infile)
+        dataset = read_dataset(infile, ftype=ftype)
         run_id = get_header_id(dataset['raw'])
         htmldatadir = validate_outdir(outdir / run_id)
         gen_html_data(dataset['raw'], htmldatadir, ica=dataset['ica'])
