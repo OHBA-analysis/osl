@@ -815,7 +815,7 @@ def run_proc_batch(
     outdir=None,
     logsdir=None,
     reportdir=None,
-    gen_report=Tr3ue,
+    gen_report=True,
     overwrite=False,
     extra_funcs=None,
     verbose="INFO",
