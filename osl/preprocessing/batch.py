@@ -417,11 +417,11 @@ def read_dataset(fif, preload=False, ftype=None):
             logger.info('Assuming fif file type is "preproc_raw"')
             ftype = "preproc_raw"
         else:
-            try:
-                ftype = fif.split("_")[-1].split('.')[-2]
-                logger.info('Assuming fif file type is the last "_" separated string')
-            except:
+            if len(fif.split("_"))<2:
                 logger.error("Unable to guess the fif file extension")
+            else:
+                logger.info('Assuming fif file type is the last "_" separated string')
+                ftype = fif.split("_")[-1].split('.')[-2]
     
     # add extension to fif file name
     ftype = ftype + ".fif"
