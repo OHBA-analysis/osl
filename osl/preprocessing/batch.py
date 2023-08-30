@@ -655,7 +655,7 @@ def run_proc_chain(
         gen_report = True if gen_report is None else gen_report
         
         # Create output directories if they don't exist
-        # outdir = add_subdir(infile, outdir, run_id)
+        outdir = add_subdir(infile, outdir, run_id)
         outdir = validate_outdir(outdir)
         logsdir = validate_outdir(logsdir or outdir / "logs")
         reportdir = validate_outdir(reportdir or outdir / "report")
