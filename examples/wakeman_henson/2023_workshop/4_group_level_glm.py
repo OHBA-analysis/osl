@@ -1,7 +1,4 @@
-#!/usr/bin/env python
-
-"""
-Run group analysis on data on the Wakeman-Henson dataset.
+"""Run group analysis on data on the Wakeman-Henson dataset.
 
 """
 
@@ -28,8 +25,8 @@ first_level_contrasts = [15]
 baseline_correct = True
 rectify = True
 
-# -------------------------------------------------------------
-# %% Setup file names
+# ----------------
+# Setup file names
 
 glm_model_files = []
 glm_time_files = []
@@ -61,8 +58,9 @@ for sub in subjects_to_do:
                 # store which subject this belongs to
                 subj_indices.append(sub)
 
-# -------------------
+# --------------------------------------------
 # Setup group-level design matrix in GLM tools
+
 print("\nSetting up group design matrix")
 
 design_matrix = np.zeros([len(subj_indices), len(set(subj_indices))])
@@ -117,9 +115,9 @@ for first_level_contrast in first_level_contrasts:
     # Create GLM data
     data = glm.data.TrialGLMData(data=data)
 
-    # ------------------------------------------------------
-
+    # ---------
     # Fit Model
+
     print("Fitting GLM")
     model = glm.fit.OLSModel(des, data)
 
@@ -132,6 +130,3 @@ for first_level_contrast in first_level_contrasts:
     out.close()
 
     np.save(group_glm_time_file, epochs_times)
-
-
-

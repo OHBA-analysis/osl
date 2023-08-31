@@ -1,7 +1,4 @@
-#!/usr/bin/env python
-
-"""
-Run group analysis on data on the Wakeman-Henson dataset.
+"""Run group analysis on data on the Wakeman-Henson dataset.
 
 """
 
@@ -9,13 +6,15 @@ Run group analysis on data on the Wakeman-Henson dataset.
 
 import os
 import os.path as op
+
 import numpy as np
-import matplotlib.pyplot as plt
-from anamnesis import obj_from_hdf5file
 import nibabel as nib
-from osl.source_recon import parcellation, rhino
+import matplotlib.pyplot as plt
 from nilearn import plotting
+from anamnesis import obj_from_hdf5file
+
 import glmtools as glm
+from osl.source_recon import parcellation, rhino
 
 subjects_dir = "/ohba/pi/mwoolrich/datasets/WakemanHenson/ds117"
 subjects_dir = "/Users/woolrich/homedir/vols_data/WakeHen"
@@ -31,7 +30,7 @@ glm_dir = op.join(subjects_dir, "glm")
 
 show_plots = True
 
-# ------------------------------------------------------
+# ------------------
 # Load group GLM fit
 
 group_glm_model_file = op.join(
@@ -45,7 +44,7 @@ print("Loading GLM:", group_glm_model_file)
 model = obj_from_hdf5file(group_glm_model_file, "model")
 epochs_times = np.load(group_glm_time_file)
 
-# ------------------------------------------------------
+# ------------------------------------------------------------------------------
 # Output parcel-wise stats as 3D nii file in MNI space at time point of interest
 
 group_contrast = 0
@@ -62,7 +61,9 @@ cope_map = model.copes[group_contrast, :, volume_num]
 
 print(cope_map.shape)
 
-nii = parcellation.convert2niftii(cope_map, parcellation.find_file(parcellation_file), parcellation.find_file(mask_file))
+nii = parcellation.convert2niftii(
+    cope_map, parcellation.find_file(parcellation_file), parcellation.find_file(mask_file)
+)
 
 cope_fname = op.join(
     stats_dir,
@@ -102,13 +103,19 @@ plt.title(
 )
 plt.xlabel("time (s)")
 plt.ylabel("abs(cope)")
-plt.savefig(op.join(stats_dir, 'gc{}_flc{}_tc_parc{}.png'.format(group_contrast, first_level_contrast, parcel_ind)))
+plt.savefig(
+    op.join(stats_dir,
+        'gc{}_flc{}_tc_parc{}.png'.format(
+            group_contrast, first_level_contrast, parcel_ind
+        )
+    )
+)
 
 if show_plots:
     plt.show()
 
-# ------------------------------------------------------------------
-# plot subject-specific copes for the first-level contrast
+# --------------------------------------------------------
+# Plot subject-specific copes for the first-level contrast
 
 first_level_data = obj_from_hdf5file(group_glm_model_file, "data").data  # nsess x nparcels x ntpts
 
@@ -122,25 +129,33 @@ plt.title(
 )
 plt.xlabel("time (s)")
 plt.ylabel("abs(cope)")
-plt.savefig(op.join(stats_dir, 'subjects_gc{}_flc{}_tc_parc{}.png'.format(group_contrast, first_level_contrast, parcel_ind)))
+plt.savefig(
+    op.join(
+        stats_dir,
+        'subjects_gc{}_flc{}_tc_parc{}.png'.format(
+            group_contrast, first_level_contrast, parcel_ind
+        )
+    )
+)
 
 if show_plots:
     plt.show()
 
-# ------------------------------------------------------------------
+# ------------------------------------------------------
 # Write stats as 4D niftii file in MNI space.
 # Note, 4th dimension is timepoint within an epoch/trial
-
 
 time_inds = np.where((epochs_times>-0.25) & (epochs_times<1))[0]
 cope_map = model.copes[group_contrast, :, :].T
 
 cope_map.shape
-nii = parcellation.convert2niftii(cope_map,
-                                  parcellation.find_file(parcellation_file),
-                                  parcellation.find_file(mask_file),
-                                  tres=epochs_times[1]-epochs_times[0],
-                                  tmin=epochs_times[0])
+nii = parcellation.convert2niftii(
+    cope_map,
+    parcellation.find_file(parcellation_file),
+    parcellation.find_file(mask_file),
+    tres=epochs_times[1]-epochs_times[0],
+    tmin=epochs_times[0],
+)
 
 cope_fname = op.join(
     stats_dir,

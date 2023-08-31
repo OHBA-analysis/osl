@@ -1,7 +1,4 @@
-#!/usr/bin/env python
-
-"""
-Run group analysis on data from the Wakeman-Henson dataset.
+"""Run group analysis on data from the Wakeman-Henson dataset.
 
 """
 
@@ -30,8 +27,8 @@ subjects_to_do = np.arange(0, nsubjects)
 sessions_to_do = np.arange(0, nsessions)
 subj_sess_2exclude = np.zeros([nsubjects, nsessions]).astype(bool)
 
-# -------------------------------------------------------------
-# %% Setup file names
+# ----------------
+# Setup file names
 
 preproc_fif_files = []
 input_fif_files = []
@@ -93,9 +90,9 @@ for sub in subjects_to_do:
                 if not os.path.isdir(glm_subj_dir):
                     os.makedirs(glm_subj_dir)
 
-
-# -------------------
+# -------------------------------
 # Epoch first-level design matrix
+
 for preproc_fif_file, input_fif_file, epoch_fif_file, abs_epoch_fif_file \
         in zip(preproc_fif_files, input_fif_files, epoch_fif_files, abs_epoch_fif_files):
 
@@ -116,8 +113,6 @@ for preproc_fif_file, input_fif_file, epoch_fif_file, abs_epoch_fif_file \
     epochs.drop_bad(verbose=True)
     epochs.load_data()
     epochs.save(epoch_fif_file, overwrite=True)
-
-    #### hilb
 
     # Do hilbert transform
     hilb_raw = raw.copy()
@@ -171,8 +166,9 @@ if False:
         file_to = op.join(workshop_recon_dir, subject + '/')
         os.system("cp -f {} {}".format(file_from, file_to))
 
-# -------------------
+# -------------------------------
 # Setup first-level design matrix
+
 print("\nSetting up design matrix")
 
 DC = glm.design.DesignConfig()
@@ -241,8 +237,9 @@ DC.add_contrast(
 print(DC.to_yaml())
 
 
-# -------------
+# -------------------
 # Fit first-level GLM
+
 use_hilbert = True
 
 if use_hilbert:
@@ -269,9 +266,9 @@ for epoch_fif_file, glm_model_file, glm_time_file \
     # Create Design Matrix
     des = DC.design_from_datainfo(data.info)
 
-    # ------------------------------------------------------
-
+    # ---------
     # Fit Model
+
     print("Fitting GLM")
     model = glm.fit.OLSModel(des, data)
 
@@ -284,4 +281,3 @@ for epoch_fif_file, glm_model_file, glm_time_file \
     out.close()
 
     np.save(glm_time_file, epochs.times)
-
