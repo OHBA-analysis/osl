@@ -1,9 +1,5 @@
-#!/usr/bin/env python
-
-"""Run RHINO-based source reconstruction on the Wakeman-Henson dataset.
-
-This script can be copy and pasted into any directory on hbaws and executed with:
-python wakeman_henson.py
+"""Run RHINO-based source reconstruction on the Wakeman-Henson dataset and do
+first-level GLM analysis.
 
 See run_wakeman_henson.m for matlab equivalent.
 """
@@ -129,6 +125,7 @@ if use_eeg:
 
 # -------------------
 # Setup design matrix
+
 print("\nSetting up design matrix")
 
 DC = glm.design.DesignConfig()
@@ -216,9 +213,9 @@ if run_sensor_space:
     epochs.pick(chantypes)
     data = glm.io.load_mne_epochs(epochs)
 
-    # ------------------------------------------------------
-
+    # ---------
     # Fit Model
+
     print("Fitting GLM")
     model_sensor = glm.fit.OLSModel(des, data)
 
@@ -231,9 +228,9 @@ if run_sensor_space:
     model_sensor.to_hdf5(out.create_group("model_sensor"))
     out.close()
 
-    # ------------------------------------------------------
-
+    # ----------------
     # Load subject GLM
+
     model_sensor = obj_from_hdf5file(glmname, "model_sensor")
 
     # Make MNE object with contrast
@@ -252,6 +249,7 @@ if run_sensor_space:
 
 # ------------------------------------------------------------------
 # Compute info for source reconstruction (coreg, forward model, BEM)
+
 print("Computing info for source reconstruction")
 
 subjects_dir = op.join(out_dir, "coreg")
@@ -332,6 +330,7 @@ if run_forward_model:
 
 # -------------------------------------------
 # Apply source reconstruction to epoched data
+
 print("Applying source reconstruction to epoched data")
 
 # Epoch the preprocessed data again from scratch and drop bad epochs
@@ -375,6 +374,7 @@ stc = apply_lcmv_epochs(epochs, filters)
 
 # ------------------------------------
 # Fit GLM to source reconstructed data
+
 print("Source Space Analysis")
 
 # Turns this into a ntrials x nsources x ntpts array
@@ -390,9 +390,9 @@ data = glm.data.TrialGLMData(data=sourcespace_epoched_data)
 print("Please close the pop-up figures to continue running the code")
 des.plot_summary(show=True, savepath=preproc_fif_file.replace(".fif", "_design.png"))
 
-# ------------------------------------------------------
-
+# ---------
 # Fit Model
+
 print("Fitting GLM")
 model_source = glm.fit.OLSModel(des, data)
 
@@ -407,6 +407,7 @@ out.close()
 
 # --------------------------------------
 # Compute stats of interest from GLM fit
+
 print("Computing stats from GLM fit")
 
 acopes = []
@@ -429,6 +430,7 @@ acopes.append(acope)
 
 # ------------------------------------------------------
 # Output stats as 3D nii files at time point of interest
+
 print("Saving stats nii")
 
 stats_dir = op.join(subjects_dir, subject, "rhino", "stats")
@@ -477,6 +479,7 @@ plt.show()
 # --------------------------------------------------------------------------
 # Convert cope to standard brain grid in MNI space, for doing group stats
 # (sourcespace_epoched_data and therefore acopes are in head/polhemus space)
+
 print("Converting COPE to MNI space")
 
 (

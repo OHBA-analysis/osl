@@ -1,7 +1,4 @@
-#!/usr/bin/env python
-
-"""
-Run group analysis on parcellated data on the Wakeman-Henson dataset.
+"""Preprocessing.
 
 """
 
@@ -27,8 +24,8 @@ subj_sess_2exclude = np.zeros([nsubjects, nsessions]).astype(bool)
 #subj_sess_2exclude = np.ones(subj_sess_2exclude.shape).astype(bool)
 #subj_sess_2exclude[0:1,0:2]=False
 
-# -------------------------------------------------------------
-# %% Setup file names
+# ----------------
+# Setup file names
 
 smri_files = []
 fif_files = []
@@ -111,4 +108,3 @@ config = """
 osl.preprocessing.run_proc_batch(
     config, fif_files, outdir=subjects_dir, overwrite=True
 )
-

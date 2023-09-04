@@ -1,18 +1,26 @@
-"""Dipole sign flipping.
+"""Sign flipping.
 
 """
 
 from glob import glob
 from dask.distributed import Client
-from osl import utils
-from osl.source_recon import find_template_subject, run_src_batch, setup_fsl
 
-SRC_DIR = "/well/woolrich/projects/camcan/winter23/src"
-FSL_DIR = "/well/woolrich/projects/software/fsl"
+from osl import source_recon, utils
+
+# Authors : Rukuang Huang <rukuang.huang@jesus.ox.ac.uk>
+#           Chetan Gohil <chetan.gohil@psych.ox.ac.uk>
+
+TASK = "resteyesopen"  # resteyesopen or resteyesclosed
+
+# Setup FSL
+source_recon.setup_fsl("/well/woolrich/projects/software/fsl")
+
+# Directories
+SRC_DIR = f"/well/woolrich/projects/mrc_meguk/notts/{TASK}/src"
 
 if __name__ == "__main__":
     utils.logger.set_up(level="INFO")
-    setup_fsl(FSL_DIR)
+    client = Client(n_workers=16, threads_per_worker=1)
 
     # Subjects to sign flip
     subjects = []
@@ -21,9 +29,11 @@ if __name__ == "__main__":
         subjects.append(subject)
 
     # Find a good template subject to align other subjects to
-    template = find_template_subject(SRC_DIR, subjects, n_embeddings=15, standardize=True)
+    template = source_recon.find_template_subject(
+        SRC_DIR, subjects, n_embeddings=15, standardize=True
+    )
 
-    # Settings for batch processing
+    # Settings
     config = f"""
         source_recon:
         - fix_sign_ambiguity:
@@ -35,8 +45,5 @@ if __name__ == "__main__":
             max_flips: 20
     """
 
-    # Setup parallel processing
-    client = Client(n_workers=16, threads_per_worker=1)
-
     # Do the sign flipping
-    run_src_batch(config, SRC_DIR, subjects, dask_client=True)
+    source_recon.run_src_batch(config, SRC_DIR, subjects, dask_client=True)

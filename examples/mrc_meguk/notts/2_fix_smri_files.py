@@ -1,5 +1,4 @@
-"""The sform headers in the structural MRIs in the MRC MEG UK dataset have an issue.
-This script writes new MRI files compatible with oslpy.
+"""Fix structural MRI files.
 
 """
 
@@ -13,22 +12,25 @@ import nibabel as nib
 
 from osl import source_recon
 
+# Authors : Rukuang Huang <rukuang.huang@jesus.ox.ac.uk>
+#           Chetan Gohil <chetan.gohil@psych.ox.ac.uk>
 
-PREPROC_DIR = "/ohba/pi/mwoolrich/cgohil/ukmp_notts/preproc"
-SMRI_FILE = (
-    "/ohba/pi/mwoolrich/datasets/mrc_meguk_public/Nottingham/{0}/anat/{0}_T1w.nii.gz"
-)
+TASK = "resteyesopen"  # resteyesopen or resteyesclosed
 
-FIXED_SMRI_DIR = "/ohba/pi/mwoolrich/cgohil/ukmp_notts/smri"
+PREPROC_DIR = f"/well/woolrich/projects/mrc_meguk/notts/{TASK}/preproc"
+SMRI_FILE = "/well/woolrich/projects/mrc_meguk/raw/Nottingham/{0}/anat/{0}_T1w.nii.gz"
+FIXED_SMRI_DIR = f"/well/woolrich/projects/mrc_meguk/notts/{TASK}/smri"
 
 # Setup FSL
-source_recon.setup_fsl("/home/cgohil/local/fsl")
+source_recon.setup_fsl("/well/woolrich/projects/software/fsl")
 
 # Look up which subjects we preprocessed to see what SMRI files we need to fix
 smri_files = []
 for path in sorted(glob(PREPROC_DIR + "/*/sub-*_preproc_raw.fif")):
     subject = Path(path).stem.split("_")[0]
-    smri_files.append(SMRI_FILE.format(subject))
+    smri_file = SMRI_FILE.format(subject)
+    if Path(smri_file).exists():
+        smri_files.append(smri_file)
 
 # Make output directory if it doesn't exist
 makedirs(FIXED_SMRI_DIR, exist_ok=True)

@@ -1,7 +1,4 @@
-#!/usr/bin/env python
-
-"""
-Run group analysis on parcellated data on the Wakeman-Henson dataset.
+"""Run group analysis on parcellated data on the Wakeman-Henson dataset.
 
 """
 
@@ -27,8 +24,8 @@ subj_sess_2exclude = np.zeros([nsubjects, nsessions]).astype(bool)
 #subj_sess_2exclude = np.ones(subj_sess_2exclude.shape).astype(bool)
 #subj_sess_2exclude[0:1,0:1]=False
 
-# -------------------------------------------------------------
-# %% Setup file names
+# ----------------
+# Setup file names
 
 smri_files = []
 preproc_fif_files = []
@@ -62,8 +59,8 @@ for sub in subjects_to_do:
                 preproc_fif_files.append(preproc_fif_file)
                 sflip_parc_files.append(sflip_parc_file)
 
-# -------------------------------------------------------------
-# %% Coreg and Source recon and Parcellate
+# -------------------------------------
+# Coreg and Source recon and Parcellate
 
 config = """
     source_recon:
@@ -94,8 +91,8 @@ source_recon.run_src_batch(
     smri_files=smri_files,
 )
 
-# -------------------------------------------------------------
-# %% Sign flip
+# ---------
+# Sign flip
 
 # Find a good template subject to align other subjects to
 template = source_recon.find_template_subject(
@@ -123,23 +120,18 @@ source_recon.run_src_batch(
 
 
 if False:
-    # -------------------------------------------------------------
-    # %% Copy sf files to a single directory (makes it easier to copy minimal
+    # --------------------------------------------------------------------
+    # Copy sf files to a single directory (makes it easier to copy minimal
     # files to, e.g. BMRC, for downstream analysis)
 
     os.makedirs(op.join(recon_dir, "sflip_data"), exist_ok=True)
 
     for subject, sflip_parc_file in zip(subjects, sflip_parc_files):
-
         sflip_parc_file_from = op.join(recon_dir, subject, sflip_parc_file)
-
         sflip_parc_file_to = op.join(
             recon_dir, "sflip_data", subject + "_sflip_parc-raw.fif"
         )
-
         os.system("cp -f {} {}".format(sflip_parc_file_from, sflip_parc_file_to))
-
-    ####
 
 if False:
 

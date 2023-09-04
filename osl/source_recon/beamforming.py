@@ -43,6 +43,7 @@ from osl.source_recon import rhino
 from osl.source_recon.rhino import utils as rhino_utils
 from osl.utils.logger import log_or_print
 
+
 def get_beamforming_filenames(subjects_dir, subject):
     """Get beamforming filenames.
 
@@ -644,7 +645,18 @@ def _make_lcmv(
     # Compute spatial filter
     n_orient = 3 if is_free_ori else 1
     W, max_power_ori = _compute_beamformer(
-        G, Cm, reg, n_orient, weight_norm, pick_ori, reduce_rank, rank_int, inversion=inversion, nn=nn, orient_std=orient_std, whitener=whitener,
+        G,
+        Cm,
+        reg,
+        n_orient,
+        weight_norm,
+        pick_ori,
+        reduce_rank,
+        rank_int,
+        inversion=inversion,
+        nn=nn,
+        orient_std=orient_std,
+        whitener=whitener,
     )
 
     # Get src type to store with filters for _make_stc
@@ -961,13 +973,13 @@ def _prepare_beamformer_input(
 
     Modified version of mne.beamformer._prepare_beamformer_input.
     """
-    # Lines marked MWW or CG for where code has been changed.
+    # Lines marked MWW are where code has been changed.
 
     # MWW
     # _check_option('pick_ori', pick_ori, ('normal', 'max-power', 'vector', None))
     _check_option("pick_ori", pick_ori, ("normal", "max-power", "vector", "max-power-pre-weight-norm", None))
 
-    # MWW, CG
+    # MWW
     # Restrict forward solution to selected vertices
     #if label is not None:
     #    _, src_sel = label_src_vertno_sel(label, forward["src"])
@@ -976,7 +988,7 @@ def _prepare_beamformer_input(
     if loose is None:
         loose = 0.0 if is_fixed_orient(forward) else 1.0
 
-    # MWW, CG
+    # MWW
     #if noise_cov is None:
     #    noise_cov = make_ad_hoc_cov(info, std=1.0)
 
@@ -1087,11 +1099,8 @@ def voxel_timeseries(
         log_or_print(f"bandpass filtering: {freq_range}")
         data = data.filter(l_freq=freq_range[0], h_freq=freq_range[1], method="iir", iir_params={"order": 5, "ftype": "butter"})
 
-    # Load the beamformer
+    # Load the beamformer and apply
     filters = load_lcmv(subjects_dir, subject)
-
-    # Apply the beamformer
-    log_or_print("applying beamformer")
     bf_data = apply_lcmv(data, filters, reject_by_annotation)
 
     # Transform to MNI space
