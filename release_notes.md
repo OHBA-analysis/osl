@@ -56,6 +56,8 @@ You need to update the version number the the following files to version number 
 - `setup.py`
 - `osl/__init__.py`
 
+Don't forget to commit these changes before continuing.
+
 ##### 4 - Run a local build and make sure you get the right versions.
 
 Run a local install using pip from the local directory:
@@ -103,7 +105,8 @@ Note, you may need to install `twine` with `pip install twine`.
 
 ##### 8 - TEST EVERYTHING!
 
-Ask your friends and family to install the released package and let you know if there are any problems. Fix any that come up and repeat steps 1 to 8 with a new version number.
+Ask your friends and family to install the released package and let you know if there are any problems. Fix any that come up and repeat steps 1 to 8 with a new version number. 
+Note: if you test the installation from a `pip install osl`, make sure you're not opening Python from an OSL directory because then the directory will be imported rather than the installed package from pip.
 
 Do not delete broken package releases, make any fixes in a new 'trivial' update.
 
@@ -121,12 +124,14 @@ You need to change the version number in the following files:
 - `setup.py`
 - `osl/__init__.py`
 
+Don't forget to commit these changes before continuing.
+
 ##### 10 - Push branch and merge into main
 
 To push use:
 
 ```
-git push --set-upstream origina release-vX.Y.Z
+git push --set-upstream origin release-vX.Y.Z
 ```
 Remember to replace vX.Y.Z with the latest version number.
 
