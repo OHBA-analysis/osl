@@ -9,7 +9,7 @@ import mne
 import numpy as np
 from sails.stft import glm_periodogram
 from scipy import signal, stats
-from .glm_base import GLMBaseResult, GroupGLMBaseResult, SensorClusterPerm
+from .glm_base import GLMBaseResult, GroupGLMBaseResult, SensorClusterPerm, SensorMaxStatPerm
 
 from matplotlib.patches import ConnectionPatch
 
@@ -134,7 +134,7 @@ class GroupSensorGLMSpectrum(GroupGLMBaseResult):
     def __init__(self, model, design, config, info, fl_contrast_names=None, data=None):
 
         self.f = config.freqvals
-        super().__init__(model, design, info, fl_contrast_names=fl_contrast_names, data=data)
+        super().__init__(model, design, info, config, fl_contrast_names=fl_contrast_names, data=data)
 
     def __str__(self):
         msg = 'GroupSensorGLMSpectrum\n'
@@ -165,6 +165,7 @@ class GroupSensorGLMSpectrum(GroupGLMBaseResult):
         if Path(outname).exists() and not overwrite:
             msg = "{} already exists. Please delete or do use overwrite=True."
             raise ValueError(msg.format(outname))
+
 
         self.config.detrend_func = None  # Have to drop this to pickle
 
@@ -257,6 +258,33 @@ class GroupSensorGLMSpectrum(GroupGLMBaseResult):
         return ret_con
 
 
+class MaxStatPermuteGLMSpectrum(SensorMaxStatPerm):
+    """A class holding the result for sensor x frequency cluster stats computed
+    from a group level GLM-Spectrum"""
+
+    def plot_sig_clusters(self, thresh, ax=None, base=1):
+        """Plot the significant clusters at a given threshold.
+
+        Parameters
+        ----------
+        thresh : float
+            The threshold to consider a cluster significant eg 95 or 99
+        ax :
+             (Default value = None)
+        base :
+             (Default value = 1)
+
+        Returns
+        -------
+
+        """
+        title = 'group-con: {}\nfirst-level-con: {}'
+        title = title.format(self.gl_contrast_name, self.fl_contrast_name)
+
+        clu, obs = self.get_sig_clusters(thresh)
+        plot_joint_spectrum_clusters(self.f, obs, clu, self.info, base=base, ax=ax, title=title, ylabel='t-stat')
+
+
 class ClusterPermuteGLMSpectrum(SensorClusterPerm):
     """A class holding the result for sensor x frequency cluster stats computed
     from a group level GLM-Spectrum"""
@@ -281,7 +309,7 @@ class ClusterPermuteGLMSpectrum(SensorClusterPerm):
         title = title.format(self.gl_contrast_name, self.fl_contrast_name)
 
         clu, obs = self.perms.get_sig_clusters(thresh, self.perm_data)
-        plot_joint_spectrum_clusters(self.f, obs, clu, self.info, base=base, ax=ax, title=title)
+        plot_joint_spectrum_clusters(self.f, obs, clu, self.info, base=base, ax=ax, title=title, ylabel='t-stat')
 
 
 #%% ---------------------------------------
@@ -608,24 +636,21 @@ def plot_joint_spectrum_clusters(xvect, psd, clusters, info, ax=None, freqs='aut
 
         # Plot topo
         dat = psd[fmid, :]
-        im, cn = mne.viz.plot_topomap(dat, info, axes=topo_ax, show=False, mask=channels)
+        im, cn = mne.viz.plot_topomap(dat, info, axes=topo_ax, show=False, mask=channels, ch_type='planar1')
         topos.append(im)
 
-    if topo_scale == 'joint':
+    if topo_scale == 'joint' and len(topos) > 0:
         vmin = np.min([t.get_clim()[0] for t in topos])
         vmax = np.max([t.get_clim()[1] for t in topos])
 
         for t in topos:
             t.set_clim(vmin, vmax)
-    else:
-        vmin = 0
-        vmax = 1
+
+        cb_pos = [0.95, 1-title_prop-topo_prop, 0.025, topo_prop]
+        cax =  ax.inset_axes(cb_pos)
+        plt.colorbar(topos[0], cax=cax)
+
     print('\n')  # End table
-
-    cb_pos = [0.95, 1-title_prop-topo_prop, 0.025, topo_prop]
-    cax =  ax.inset_axes(cb_pos)
-
-    plt.colorbar(topos[0], cax=cax)
 
     ax.set_title(title, x=0.5, y=1-title_prop)
 
