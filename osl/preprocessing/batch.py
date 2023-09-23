@@ -812,6 +812,8 @@ def run_proc_chain(
 def run_proc_batch(
     config,
     files,
+    outnames=None,
+    ftype=None,
     outdir=None,
     logsdir=None,
     reportdir=None,
@@ -822,7 +824,6 @@ def run_proc_batch(
     mneverbose="WARNING",
     strictrun=False,
     dask_client=False,
-    ftype=None,
 ):
     """Run batched preprocessing.
 
@@ -892,7 +893,19 @@ def run_proc_batch(
     logger.info('Starting OSL Batch Processing')
 
     # Check through inputs and parameters
-    infiles, outnames, good_files = process_file_inputs(files)
+    infiles, good_files_outnames, good_files = process_file_inputs(files)
+
+    # Specify filenames for the output data
+    if outnames is None:
+        outnames = good_files_outnames
+    else:
+        if len(outnames) != len(good_files_outnames):
+            logger.critical(
+                f"Number of outnames ({len(outnames)}) does not match "
+                f"number of good files {len(good_files_outnames)}. "
+                "Fix outnames or use outnames=None."
+            )
+
     if strictrun and click.confirm('Is this correct set of inputs?') is False:
         logger.critical('Stopping : User indicated incorrect number of input files')
         sys.exit(1)
@@ -932,7 +945,6 @@ def run_proc_batch(
 
     # Loop through input files to generate arguments for run_proc_chain
     args = []
-
     for infile, outname in zip(infiles, outnames):
         args.append((config, infile, outname))
 
