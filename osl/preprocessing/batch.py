@@ -106,7 +106,7 @@ def import_data(infile, preload=True):
         logger.info("Detected fif file format, using: mne.io.read_raw_fif")
         raw = mne.io.read_raw_fif(infile, preload=preload)
     # EDF file
-    elif os.path.splitext(infile)[1] == ".edf":
+    elif os.path.splitext(infile)[1].lower() == ".edf":
         logger.info("Detected edf file format, using: mne.io.read_raw_edf")
         raw = mne.io.read_raw_edf(infile, preload=preload)
     # CTF data in ds directory
