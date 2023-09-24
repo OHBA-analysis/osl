@@ -18,7 +18,6 @@ subjects = ["sub-001", "sub-002"]
 # Settings
 config = """
     preproc:
-    - crop: {tmin: 20}
     - filter: {l_freq: 0.5, h_freq: 125, method: iir, iir_params: {order: 5, ftype: butter}}
     - notch_filter: {freqs: 50 100}
     - resample: {sfreq: 250}
