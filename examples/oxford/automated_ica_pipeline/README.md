@@ -5,7 +5,7 @@ The scripts in this directory contain the recommended settings for preprocessing
 
 To run these scripts you need:
 
-1. The raw `.fif` file containing the recording for each session.
+1. The raw `.fif` file containing the recording for each session. Note, you must have an EOG and ECG channel.
 
 2. A structural MRI for each subject.
 

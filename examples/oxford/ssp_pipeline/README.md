@@ -15,7 +15,7 @@ The steps are:
 
 2. **Preprocess** (`2_preprocess.py`). This script filters, downsamples, and uses automated algorithms to detect bad segments/channels and uses ICA to remove eye blinks. Note, the automated ICA artefact removal might not always work very well, so it's often worthwhile to check the preprocessing.
 
-3. **Manual ICA denoising** (`3_manual_ica.py`). This script can be used to do manual ICA artefact rejection. Note, this script was tested using Spyder.
+3. **SSP denoising** (`3_ssp_denoising.py`). This script can be used to do SSP artefact rejection.
 
 4. **Coregistration** (`4_coregister.py`). This script aligns the sMRI and MEG space (using the polhemus head space). Here, we advise you check the head has been placed in a plausible location in the MEG scanner. You can do this by looking at the coregistration panel in the report (`coreg/report/subjects_report.html` and `summary_report.html`). You may need to re-run this script with different settings (e.g. by increasing `n_init`) to fix poorly aligned subjects.
 
