@@ -18,7 +18,6 @@ subjects = ["sub-001", "sub-002"]
 # Settings
 config = """
     preproc:
-    - crop: {tmin: 30}
     - filter: {l_freq: 0.5, h_freq: 125, method: iir, iir_params: {order: 5, ftype: butter}}
     - notch_filter: {freqs: 50 100}
     - resample: {sfreq: 250}
@@ -28,8 +27,8 @@ config = """
     - bad_segments: {segment_len: 500, picks: grad, mode: diff, significance_level: 0.1}
     - bad_channels: {picks: mag, significance_level: 0.1}
     - bad_channels: {picks: grad, significance_level: 0.1}
-    - ica_raw: {picks: meg, n_components: 0.99}
-    - ica_autoreject: {picks: meg, ecgmethod: correlation, eogthreshold: auto}
+    - ica_raw: {picks: meg, n_components: 64}
+    - ica_autoreject: {apply: False}
     - interpolate_bads: {}
 """
 

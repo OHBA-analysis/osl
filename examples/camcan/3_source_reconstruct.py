@@ -1,9 +1,10 @@
 """Source reconstruction: forward modelling, beamforming and parcellation.
 
-Note, before this script is run the /coreg directory created by coregister.py
-must be copied and renamed to /src.
 """
 
+# Authors: Chetan Gohil <chetan.gohil@psych.ox.ac.uk>
+
+import os
 import pathlib
 from glob import glob
 from dask.distributed import Client
@@ -13,6 +14,7 @@ from osl import source_recon, utils
 # Directories
 BASE_DIR = "/well/woolrich/projects/camcan"
 PREPROC_DIR = BASE_DIR + "/summer23/preproc"
+COREG_DIR = BASE_DIR + "/summer23/coreg"
 SRC_DIR = BASE_DIR + "/summer23/src"
 FSL_DIR = "/well/woolrich/projects/software/fsl"
 
@@ -23,24 +25,15 @@ PREPROC_FILE = (
     + "/mf2pt2_{0}_ses-rest_task-rest_meg_preproc_raw.fif"
 )
 
-# Settings
-config = """
-    source_recon:
-    - forward_model:
-        model: Single Layer
-    - beamform_and_parcellate:
-        freq_range: [1, 80]
-        chantypes: [mag, grad]
-        rank: {meg: 60}
-        parcellation_file: Glasser52_binary_space-MNI152NLin6_res-8x8x8.nii.gz
-        method: spatial_basis
-        orthogonalisation: symmetric
-        extra_chans: [eog, ecg]
-"""
-
 if __name__ == "__main__":
     utils.logger.set_up(level="INFO")
     source_recon.setup_fsl(FSL_DIR)
+
+    # Copy coreg directory
+    if not os.path.exists(SRC_DIR):
+        cmd = f"cp -r {COREG_DIR} {SRC_DIR}"
+        print(cmd)
+        os.system(cmd)
 
     # Get subjects
     subjects = []
@@ -51,6 +44,21 @@ if __name__ == "__main__":
     preproc_files = []
     for subject in subjects:
         preproc_files.append(PREPROC_FILE.format(subject))
+
+    # Settings
+    config = """
+        source_recon:
+        - forward_model:
+            model: Single Layer
+        - beamform_and_parcellate:
+            freq_range: [1, 80]
+            chantypes: [mag, grad]
+            rank: {meg: 60}
+            parcellation_file: Glasser52_binary_space-MNI152NLin6_res-8x8x8.nii.gz
+            method: spatial_basis
+            orthogonalisation: symmetric
+            extra_chans: [eog, ecg]
+    """
 
     # Setup parallel processing
     client = Client(n_workers=16, threads_per_worker=1)

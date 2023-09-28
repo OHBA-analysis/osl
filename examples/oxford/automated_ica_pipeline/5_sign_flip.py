@@ -38,7 +38,7 @@ if __name__ == "__main__":
             n_embeddings: 15
             standardize: True
             n_init: 3
-            n_iter: 500
+            n_iter: 2500
             max_flips: 20
     """
 
@@ -52,6 +52,6 @@ if __name__ == "__main__":
     run_src_batch(
         config,
         src_dir=src_dir,
-        subjects=subjects
+        subjects=subjects,
         dask_client=True,
     )
