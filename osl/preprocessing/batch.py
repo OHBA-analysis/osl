@@ -967,6 +967,11 @@ def run_proc_batch(
 
 
 def main(argv=None):
+    """_summary_
+
+    Args:
+        argv (_type_, optional): _description_. Defaults to None.
+    """    
     if argv is None:
         argv = sys.argv[1:]
 

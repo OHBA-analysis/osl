@@ -1,5 +1,24 @@
 """Wrappers for MNE functions to perform preprocessing.
 
+    We have run_mne_anonymous which tries to run a method directly on a target
+    object (typically an mne Raw or Epochs object).
+
+    In addition, there are a set of wrapper functions for MNE methods which need
+    a bit more option processing than the default - for example, converting input
+    strings into arrays of frequencies
+
+    Wrapper functions have priority and will be run rather than the direct method
+    call if a wrapper is present. If no wrapper is present then we fall back to
+    the direct method call.
+    
+    Most wrapper functions run on the `mne.Raw` object in `dataset` by default
+    and the function docstrings assume this - but is most cases `mne.io.Raw` can
+    be replaced with `mne.Epochs` (or `dataset['raw']` by `dataset['epochs']` and 
+    the function will still work, e.g. :py:meth:`mne.Epochs.pick <mne.Epochs.pick>`.
+    In order to apply the method to an object different from `mne.Raw`, the `target`
+    argument can be specified in `userargs`. For example, `target: 'epochs'` can be
+    specified in the userargs to apply the method to `dataset['epochs']` instead of
+    `dataset['raw']`.
 """
 
 # Authors: Andrew Quinn <a.quinn@bham.ac.uk>
@@ -17,19 +36,29 @@ logger = logging.getLogger(__name__)
 # --------------------------------------------------------------
 # MNE Raw/Epochs Object Methods
 #
-# We have run_mne_anonymous which tries to run a method directly on a target
-# object (typically an mne Raw or Epochs object).
-#
-# In addition, there are a set of wrapper functions for MNE methods which need
-# a bit more option processing than the default - for example, converting input
-# strings into arrays of frequencies
-#
-# Wrapper functions have priority and will be run rather than the direct method
-# call if a wrapper is present. If no wrapper is present then we fall back to
-# the direct method call.
 
 
 def run_mne_anonymous(dataset, userargs, method):
+    """OSL-Batch function which runs a method directly on a target MNE object 
+    in `dataset`, typically an `mne.Raw` or `mne.Epochs` object.
+    
+    OSL Batch will first look for OSL/MNE wrapper functions for the method, and 
+    otherwise will try to run the method directly on the target object.
+
+    Arguments
+    ---------
+    dataset: dict
+        Dictionary containing at least an MNE object with the key `raw`.
+    userargs: dict
+        Contains user arguments for the function.
+    method: str
+        
+
+    Returns
+    -------
+    dataset: dict
+        Input dictionary containing MNE objects that have been modified in place.
+    """    
     target = userargs.pop("target", "raw")
     logger.info("MNE Stage - {0}.{1}".format(target, method))
     logger.info("userargs: {0}".format(str(userargs)))
@@ -49,6 +78,24 @@ def run_mne_anonymous(dataset, userargs, method):
 
 
 def run_mne_notch_filter(dataset, userargs):
+    """OSL-Batch wrapper for `raw.notch_filter`.
+
+    This function calls :py:meth:`mne.io.Raw.notch_filter <mne.io.Raw.notch_filter>` on
+    an MNE object in `dataset`. Additional arguments on the MNE function can be
+    specified as a dictonary.
+
+    Parameters
+    ----------
+    dataset : dict
+        Dictionary containing at least an MNE object with the key `raw`.
+    userargs : dict
+        Dictionary of additional arguments to be passed to mne.io.Raw.pick
+
+    Returns
+    -------
+    dataset: dict
+        Input dictionary containing MNE objects that have been modified in place.
+    """    
     target = userargs.pop("target", "raw")
     logger.info("MNE Stage - {0}.{1}".format(target, "notch_filter"))
     logger.info("userargs: {0}".format(str(userargs)))
@@ -63,22 +110,22 @@ def run_mne_notch_filter(dataset, userargs):
 
 
 def run_mne_pick(dataset, userargs):
-    """OSL-Batch wrapper for 'raw.pick'.
+    """OSL-Batch wrapper for `raw.pick`.
 
-    This function calls :py:meth:`mne.io.Raw.pick <mne.io.BaseRaw.pick>` on
-    the raw object in dataset. Additional arguments on the MNE function can be
+    This function calls :py:meth:`mne.io.Raw.pick <mne.io.Raw.pick>` on
+    `dataset['raw']`. Additional arguments on the MNE function can be
     specified as a dictonary.
 
     Parameters
     ----------
     dataset : dict
-        Dictionary containing at least an MNE object with the key 'raw'
+        Dictionary containing at least an MNE object with the key `raw`.
     userargs : dict
-        Dictionary of additional arguments to be passed to mne.io.Raw.pick
+        Dictionary of additional arguments to be passed to `mne.io.Raw.pick`.
 
     Returns
     -------
-    dict
+    dataset: dict
         Input dictionary containing MNE objects that have been modified in place.
 
     Notes
@@ -88,7 +135,7 @@ def run_mne_pick(dataset, userargs):
     >>> preproc:
     >>>  - pick: {picks: 'meg'}
 
-    By default, the :py:meth:`mne.io.Raw.pick <mne.io.BaseRaw.pick>` will be
+    By default, the :py:meth:`mne.io.Raw.pick <mne.io.Raw.pick>` will be
     called on `dataset['raw']`, you can specify another options by specifying
     `target` in userargs. For example:
 
@@ -106,6 +153,24 @@ def run_mne_pick(dataset, userargs):
 
 
 def run_mne_pick_channels(dataset, userargs):
+    """OSL-Batch wrapper for `raw.pick_channels`.
+
+    This function calls :py:meth:`mne.pick_channels <mne.io.Raw.pick_channels>` on
+    an MNE object in `dataset`. Additional arguments on the MNE function can be
+    specified as a dictonary.
+
+    Arguments
+    ---------
+    dataset: dict
+        Dictionary containing at least an MNE object with the key `raw`.
+    userargs: dict
+        Dictionary of additional arguments to be passed to `mne.io.Raw.pick_channels`.
+
+    Returns
+    -------
+    dataset: dict
+        Input dictionary containing MNE objects that have been modified in place.
+    """    
     target = userargs.pop("target", "raw")
     logger.info("MNE Stage - {0}.{1}".format(target, "pick_channels"))
     logger.info("userargs: {0}".format(str(userargs)))
@@ -114,6 +179,24 @@ def run_mne_pick_channels(dataset, userargs):
 
 
 def run_mne_pick_types(dataset, userargs):
+    """OSL-Batch wrapper for `raw.pick_types`.
+
+    This function calls :py:meth:`mne.io.Raw.pick_types <mne.io.Raw.pick_types>` on
+    `dataset['raw']`. Additional arguments on the MNE function can be
+    specified as a dictonary.
+
+    Arguments
+    ---------
+    dataset: dict
+        Dictionary containing at least an MNE object with the key `raw`.
+    userargs: dict
+        Dictionary of additional arguments to be passed to `mne.io.Raw.pick_types`.
+
+    Returns
+    -------
+    dataset: dict
+        Input dictionary containing MNE objects that have been modified in place.
+    """    
     target = userargs.pop("target", "raw")
     logger.info("MNE Stage - {0}.{1}".format(target, "pick_types"))
     logger.info("userargs: {0}".format(str(userargs)))
@@ -122,6 +205,24 @@ def run_mne_pick_types(dataset, userargs):
 
 
 def run_mne_resample(dataset, userargs):
+    """OSL-Batch wrapper for `raw.resample`.
+
+    This function calls :py:meth:`mne.io.Raw.resample <mne.io.Raw.resample>` on
+    an MNE object in `dataset`. Additional arguments on the MNE function can be
+    specified as a dictonary.
+
+    Arguments
+    ---------
+    dataset: dict
+        Dictionary containing at least an MNE object with the key `raw`.
+    userargs: dict
+        Dictionary of additional arguments to be passed to `mne.io.Raw.resample`.
+
+    Returns
+    -------
+    dataset: dict
+        Input dictionary containing MNE objects that have been modified in place.
+    """    
     target = userargs.pop("target", "raw")
     logger.info("MNE Stage - {0}.{1}".format(target, "resample"))
     logger.info("userargs: {0}".format(str(userargs)))
@@ -135,6 +236,24 @@ def run_mne_resample(dataset, userargs):
 
 
 def run_mne_set_channel_types(dataset, userargs):
+    """OSL-Batch wrapper for `raw.set_channel_types`.
+
+    This function calls :py:meth:`mne.io.Raw.set_channel_types <mne.io.Raw.set_channel_types>` on
+    an MNE object in `dataset`. Additional arguments on the MNE function can be
+    specified as a dictonary.
+
+    Arguments
+    ---------
+    dataset: dict
+        Dictionary containing at least an MNE object with the key `raw`.
+    userargs: dict
+        Dictionary of additional arguments to be passed to `mne.io.Raw.set_channel_types`.
+
+    Returns
+    -------
+    dataset: dict
+        Input dictionary containing MNE objects that have been modified in place.
+    """    
     target = userargs.pop("target", "raw")
     logger.info("MNE Stage - {0}.{1}".format(target, "set_channel_types"))
     logger.info("userargs: {0}".format(str(userargs)))
@@ -147,6 +266,24 @@ def run_mne_set_channel_types(dataset, userargs):
 
 
 def run_mne_drop_bad(dataset, userargs):
+    """OSL-Batch wrapper for `epochs.drop_bad`.
+
+    This function calls :py:meth:`mne.Epochs.drop_bad <mne.Epochs.drop_bad>` on
+    an MNE object in `dataset`. Additional arguments on the MNE function can be
+    specified as a dictonary.
+    
+    Arguments
+    ---------
+    dataset: dict
+        Dictionary containing at least an MNE object with the key `raw` and `epochs`.
+    userargs: dict
+        Dictionary of additional arguments to be passed to `mne.Epochs.drop_bad`.
+
+    Returns
+    -------
+    dataset: dict
+        Input dictionary containing MNE objects that have been modified in place.
+    """    
     target = userargs.pop("target", "epochs")  # should only be epochs
     logger.info("MNE Stage - {0}.{1}".format(target, "drop_bad"))
     logger.info("userargs: {0}".format(str(userargs)))
@@ -166,6 +303,24 @@ def run_mne_drop_bad(dataset, userargs):
 
 
 def run_mne_apply_baseline(dataset, userargs):
+    """OSL-Batch wrapper for `epochs.apply_baseline`.
+
+    This function calls :py:meth:`mne.Epochs.apply_baseline <mne.Epochs.apply_baseline>` on
+    an MNE object in `dataset`. Additional arguments on the MNE function can be
+    specified as a dictonary.
+    
+    Arguments
+    ---------
+    dataset: dict
+        Dictionary containing at least an MNE object with the key `raw` and `epochs`.
+    userargs: dict
+        Dictionary of additional arguments to be passed to `mne.Epochs.apply_baseline`.
+
+    Returns
+    -------
+    dataset: dict
+        Input dictionary containing MNE objects that have been modified in place.
+    """    
     target = userargs.pop("target", "epochs")  # should only be epochs
     logger.info("MNE Stage - {0}.{1}".format(target, "apply_baseline"))
     logger.info("userargs: {0}".format(str(userargs)))
@@ -184,6 +339,24 @@ def run_mne_apply_baseline(dataset, userargs):
 
 
 def run_mne_find_events(dataset, userargs):
+    """OSL-Batch wrapper for `raw.find_events`.
+
+    This function calls :py:meth:`mne.io.Raw.find_events <mne.io.Raw.find_events>` on
+    an MNE object in `dataset`. Additional arguments on the MNE function can be
+    specified as a dictonary.
+
+    Arguments
+    ---------
+    dataset: dict
+        Dictionary containing at least an MNE object with the key `raw`.
+    userargs: dict
+        Dictionary of additional arguments to be passed to `mne.io.Raw.find_events`.
+
+    Returns
+    -------
+    dataset: dict
+        Input dictionary containing MNE objects that have been modified in place.
+    """    
     logger.info("MNE Stage - {0}.{1}".format("mne", "find_events"))
     logger.info("userargs: {0}".format(str(userargs)))
 
@@ -192,6 +365,23 @@ def run_mne_find_events(dataset, userargs):
 
 
 def run_mne_epochs(dataset, userargs):
+    """OSL-Batch wrapper for `mne.Epochs`.
+
+    This function calls :py:meth:`mne.Epochs <mne.Epochs>` on the `raw`, `events`, and `event-id`
+    objects in `dataset`. Additional arguments on the MNE function can be specified as a dictonary.
+
+    Arguments
+    ---------
+    dataset: dict
+        Dictionary containing at least an MNE object with the key `raw`, `events`, and `event-id`.
+    userargs: dict
+        Dictionary of additional arguments to be passed to `mne.Epochs`.
+
+    Returns
+    -------
+    dataset: dict
+        Input dictionary containing MNE objects that have been modified in place.
+    """    
     logger.info("MNE Stage - {0}.{1}".format("mne", "epochs"))
     logger.info("userargs: {0}".format(str(userargs)))
     tmin = userargs.pop("tmin", -0.2)
@@ -207,6 +397,24 @@ def run_mne_epochs(dataset, userargs):
 
 
 def run_mne_annotate_amplitude(dataset, userargs):
+    """OSL-Batch wrapper for `mne.preprocessing.annotate_amplitude`.
+
+    This function calls :py:meth:`mne.preprocessing.annotate_amplitude <mne.preprocessing.annotate_amplitude>` on
+    an MNE object in `dataset`. Additional arguments on the MNE function can be
+    specified as a dictonary.
+
+    Arguments
+    ---------
+    dataset: dict
+        Dictionary containing at least an MNE object with the key `raw`.
+    userargs: dict
+        Dictionary of additional arguments to be passed to `mne.preprocessing.annotate_amplitude`.
+
+    Returns
+    -------
+    dataset: dict
+        Input dictionary containing MNE objects that have been modified in place.
+    """    
     logger.info("MNE Stage - {0}.{1}".format("mne.preprocessing", "annotate_amplitude"))
     logger.info("userargs: {0}".format(str(userargs)))
     target = userargs.pop("target", "raw")
@@ -238,6 +446,24 @@ def run_mne_annotate_amplitude(dataset, userargs):
 
 
 def run_mne_annotate_muscle_zscore(dataset, userargs):
+    """OSL-Batch wrapper for `mne.preprocessing.annotate_muscle_zscore`.
+
+    This function calls :py:meth:`mne.preprocessing.annotate_muscle_zscore <mne.preprocessing.annotate_muscle_zscore>` on
+    an MNE object in `dataset`. Additional arguments on the MNE function can be
+    specified as a dictonary.
+    
+    Arguments
+    ---------
+    dataset: dict
+        Dictionary containing at least an MNE object with the key `raw`.
+    userargs: dict
+        Dictionary of additional arguments to be passed to `mne.preprocessing.annotate_muscle_zscore`.
+
+    Returns
+    -------
+    dataset: dict
+        Input dictionary containing MNE objects that have been modified in place.
+    """    
     logger.info(
         "MNE Stage - {0}.{1}".format("mne.preprocessing", "annotate_muscle_zscore")
     )
@@ -269,6 +495,24 @@ def run_mne_annotate_muscle_zscore(dataset, userargs):
 
 
 def run_mne_find_bad_channels_maxwell(dataset, userargs):
+    """OSL-Batch wrapper for `mne.preprocessing.find_bad_channels_maxwell`.
+
+    This function calls :py:meth:`mne.preprocessing.find_bad_channels_maxwell <mne.preprocessing.find_bad_channels_maxwell>` on
+    an MNE object in `dataset`. Additional arguments on the MNE function can be
+    specified as a dictonary.
+
+    Arguments
+    ---------
+    dataset: dict
+        Dictionary containing at least an MNE object with the key `raw`.
+    userargs: dict
+        Dictionary of additional arguments to be passed to `mne.preprocessing.find_bad_channels_maxwell`.
+
+    Returns
+    -------
+    dataset: dict
+        Input dictionary containing MNE objects that have been modified in place.
+    """    
     logger.info(
         "MNE Stage - {0}.{1}".format("mne.preprocessing", "find_bad_channels_maxwell")
     )
@@ -287,6 +531,24 @@ def run_mne_find_bad_channels_maxwell(dataset, userargs):
 
 
 def run_mne_maxwell_filter(dataset, userargs):
+    """OSL-Batch wrapper for `mne.preprocessing.maxwell_filter`.
+
+    This function calls :py:meth:`mne.preprocessing.maxwell_filter <mne.preprocessing.maxwell_filter>` on
+    an MNE object in `dataset`. Additional arguments on the MNE function can be
+    specified as a dictonary.
+
+    Arguments
+    ---------
+    dataset: dict
+        Dictionary containing at least an MNE object with the key `raw`.
+    userargs: dict
+        Dictionary of additional arguments to be passed to `mne.preprocessing.maxwell_filter`.
+        
+    Returns
+    -------
+    dataset: dict
+        Input dictionary containing MNE objects that have been modified in place.
+    """    
     logger.info("MNE Stage - {0}.{1}".format("mne.preprocessing", "maxwell_filter"))
     logger.info("userargs: {0}".format(str(userargs)))
     target = userargs.pop("target", "raw")
@@ -301,6 +563,24 @@ def run_mne_maxwell_filter(dataset, userargs):
 
 
 def run_mne_compute_current_source_density(dataset, userargs):
+    """OSL-Batch wrapper for `mne.preprocessing.compute_current_source_density`.
+
+    This function calls :py:meth:`mne.preprocessing.compute_current_source_density <mne.preprocessing.compute_current_source_density>` on
+    an MNE object in `dataset`. Additional arguments on the MNE function can be
+    specified as a dictonary.
+
+    Arguments
+    ---------
+    dataset: dict
+        Dictionary containing at least an MNE object with the key `raw`.
+    userargs: dict
+        Dictionary of additional arguments to be passed to `mne.preprocessing.compute_current_source_density`.
+
+    Returns
+    -------
+    dataset: dict
+        Input dictionary containing MNE objects that have been modified in place.
+    """    
     logger.info(
         "MNE Stage - {0}.{1}".format(
             "mne.preprocessing", "compute_current_source_density"
@@ -322,6 +602,24 @@ def run_mne_compute_current_source_density(dataset, userargs):
 
 
 def run_mne_tfr_multitaper(dataset, userargs):
+    """OSL-Batch wrapper for `mne.time_frequency.tfr_multitaper`.
+
+    This function calls :py:meth:`mne.time_frequency.tfr_multitaper <mne.time_frequency.tfr_multitaper>` on
+    an MNE object in `dataset`. Additional arguments on the MNE function can be
+    specified as a dictonary.
+
+    Arguments
+    ---------
+    dataset: dict
+        Dictionary containing at least an MNE object with the key `raw`.
+    userargs: dict
+        Dictionary of additional arguments to be passed to `mne.time_frequency.tfr_multitaper`.
+
+    Returns
+    -------
+    dataset: dict
+        Input dictionary containing MNE objects that have been modified in place.
+    """    
     target = userargs.pop("target", "epochs")
     logger.info("MNE Stage - {0} on {1}".format("tfr_multitaper", target))
     logger.info("userargs: {0}".format(str(userargs)))
@@ -339,6 +637,24 @@ def run_mne_tfr_multitaper(dataset, userargs):
 
 
 def run_mne_tfr_morlet(dataset, userargs):
+    """OSL-Batch wrapper for `mne.time_frequency.tfr_morlet`.
+
+    This function calls :py:meth:`mne.time_frequency.tfr_morlet <mne.time_frequency.tfr_morlet>` on
+    an MNE object in `dataset`. Additional arguments on the MNE function can be
+    specified as a dictonary.
+
+    Arguments
+    ---------
+    dataset: dict
+        Dictionary containing at least an MNE object with the key `raw`.
+    userargs: dict
+        Dictionary of additional arguments to be passed to `mne.time_frequency.tfr_morlet`.
+
+    Returns
+    -------
+    dataset: dict
+        Input dictionary containing MNE objects that have been modified in place.
+    """    
     target = userargs.pop("target", "epochs")
     logger.info("MNE Stage - {0} on {1}".format("tfr_morlet", target))
     logger.info("userargs: {0}".format(str(userargs)))
@@ -352,6 +668,24 @@ def run_mne_tfr_morlet(dataset, userargs):
 
 
 def run_mne_tfr_stockwell(dataset, userargs):
+    """OSL-Batch wrapper for `mne.time_frequency.tfr_stockwell`.
+
+    This function calls :py:meth:`mne.time_frequency.tfr_stockwell <mne.time_frequency.tfr_stockwell>` on
+    an MNE object in `dataset`. Additional arguments on the MNE function can be
+    specified as a dictonary.
+
+    Arguments
+    ---------
+    dataset: dict
+        Dictionary containing at least an MNE object with the key `raw`.
+    userargs: dict
+        Dictionary of additional arguments to be passed to `mne.time_frequency.stockwell`.
+
+    Returns
+    -------
+    dataset: dict
+        Input dictionary containing MNE objects that have been modified in place.
+    """    
     target = userargs.pop("target", "epochs")
     logger.info("MNE Stage - {0} on {1}".format("tfr_stockwell", target))
     logger.info("userargs: {0}".format(str(userargs)))
@@ -373,6 +707,25 @@ def run_mne_tfr_stockwell(dataset, userargs):
 
 
 def run_mne_ica_raw(dataset, userargs):
+    """OSL-Batch wrapper for `mne.preprocessing.ICA`.
+
+    This function creates class :py:meth:`mne.preprocessing.ICA <mne.preprocessing.ICA>` 
+    and fits it to an MNE object in `dataset`. Additional arguments on the MNE function can be
+    specified as a dictonary.
+
+    Arguments
+    ---------
+    dataset: dict
+        Dictionary containing at least an MNE object with the key `raw`.
+    userargs: dict
+        Dictionary of additional arguments to be passed to `mne.preprocessing.ICA`, 
+        `mne.preprocessing.ICA.fit`, and `mne.io.Raw.filter`.
+
+    Returns
+    -------
+    dataset: dict
+        Input dictionary containing MNE objects that have been modified in place.
+    """    
     target = userargs.pop("target", "raw")
     logger.info("MNE Stage - {0}".format("mne.preprocessing.ICA"))
     logger.info("userargs: {0}".format(str(userargs)))
@@ -392,6 +745,27 @@ def run_mne_ica_raw(dataset, userargs):
 
 
 def run_mne_ica_autoreject(dataset, userargs):
+    """OSL-Batch wrapper for `mne.preprocessing.ICA.find_bads_ecg` and `mne.preprocessing.ICA.find_bads_eog`.
+
+    This function rejects IC's that are deemed to correspond to ECG or EOG artifacts, as found by
+    :py:meth:`mne.preprocessing.ICA.find_bads_ecg <mne.preprocessing.ICA.find_bads_ecg>` and 
+    :py:meth:`mne.preprocessing.ICA.find_bads_eog <mne.preprocessing.ICA.find_bads_eog>` on
+    the `raw` and `ica` objects in `dataset`. Additional arguments on the MNE functions can be
+    specified as a dictonary.
+
+    Arguments
+    ---------
+    dataset: dict
+        Dictionary containing at least an MNE object with the key `raw`.
+    userargs: dict
+        Dictionary of additional arguments to be passed to `mne.preprocessing.ICA.find_bads_ecg`
+        and `mne.preprocessing.ICA.find_bads_eog`.
+
+    Returns
+    -------
+    dataset: dict
+        Input dictionary containing MNE objects that have been modified in place.
+    """    
     target = userargs.pop("target", "raw")
     logger.info("OSL Stage - {0}".format("ICA Autoreject"))
     logger.info("userargs: {0}".format(str(userargs)))
@@ -428,8 +802,26 @@ def run_mne_ica_autoreject(dataset, userargs):
 
 
 def run_mne_apply_ica(dataset, userargs):
+    """OSL-Batch wrapper for `mne.preprocessing.ICA.apply`.
+
+    This function creates class :py:meth:`mne.preprocessing.ICA.apply <mne.preprocessing.ICA.apply>` 
+    and fits it to an MNE object in `dataset`. Additional arguments on the MNE function can be
+    specified as a dictonary.
+
+    Arguments
+    ---------
+    dataset: dict
+        Dictionary containing at least an MNE object with the key `raw`.
+    userargs: dict
+        Dictionary of additional arguments to be passed to `mne.preprocessing.ICA.apply`.
+
+    Returns
+    -------
+    dataset: dict
+        Input dictionary containing MNE objects that have been modified in place.
+    """    
     target = userargs.pop("target", "raw")
     logger.info("MNE Stage - {0}".format("ica.apply"))
     logger.info("userargs: {0}".format(str(userargs)))
-    dataset["raw"] = dataset["ica"].apply(dataset["raw"])
+    dataset["raw"] = dataset["ica"].apply(dataset["raw"], **userargs)
     return dataset

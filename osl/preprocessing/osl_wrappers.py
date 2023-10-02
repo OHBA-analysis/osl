@@ -21,7 +21,21 @@ logger = logging.getLogger(__name__)
 #
 
 def detect_maxfilt_zeros(raw):
-    """This function tries to load the maxfilter log files in order to annotate zeroed out data"""
+    """This function tries to load the maxfilter log files in order 
+        to annotate zeroed out data in the 'mne.Raw' object. It 
+        assumes that the log file is in the same directory as the
+        raw file and has the same name, but with the extension '.log'.
+
+    Parameters
+    ----------
+    raw : :py:meth:`mne.io.Raw <mne.io.Raw>`
+        MNE raw object.
+
+    Returns
+    -------
+    bad_inds : np.array of bool (n_times,) or None
+        Boolean array indicating which time points are zeroed out.
+    """    
     if raw.filenames[0] is not None:
         log_fname = raw.filenames[0].replace('.fif', '.log')
     if 'log_fname' in locals() and exists(log_fname):
@@ -72,11 +86,11 @@ def detect_badsegments(
     mode=None,
     detect_zeros=True,
 ):
-    """Set bad segments in MNE object.
+    """Set bad segments in 'mne.Raw' object as defined by the Generalized ESD test.
 
     Parameters
     ----------
-    raw : mne.Raw
+    raw : :py:meth:`mne.io.Raw <mne.io.Raw>`
         MNE raw object.
     picks : str
         Channel types to pick. Note that with CTF data, mne.pick_types will return:
@@ -94,7 +108,7 @@ def detect_badsegments(
         Should be 'diff' or None. When mode='diff' we calculate a difference time
         series before detecting bad segments.
     detect_zeros : bool
-        Should we detect segments of zeros?
+        Should we detect segments of zeros based on the maxfilter files?
 
     Returns
     -------
@@ -190,11 +204,11 @@ def detect_badsegments(
 
 
 def detect_badchannels(raw, picks, ref_meg="auto", significance_level=0.05):
-    """Set bad channels in MNE object.
+    """Set bad channels in MNE raw object as defined by the Generalized ESD test.
 
     Parameters
     ----------
-    raw : mne.Raw
+    raw : :py:meth:`mne.io.Raw <mne.io.Raw>`
         MNE raw object.
     picks : str
         Channel types to pick. Note that with CTF data, mne.pick_types will return:
@@ -207,7 +221,7 @@ def detect_badchannels(raw, picks, ref_meg="auto", significance_level=0.05):
 
     Returns
     -------
-    raw : mne.Raw
+    raw : :py:meth:`mne.io.Raw <mne.io.Raw>`
         MNE Raw object with bad channels marked.
     """
 
@@ -256,11 +270,11 @@ def drop_bad_epochs(
     ref_meg='auto',
     mode=None,
 ):
-    """Drop bad epochs in MNE object.
+    """Drop bad epochs in MNE object as defined by the Generalized ESD test.
 
     Parameters
     ----------
-    epochs : mne.Epochs
+    epochs : :py:meth:`mne.Epochs <mne.Epochs>`
         MNE Epochs object.
     picks : str
         Channel types to pick. Note that with CTF data, mne.pick_types will return:
@@ -272,14 +286,13 @@ def drop_bad_epochs(
         Maximum fraction of the epochs to drop. Should be between 0-1.
     outlier_side : int
         Specify sidedness of the test:
-
        - outlier_side = -1 -> outliers are all smaller
        - outlier_side = 0  -> outliers could be small/negative or large/positive (default)
        - outlier_side = 1  -> outliers are all larger
     metric : str
         Metric to use. Could be 'std', 'var' or 'kurtosis'.
     ref_meg : str
-        ref_meg argument to pass with mne.pick_types().
+        ref_meg argument to pass with mne.pick_types(). :py:meth:`mne.pick_types <mne.io.Raw>`
     mode : str
         Should be 'diff' or None. When mode='diff' we calculate a difference time
         series before detecting bad segments.
@@ -349,6 +362,22 @@ def drop_bad_epochs(
 
 
 def run_osl_bad_segments(dataset, userargs, logfile=None):
+    """OSL-Batch wrapper for detect_badsegments
+
+    Arguments
+    ---------
+    dataset: dict
+        Dictionary containing at least an MNE object with the key `raw`.
+    userargs: dict
+        Dictionary of additional arguments to be passed to detect_badsegments
+    logfile: Boolean or None (default).
+
+    Returns
+    -------
+    dataset: dict
+        dataset: dict
+    Input dictionary containing MNE objects that have been modified in place.
+    """    
     target = userargs.pop("target", "raw")
     logger.info("OSL Stage - {0} : {1}".format(target, "detect_badsegments"))
     logger.info("userargs: {0}".format(str(userargs)))
@@ -357,10 +386,23 @@ def run_osl_bad_segments(dataset, userargs, logfile=None):
 
 
 def run_osl_bad_channels(dataset, userargs, logfile=None):
-    """
-    Note that with CTF data, mne.pick_types will return:
-    ~274 axial grads (as magnetometers) if {picks: 'mag', ref_meg: False}
-    ~28 reference axial grads if {picks: 'grad'}
+    """OSL-Batch wrapper for detect_badchannels
+    
+    Arguments
+    ---------
+    dataset: dict
+        Dictionary containing at least an MNE object with the key `raw`.
+    userargs: dict
+        Dictionary of additional arguments to be passed to detect_badchannels
+        Note that using 'picks' with CTF data, mne.pick_types will return:
+        ~274 axial grads (as magnetometers) if {picks: 'mag', ref_meg: False}
+        ~28 reference axial grads if {picks: 'grad'}
+    logfile: Boolean or None (default).
+
+    Returns
+    -------
+    dataset: dict
+        Input dictionary containing MNE objects that have been modified in place.
     """
 
     target = userargs.pop("target", "raw")
@@ -371,6 +413,21 @@ def run_osl_bad_channels(dataset, userargs, logfile=None):
 
 
 def run_osl_drop_bad_epochs(dataset, userargs, logfile=None):
+    """OSL-Batch wrapper for drop_bad_epochs
+
+    Arguments
+    ---------
+    dataset: dict
+        Dictionary containing at least an MNE object with the key `raw`.
+    userargs: dict
+        Dictionary of additional arguments to be passed to drop_bad_epochs
+    logfile: Boolean or None (default).
+
+    Returns
+    -------
+    dataset: dict
+        Input dictionary containing MNE objects that have been modified in place.
+    """    
     target = userargs.pop("target", "raw")
     logger.info("OSL Stage - {0} : {1}".format(target, "detect_bad_epochs"))
     logger.info("userargs: {0}".format(str(userargs)))
@@ -381,6 +438,20 @@ def run_osl_drop_bad_epochs(dataset, userargs, logfile=None):
 
 
 def run_osl_ica_manualreject(dataset, userargs):
+    """OSL-Batch wrapper for `plot_ica`, and optionally `osl.preprocessing.ICA.apply`.
+
+    Arguments
+    ---------
+    dataset: dict
+        Dictionary containing at least an MNE object with the key `raw`
+    userargs: dict
+        Dictionary of additional arguments to be passed to drop_bad_epochs
+
+    Returns
+    -------
+    dataset: dict
+        Input dictionary containing MNE objects that have been modified in place.
+    """    
     target = userargs.pop("target", "raw")
     logger.info("OSL Stage - {0}".format("ICA Manual Reject"))
     logger.info("userargs: {0}".format(str(userargs)))

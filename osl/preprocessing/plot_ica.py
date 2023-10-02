@@ -21,7 +21,8 @@ def plot_ica(
     n_channels=10,
     bad_labels_list=["eog", "ecg", "emg", "hardware", "other"],
 ):
-    """Plot estimated latent sources given the unmixing matrix.
+    """OSL adaptation of MNE's `mne.preprocessing.ICA.plot` function to 
+    plot estimated latent sources given the unmixing matrix.
 
     Typical usecases:
 
@@ -136,6 +137,8 @@ def _plot_sources(
     n_channels,
     bad_labels_list,
 ):
+    """Adaptation of MNE's `mne.preprocessing.ica._plot_sources` function to allow for OSL additions.
+    """    
     """Plot the ICA components as a RawArray or EpochsArray."""
     # from mne.viz._figure import _get_browser
     from mne.viz.utils import _compute_scalings, _make_event_color_dict, plt_show
@@ -329,7 +332,10 @@ backend = None
 
 
 def _get_browser(**kwargs):
-    """Instantiate a new MNE browse-style figure."""
+    """OSL Adaptation of MNE's `mne.viz._figure._get_browser` function 
+    that instantiate a new MNE browse-style figure.
+
+    """    
     from mne.viz.utils import _get_figsize_from_config
     from mne.viz._figure import _init_browser_backend
     import numpy as np
@@ -350,8 +356,10 @@ def _get_browser(**kwargs):
 
 def _init_browser(backend, **kwargs):  # OSL ADDITION IN ORDER TO USE OSL'S FIGURE CLASS
     from mne.viz._mpl_figure import _figure
-
-    """Instantiate a new MNE browse-style figure."""
+    """OSL's adaptation of MNE's `mne.viz._mpl_figure._init_browser` that 
+    instantiate a new MNE browse-style figure.
+    """
+    
     fig = _figure(toolbar=False, FigureClass=osl_MNEBrowseFigure, **kwargs)
 
     # initialize zen mode
@@ -370,7 +378,9 @@ def _init_browser(backend, **kwargs):  # OSL ADDITION IN ORDER TO USE OSL'S FIGU
 
 
 class osl_MNEBrowseFigure(MNEBrowseFigure):
-    """Interactive figure with scrollbars, for data browsing."""
+    """OSL's adaptatation of MNE's `mne.viz._mpl_figure.MNEBrowseFigure` that
+    creates an interactive figure with scrollbars, for data browsing."""
+    
 
     def __init__(self, inst, figsize, ica=None,
                  xlabel='Time (s)', **kwargs):
@@ -663,6 +673,7 @@ class osl_MNEBrowseFigure(MNEBrowseFigure):
 
     def _draw_traces(self):
         """Draw (or redraw) the channel data."""
+        
         from matplotlib.colors import to_rgba_array
         from matplotlib.patches import Rectangle
 
