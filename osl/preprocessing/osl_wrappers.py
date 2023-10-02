@@ -361,7 +361,7 @@ def drop_bad_epochs(
 # Wrapper functions
 
 
-def run_osl_bad_segments(dataset, userargs, logfile=None):
+def run_osl_bad_segments(dataset, userargs):
     """OSL-Batch wrapper for detect_badsegments
 
     Arguments
@@ -370,7 +370,6 @@ def run_osl_bad_segments(dataset, userargs, logfile=None):
         Dictionary containing at least an MNE object with the key `raw`.
     userargs: dict
         Dictionary of additional arguments to be passed to detect_badsegments
-    logfile: Boolean or None (default).
 
     Returns
     -------
@@ -385,7 +384,7 @@ def run_osl_bad_segments(dataset, userargs, logfile=None):
     return dataset
 
 
-def run_osl_bad_channels(dataset, userargs, logfile=None):
+def run_osl_bad_channels(dataset, userargs):
     """OSL-Batch wrapper for detect_badchannels
     
     Arguments
@@ -397,7 +396,6 @@ def run_osl_bad_channels(dataset, userargs, logfile=None):
         Note that using 'picks' with CTF data, mne.pick_types will return:
         ~274 axial grads (as magnetometers) if {picks: 'mag', ref_meg: False}
         ~28 reference axial grads if {picks: 'grad'}
-    logfile: Boolean or None (default).
 
     Returns
     -------
@@ -412,7 +410,7 @@ def run_osl_bad_channels(dataset, userargs, logfile=None):
     return dataset
 
 
-def run_osl_drop_bad_epochs(dataset, userargs, logfile=None):
+def run_osl_drop_bad_epochs(dataset, userargs):
     """OSL-Batch wrapper for drop_bad_epochs
 
     Arguments
@@ -421,7 +419,6 @@ def run_osl_drop_bad_epochs(dataset, userargs, logfile=None):
         Dictionary containing at least an MNE object with the key `raw`.
     userargs: dict
         Dictionary of additional arguments to be passed to drop_bad_epochs
-    logfile: Boolean or None (default).
 
     Returns
     -------
