@@ -22,7 +22,7 @@ logger = logging.getLogger(__name__)
 
 def detect_maxfilt_zeros(raw):
     """This function tries to load the maxfilter log files in order 
-        to annotate zeroed out data in the 'mne.Raw' object. It 
+        to annotate zeroed out data in the :py:meth:`mne.Raw <mne.io.Raw>` object. It 
         assumes that the log file is in the same directory as the
         raw file and has the same name, but with the extension '.log'.
 
@@ -86,7 +86,7 @@ def detect_badsegments(
     mode=None,
     detect_zeros=True,
 ):
-    """Set bad segments in 'mne.Raw' object as defined by the Generalized ESD test.
+    """Set bad segments in :py:meth:`mne.Raw <mne.io.Raw>` object as defined by the :py:meth:`Generalized ESD test <sails.utils.gesd>`.
 
     Parameters
     ----------
@@ -204,7 +204,7 @@ def detect_badsegments(
 
 
 def detect_badchannels(raw, picks, ref_meg="auto", significance_level=0.05):
-    """Set bad channels in MNE raw object as defined by the Generalized ESD test.
+    """Set bad channels in MNE raw object as defined by the :py:meth:`Generalized ESD test <sails.utils.gesd>`.
 
     Parameters
     ----------
@@ -212,10 +212,10 @@ def detect_badchannels(raw, picks, ref_meg="auto", significance_level=0.05):
         MNE raw object.
     picks : str
         Channel types to pick. Note that with CTF data, mne.pick_types will return:
-        ~274 axial grads (as magnetometers) if {picks: 'mag', ref_meg: False}
-        ~28 reference axial grads if {picks: 'grad'}.
+        ~274 axial grads (as magnetometers) if ``{picks: 'mag', ref_meg: False}``
+        ~28 reference axial grads if ``{picks: 'grad'}``.
     ref_meg : str
-        ref_meg argument to pass with mne.pick_types().
+        ref_meg argument to pass with ``mne.pick_types()``.
     significance_level : float
         Significance level for detecting outliers. Must be between 0-1.
 
@@ -270,7 +270,7 @@ def drop_bad_epochs(
     ref_meg='auto',
     mode=None,
 ):
-    """Drop bad epochs in MNE object as defined by the Generalized ESD test.
+    """Drop bad epochs in MNE object as defined by the :py:meth:`Generalized ESD test <sails.utils.gesd>`.
 
     Parameters
     ----------
@@ -278,8 +278,8 @@ def drop_bad_epochs(
         MNE Epochs object.
     picks : str
         Channel types to pick. Note that with CTF data, mne.pick_types will return:
-        ~274 axial grads (as magnetometers) if {picks: 'mag', ref_meg: False}
-        ~28 reference axial grads if {picks: 'grad'}.
+        ~274 axial grads (as magnetometers) if ``{picks: 'mag', ref_meg: False}``
+        ~28 reference axial grads if ``{picks: 'grad'}``.
     sign3ificance_level : float
         Significance level for detecting outliers. Must be between 0-1.
     max_percentage : float
@@ -292,7 +292,7 @@ def drop_bad_epochs(
     metric : str
         Metric to use. Could be 'std', 'var' or 'kurtosis'.
     ref_meg : str
-        ref_meg argument to pass with mne.pick_types(). :py:meth:`mne.pick_types <mne.io.Raw>`
+        ref_meg argument to pass with ``mne.pick_types()``. :py:meth:`mne.pick_types <mne.io.Raw>`
     mode : str
         Should be 'diff' or None. When mode='diff' we calculate a difference time
         series before detecting bad segments.
@@ -362,13 +362,13 @@ def drop_bad_epochs(
 
 
 def run_osl_bad_segments(dataset, userargs):
-    """OSL-Batch wrapper for detect_badsegments.
+    """OSL-Batch wrapper for :py:meth:`detect_badsegments <osl.preprocessing.osl_wrappers.detect_badsegments>`.
 
     
-    Arguments
-    ---------
+    Parameters
+    ----------
     dataset: dict
-        Dictionary containing at least an MNE object with the key `raw`.
+        Dictionary containing at least an MNE object with the key ``raw``.
     userargs: dict
         Dictionary of additional arguments to be passed to detect_badsegments
 
@@ -385,17 +385,17 @@ def run_osl_bad_segments(dataset, userargs):
 
 
 def run_osl_bad_channels(dataset, userargs):
-    """OSL-Batch wrapper for detect_badchannels
+    """OSL-Batch wrapper for :py:meth:`detect_badchannels <osl.preprocessing.osl_wrappers.detect_badchannels>`.
     
-    Arguments
-    ---------
+    Parameters
+    ----------
     dataset: dict
-        Dictionary containing at least an MNE object with the key `raw`.
+        Dictionary containing at least an MNE object with the key ``raw``.
     userargs: dict
         Dictionary of additional arguments to be passed to detect_badchannels
         Note that using 'picks' with CTF data, mne.pick_types will return:
-        ~274 axial grads (as magnetometers) if {picks: 'mag', ref_meg: False}
-        ~28 reference axial grads if {picks: 'grad'}
+        ~274 axial grads (as magnetometers) if ``{picks: 'mag', ref_meg: False}``
+        ~28 reference axial grads if ``{picks: 'grad'}``.
 
     Returns
     -------
@@ -411,12 +411,12 @@ def run_osl_bad_channels(dataset, userargs):
 
 
 def run_osl_drop_bad_epochs(dataset, userargs):
-    """OSL-Batch wrapper for drop_bad_epochs
+    """OSL-Batch wrapper for :py:meth:`drop_bad_epochs <osl.preprocessing.osl_wrappers.drop_bad_epochs>`.
 
-    Arguments
-    ---------
+    Parameters
+    ----------
     dataset: dict
-        Dictionary containing at least an MNE object with the key `raw`.
+        Dictionary containing at least an MNE object with the key ``raw``.
     userargs: dict
         Dictionary of additional arguments to be passed to drop_bad_epochs
 
@@ -435,12 +435,12 @@ def run_osl_drop_bad_epochs(dataset, userargs):
 
 
 def run_osl_ica_manualreject(dataset, userargs):
-    """OSL-Batch wrapper for `plot_ica`, and optionally `osl.preprocessing.ICA.apply`.
+    """OSL-Batch wrapper for :py:meth:`plot_ica <osl.preprocessing.osl_wrappers.plot_ica>`, and optionally :py:meth:`ICA.apply <mne.preprocessing.ICA.apply>`.
 
-    Arguments
-    ---------
+    Parameters
+    ----------
     dataset: dict
-        Dictionary containing at least an MNE object with the key `raw`
+        Dictionary containing at least an MNE object with the key ``raw``
     userargs: dict
         Dictionary of additional arguments to be passed to drop_bad_epochs
 

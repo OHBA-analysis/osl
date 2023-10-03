@@ -76,4 +76,5 @@ sphinx_gallery_conf = {
      'filename_pattern': '/osl_tutorial_',
 }
 
-intersphinx_mapping = {'mne': ('https://mne.tools/stable', None)}
+intersphinx_mapping = {'mne': ('https://mne.tools/stable', None), 'osl': ('https://osl.readthedocs.io/en/improve_docs/', None), 
+                       'sails' : ('https://sails.readthedocs.io/en/latest/', None), 'dask': ('https://docs.dask.org/en/latest/', None),}

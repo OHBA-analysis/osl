@@ -78,7 +78,7 @@ def import_data(infile, preload=True):
 
     Returns
     -------
-    raw : mne.Raw
+    raw : :py:meth:`mne.io.Raw <mne.io.Raw>`
         Data as an MNE Raw object.
     """
     if not isinstance(infile, str):
@@ -273,7 +273,7 @@ def get_config_from_fif(data):
 
     Parameters
     ----------
-    data : mne.Raw
+    data : :py:meth:`mne.io.Raw <mne.io.Raw>`
         Preprocessing data.
 
     Return
@@ -345,7 +345,7 @@ def write_dataset(dataset, outbase, run_id, ftype='preproc_raw', overwrite=False
     run_id : str
         ID for the output file.
     ftype: str
-        Extension for the fif file (default "preproc_raw")
+        Extension for the fif file (default ``preproc_raw``)
     overwrite : bool
         Should we overwrite if the file already exists?
 
@@ -598,16 +598,16 @@ def run_proc_chain(
     outname : str
         Output filename.
     ftype: str
-        Extension for the fif file (default "preproc_raw")
+        Extension for the fif file (default ``preproc_raw``)
     outdir : str
         Output directory. If processing multiple files, they can
-        be put in unique sub directories by including {x:0} at 
-        the end of the outdir, where x is the pattern which
-        precedes the unique identifier and 0 is the length of 
+        be put in unique sub directories by including ``{x:0}`` at 
+        the end of the outdir, where ``x`` is the pattern which
+        precedes the unique identifier and ``0`` is the length of 
         the unique identifier. For example: if the outdir is
-        ../../{sub-:3} and each is like 
-        /sub-001_task-rest.fif, the outdir for the file will be
-        ../../sub-001/
+        ``../../{sub-:3}`` and each is like 
+        ``/sub-001_task-rest.fif``, the outdir for the file will be
+        ``../../sub-001/``.
     logsdir : str
         Directory to save log files to.
     reportdir : str
@@ -630,9 +630,9 @@ def run_proc_chain(
     Returns
     -------
     dict or bool
-        If ret_dataset=True, a dict containing the preprocessed dataset with the
-        following keys: raw, ica, epochs, events, event_id. An empty dict is returned
-        if preprocessing fail. If return an empty dict. if ret_dataset=False, we
+        If ``ret_dataset=True``, a dict containing the preprocessed dataset with the
+        following keys: ``raw``, ``ica``, ``epochs``, ``events``, ``event_id``. An empty dict is returned
+        if preprocessing fail. If return an empty dict. if ``ret_dataset=False``, we
         return a flag indicating whether preprocessing was successful.
     """
 
@@ -838,12 +838,12 @@ def run_proc_batch(
         or a path to a textfile list of filenames (or .ds dir names if CTF data).
     outdir : str
         Output directory. If processing multiple files, they can
-        be put in unique sub directories by including {x:0} at 
-        the end of the outdir, where x is the pattern which
-        precedes the unique identifier and 0 is the length of 
+        be put in unique sub directories by including ``{x:0}`` at 
+        the end of the outdir, where ``x`` is the pattern which
+        precedes the unique identifier and ``0`` is the length of 
         the unique identifier. For example: if the outdir is
-        ../../{sub-:3} and each is like /sub-001_task-rest.fif, 
-        the outdir for the file will be ../../sub-001/
+        ``../../{sub-:3}`` and each is like ``/sub-001_task-rest.fif``, 
+        the outdir for the file will be ``../../sub-001/``.
     logsdir : str
         Directory to save log files to.
     reportdir : str
@@ -863,7 +863,7 @@ def run_proc_batch(
     strictrun : bool
         Should we ask for confirmation of user inputs before starting?
     dask_client : bool
-        Indicate whether to use a previously initialised dask.distributed.Client
+        Indicate whether to use a previously initialised :py:meth:`dask.distributed.Client <dask.distributed.Client>`
         instance.
 
     Returns
@@ -967,10 +967,12 @@ def run_proc_batch(
 
 
 def main(argv=None):
-    """_summary_
-
-    Args:
-        argv (_type_, optional): _description_. Defaults to None.
+    """Main function for command line interface.
+    
+    Parameters
+    ----------
+    argv : list
+        Command line arguments.
     """    
     if argv is None:
         argv = sys.argv[1:]
