@@ -280,15 +280,15 @@ def drop_bad_epochs(
         Channel types to pick. Note that with CTF data, mne.pick_types will return:
         ~274 axial grads (as magnetometers) if {picks: 'mag', ref_meg: False}
         ~28 reference axial grads if {picks: 'grad'}.
-    significance_level : float
+    sign3ificance_level : float
         Significance level for detecting outliers. Must be between 0-1.
     max_percentage : float
         Maximum fraction of the epochs to drop. Should be between 0-1.
     outlier_side : int
         Specify sidedness of the test:
-       - outlier_side = -1 -> outliers are all smaller
-       - outlier_side = 0  -> outliers could be small/negative or large/positive (default)
-       - outlier_side = 1  -> outliers are all larger
+        - outlier_side = -1 -> outliers are all smaller
+        - outlier_side = 0  -> outliers could be small/negative or large/positive (default)
+        - outlier_side = 1  -> outliers are all larger
     metric : str
         Metric to use. Could be 'std', 'var' or 'kurtosis'.
     ref_meg : str
@@ -362,8 +362,9 @@ def drop_bad_epochs(
 
 
 def run_osl_bad_segments(dataset, userargs):
-    """OSL-Batch wrapper for detect_badsegments
+    """OSL-Batch wrapper for detect_badsegments.
 
+    
     Arguments
     ---------
     dataset: dict
@@ -374,8 +375,7 @@ def run_osl_bad_segments(dataset, userargs):
     Returns
     -------
     dataset: dict
-        dataset: dict
-    Input dictionary containing MNE objects that have been modified in place.
+        Input dictionary containing MNE objects that have been modified in place.
     """    
     target = userargs.pop("target", "raw")
     logger.info("OSL Stage - {0} : {1}".format(target, "detect_badsegments"))

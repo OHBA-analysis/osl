@@ -41,7 +41,6 @@ logger = logging.getLogger(__name__)
 def run_mne_anonymous(dataset, userargs, method):
     """OSL-Batch function which runs a method directly on a target MNE object 
     in `dataset`, typically an `mne.Raw` or `mne.Epochs` object.
-    
     OSL Batch will first look for OSL/MNE wrapper functions for the method, and 
     otherwise will try to run the method directly on the target object.
 
@@ -52,12 +51,13 @@ def run_mne_anonymous(dataset, userargs, method):
     userargs: dict
         Contains user arguments for the function.
     method: str
-        
+        See :py:meth:`mne.io.Raw <mne.io.Raw>` for the available methods.
 
     Returns
     -------
     dataset: dict
         Input dictionary containing MNE objects that have been modified in place.
+        
     """    
     target = userargs.pop("target", "raw")
     logger.info("MNE Stage - {0}.{1}".format(target, method))
@@ -110,18 +110,18 @@ def run_mne_notch_filter(dataset, userargs):
 
 
 def run_mne_pick(dataset, userargs):
-    """OSL-Batch wrapper for `raw.pick`.
+    """OSL-Batch wrapper for ``raw.pick``.
 
     This function calls :py:meth:`mne.io.Raw.pick <mne.io.Raw.pick>` on
-    `dataset['raw']`. Additional arguments on the MNE function can be
+    ``dataset['raw']``. Additional arguments on the MNE function can be
     specified as a dictonary.
 
     Parameters
     ----------
     dataset : dict
-        Dictionary containing at least an MNE object with the key `raw`.
+        Dictionary containing at least an MNE object with the key ``raw``.
     userargs : dict
-        Dictionary of additional arguments to be passed to `mne.io.Raw.pick`.
+        Dictionary of additional arguments to be passed to ``mne.io.Raw.pick``.
 
     Returns
     -------
@@ -135,14 +135,14 @@ def run_mne_pick(dataset, userargs):
     >>> preproc:
     >>>  - pick: {picks: 'meg'}
 
-    By default, the :py:meth:`mne.io.Raw.pick <mne.io.Raw.pick>` will be
-    called on `dataset['raw']`, you can specify another options by specifying
-    `target` in userargs. For example:
+    By default, the :py:meth:`mne.io.Raw.pick <mne.io.BaseRaw.pick>` will be
+    called on ``dataset['raw']``, you can specify another options by specifying
+    ``target`` in ``userargs``. For example:
 
     >>> preproc:
     >>>  - pick: {picks: 'meg', target: 'epochs'}
 
-    Then the function or method will be called on `dataset['epochs']`
+    Then the function or method will be called on ``dataset['epochs']`` instead.
 
     """
     target = userargs.pop("target", "raw")
@@ -804,7 +804,7 @@ def run_mne_ica_autoreject(dataset, userargs):
 def run_mne_apply_ica(dataset, userargs):
     """OSL-Batch wrapper for `mne.preprocessing.ICA.apply`.
 
-    This function creates class :py:meth:`mne.preprocessing.ICA.apply <mne.preprocessing.ICA.apply>` 
+    This function creates class :py:meth:`mne.preprocessing.ICA.apply` <mne.preprocessing.ICA.apply> 
     and fits it to an MNE object in `dataset`. Additional arguments on the MNE function can be
     specified as a dictonary.
 
