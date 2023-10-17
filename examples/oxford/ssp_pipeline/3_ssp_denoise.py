@@ -108,4 +108,4 @@ for index in range(len(preproc_files)):
         plt.close()
 
     # Save cleaned data
-    dataset["raw"].save(output_raw_file, overwrite=True)
+    raw_ssp.save(output_raw_file, overwrite=True)
