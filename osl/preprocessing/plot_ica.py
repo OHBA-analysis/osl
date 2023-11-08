@@ -32,19 +32,20 @@ def plot_ica(
 
     Parameters
     ----------
-    ica : instance of mne.preprocessing.ICA
+    ica : :py:class:`mne.preprocessing.ICA <mne.preprocessing.ICA>`.
         The ICA solution.
-    inst : instance of mne.io.Raw, mne.Epochs, mne.Evoked
+    inst : :py:class:`mne.io.Raw <mne.io.Raw>`, :py:class:`mne.Epochs <mne.Epochs>`, or :py:class:`mne.Evoked <mne.Evoked>`.
         The object to plot the sources from.
-    %(picks_base)s all sources in the order as fitted.
+    picks : str
+        Channel types to pick.
     start, stop : float | int | None
-       If ``inst`` is a `~mne.io.Raw` or an `~mne.Evoked` object, the first and
-       last time point (in seconds) of the data to plot. If ``inst`` is a
-       `~mne.io.Raw` object, ``start=None`` and ``stop=None`` will be
-       translated into ``start=0.`` and ``stop=3.``, respectively. For
-       `~mne.Evoked`, ``None`` refers to the beginning and end of the evoked
-       signal. If ``inst`` is an `~mne.Epochs` object, specifies the index of
-       the first and last epoch to show.
+        If ``inst`` is a :py:class:`mne.io.Raw <mne.io.Raw>` or an  :py:class:`mne.Evoked <mne.Evoked>` object, the first and
+        last time point (in seconds) of the data to plot. If ``inst`` is a
+        :py:class:`mne.io.Raw <mne.io.Raw>` object, ``start=None`` and ``stop=None`` will be
+        translated into ``start=0.`` and ``stop=3.``, respectively. For
+        :py:class:`mne.Evoked <mne.Evoked>`, ``None`` refers to the beginning and end of the evoked
+        signal. If ``inst`` is an  :py:class:`mne.Epochs <mne.Epochs>` object, specifies the index of
+        the first and last epoch to show.
     title : str | None
         The window title. If None a default is provided.
     show : bool

@@ -78,7 +78,7 @@ def import_data(infile, preload=True):
 
     Returns
     -------
-    raw : :py:meth:`mne.io.Raw <mne.io.Raw>`
+    raw : :py:class:`mne.io.Raw <mne.io.Raw>`
         Data as an MNE Raw object.
     """
     if not isinstance(infile, str):
@@ -273,7 +273,7 @@ def get_config_from_fif(data):
 
     Parameters
     ----------
-    data : :py:meth:`mne.io.Raw <mne.io.Raw>`
+    data : :py:class:`mne.io.Raw <mne.io.Raw>`
         Preprocessing data.
 
     Return
@@ -622,18 +622,18 @@ def run_proc_chain(
         User-defined functions.
     verbose : str
         Level of info to print.
-        Can be: CRITICAL, ERROR, WARNING, INFO, DEBUG or NOTSET.
+        Can be: ``'CRITICAL'``, ``'ERROR'``, ``'WARNING'``, ``'INFO'``, ``'DEBUG'`` or ``'NOTSET'``.
     mneverbose : str
         Level of info from MNE to print.
-        Can be: CRITICAL, ERROR, WARNING, INFO, DEBUG or NOTSET.
+        Can be: ``'CRITICAL'``, ``'ERROR'``, ``'WARNING'``, ``'INFO'``, ``'DEBUG'`` or ``'NOTSET'``.
 
     Returns
     -------
     dict or bool
         If ``ret_dataset=True``, a dict containing the preprocessed dataset with the
         following keys: ``raw``, ``ica``, ``epochs``, ``events``, ``event_id``. An empty dict is returned
-        if preprocessing fail. If return an empty dict. if ``ret_dataset=False``, we
-        return a flag indicating whether preprocessing was successful.
+        if preprocessing fails. If ``ret_dataset=False``, we return a flag indicating whether 
+        preprocessing was successful.
     """
 
     # Generate a run ID
@@ -834,8 +834,8 @@ def run_proc_batch(
     config : str or dict
         Preprocessing config.
     files : str or list or mne.Raw
-        Can be a list of Raw objects or a list of filenames (or .ds dir names if CTF data)
-        or a path to a textfile list of filenames (or .ds dir names if CTF data).
+        Can be a list of Raw objects or a list of filenames (or ``.ds`` dir names if CTF data)
+        or a path to a textfile list of filenames (or ``.ds`` dir names if CTF data).
     outdir : str
         Output directory. If processing multiple files, they can
         be put in unique sub directories by including ``{x:0}`` at 
@@ -856,20 +856,28 @@ def run_proc_batch(
         User-defined functions.
     verbose : str
         Level of info to print.
-        Can be: CRITICAL, ERROR, WARNING, INFO, DEBUG or NOTSET.
+        Can be: ``'CRITICAL'``, ``'ERROR'``, ``'WARNING'``, ``'INFO'``, ``'DEBUG'`` or ``'NOTSET'``.
     mneverbose : str
         Level of info from MNE to print.
-        Can be: CRITICAL, ERROR, WARNING, INFO, DEBUG or NOTSET.
+        Can be: ``'CRITICAL'``, ``'ERROR'``, ``'WARNING'``, ``'INFO'``, ``'DEBUG'`` or ``'NOTSET'``.
     strictrun : bool
         Should we ask for confirmation of user inputs before starting?
     dask_client : bool
-        Indicate whether to use a previously initialised :py:meth:`dask.distributed.Client <dask.distributed.Client>`
-        instance.
+        Indicate whether to use a previously initialised :py:class:`dask.distributed.Client <distributed.Client>`
+        instance. 
 
     Returns
     -------
     list of bool
         Flags indicating whether preprocessing was successful for each input file.
+        
+    Notes
+    -----
+    If you are using a :py:class:`dask.distributed.Client <distributed.Client>` instance, you must initialise it
+    before calling this function. For example:
+    
+    >>> from dask.distributed import Client
+    >>> client = Client(threads_per_worker=1, n_workers=4)
     """
 
     if outdir is None:
