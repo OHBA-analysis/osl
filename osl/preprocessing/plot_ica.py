@@ -21,7 +21,7 @@ def plot_ica(
     n_channels=10,
     bad_labels_list=["eog", "ecg", "emg", "hardware", "other"],
 ):
-    """OSL adaptation of MNE's `mne.preprocessing.ICA.plot` function to 
+    """OSL adaptation of MNE's :py:meth:`mne.preprocessing.ICA.plot_sources <mne.preprocessing.ICA.plot_sources>` function to 
     plot estimated latent sources given the unmixing matrix.
 
     Typical usecases:
@@ -57,11 +57,11 @@ def plot_ica(
     show_first_samp : bool
         If True, show time axis relative to the ``raw.first_samp``.
     n_channels : int
-        OSL ADDITION - Number of channels to show at the same time
+        Number of channels to show at the same time (default: 10)
     bad_labels_list : list of str
-        OSL ADDITION -
-    %(show_scrollbars)s
-    %(time_format)s
+        list of bad labels to show in the bad labels list that can be used to mark the type of 
+        bad component. Defaults to ``["eog", "ecg", "emg", "hardware", "other"]``.
+ 
 
     Returns
     -------

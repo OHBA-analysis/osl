@@ -3,26 +3,54 @@ API
 
 This page is the reference for the functions in OSL.
 
-Preprocessing Functions
-***********************
+Preprocessing - Pipeline Functions
+**********************************
+
+Primary user-level functions for running an OSL pipeline.
+
+.. currentmodule:: osl.preprocessing.batch
 
 .. autosummary::
    :toctree: stubs
+   
+   run_proc_chain
+   run_proc_batch
 
-    osl.preprocessing.run_proc_chain
-    osl.preprocessing.run_proc_batch
+
+Preprocessing - Utils
+**********************************
+
+Utility functions for running an OSL pipeline.
+
+.. currentmodule:: osl.preprocessing.batch
+
+.. autosummary::
+   :toctree: stubs
+   
+   append_preproc_info
+   get_config_from_fif
+   find_func
+   import_data
+   load_config
+   plot_preproc_flowchart
+   print_custom_func_info
+   read_dataset
+   write_dataset   
 
 
-MNE Wrappers
-************
+Preprocessing - MNE Wrappers
+****************************
+
+Wrappers for MNE functions to perform preprocessing.
 
 .. currentmodule:: osl.preprocessing.mne_wrappers
 
 .. autosummary::
    :toctree: stubs
 
+    run_mne_anonymous
     
-    run_mne_annotate_flat
+    run_mne_annotate_amplitude
     
     run_mne_annotate_muscle_zscore
     
@@ -67,14 +95,17 @@ MNE Wrappers
     run_mne_tfr_stockwell
     
 
-OSL Wrappers
-************
+Preprocessing - OSL Wrappers
+****************************
 
 .. currentmodule:: osl.preprocessing.osl_wrappers
 
 .. autosummary::
    :toctree: stubs
 
+    gesd
+
+    detect_artefacts
     
     detect_badchannels
     
@@ -82,11 +113,23 @@ OSL Wrappers
     
     detect_maxfilt_zeros
     
+    drop_bad_epochs
+    
     exists
     
     run_osl_bad_channels
     
     run_osl_bad_segments
     
+    run_osl_drop_bad_epochs
+    
     run_osl_ica_manualreject
+
+
+.. currentmodule:: osl.preprocessing.plot_ica
+
+.. autosummary::
+   :toctree: stubs
+
+    plot_ica
     

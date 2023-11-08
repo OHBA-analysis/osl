@@ -20,6 +20,231 @@ logger = logging.getLogger(__name__)
 # OSL preprocessing functions
 #
 
+def gesd(x, alpha=0.05, p_out=.1, outlier_side=0):
+    """Detect outliers using Generalized ESD test
+
+     Parameters
+     ----------
+     x : vector
+        Data set containing outliers
+     alpha : scalar
+        Significance level to detect at (default = 0.05)
+     p_out : int
+        Maximum number of outliers to detect (default = 10% of data set)
+     outlier_side : {-1,0,1}
+        Specify sidedness of the test
+           - outlier_side = -1 -> outliers are all smaller
+           - outlier_side = 0  -> outliers could be small/negative or large/positive (default)
+           - outlier_side = 1  -> outliers are all larger
+
+    Returns
+    -------
+    idx : boolean vector
+        Boolean array with TRUE wherever a sample is an outlier
+    x2 : vector
+        Input array with outliers removed
+
+    References
+    ----------
+    B. Rosner (1983). Percentage Points for a Generalized ESD Many-Outlier Procedure. Technometrics 25(2), pp. 165-172.
+    http://www.jstor.org/stable/1268549?seq=1
+
+    """
+
+    if outlier_side == 0:
+        alpha = alpha/2
+
+    if not isinstance(x, np.ndarray):
+        x = np.asarray(x)
+
+    n_out = int(np.ceil(len(x)*p_out))
+
+    if np.any(np.isnan(x)):
+        # Need to find outliers only in finite x
+        y = np.where(np.isnan(x))[0]
+        idx1, x2 = gesd(x[np.isfinite(x)], alpha, n_out, outlier_side)
+
+        # idx1 has the indexes of y which were marked as outliers
+        # the value of y contains the corresponding indexes of x that are outliers
+        idx = np.zeros_like(x).astype(bool)
+        idx[y[idx1]] = True
+
+    n = len(x)
+    temp = x.copy()
+    R = np.zeros((n_out,))
+    rm_idx = np.zeros((n_out,), dtype=int)
+    lam = np.zeros((n_out,))
+
+    for j in range(0, int(n_out)):
+        i = j+1
+        if outlier_side == -1:
+            rm_idx[j] = np.nanargmin(temp)
+            sample = np.nanmin(temp)
+            R[j] = np.nanmean(temp) - sample
+        elif outlier_side == 0:
+            rm_idx[j] = int(np.nanargmax(abs(temp-np.nanmean(temp))))
+            R[j] = np.nanmax(abs(temp-np.nanmean(temp)))
+        elif outlier_side == 1:
+            rm_idx[j] = np.nanargmax(temp)
+            sample = np.nanmax(temp)
+            R[j] = sample - np.nanmean(temp)
+
+        R[j] = R[j] / np.nanstd(temp)
+        temp[int(rm_idx[j])] = np.nan
+
+        p = 1-alpha/(n-i+1)
+        t = stats.t.ppf(p, n-i-1)
+        lam[j] = ((n-i) * t) / (np.sqrt((n-i-1+t**2)*(n-i+1)))
+
+    # Create a boolean array of outliers
+    idx = np.zeros((n,)).astype(bool)
+    idx[rm_idx[np.where(R > lam)[0]]] = True
+
+    x2 = x[~idx]
+
+    return idx, x2
+
+def _find_outliers_in_dims(X, axis=-1, metric_func=np.std, gesd_args=None):
+    """Find outliers across specified dimensions of an array"""
+
+    if gesd_args is None:
+        gesd_args = {}
+
+    if axis == -1:
+        axis = np.arange(X.ndim)[axis]
+
+    squashed_axes = tuple(np.setdiff1d(np.arange(X.ndim), axis))
+    metric = metric_func(X, axis=squashed_axes)
+
+    rm_ind, _ = gesd(metric, **gesd_args)
+
+    return rm_ind
+
+
+def _find_outliers_in_segments(X, axis=-1, segment_len=100,
+                               metric_func=np.std, gesd_args=None):
+    """Create dummy-segments in a dimension of an array and find outliers in it"""
+
+    if gesd_args is None:
+        gesd_args = {}
+
+    if axis == -1:
+        axis = np.arange(X.ndim)[axis]
+
+    # Prepare to slice data array
+    slc = []
+    for ii in range(X.ndim):
+        if ii == axis:
+            slc.append(slice(0, segment_len))
+        else:
+            slc.append(slice(None))
+
+    # Preallocate some variables
+    starts = np.arange(0, X.shape[axis], segment_len)
+    metric = np.zeros((len(starts), ))
+    bad_inds = np.zeros(X.shape[axis])*np.nan
+
+    # Main loop
+    for ii in range(len(starts)):
+        if ii == len(starts)-1:
+            stop = None
+        else:
+            stop = starts[ii]+segment_len
+
+        # Update slice on dim of interest
+        slc[axis] = slice(starts[ii], stop)
+        # Compute metric for current chunk
+        metric[ii] = metric_func(X[tuple(slc)])
+        # Store which chunk we've used
+        bad_inds[slc[axis]] = ii
+
+    # Get bad segments
+    rm_ind, _ = gesd(metric, **gesd_args)
+    # Convert to int indices
+    rm_ind = np.where(rm_ind)[0]
+    # Convert to bool in original space of defined axis
+    bads = np.isin(bad_inds, rm_ind)
+    return bads
+
+
+def detect_artefacts(X, axis=None, reject_mode='dim', metric_func=np.std,
+                     segment_len=100, gesd_args=None, ret_mode='bad_inds'):
+    """Detect bad observations or segments in a dataset
+
+    Parameters
+    ----------
+    X : ndarray
+        Array to find artefacts in.
+    axis : int
+        Index of the axis to detect artefacts in
+    reject_mode : {'dim' | 'segments'}
+        Flag indicating whether to detect outliers across a dimension (dim;
+        default) or whether to split a dim into segments and detect outliers in
+        the them (segments)
+    metric_func : function
+        Function defining metric to detect outliers on. Defaults to np.std but
+        can be any function taking an array and returning a single number.
+    segement_len : int > 0
+        Integer window length of dummy epochs for bad_segment detection
+    gesd_args : dict
+        Dictionary of arguments to pass to gesd
+    ret_mode : {'good_inds','bad_inds','zero_bads','nan_bads'}
+        Flag indicating whether to return the indices for good observations,
+        indices for bad observations (default), the input data with outliers
+        removed (zero_bads) or the input data with outliers replaced with nans
+        (nan_bads)
+
+    Returns
+    -------
+    ndarray
+        If ret_mode is ``'bad_inds'`` or ``'good_inds'``, this returns a boolean vector
+        of length ``X.shape[axis]`` indicating good or bad samples. If ``ret_mode`` is
+        ``'zero_bads'`` or ``'nan_bads'`` this returns an array copy of the input data
+        ``X`` with bad samples set to zero or ``np.nan`` respectively.
+
+    """
+
+    if reject_mode not in ['dim', 'segments']:
+        raise ValueError("reject_mode: '{0}' not recognised".format(reject_mode))
+
+    if ret_mode not in ['bad_inds', 'good_inds', 'zero_bads', 'nan_bads']:
+        raise ValueError("ret_mode: '{0}' not recognised")
+
+    if axis is None or axis > X.ndim:
+        raise ValueError('bad axis')
+
+    if reject_mode == 'dim':
+        bad_inds = _find_outliers_in_dims(X, axis=axis, metric_func=metric_func, gesd_args=gesd_args)
+
+    elif reject_mode == 'segments':
+        bad_inds = _find_outliers_in_segments(X, axis=axis,
+                                              segment_len=segment_len,
+                                              metric_func=metric_func,
+                                              gesd_args=gesd_args)
+
+    if ret_mode == 'bad_inds':
+        return bad_inds
+    elif ret_mode == 'good_inds':
+        return bad_inds == False  # noqa: E712
+    elif ret_mode in ['zero_bads', 'nan_bads']:
+        out = X.copy()
+
+        slc = []
+        for ii in range(X.ndim):
+            if ii == axis:
+                slc.append(bad_inds)
+            else:
+                slc.append(slice(None))
+        slc = tuple(slc)
+
+        if ret_mode == 'zero_bads':
+            out[slc] = 0
+            return out
+        elif ret_mode == 'nan_bads':
+            out[slc] = np.nan
+            return out
+
+
 def detect_maxfilt_zeros(raw):
     """This function tries to load the maxfilter log files in order 
         to annotate zeroed out data in the :py:class:`mne.io.Raw <mne.io.Raw>` object. It 
@@ -162,7 +387,7 @@ def detect_badsegments(
             return stats.kurtosis(inputs, axis=None)
         metric_func = kurtosis
     
-    bdinds = sails.utils.detect_artefacts(
+    bdinds = detect_artefacts(
         XX,
         axis=1,
         reject_mode="segments",
@@ -250,7 +475,7 @@ def detect_badchannels(raw, picks, ref_meg="auto", significance_level=0.05):
         raise NotImplementedError(f"picks={picks} not available.")
     ch_names = np.array(raw.ch_names)[chinds]
 
-    bdinds = sails.utils.detect_artefacts(
+    bdinds = detect_artefacts(
         raw.get_data(picks=chinds),
         axis=0,
         reject_mode="dim",
@@ -364,7 +589,7 @@ def drop_bad_epochs(
     X = np.mean(X, axis=1)
 
     # Use gesd to find outliers
-    bad_epochs, _ = sails.utils.gesd(X, **gesd_args)
+    bad_epochs, _ = gesd(X, **gesd_args)
     logger.info(
         f"Modality {picks} - {np.sum(bad_epochs)}/{X.shape[0]} epochs rejected"
     )

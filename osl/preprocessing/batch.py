@@ -148,16 +148,19 @@ def find_func(method, target="raw", extra_funcs=None):
     """Find a preprocessing function.
 
     Function priority:
-    1) User custom function
-    2) MNE/OSL wrapper
-    3) MNE method on Raw or Epochs (specified by target)
+
+    1. User custom function
+    
+    2. MNE/OSL wrapper
+    
+    3. MNE method on Raw or Epochs (specified by target)
 
     Parameters
     ----------
     method : str
         Function name.
     target : str
-        Type of MNE object to preprocess. Can be 'raw', 'epochs', 'power' or 'itc'.
+        Type of MNE object to preprocess. Can be ``'raw'``, ``'epochs'``, ``'evoked'``, ``'power'`` or ``'itc'``.
     extra_funcs : list
         List of user-defined functions.
 
@@ -268,22 +271,25 @@ def load_config(config):
     return config
 
 
-def get_config_from_fif(data):
+def get_config_from_fif(inst):
     """Get config from a preprocessed fif file.
 
+    Reads the ``inst.info['description']`` field of a fif file to get the
+    preprocessing config.
+    
     Parameters
     ----------
-    data : :py:class:`mne.io.Raw <mne.io.Raw>`
-        Preprocessing data.
+    inst : :py:class:`mne.io.Raw <mne.io.Raw>`, :py:class:`mne.Epochs <mne.Epochs>`, :py:class:`mne.Evoked <mne.Evoked>`
+        Preprocessed MNE object.
 
-    Return
-    ------
+    Returns
+    -------
     dict
         Preprocessing config.
     """
     config_list = re.findall(
         "%% config start %%(.*?)%% config end %%",
-        data.info["description"],
+        inst.info["description"],
         flags=re.DOTALL,
     )
     config = []
@@ -294,7 +300,7 @@ def get_config_from_fif(data):
 
 
 def append_preproc_info(dataset, config):
-    """Add to the config of already preprocessed data.
+    """Add to the config of already preprocessed data to ``inst.info['description']``.
 
     Parameters
     ----------
@@ -306,7 +312,7 @@ def append_preproc_info(dataset, config):
     Returns
     -------
     dict
-        Dataset dict containing the preprocessed data.
+        Dataset dict containing the preprocessed data edited in place.
     """
     from .. import __version__  # here to avoid circular import
 
@@ -335,6 +341,8 @@ def append_preproc_info(dataset, config):
 
 def write_dataset(dataset, outbase, run_id, ftype='preproc_raw', overwrite=False):
     """Write preprocessed data to a file.
+
+    Will write all keys in the dataset dict to disk with corresponding extensions.
 
     Parameters
     ----------
@@ -386,7 +394,7 @@ def write_dataset(dataset, outbase, run_id, ftype='preproc_raw', overwrite=False
     return fif_outname
 
 def read_dataset(fif, preload=False, ftype=None):
-    """Reads fif/npy/yml files associated with a dataset.
+    """Reads ``fif``/``npy``/``yml`` files associated with a dataset.
 
     Parameters
     ----------
@@ -395,15 +403,15 @@ def read_dataset(fif, preload=False, ftype=None):
     preload : bool
         Should we load the raw fif data?
     ftype : str
-        Extension for the fif file (will be replaced for e.g. "_events.npy" or 
-        "_ica.fif"). If None, we assume the fif file is preprocessed with 
-        OSL and has the extension "preproc_raw". If this fails, we guess 
-        the extension as whatever comes after the last "_".
+        Extension for the fif file (will be replaced for e.g. ``'_events.npy'`` or 
+        ``'_ica.fif'``). If ``None``, we assume the fif file is preprocessed with 
+        OSL and has the extension ``'_preproc_raw'``. If this fails, we guess 
+        the extension as whatever comes after the last ``'_'``.
 
     Returns
     -------
     dataset : dict
-        Contains keys: 'raw', 'events', 'epochs', 'ica'.
+        Contains keys: ``'raw'``, ``'events'``, ``'event_id'``, ``'epochs'``, ``'ica'``.
     """
     print("Loading dataset:")
 
