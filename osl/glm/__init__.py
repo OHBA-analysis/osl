@@ -2,5 +2,5 @@
 from .glm_spectrum import *
 from .glm_epochs import *
 
-with open("osl/glm/README.md", 'r') as f:
+with open(os.path.join(os.path.dirname(__file__), "README.md"), 'r') as f:
     __doc__ = f.read()

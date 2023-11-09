@@ -10,5 +10,5 @@ from .simulate import *  # noqa: F401, F403
 from .opm import *  # noqa: F401, F403
 from .package import soft_import, run_package_tests  # noqa: F401, F403
 
-with open("osl/utils/README.md", 'r') as f:
+with open(os.path.join(os.path.dirname(__file__), "README.md"), 'r') as f:
     __doc__ = f.read()
