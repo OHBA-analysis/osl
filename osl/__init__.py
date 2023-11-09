@@ -38,3 +38,6 @@ osl_logger.debug('osl main init complete')
 
 # --------------------------------------------------------
 __version__ = '0.5.dev0'
+
+with open("osl/README.md", 'r') as f:
+    __doc__ = f.read()

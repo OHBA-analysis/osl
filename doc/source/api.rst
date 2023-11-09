@@ -3,8 +3,35 @@ API
 
 This page is the reference for the functions in OSL.
 
-Preprocessing - Pipeline Functions
-**********************************
+
+Maxfilter
+*********
+
+Wrappers for Elekta/MEGIN Maxfilter software (requires license).
+
+.. currentmodule:: osl.maxfilter
+
+.. autosummary::
+   :toctree: stubs
+
+    run_maxfilter
+
+    run_multistage_maxfilter
+    
+    run_cbu_3stage_maxfilter
+
+    run_maxfilter_batch
+
+
+    
+
+
+Preprocessing
+*************
+
+
+Pipeline Functions
+++++++++++++++++++
 
 Primary user-level functions for running an OSL pipeline.
 
@@ -17,8 +44,8 @@ Primary user-level functions for running an OSL pipeline.
    run_proc_batch
 
 
-Preprocessing - Utils
-**********************************
+Utils
++++++
 
 Utility functions for running an OSL pipeline.
 
@@ -38,8 +65,8 @@ Utility functions for running an OSL pipeline.
    write_dataset   
 
 
-Preprocessing - MNE Wrappers
-****************************
+MNE Wrappers
+++++++++++++
 
 Wrappers for MNE functions to perform preprocessing.
 
@@ -95,8 +122,10 @@ Wrappers for MNE functions to perform preprocessing.
     run_mne_tfr_stockwell
     
 
-Preprocessing - OSL Wrappers
-****************************
+OSL Wrappers
+++++++++++++
+
+Wrappers for OSL functions to perform preprocessing.
 
 .. currentmodule:: osl.preprocessing.osl_wrappers
 
@@ -133,3 +162,42 @@ Preprocessing - OSL Wrappers
 
     plot_ica
     
+
+Report
+******
+Sensor level
+++++++++++++
+.. currentmodule:: osl.report.raw_report
+
+.. autosummary::
+   :toctree: stubs
+
+    gen_report_from_fif
+
+   
+Source level
+++++++++++++
+.. currentmodule:: osl.report.src_report
+
+.. autosummary::
+   :toctree: stubs
+    
+    gen_html_data
+
+    gen_html_page
+
+GLM
+******
+
+
+
+Source Reconstruction
+**********************
+Rhino
++++++
+
+Parcellation
+++++++++++++
+
+Utilities
+*********
