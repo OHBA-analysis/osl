@@ -14,7 +14,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 from tabulate import tabulate
 
-from . import raw_report
+from . import preproc_report
 from ..source_recon import parcellation
 
 
@@ -151,7 +151,7 @@ def gen_html_page(reportdir):
 
     # Create panels
     panels = []
-    panel_template = raw_report.load_template('src_subject_panel')
+    panel_template = preproc_report.load_template('src_subject_panel')
 
     for i in range(total):
         panels.append(panel_template.render(data=data[i]))
@@ -163,7 +163,7 @@ def gen_html_page(reportdir):
         filenames += "{0}. {1}<br>".format(i + 1, filename)
 
     # Render the full page
-    page_template = raw_report.load_template('subject_report')
+    page_template = preproc_report.load_template('subject_report')
     page = page_template.render(panels=panels, filenames=filenames)
 
     # Write the output file
@@ -251,7 +251,7 @@ def gen_html_summary(reportdir):
         data["plt_sflip"] = plot_sign_flipping_results(metrics, reportdir)
 
     # Create panel
-    panel_template = raw_report.load_template('src_summary_panel')
+    panel_template = preproc_report.load_template('src_summary_panel')
     panel = panel_template.render(data=data)
 
     # List of filenames
@@ -261,7 +261,7 @@ def gen_html_summary(reportdir):
         filenames += "{0}. {1}<br>".format(i + 1, filename)
 
     # Render the full page
-    page_template = raw_report.load_template('summary_report')
+    page_template = preproc_report.load_template('summary_report')
     page = page_template.render(panel=panel, filenames=filenames)
 
     # Write the output file
