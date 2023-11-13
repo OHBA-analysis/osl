@@ -9,7 +9,7 @@ glmtools>=0.2.1
 tabulate~=0.8.9
 pyyaml>=5.1
 neurokit2
-jinja2
+jinja2-3.1.2
 file-tree
 pymatreader
 # Docs
