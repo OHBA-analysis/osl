@@ -821,7 +821,7 @@ def convert2mne_epochs(parc_data, epochs, parcel_names=None):
 
     # Create parc info
     if parcel_names is None:
-        parcel_names = [f"parcel_{i}" for i in range(data.shape[0])]
+        parcel_names = [f"parcel_{i}" for i in range(parc_data.shape[0])]
 
     parc_info = mne.create_info(ch_names=parcel_names, ch_types="misc", sfreq=info["sfreq"])
     parc_events = epochs.events
