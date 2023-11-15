@@ -319,7 +319,7 @@ def detect_badsegments(
     raw : :py:class:`mne.io.Raw <mne.io.Raw>`
         MNE raw object.
     picks : str
-        Channel types to pick.
+        Channel types to pick. See Notes for recommendations.
     segment_len : int
         Window length to divide the data into (non-overlapping).
     significance_level : float
@@ -341,9 +341,14 @@ def detect_badsegments(
         
     Notes
     -----
+    Note that for Elekta/MEGIN data, we recommend using ``picks: 'mag'`` or ``picks: 'grad'`` 
+        separately (in no particular order).
+    
     Note that with CTF data, mne.pick_types will return:
         ~274 axial grads (as magnetometers) if ``{picks: 'mag', ref_meg: False}``
-        ~28 reference axial grads if ``{picks: 'grad'}``.
+        ~28 reference axial grads if ``{picks: 'grad'}``. Thus, it is recommended to
+        use ``picks:'mag'`` in combination with ``ref_mag: False``,  and ``picks:'grad'`` separately (in no particular order).
+        
     """
 
     gesd_args = {'alpha': significance_level}
@@ -441,7 +446,7 @@ def detect_badchannels(raw, picks, ref_meg="auto", significance_level=0.05):
     raw : :py:class:`mne.io.Raw <mne.io.Raw>`
         MNE raw object.
     picks : str
-        Channel types to pick. 
+        Channel types to pick. See Notes for recommendations.
     ref_meg : str
         ref_meg argument to pass with :py:func:`mne.pick_types <mne.pick_types>`.
     significance_level : float
@@ -454,9 +459,13 @@ def detect_badchannels(raw, picks, ref_meg="auto", significance_level=0.05):
         
     Notes
     -----
+    Note that for Elekta/MEGIN data, we recommend using ``picks:'mag'`` or ``picks:'grad'`` 
+        separately (in no particular order).
+    
     Note that with CTF data, mne.pick_types will return:
         ~274 axial grads (as magnetometers) if ``{picks: 'mag', ref_meg: False}``
-        ~28 reference axial grads if ``{picks: 'grad'}``.
+        ~28 reference axial grads if ``{picks: 'grad'}``. Thus, it is recommended to
+        use ``picks:'mag'`` in combination with ``ref_mag: False``,  and ``picks:'grad'`` separately (in no particular order).
     """
 
     gesd_args = {'alpha': significance_level}

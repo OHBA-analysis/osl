@@ -315,7 +315,8 @@ def run_maxfilter(infif, outfif, args, logfile_tag=''):
         outfif : str
             Path to output fif file (maxfiltered).
         args : dict
-            Dictionary of arguments to pass to maxfilter.  See ``help(osl.maxfilter)`` for all options.
+            Dictionary of arguments to pass to maxfilter.  See ``help(osl.maxfilter)`` for all options, and 
+            Notes for recommendations.
         logfile_tag : str, optional
             Tag to append to logfile name. The default is ''. This is used to
             differentiate between different stages of maxfiltering (e.g., ``'_trans'``, ``'_tsss'``).
@@ -326,6 +327,11 @@ def run_maxfilter(infif, outfif, args, logfile_tag=''):
             Path to output fif file (maxfiltered).
         stdlog : str
             Path to logfile.
+            
+    Notes
+    -----
+    The recommended use for maxfilter at OHBA is to run multistage maxfiltering, with the following options:
+    ``args = {'maxpath': '/neuro/bin/util/maxfilter', 'scanner': 'Neo', 'mode': 'multistage', 'tsss': {}, 'headpos': {}, 'movecomp': {}}``
     """
 
     basecmd = '{maxpath} -f {infif} -o {outfif}'
