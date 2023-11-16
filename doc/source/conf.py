@@ -78,5 +78,3 @@ sphinx_gallery_conf = {
 intersphinx_mapping = {'mne': ('https://mne.tools/stable/', None), 
                        'osl': ('https://osl.readthedocs.io/en/improve_docs/', None), 
                        'dask': ('https://distributed.dask.org/en/stable/', None),}
-
-intersphinx_disabled_reftypes = ["*"]
