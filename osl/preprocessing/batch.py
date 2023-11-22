@@ -963,9 +963,9 @@ def run_proc_batch(
 
     # Generate a report
     if gen_report and len(infiles) > 0:
-        from ..report import raw_report # avoids circular import
-        raw_report.gen_html_page(reportdir)
-        if raw_report.gen_html_summary(reportdir):
+        from ..report import preproc_report # avoids circular import
+        preproc_report.gen_html_page(reportdir)
+        if preproc_report.gen_html_summary(reportdir):
             logger.info("******************************" + "*" * len(str(reportdir)))
             logger.info(f"* REMEMBER TO CHECK REPORT: {reportdir} *")
             logger.info("******************************" + "*" * len(str(reportdir)))
