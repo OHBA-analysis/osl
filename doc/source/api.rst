@@ -21,9 +21,7 @@ Wrappers for Elekta/MEGIN Maxfilter software (requires license).
     run_cbu_3stage_maxfilter
 
     run_maxfilter_batch
-
-
-    
+   
 
 
 Preprocessing
@@ -199,5 +197,72 @@ Rhino
 Parcellation
 ++++++++++++
 
+
 Utilities
 *********
+
+File handling
++++++++++++++
+
+.. currentmodule:: osl.utils.study
+
+.. autosummary::
+   :toctree: stubs
+    
+    Study
+
+    Study.get
+
+
+Logger
+++++++++++++
+
+.. currentmodule:: osl.utils.logger
+
+.. autosummary::
+   :toctree: stubs
+
+    set_up
+
+    set_level
+
+    get_level
+
+    log_or_print
+
+
+Parallel processing
++++++++++++++++++++
+
+.. currentmodule:: osl.utils.parallel
+
+.. autosummary::
+   :toctree: stubs
+
+    dask_parallel_bag
+
+
+Package Utilities
++++++++++++++++++
+
+.. currentmodule:: osl.utils.package
+
+.. autosummary::
+   :toctree: stubs
+
+    run_package_test
+
+    soft_import
+
+
+OPM Utilities
++++++++++++++
+
+.. currentmodule:: osl.utils.opm
+
+.. autosummary::
+   :toctree: stubs
+
+    convert_notts
+
+    correct_mri

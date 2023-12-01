@@ -33,19 +33,23 @@ class Study:
     Notes
     -----
     This class is a simple wrapper around glob and parse. It works something like this:
+    
     >>> studydir = '/path/to/study/{subject}/{session}/{subject}_{task}.fif'
     >>> study = Study(studydir)
     
     Get all files in the study directory:
+    
     >>> study.get()
     
     Get all files for a particular subject:
+    
     >>> study.get(subject='sub-01')
     
     Get all files for a particular subject and session:
+    
     >>> study.get(subject='sub-01', session='ses-01')
     
-    The fieldnames that are not specified in ``get`` are replaced with wildcards (*).
+    The fieldnames that are not specified in ``get`` are replaced with wildcards (``*``).
     """
     
     def __init__(self, studydir):
@@ -130,7 +134,7 @@ class Study:
         
         >>> study.get(subject='sub-01', session='ses-01')
         
-        The fieldnames that are not specified in ``get`` are replaced with wildcards (*).               
+        The fieldnames that are not specified in ``get`` are replaced with wildcards (``*``).               
         """
         keywords = {}
         for key in self.fieldnames:

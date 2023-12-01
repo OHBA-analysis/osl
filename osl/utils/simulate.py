@@ -188,8 +188,8 @@ if __name__ ==  '__main__':
 
     info = mne.io.anonymize_info(info)
     info['description'] = 'OSL Simulated Dataset'
-    info['experimentor'] = 'osl'
-    info['proj_name'] = 'osl_simulate'
+    # info['experimentor'] = 'osl'
+    # info['proj_name'] = 'osl_simulate'
     info['subject_info'] = {'id': 0, 'first_name': 'OSL', 'last_name': 'Simulated Data'}
     info.pop('dig')
 

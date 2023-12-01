@@ -15,7 +15,7 @@ osl_logger = logging.getLogger(__name__)
 
 def dask_parallel_bag(func, iter_args,
                       func_args=None, func_kwargs=None):
-    """A maybe more consistent alternative to dask_parallel.
+    """A maybe more consistent alternative to ``dask_parallel``.
     
     Parameters
     ---------

@@ -22,7 +22,32 @@ import scipy
 # %% Get sensor locations and orientations from tsv file
 
 def convert_notts(notts_opm_mat_file, smri_file, tsv_file, fif_file, smri_fixed_file):
-
+    """ Convert Nottingham OPM data from matlab file to fif file.
+    
+    Parameters
+    ----------
+    notts_opm_mat_file : str
+        The matlab file containing the OPM data.
+    smri_file : str
+        The structural MRI file.
+    tsv_file : str
+        The tsv file containing the sensor locations and orientations.
+    fif_file : str
+        The output fif file.
+    smri_fixed_file : str
+        The output structural MRI file with corrected sform.
+        
+    Notes
+    -----
+    The matlab file is assumed to contain a variable called 'data' which is
+    a matrix of size nSamples x nChannels.
+    The matlab file is assumed to contain a variable called 'fs' which is
+    the sampling frequency.
+    The tsv file is assumed to contain a header row, and the following columns:
+    name, type, bad, x, y, z, qx, qy, qz
+    The x,y,z columns are the sensor locations in metres.
+    The qx,qy,qz columns are the sensor orientations in metres.
+    """
     # correct sform for smri
     sform_std_fixed = correct_mri(smri_file, smri_fixed_file)
 
@@ -170,7 +195,26 @@ def convert_notts(notts_opm_mat_file, smri_file, tsv_file, fif_file, smri_fixed_
     raw.save(fif_file, overwrite=True)
 
 def correct_mri(smri_file, smri_fixed_file):
+    """Correct the sform in the structural MRI file.
 
+    Parameters
+    ----------
+    smri_file : str
+        The structural MRI file.
+    smri_fixed_file : str
+        The output structural MRI file with corrected sform.
+        
+        
+    Returns
+    -------
+    sform_std : ndarray
+        The new sform.
+        
+    Notes
+    -----
+    The sform is corrected so that it is in standard orientation.
+
+    """
     # Copy smri_name to new file for modification
     copyfile(smri_file, smri_fixed_file)
 

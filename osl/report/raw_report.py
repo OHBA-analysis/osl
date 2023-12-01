@@ -50,7 +50,7 @@ def gen_report_from_fif(infiles, outdir, ftype=None):
     outdir : str
         Directory to save HTML report and figures to.
     ftype : str
-        Type of fif file, e.g., 'raw' or 'preproc_raw'.
+        Type of fif file, e.g., ``'raw'`` or ``'preproc_raw'``.
         
     """
 

@@ -647,20 +647,18 @@ def run_maxfilter_batch(files, outdir, args=None):
     args : str
         List of additional optional arguments to pass to osl_maxfilter.  See ``help(osl.maxfilter)`` for all options.
         If a string is passed it it split input a list (delimited by spaces).
-        E.g. args="--maxpath /neuro/bin/util/maxfilter"
-        is equivalent to args=["--maxpath", "/neuro/bin/util/maxfilter"].
+        E.g. ``args="--maxpath /neuro/bin/util/maxfilter"``
+        is equivalent to ``args=["--maxpath", "/neuro/bin/util/maxfilter"]``.
         
     Notes
     -----
     Example use:
-        run_maxfilter_batch(files="/path/to/fif", outdir="/path/to/outdir",
+    
+    
+    >>> run_maxfilter_batch(files="/path/to/fif", outdir="/path/to/outdir",
         args="--maxpath /neuro/bin/util/maxfilter --scanner Neo --tsss --mode
         multistage --headpos --movecomp")
-        
-    args[]:
-        * standard
-        * multistage
-        * cbu
+    
     """
 
     if args is None:
