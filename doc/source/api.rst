@@ -172,6 +172,12 @@ Sensor level
 
     gen_report_from_fif
 
+    gen_html_data
+
+    gen_html_page
+
+    gen_html_summary
+
    
 Source level
 ++++++++++++
@@ -183,6 +189,10 @@ Source level
     gen_html_data
 
     gen_html_page
+
+    gen_html_summary
+
+    
 
 GLM
 ******

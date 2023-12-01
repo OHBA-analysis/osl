@@ -123,6 +123,11 @@ def gen_html_page(reportdir):
     ----------
     reportdir : str
         Directory to generate HTML report with.
+        
+    Returns
+    -------
+    bool
+        Whether the report was generated successfully.    
     """
     reportdir = Path(reportdir)
 
@@ -181,6 +186,11 @@ def gen_html_summary(reportdir):
     ----------
     reportdir : str
         Directory to generate HTML summary report with.
+        
+    Returns
+    -------
+    bool
+        Whether the report was generated successfully.
     """
     reportdir = Path(reportdir)
 
