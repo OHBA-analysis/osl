@@ -501,15 +501,15 @@ def plot_preproc_flowchart(
         Start colour.
     fig : matplotlib.figure
         Matplotlib figure to plot on.
-    ax : matplotlib.axes
+    ax : :py:class:`matplotlib.axes <matplotlib.axes>`
         Matplotlib axes to plot on.
     title : str
         Title for the plot.
 
     Returns
     -------
-    fig : matplotlib.figure
-    ax : matplotlib.axes
+    fig : :py:class:`matplotlib.figure <matplotlib.figure>`
+    ax : :py:class:`matplotlib.axes <matplotlib.axes>`
     """
     config = load_config(config)
 

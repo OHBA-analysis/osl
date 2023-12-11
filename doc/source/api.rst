@@ -42,27 +42,6 @@ Primary user-level functions for running an OSL pipeline.
    run_proc_batch
 
 
-Utils
-+++++
-
-Utility functions for running an OSL pipeline.
-
-.. currentmodule:: osl.preprocessing.batch
-
-.. autosummary::
-   :toctree: stubs
-   
-   append_preproc_info
-   get_config_from_fif
-   find_func
-   import_data
-   load_config
-   plot_preproc_flowchart
-   print_custom_func_info
-   read_dataset
-   write_dataset   
-
-
 MNE Wrappers
 ++++++++++++
 
@@ -161,6 +140,27 @@ Wrappers for OSL functions to perform preprocessing.
     plot_ica
     
 
+Utils
++++++
+
+Utility functions for running an OSL Preprocessing pipeline.
+
+.. currentmodule:: osl.preprocessing.batch
+
+.. autosummary::
+   :toctree: stubs
+   
+   append_preproc_info
+   get_config_from_fif
+   find_func
+   import_data
+   load_config
+   plot_preproc_flowchart
+   print_custom_func_info
+   read_dataset
+   write_dataset   
+
+
 Report
 ******
 Sensor level
@@ -192,12 +192,131 @@ Source level
 
     gen_html_summary
 
-    
+
 
 GLM
 ******
 
+Modality specific wrappers for glmtools.
 
+GLM Base
+++++++++++++++++++++++++
+
+.. currentmodule:: osl.glm.glm_base
+
+.. autosummary::
+   :toctree: stubs
+
+   GLMBaseResult
+
+   GLMBaseResult.save_pkl
+
+   GroupGLMBaseResult
+
+   GroupGLMBaseResult.get_channel_adjacency
+
+   BaseSensorPerm
+
+   BaseSensorPerm.save_pkl
+
+   SensorMaxStatPerm
+
+   SensorMaxStatPerm.get_sig_clusters
+
+   SensorClusterPerm
+
+   SensorClusterPerm.get_sig_clusters
+
+GLM Epochs
+++++++++++++++++++++++++
+
+.. currentmodule:: osl.glm.glm_epochs
+
+.. autosummary::
+   :toctree: stubs
+
+    glm_epochs
+
+    group_glm_epochs
+
+    read_mne_epochs
+
+    read_glm_epochs
+
+    GLMEpochsResult
+
+    GLMEpochsResult.get_evoked_contrast
+
+    GLMEpochsResult.plot_joint_contrast
+
+    GroupGLMEpochs
+
+    GroupGLMEpochs.get_evoked_contrast
+
+    GroupGLMEpochs.plot_joint_contrast
+
+    GroupGLMEpochs.get_channel_adjacency
+
+    GroupGLMEpochs.get_fl_contrast
+
+
+
+GLM Spectrum
+++++++++++++++++++++++++
+
+GLM-Spectrum classes and functions designed to work with GLM-Spectra computed from  MNE format sensorspace data
+
+.. currentmodule:: osl.glm.glm_spectrum
+
+.. autosummary::
+   :toctree: stubs
+
+   glm_spectrum
+
+   group_glm_spectrum
+
+   read_glm_spectrum
+
+   plot_sensor_data
+   
+   plot_sensor_spectrum
+
+   plot_joint_spectrum
+
+   plot_joint_spectrum_clusters
+   
+   plot_channel_layout
+
+   plot_with_cols
+
+   decorate_spectrum
+
+   prep_scaled_freq
+
+   get_mne_sensor_cols
+
+   SensorGLMSpectrum
+
+   SensorGLMSpectrum.plot_joint_spectrum
+
+   SensorGLMSpectrum.plot_sensor_spectrum
+
+   GroupSensorGLMSpectrum
+
+   GroupSensorGLMSpectrum.save_pkl
+
+   GroupSensorGLMSpectrum.plot_joint_spectrum
+
+   GroupSensorGLMSpectrum.get_fl_contrast
+
+   MaxStatPermuteGLMSpectrum
+
+   MaxStatPermuteGLMSpectrum.plot_sig_clusters
+
+   ClusterPermuteGLMSpectrum
+
+   ClusterPermuteGLMSpectrum.plot_sig_clusters
+   
 
 Source Reconstruction
 **********************

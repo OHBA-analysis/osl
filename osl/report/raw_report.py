@@ -343,7 +343,7 @@ def gen_html_summary(reportdir):
 
 
 def load_template(tname):
-    """Load a template from the templates directory.
+    """Load an HTML template from the templates directory.
 
     Parameters
     ----------

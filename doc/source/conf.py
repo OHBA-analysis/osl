@@ -32,7 +32,7 @@ release = '0.0.1dev'
 # ones.
 extensions = [
     'sphinx_gallery.gen_gallery',
-    'sphinx.ext.autosummary',
+    # 'sphinx.ext.autosummary',
     'sphinx.ext.autodoc',
     'sphinx.ext.intersphinx',
     'numpydoc',
@@ -77,4 +77,6 @@ sphinx_gallery_conf = {
 
 intersphinx_mapping = {'mne': ('https://mne.tools/stable/', None), 
                        'osl': ('https://osl.readthedocs.io/en/improve_docs/', None), 
-                       'dask': ('https://distributed.dask.org/en/stable/', None),}
+                       'dask': ('https://distributed.dask.org/en/stable/', None),
+                       'sails': ('https://sails.readthedocs.io/en/stable/', None),
+                       'matplotlib': ('https://matplotlib.org/stable/', None),}
