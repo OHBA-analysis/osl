@@ -129,6 +129,15 @@ def get_rhino_files(subjects_dir, subject):
 
 
 def system_call(cmd, verbose=False):
+    """ Run a system call.
+    
+    Parameters
+    ----------
+    cmd : string
+        Command to run.
+    verbose : bool
+        Print command before running.
+    """
     if verbose:
         log_or_print(cmd)
     subprocess.call(cmd, shell=True)
@@ -1073,7 +1082,20 @@ def _create_freesurfer_mesh_from_bet_surface(infile, surf_outfile, xform_mri_vox
 
 
 def _transform_bet_surfaces(flirt_xform_file, mne_xform_file, filenames, smri_file):
-
+    """Transforms bet surfaces into mne space.
+    
+    Parameters
+    ----------
+    flirt_xform_file : string
+        Path to flirt xform file.
+    mne_xform_file : string
+        Path to mne xform file.
+    filenames : dict
+        Dictionary containing filenames.
+    smri_file : string
+        Path to structural MRI file.
+    """
+    
     # Transform betsurf mask/mesh using passed in flirt transform and mne transform
     for mesh_name in {"outskin_mesh", "inskull_mesh", "outskull_mesh"}:
         # xform mask

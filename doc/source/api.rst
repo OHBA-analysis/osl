@@ -196,11 +196,9 @@ Source level
 
 GLM
 ******
-
-Modality specific wrappers for glmtools.
-
 GLM Base
-++++++++++++++++++++++++
+++++++++
+Modality specific wrappers for glmtools.
 
 .. currentmodule:: osl.glm.glm_base
 
@@ -316,15 +314,354 @@ GLM-Spectrum classes and functions designed to work with GLM-Spectra computed fr
    ClusterPermuteGLMSpectrum
 
    ClusterPermuteGLMSpectrum.plot_sig_clusters
-   
+
 
 Source Reconstruction
 **********************
-Rhino
-+++++
+
+Pipeline Functions
+++++++++++++++++++
+
+Primary user-level functions for running OSL source_recon functions.
+
+.. currentmodule:: osl.source_recon.batch
+
+.. autosummary::
+   :toctree: stubs
+
+    run_src_chain
+
+    run_src_batch
+
+
+Wrappers
+++++++++
+Primary wrapper functions to use in a source_recon configuration
+
+.. currentmodule:: osl.source_recon.wrappers
+
+.. autosummary::
+   :toctree: stubs
+
+    beamform
+
+    beamform_and_parcellate
+    
+    compute_surfaces
+
+    compute_surfaces_coregister_and_forward_model
+
+    coregister
+
+    extract_fiducials_from_fif
+
+    extract_rhino_files
+
+    find_template_subject
+
+    fix_sign_ambiguity
+
+    forward_model
+
+    parcellate
+
+
+Beamforming
++++++++++++
+Second-level beamforming functions used by wrappers
+
+.. currentmodule:: osl.source_recon.beamforming
+
+.. autosummary::
+   :toctree: stubs
+
+    apply_lcmv
+
+    apply_lcmv_raw
+
+    get_beamforming_filenames
+
+    get_recon_timeseries
+
+    load_lcmv
+
+    make_lcmv
+
+    make_plots
+
+    transform_leadfield
+
+    transform_recon_timeseries
+
+    voxel_timeseries
+
+    _compute_beamformer
+    
+    _make_lcmv
+
+    _prepare_beamformer_input
+
 
 Parcellation
 ++++++++++++
+Second-level Parcellation functions used by wrappers
+
+.. currentmodule:: osl.source_recon.parcellation.parcellation
+
+.. autosummary::
+   :toctree: stubs
+
+   convert2mne_raw
+
+   convert2mne_epochs
+   
+   convert2niftii
+
+   find_file
+   
+   load_parcellation
+
+   parcel_centers
+
+   parcellate_timeseries
+
+   plot_correlation
+   
+   plot_parcellation
+
+   plot_psd
+
+   spatial_dist_adjacency
+
+   symmetric_orthogonalise
+
+   _get_parcel_timeseries
+
+   _parcel_timeseries2nii
+
+   _resample_parcellation
+
+
+Parcellation Nifti
+++++++++++++
+Second-level Parcellation functions used by wrappers
+
+.. currentmodule:: osl.source_recon.parcellation.nii
+
+.. autosummary::
+   :toctree: stubs
+
+    append_4d_parcellation
+    
+    convert_3dparc_to_4d
+    
+    convert_4dparc_to_3d
+
+    spatially_downsample
+
+
+
+Rhino Coreg
++++++++++++
+Deep-level RHINO functions used by wrappers
+
+.. currentmodule:: osl.source_recon.rhino.coreg
+
+.. autosummary::
+   :toctree: stubs
+
+    bem_display
+    
+    coreg
+
+    coreg_display
+    
+    coreg_metrics
+    
+    get_coreg_filenames
+
+Rhino Forward-model
++++++++++++
+Deep-level RHINO functions used by wrappers
+
+.. currentmodule:: osl.source_recon.rhino.forward_model
+
+.. autosummary::
+   :toctree: stubs
+
+    forward_model
+
+    make_fwd_solution
+
+    setup_volume_source_space
+
+
+Rhino FSL-utils
++++++++++++
+Deep-level RHINO functions used by wrappers
+
+.. currentmodule:: osl.source_recon.rhino.fsl_utils
+
+.. autosummary::
+   :toctree: stubs
+
+    check_fsl
+
+    fsleyes
+
+    fsleyes_overlay
+    
+    setup_fsl
+
+
+Rhino Polhemus
++++++++++++
+Deep-level RHINO functions used by wrappers
+
+.. currentmodule:: osl.source_recon.rhino.polhemus
+
+.. autosummary::
+   :toctree: stubs
+
+    delete_headshape_points
+    
+    extract_polhemus_from_info
+
+    plot_polhemus_points
+
+
+Rhino Surfaces
++++++++++++
+Deep-level RHINO functions used by wrappers
+
+.. currentmodule:: osl.source_recon.rhino.surfaces
+
+.. autosummary::
+   :toctree: stubs
+
+    check_if_already_computed
+
+    compute_surfaces
+    
+    get_surfaces_filenames
+
+    plot_surfaces
+
+    surfaces_display
+
+
+Rhino Utils
++++++++++++
+Deep-level RHINO functions used by wrappers
+
+.. currentmodule:: osl.source_recon.rhino.utils
+
+.. autosummary::
+   :toctree: stubs
+
+    best_fit_transform
+
+    extract_rhino_files
+    
+    get_gridstep
+    
+    get_rhino_files
+
+    icp
+
+    majority
+
+    nearest_neighbor
+    
+    niimask2indexpointcloud
+
+    niimask2mmpointcloud
+
+    recon_timeseries2niftii
+
+    rhino_icp
+    
+    rigid_transform_3D
+
+    save_or_show_renderer
+
+    system_call
+
+    xform_points
+
+    _closest_node
+
+    _create_freesurfer_mesh_from_bet_surface
+
+    _create_freesurfer_meshes_from_bet_surfaces
+
+    _get_flirtcoords2native_xform
+
+    _get_vol_info_from_nii
+
+    _get_sform
+
+    _get_mne_xform_from_flirt_xform
+
+    _get_flirt_xform_between_axes
+
+    _get_mni_sform
+
+    _get_orient
+
+    _get_vtk_mesh_native
+
+    _binary_majority3d
+
+    _timeseries2nii
+
+    _transform_bet_surfaces
+
+    _transform_vtk_mesh
+
+
+Sign-flipping
++++++++++++++
+Second-level sign-flipping functions used by wrappers
+
+.. currentmodule:: osl.source_recon.sign_flipping
+
+.. autosummary::
+   :toctree: stubs
+    
+    apply_flips
+    
+    apply_flips_to_covariance
+
+    covariance_matrix_correlation
+
+    find_flips
+
+    find_template_subject
+
+    load_covariances
+
+    randomly_flip
+
+    std_data
+
+    time_embed
+
+    _get_parc_chans
+
+
+Utils
++++++
+Utility functions for running an OSL Source Recon pipeline.
+
+.. currentmodule:: osl.source_recon.batch
+
+.. autosummary::
+   :toctree: stubs
+
+    load_config
+
+    find_func
 
 
 Utilities

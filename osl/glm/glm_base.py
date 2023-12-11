@@ -128,7 +128,8 @@ class GroupGLMBaseResult:
 
 
 class BaseSensorPerm:
-
+    """A base class for sensor x frequency permutation tests computed from a
+    group level GLM-Spectrum."""
     def save_pkl(self, outname, overwrite=True, save_data=False):
         """Save GLM-Epochs result to a pickle file.
 

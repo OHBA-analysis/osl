@@ -83,6 +83,21 @@ def extract_polhemus_from_info(
 
 
 def plot_polhemus_points(txt_fnames, colors=None, scales=None, markers=None, alphas=None):
+    """Plot polhemus points.
+    
+    Parameters
+    ----------
+    txt_fnames : list of strings
+        List of filenames containing polhemus points.
+    colors : list of tuples
+        List of colors for each set of points.
+    scales : list of floats
+        List of scales for each set of points.
+    markers : list of strings
+        List of markers for each set of points.
+    alphas : list of floats
+        List of alphas for each set of points.
+    """
     plt.figure()
     ax = plt.axes(projection="3d")
     for ss in range(len(txt_fnames)):
