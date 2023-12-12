@@ -32,7 +32,7 @@ release = '0.0.1dev'
 # ones.
 extensions = [
     'sphinx_gallery.gen_gallery',
-    # 'sphinx.ext.autosummary',
+    'sphinx.ext.autosummary',
     'sphinx.ext.autodoc',
     'sphinx.ext.intersphinx',
     'numpydoc',
