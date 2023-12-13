@@ -14,6 +14,7 @@ from osl import source_recon, utils
 
 # Directories
 preproc_dir = "output/preproc"
+coreg_dir = "output/coreg"
 src_dir = "output/src"
 fsl_dir = "/opt/ohba/fsl/6.0.5"  # this is where FSL is installed on hbaws
 
@@ -40,6 +41,12 @@ config = """
 if __name__ == "__main__":
     utils.logger.set_up(level="INFO")
     source_recon.setup_fsl(fsl_dir)
+
+    # Copy directory containing the coregistration
+    if not os.path.exists(src_dir):
+        cmd = f"cp -r {coreg_dir} {src_dir}"
+        print(cmd)
+        os.system(cmd)
 
     # Get paths to files
     preproc_files = []

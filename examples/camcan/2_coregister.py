@@ -29,20 +29,6 @@ PREPROC_FILE = (
 )
 SMRI_FILE = ANAT_DIR + "/{0}/anat/{0}_T1w.nii"
 
-# Settings
-config = """
-    source_recon:
-    - extract_fiducials_from_fif: {}
-    - fix_headshape_points: {}
-    - compute_surfaces:
-        include_nose: False
-    - coregister:
-        use_nose: False
-        use_headshape: True
-        #n_init: 50
-"""
-
-
 def fix_headshape_points(src_dir, subject, preproc_file, smri_file, epoch_file):
     filenames = source_recon.rhino.get_coreg_filenames(src_dir, subject)
 
@@ -93,8 +79,21 @@ if __name__ == "__main__":
         smri_files.append(SMRI_FILE.format(subject))
         preproc_files.append(PREPROC_FILE.format(subject))
 
+    # Settings
+    config = """
+        source_recon:
+        - extract_fiducials_from_fif: {}
+        - fix_headshape_points: {}
+        - compute_surfaces:
+            include_nose: False
+        - coregister:
+            use_nose: False
+            use_headshape: True
+            #n_init: 50
+    """
+
     # Setup parallel processing
-    # client = Client(n_workers=8, threads_per_worker=1)
+    client = Client(n_workers=16, threads_per_worker=1)
 
     # Run coregistration
     source_recon.run_src_batch(
@@ -104,5 +103,5 @@ if __name__ == "__main__":
         preproc_files=preproc_files,
         smri_files=smri_files,
         extra_funcs=[fix_headshape_points],
-        # dask_client=True,
+        dask_client=True,
     )

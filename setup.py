@@ -9,8 +9,8 @@ HERE = pathlib.Path(__file__).parent
 README = (HERE / "README.md").read_text()
 
 # Requirement categories
-reqs = ['numpy', 'scipy', 'matplotlib', 'mne>=1.0.0', 'scikit-learn', 'fslpy',
-        'sails', 'tabulate', 'pyyaml>=5.1', 'neurokit2', 'jinja2',
+reqs = ['numpy', 'scipy', 'matplotlib', 'mne~=1.3.1', 'scikit-learn', 'fslpy',
+        'sails', 'tabulate', 'pyyaml>=5.1', 'neurokit2', 'jinja2==3.0.3',
         'glmtools', 'numba', 'nilearn', 'dask', 'distributed', 'parse',
         'opencv-python', 'panel', 'h5io']
 doc_reqs = ['sphinx==4.0.2', 'numpydoc', 'sphinx_gallery', 'pydata-sphinx-theme']
@@ -19,7 +19,7 @@ dev_reqs = ['setuptools>=41.0.1', 'pytest', 'pytest-cov', 'coverage', 'flake8']
 name = 'osl'
 
 setup(name=name,
-      version='0.5.dev0',
+      version='0.6.dev0',
       description='OHBA Software Library',
       long_description=README,
       long_description_content_type="text/markdown",

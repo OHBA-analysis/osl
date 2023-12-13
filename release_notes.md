@@ -37,15 +37,26 @@ git checkout -b release-vX.Y.Z
 
 ##### 2 - Make sure the tests pass
 
-These should be run on github automatically as part of the pull request, you
-can also run them with `pytest` in the osl root directory. Fix anything that
-fails - though nothing should at this stage....
+Run tests on your local machine, from your root osl directory with:
+
+```
+conda activate osl
+pytest osl/tests
+```
+
+Passes and warnings are fine. Just need to check for failures.
+
+Note, you may need to install `pytest` with `pip install pytest` to run the tests.
 
 
 ##### 3 - Increment the version numbers in across the codebase
 
-Verson numbers are included in a number of files - these ALL need to be updated, though only one or two are absolutely critical. `setup.py` and `osl/__init__.py` are vital and must match or someone is going to get very confused later on. I'd strongly recommend running `git grep version` to search for other possibles.
+You need to update the version number the the following files to version number you'd like to release:
 
+- `setup.py`
+- `osl/__init__.py`
+
+Don't forget to commit these changes before continuing.
 
 ##### 4 - Run a local build and make sure you get the right versions.
 
@@ -57,7 +68,7 @@ pip install .
 
 The final line of output should say 'Successfully installed' and include osl with the correct version number, if its incorrect then check the version in `setup.py`
 
-Next, start a python session, import osl and check osl.__version__ - this should show the correct version number, it it is incorrect then check the version in `osl/__init__.py`
+Next, start a python session, import osl and check `osl.__version__` - this should show the correct version number, it it is incorrect then check the version in `osl/__init__.py`
 
 
 ##### 5 - tag a new version
@@ -90,21 +101,42 @@ and upload to PyPi.org using twine, ensure you have your username and password t
 twine upload --skip-existing dist/*
 ```
 
+Note, you may need to install `twine` with `pip install twine`.
+
 ##### 8 - TEST EVERYTHING!
 
-Ask your friends and family to install the released pacakge and let you know if there are any problems. Fix any that come up and repeat steps 1 to 8 with a new version number.
+Ask your friends and family to install the released package and let you know if there are any problems. Fix any that come up and repeat steps 1 to 8 with a new version number. 
+Note: if you test the installation from a `pip install osl`, make sure you're not opening Python from an OSL directory because then the directory will be imported rather than the installed package from pip.
 
 Do not delete broken package releases, make any fixes in a new 'trivial' update.
 
 
 ##### 9 - Update version numbers to include 'dev'
 
-The same versions you incremented in step 3 should be updated to increment once mor and include 'dev' at the end, this means we will be able to distinguish the tagged/fixed version from future work-in-progress. If we don't do this, then updates to main will have the same version even though they are likely to significantly differ from the release.
+The same versions you incremented in step 3 should be updated to increment once more and include 'dev' at the end, this means we will be able to distinguish the tagged/fixed version from future work-in-progress. If we don't do this, then updates to main will have the same version even though they are likely to significantly differ from the release.
 
 If we just did a minor update and released v0.3.0, we would make the development version v0.4.dev0.
 
 If we did a trivial update and released v0.1.2, we would still fix the development version to the next minor release v0.2.dev0. Don't bother incrementing the trivial versions.
 
-##### 10 - Merge the branch into main
+You need to change the version number in the following files:
 
-And wait for someone to point out which mistake you made. Fix it and then repeat steps 1 to 10 with an appropriate new version number.
+- `setup.py`
+- `osl/__init__.py`
+
+Don't forget to commit these changes before continuing.
+
+##### 10 - Push branch and merge into main
+
+To push use:
+
+```
+git push --set-upstream origin release-vX.Y.Z
+```
+Remember to replace vX.Y.Z with the latest version number.
+
+Then create the pull request.
+
+Wait for someone to point out which mistake you made. Fix it and then repeat steps 1 to 10 with an appropriate new version number.
+
+Once you're happy and if the tests pass you can merge.
