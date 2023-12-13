@@ -39,7 +39,7 @@ raw.plot(n_channels=30)
 
 #%%
 
-bad_annotations, flat_channels = mne.preprocessing.annotate_flat(raw)
+bad_annotations, flat_channels = mne.preprocessing.annotate_amplitude(raw, flat=1e-30, picks='meg')
 
 raw.set_annotations(bad_annotations)
 raw.info['bads'].extend(flat_channels)
@@ -50,6 +50,6 @@ raw.plot(n_channels=30)
 
 #%%
 
-raw = osl.preprocessing.osl_wrappers.detect_badsegments(raw, segment_len=150)
+raw = osl.preprocessing.osl_wrappers.detect_badsegments(raw, 'grad', segment_len=150)
 
 raw.plot(n_channels=30)

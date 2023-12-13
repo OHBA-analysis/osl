@@ -8,9 +8,24 @@ import numpy as np
 
 
 class GLMBaseResult:
-
+    """A class for GLM-Epochs fitted to MNE-Python Raw objects."""
     def __init__(self, model, design, info, data=None):
-
+        """
+        Parameters
+        ----------
+        model : :py:class:`glmtools.fit.OLSModel <glmtools.fit.OLSModel>'
+            The  model object.
+        design : :py:class:`glmtools.design.GLMDesign <glmtools.design.GLMDesign>`
+            The  GLM design object.
+        info : :py:class:`mne.Info <mne.Info>`
+            The MNE-Python Info object.
+            
+            
+        References
+        ----------
+        https://gitlab.com/ajquinn/glmtools/-/tree/master
+        
+        """
         self.model = model
         self.design = design
         self.data = data
@@ -58,7 +73,24 @@ class GroupGLMBaseResult:
     GLM-Epochs computed from MNE-Python Raw objects"""
 
     def __init__(self, model, design, info, config, fl_contrast_names=None, data=None):
-
+        """
+        Parameters
+        ----------
+        model : :py:class:`glmtools.fit.OLSModel <glmtools.fit.OLSModel>'
+            The  model object.
+        design : :py:class:`glmtools.design.GLMDesign <glmtools.design.GLMDesign>`
+            The  GLM design object.
+        info : :py:class:`mne.Info <mne.Info>`
+            The MNE-Python Info object.
+        config : :py:class:`glmtools.config.GLMConfig <glmtools.config.GLMConfig>`
+            The  GLM configuration object.
+        fl_contrast_names : list of str
+            The names of the first-level contrasts.
+        data : :py:class:`mne.Epochs <mne.Epochs>` or :py:class:`mne.Evoked <mne.Evoked>`
+            The MNE-Python Epochs or Evoked object.
+            
+        """
+        
         self.model = model
         self.design = design
         self.data = data
@@ -74,7 +106,19 @@ class GroupGLMBaseResult:
             self.fl_contrast_names = fl_contrast_names
 
     def get_channel_adjacency(self):
-        """Return adjacency matrix of channels."""
+        """Return adjacency matrix of channels.
+        
+        Parameters
+        ----------
+        None
+        
+        Returns
+        -------
+        adjacency : scipy.sparse.csr_matrix
+            The adjacency matrix.
+        ch_names : list of str
+            The channel names.
+        """
         ch_type =  mne.io.meas_info._get_channel_types(self.info)[0]  # Assuming these are all the same!
         adjacency, ch_names = mne.channels.channels._compute_ch_adjacency(self.info, ch_type)
         ntests = np.prod(self.data.data.shape[2:])
@@ -84,7 +128,8 @@ class GroupGLMBaseResult:
 
 
 class BaseSensorPerm:
-
+    """A base class for sensor x frequency permutation tests computed from a
+    group level GLM-Spectrum."""
     def save_pkl(self, outname, overwrite=True, save_data=False):
         """Save GLM-Epochs result to a pickle file.
 
@@ -114,7 +159,28 @@ class SensorMaxStatPerm(BaseSensorPerm):
     def __init__(self, glmsp, gl_con, fl_con=0, nperms=1000,
                     tstat_args=None,  metric='tstats', nprocesses=1,
                     pooled_dims=(1,2)):
-
+        """Initialise the SensorMaxStatPerm class.
+        
+        Parameters
+        ----------
+        glmsp : :py:class:`GroupGLMBaseResult <GroupGLMBaseResult>`
+            The group level GLM result object.
+        gl_con : int
+            The index of the group level contrast to test.
+        fl_con : int
+            The index of the first-level contrast to test.
+        nperms : int
+            The number of permutations to use.
+        tstat_args : dict
+            The arguments to pass to the tstat function.
+        metric : str
+            The metric to use for the permutation test.
+        nprocesses : int
+            The number of processes to use.
+        pooled_dims : tuple of int
+            The dimensions to pool over.
+        
+        """
         # There is a major pain here in that MNE stores raw data in [channels x time]
         # but builds adjacencies in [time x channels] - we don't need adjacencies for perms
         # but we do for making clusters for plotting, so here we are
@@ -136,7 +202,23 @@ class SensorMaxStatPerm(BaseSensorPerm):
                                                         tstat_args=tstat_args)
 
     def get_sig_clusters(self, thresh):
-        """sigh"""
+        """Return the significant clusters at a given threshold.
+        
+        Parameters
+        ----------
+        thresh : float
+            The threshold to consider a cluster significant eg 95 or 99
+            
+        Returns
+        -------
+        clusters
+            A list containing the significant clusters. Each list item contains
+            a tuple of three items - the cluster statistic, the cluster
+            percentile relative to the null and the spatial/spectral indices of
+            the cluster.
+        obs_stat
+            The observed statistic.
+        """
         obs = glm.fit.OLSModel(self.perms._design, self.perm_data)
         obs = obs.get_tstats(**self.perms.tstat_args)[self.gl_con, :, :]
         thresh = self.perms.get_thresh(thresh)
@@ -170,7 +252,28 @@ class SensorClusterPerm(BaseSensorPerm):
     def __init__(self, glmsp, gl_con, fl_con=0, nperms=1000,
                     cluster_forming_threshold=3, tstat_args=None,
                     metric='tstats', nprocesses=1):
-
+        """Initialise the SensorClusterPerm class.
+        
+        Parameters
+        ----------
+        glmsp : :py:class:`GroupGLMBaseResult <GroupGLMBaseResult>`
+            The group level GLM result object.
+        gl_con : int
+            The index of the group level contrast to test.
+        fl_con : int
+            The index of the first-level contrast to test.
+        nperms : int
+            The number of permutations to use.
+        cluster_forming_threshold : float   
+            The threshold to use for cluster forming.
+        tstat_args : dict   
+            The arguments to pass to the tstat function.
+        metric : str
+            The metric to use for the permutation test.
+        nprocesses : int    
+            The number of processes to use.
+        
+        """
 
         # There is a major pain here in that MNE stores raw data in [channels x time]
         # but builds adjacencies in [time x channels]
@@ -204,7 +307,8 @@ class SensorClusterPerm(BaseSensorPerm):
             a tuple of three items - the cluster statistic, the cluster
             percentile relative to the null and the spatial/spectral indices of
             the cluster.
-
+        obs_stat
+            The observed statistic.
         """
         clusters, obs_stat =  self.perms.get_sig_clusters(thresh, self.perm_data)
         return clusters, obs_stat

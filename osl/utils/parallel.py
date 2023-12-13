@@ -15,7 +15,29 @@ osl_logger = logging.getLogger(__name__)
 
 def dask_parallel_bag(func, iter_args,
                       func_args=None, func_kwargs=None):
-    """A maybe more consistent alternative to dask_parallel."""
+    """A maybe more consistent alternative to ``dask_parallel``.
+    
+    Parameters
+    ---------
+    func : function
+        The function to run in parallel.
+    iter_args : list
+        A list of iterables to pass to func.
+    func_args : list, optional
+        A list of positional arguments to pass to func.
+    func_kwargs : dict, optional
+        A dictionary of keyword arguments to pass to func.
+    
+    Returns
+    -------
+    flags : list
+        A list of return values from func.
+        
+    References
+    ----------
+    https://docs.dask.org/en/stable/bag.html
+    
+    """
 
     func_args = [] if func_args is None else func_args
     func_kwargs = {} if func_kwargs is None else func_kwargs

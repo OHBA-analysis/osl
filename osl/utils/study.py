@@ -8,9 +8,73 @@ import parse
 from string import Formatter
 
 class Study:
-    """Class for simple file finding and looping."""
-
+    """Class for simple file finding and looping.
+    
+    Parameters
+    ----------
+    studydir : str
+        The study directory with wildcards.
+    
+    Attributes
+    ----------
+    studydir : str
+        The study directory with wildcards.
+    fieldnames : list
+        The wildcards in the study directory, i.e., the field names in between {braces}.
+    globdir : str
+        The study directory with wildcards replaced with *.
+    match_files : list
+        The files that match the globdir.
+    match_values : list
+        The values of the field names (i.e., wildcards) for each file.
+    fields : dict
+        The field names and values for each file.
+    
+    Notes
+    -----
+    This class is a simple wrapper around glob and parse. It works something like this:
+    
+    >>> studydir = '/path/to/study/{subject}/{session}/{subject}_{task}.fif'
+    >>> study = Study(studydir)
+    
+    Get all files in the study directory:
+    
+    >>> study.get()
+    
+    Get all files for a particular subject:
+    
+    >>> study.get(subject='sub-01')
+    
+    Get all files for a particular subject and session:
+    
+    >>> study.get(subject='sub-01', session='ses-01')
+    
+    The fieldnames that are not specified in ``get`` are replaced with wildcards (``*``).
+    """
+    
     def __init__(self, studydir):
+        """
+        Notes
+        -----
+        This class is a simple wrapper around glob and parse. It works something like this:
+        
+        >>> studydir = '/path/to/study/{subject}/{session}/{subject}_{task}.fif'
+        >>> study = Study(studydir)
+        
+        Get all files in the study directory:
+        
+        >>> study.get()
+        
+        Get all files for a particular subject:
+        
+        >>> study.get(subject='sub-01')
+        
+        Get all files for a particular subject and session:
+        
+        >>> study.get(subject='sub-01', session='ses-01')
+        
+        The fieldnames that are not specified in ``get`` are replaced with wildcards (*).
+        """
         self.studydir = studydir
 
         # Extract field names in between {braces}
@@ -37,6 +101,41 @@ class Study:
                 self.fields[key].append(d[key])
 
     def get(self, check_exist=True, **kwargs):
+        """Get files from the study directory that match the fieldnames.
+
+        Parameters
+        ----------
+        check_exist : bool
+            Whether to check if the files exist.
+        **kwargs : dict
+            The field names and values to match.
+
+        Returns
+        -------
+        out : list
+            The files that match the field names and values.
+
+        Notes
+        -----
+        Example using ``Study`` and ``Study.get()``:
+        
+        >>> studydir = '/path/to/study/{subject}/{session}/{subject}_{task}.fif'
+        >>> study = Study(studydir)
+        
+        Get all files in the study directory:
+        
+        >>> study.get()
+        
+        Get all files for a particular subject:
+        
+        >>> study.get(subject='sub-01')
+        
+        Get all files for a particular subject and session:
+        
+        >>> study.get(subject='sub-01', session='ses-01')
+        
+        The fieldnames that are not specified in ``get`` are replaced with wildcards (``*``).               
+        """
         keywords = {}
         for key in self.fieldnames:
             keywords[key] = kwargs.get(key, '*')
@@ -44,5 +143,7 @@ class Study:
         fname = self.studydir.format(**keywords)
         
         # we only want the valid files
-        out = [ff for ff in glob.glob(fname) if any(ff in ff_valid for ff_valid in self.match_files)]
-        return out
+        if check_exist:
+            return [ff for ff in glob.glob(fname) if any(ff in ff_valid for ff_valid in self.match_files)]
+        else:
+            return glob.glob(fname)

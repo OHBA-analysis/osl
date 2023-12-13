@@ -11,6 +11,27 @@ import numpy as np
 
 
 def simulate_data(model, num_samples=1000, num_realisations=1, use_cov=True):
+    """Simulate data from a linear model.
+    
+    Parameters
+    ----------
+    model : sails.AbstractLinearModel
+        A linear model object.
+    num_samples : int
+        The number of samples to simulate.
+    num_realisations : int
+        The number of realisations to simulate.
+    use_cov : bool
+        Whether to use the residual covariance matrix.
+        
+    Returns
+    -------
+    Y : ndarray, shape (num_sources, num_samples, num_realisations)
+        The simulated data.
+    
+    """
+    
+    
     num_sources = model.nsignals
 
     # Preallocate output
@@ -33,7 +54,25 @@ def simulate_data(model, num_samples=1000, num_realisations=1, use_cov=True):
 
 
 def simulate_raw_from_template(sim_samples, bad_segments=None, bad_channels=None, flat_channels=None):
-
+    """Simulate raw MEG data from a 306-channel MEGIN template.
+    
+    Parameters
+    ----------
+    sim_samples : int
+        The number of samples to simulate.
+    bad_segments : list of tuples
+        The bad segments to simulate.
+    bad_channels : list of ints
+        The bad channels to simulate.
+    flat_channels : list of ints
+        The flat channels to simulate.
+        
+    Returns
+    -------
+    sim : :py:class:`mne.io.Raw <mne.io.Raw>`
+        The simulated data. 
+    
+    """
     basedir = os.path.dirname(os.path.realpath(__file__))
     basedir = os.path.join(basedir, 'simulation_config')
     info = mne.io.read_info(os.path.join(basedir, 'megin_template_info.fif'))
@@ -76,7 +115,33 @@ def simulate_raw_from_template(sim_samples, bad_segments=None, bad_channels=None
 def simulate_rest_mvar(raw, sim_samples,
                        mvar_pca=32, mvar_order=12,
                        picks=None, modalities=None, drop_dig=False):
-    """Best used on low sample rate data <200Hz. fiff only for now."""
+    """Simulate resting state data from a raw object using a reduced MVAR model.
+    
+    Parameters
+    ----------
+    raw : :py:class:`mne.io.Raw <mne.io.Raw>`
+        The raw object to simulate from.
+    sim_samples : int
+        The number of samples to simulate.
+    mvar_pca : int
+        The number of PCA components to use.
+    mvar_order : int
+        The MVAR model order.
+    picks : dict
+        The picks to use. See :py:func:`mne.pick_types <mne.pick_types>`.
+    modalities : list of str
+        The modalities to use. See :py:func:`mne.pick_types <mne.pick_types>`.
+    drop_dig : bool 
+        Whether to drop the digitisation points.
+        
+    Returns
+    -------
+    sim : :py:class:`mne.io.Raw <mne.io.Raw>`
+        The simulated data.
+    
+    Notes
+    -----
+    Best used on low sample rate data <200Hz. fiff only for now."""
 
     if modalities is None:
         modalities = ['mag', 'grad']
@@ -123,8 +188,8 @@ if __name__ ==  '__main__':
 
     info = mne.io.anonymize_info(info)
     info['description'] = 'OSL Simulated Dataset'
-    info['experimentor'] = 'osl'
-    info['proj_name'] = 'osl_simulate'
+    # info['experimentor'] = 'osl'
+    # info['proj_name'] = 'osl_simulate'
     info['subject_info'] = {'id': 0, 'first_name': 'OSL', 'last_name': 'Simulated Data'}
     info.pop('dig')
 

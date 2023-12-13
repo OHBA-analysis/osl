@@ -38,3 +38,4 @@ osl_logger.debug('osl main init complete')
 
 # --------------------------------------------------------
 __version__ = '0.6.dev0'
+
