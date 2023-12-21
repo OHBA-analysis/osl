@@ -2,6 +2,7 @@
 import pickle
 from copy import deepcopy
 from pathlib import Path
+from itertools import compress
 
 import glmtools as glm
 import matplotlib.pyplot as plt
@@ -27,9 +28,7 @@ class SensorGLMSpectrum(GLMBaseResult):
         self.config = glmsp.config
         super().__init__(glmsp.model, glmsp.design, info, data=glmsp.data)
 
-    def plot_joint_spectrum(self, contrast=0, freqs='auto', base=1, ax=None,
-                            topo_scale='joint', lw=0.5,  ylabel=None, title=None,
-                            ylim=None, xtick_skip=1, topo_prop=1/5, metric='copes'):
+    def plot_joint_spectrum(self, contrast=0, metric='copes', **kwargs):
         """Plot a GLM-Spectrum contrast with spatial line colouring and topograpies.
 
         Parameters
@@ -63,22 +62,20 @@ class SensorGLMSpectrum(GLMBaseResult):
         """
         if metric == 'copes':
             spec = self.model.copes[contrast, :, :].T
-            ylabel = 'Power' if ylabel is None else ylabel
+            kwargs['ylabel'] = 'Power' if kwargs.get('ylabel') is None else kwargs.get('ylabel')
         elif metric == 'varcopes':
             spec = self.model.varcopes[contrast, :, :].T
-            ylabel = 'Standard-Error' if ylabel is None else ylabel
+            kwargs['ylabel'] = 'Varcopes' if kwargs.get('ylabel') is None else kwargs.get('ylabel')
         elif metric == 'tstats':
             spec = self.model.tstats[contrast, :, :].T
-            ylabel = 't-statistics' if ylabel is None else ylabel
+            kwargs['ylabel'] = 't-statistics' if kwargs.get('ylabel') is None else kwargs.get('ylabel')
         else:
             raise ValueError("Metric '{}' not recognised".format(metric))
 
-        if title is None:
-            title = 'C {} : {}'.format(contrast, self.design.contrast_names[contrast])
+        if kwargs.get('title') is None:
+            kwargs['title'] = 'C {} : {}'.format(contrast, self.design.contrast_names[contrast])
 
-        plot_joint_spectrum(self.f, spec, self.info, freqs=freqs, base=base,
-                            topo_scale=topo_scale, lw=lw, ylabel=ylabel, title=title,
-                            ylim=ylim, xtick_skip=xtick_skip, topo_prop=topo_prop, ax=ax)
+        plot_joint_spectrum(self.f, spec, self.info, **kwargs)
 
     def plot_sensor_spectrum(self, contrast, sensor_proj=False,
                              xticks=None, xticklabels=None, lw=0.5, ax=None, title=None,
@@ -230,14 +227,14 @@ class GroupSensorGLMSpectrum(GroupGLMBaseResult):
             raise ValueError("Metric '{}' not recognised".format(metric))
 
         if title is None:
-            gtitle = 'gC {} : {}'.format(gcontrast, self.contrast_names[gcontrast])
-            ftitle = 'flC {} : {}'.format(fcontrast, self.fl_contrast_names[fcontrast])
+            gtitle = 'group con : {}'.format(self.contrast_names[gcontrast])
+            ftitle = 'first-level con : {}'.format(self.fl_contrast_names[fcontrast])
 
             title = gtitle + '\n' + ftitle
 
         plot_joint_spectrum(self.f, spec, self.info, freqs=freqs, base=base,
                             topo_scale=topo_scale, lw=lw, ylabel=ylabel, title=title,
-                            ylim=ylim, xtick_skip=xtick_skip, topo_prop=topo_prop, ax=ax)
+                            yl=ylim, xtick_skip=xtick_skip, topo_prop=topo_prop, ax=ax)
 
     def get_fl_contrast(self, fl_con):
         """Get the data from a single first level contrast.
@@ -262,7 +259,7 @@ class MaxStatPermuteGLMSpectrum(SensorMaxStatPerm):
     """A class holding the result for sensor x frequency cluster stats computed
     from a group level GLM-Spectrum"""
 
-    def plot_sig_clusters(self, thresh, ax=None, base=1):
+    def plot_sig_clusters(self, thresh, ax=None, base=1, min_extent=1):
         """Plot the significant clusters at a given threshold.
 
         Parameters
@@ -282,6 +279,11 @@ class MaxStatPermuteGLMSpectrum(SensorMaxStatPerm):
         title = title.format(self.gl_contrast_name, self.fl_contrast_name)
 
         clu, obs = self.get_sig_clusters(thresh)
+        to_plot = []
+        for c in clu:
+            to_plot.append(False if len(c[2][0]) < min_extent or len(c[2][1]) < min_extent else True)
+
+        clu = list(compress(clu, to_plot))
         plot_joint_spectrum_clusters(self.f, obs, clu, self.info, base=base, ax=ax, title=title, ylabel='t-stat')
 
 
@@ -480,7 +482,6 @@ def glm_spectrum(XX, reg_categorical=None, reg_ztrans=None, reg_unitmax=None,
                             mode=mode,
                             fmin=fmin,
                             fmax=fmax,
-                            ret_class=True,
                             fit_method='glmtools')
 
     if isinstance(XX, mne.io.base.BaseRaw):
@@ -656,8 +657,8 @@ def plot_joint_spectrum_clusters(xvect, psd, clusters, info, ax=None, freqs='aut
 
 
 def plot_joint_spectrum(xvect, psd, info, ax=None, freqs='auto', base=1,
-        topo_scale='joint', lw=0.5, ylabel='Power', title='', ylim=None,
-        xtick_skip=1, topo_prop=1/5):
+        topo_scale='joint', lw=0.5, ylabel='Power', title='', yl=None,
+        xtick_skip=1, topo_prop=1/5, topomap_args=None):
     """Plot a GLM-Spectrum contrast with spatial line colouring and topograpies.
 
     Parameters
@@ -696,6 +697,8 @@ def plot_joint_spectrum(xvect, psd, info, ax=None, freqs='auto', base=1,
         fig.subplots_adjust(top=0.8)
         ax = plt.subplot(111)
 
+    topomap_args = {} if topomap_args is None else topomap_args
+
     ax.set_axis_off()
 
     title_prop = 0.1
@@ -714,8 +717,10 @@ def plot_joint_spectrum(xvect, psd, info, ax=None, freqs='auto', base=1,
     else:
         topo_freq_inds = [np.argmin(np.abs(xvect - ff)) for ff in freqs]
 
-    yl = main_ax.get_ylim()
-    main_ax.set_ylim(yl[0], 1.2*yl[1])
+    yl = main_ax.get_ylim() if yl is None else yl
+    yfactor = 1.2 if yl[1] > 0 else 0.8
+    main_ax.set_ylim(yl[0], yfactor*yl[1])
+    #yl = main_ax.get_ylim()
 
     yt = ax.get_yticks()
     inds = yt < yl[1]
@@ -746,7 +751,7 @@ def plot_joint_spectrum(xvect, psd, info, ax=None, freqs='auto', base=1,
         ax.figure.add_artist(con)
 
         dat = psd[topo_freq_inds[idx], :]
-        im, cn = mne.viz.plot_topomap(dat, info, axes=topo_ax, show=False)
+        im, cn = mne.viz.plot_topomap(dat, info, axes=topo_ax, show=False, **topomap_args)
         topos.append(im)
 
     if topo_scale == 'joint':
