@@ -341,6 +341,8 @@ def run_maxfilter(infif, outfif, args, logfile_tag=''):
 
     if ('tsss' in args) and args['tsss']:
         outfif = outfif.replace('.fif', 'tsss.fif')
+    elif ('trans' in args) and args['trans']:
+        outfif = outfif.replace('.fif', 'trans.fif')
     elif logfile_tag != '_trans':
         outfif = outfif.replace('.fif', 'sss.fif')
 
@@ -498,8 +500,8 @@ def run_multistage_maxfilter(infif, outbase, args):
     if ('trans' in args) and args['trans'] is not None:
 
         infif = outfif  # input is output from previous stage
-        outfif = outbase.format('trans.fif')
-        outlog = outbase.format('trans.log')
+        outfif = outbase.format('.fif')
+        outlog = outbase.format('.log')
 
         if os.path.exists(outfif):
             os.remove(outfif)
@@ -615,8 +617,8 @@ def run_cbu_3stage_maxfilter(infif, outbase, args):
     # Stage 3 - Translate to default
 
     infif = outfif  # input is output from previous stage
-    outfif = outbase.format('trans.fif')
-    outlog = outbase.format('trans.log')
+    outfif = outbase.format('.fif')
+    outlog = outbase.format('.log')
 
     if os.path.exists(outfif):
         os.remove(outfif)
