@@ -188,6 +188,9 @@ class SensorMaxStatPerm(BaseSensorPerm):
         self.perm_data = glmsp.get_fl_contrast(fl_con)
         self.perm_data.data = np.swapaxes(self.perm_data.data, 1, 2)
 
+        # change the dim_labels to match the data (swap time and channels, and remove firstlevel contrast)
+        self.perm_data.info['dim_labels'] = [self.perm_data.info['dim_labels'][i] for i in [0,3,2]]
+                        
         self.gl_con = gl_con
         self.fl_con = fl_con
         self.gl_contrast_name = glmsp.contrast_names[gl_con]
