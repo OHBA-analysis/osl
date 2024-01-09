@@ -4,6 +4,7 @@
 
 # Authors: Mark Woolrich <mark.woolrich@ohba.ox.ac.uk>
 #          Chetan Gohil <chetan.gohil@psych.ox.ac.uk>
+#          Mats van Es <mats.vanes@psych.ox.ac.uk>
 
 import numpy as np
 import matplotlib.pyplot as plt
@@ -165,6 +166,7 @@ def delete_headshape_points(recon_dir=None, subject=None, polhemus_headshape_fil
     print("Num headshape points={}".format(polhemus_headshape_polhemus.shape[1]))
     print('Click on points to delete them.')
     print('Press "w" to write changes to the file')
+    print('Press "q" to close the figure')
     sys.stdout.flush()
 
     def scatter_headshapes(ax, x, y, z):
@@ -205,6 +207,9 @@ def delete_headshape_points(recon_dir=None, subject=None, polhemus_headshape_fil
             print("Num headshape points remaining={}".format(polhemus_headshape_polhemus_new.shape[1]))
             np.savetxt(coreg_filenames["polhemus_headshape_file"], polhemus_headshape_polhemus_new)
             print('Changes saved to file {}'.format(coreg_filenames["polhemus_headshape_file"]))
+        elif event.key == 'q':
+            print('Closing figure')
+            plt.close(fig)
                     
     # Connect click event to function
     fig.canvas.mpl_connect('pick_event', on_click)
