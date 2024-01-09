@@ -634,7 +634,10 @@ def plot_joint_spectrum_clusters(xvect, psd, clusters, info, ax=None, freqs='aut
         freqs[clu[2][0]] = 1
         finds = np.where(freqs)[0]
         if len(finds) == 1:
-            finds = np.array([finds[0], finds[0]+1])
+            if finds[0]<len(fx[0])-1: 
+                finds = np.array([finds[0], finds[0]+1])
+            else: # can't extend to next freq if last freq
+                finds = np.array([finds[0], finds[0]])
 
         msg = 'Cluster {} - stat: {}, freq range: {}, num channels {}'
         freq_range = (fx[0][finds[0]], fx[0][finds[-1]])
