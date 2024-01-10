@@ -158,6 +158,7 @@ def delete_headshape_points(recon_dir=None, subject=None, polhemus_headshape_fil
         polhemus_headshape_file = coreg_filenames["polhemus_headshape_file"]
     elif polhemus_headshape_file is not None:
         polhemus_headshape_file = polhemus_headshape_file
+        coreg_filenames = {'polhemus_headshape_file': polhemus_headshape_file}
     else:
         ValueError('Invalid inputs. See function\'s documentation.')
       
