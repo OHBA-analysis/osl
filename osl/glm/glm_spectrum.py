@@ -614,16 +614,17 @@ def plot_joint_spectrum_clusters(xvect, psd, clusters, info, ax=None, freqs='aut
     print(table_header.format('Cluster', 'Statistic', 'Freq Min', 'Freq Max', 'Num Channels'))
     table_template = '{0:<12d}{1:<16.3f}{2:<12.2f}{3:<12.2f}{4:<14d}'
 
-    topo_centres = np.linspace(0, 1, len(clusters)+2)[1:-1]
+    if type(freqs)==str and freqs=='auto':
+        topo_centres = np.linspace(0, 1, len(clusters)+2)[1:-1]
+        freqs_topo = freqs
+    else:
+        topo_centres = np.linspace(0, 1, len(freqs)+2)[1:-1]
+        freqs_topo = list(np.sort(freqs.copy()))
     topo_width = 0.4
     topos = []
     ymax_span = (np.abs(yl[0]) + yl[1]) / (np.abs(yl[0]) + yl[1]*1.2)
     for idx in range(len(clusters)):
         clu = clusters[idx]
-
-        # Create topomap axis
-        topo_pos = [topo_centres[idx] - 0.2, 1-title_prop-topo_prop, 0.4, topo_prop]
-        topo_ax = ax.inset_axes(topo_pos)
 
         # Extract cluster location in space and frequency
         channels = np.zeros((psd.shape[1], ))
@@ -645,7 +646,23 @@ def plot_joint_spectrum_clusters(xvect, psd, clusters, info, ax=None, freqs='aut
 
         # Plot cluster span overlay on spectrum
         main_ax.axvspan(fx[0][finds[0]], fx[0][finds[-1]], facecolor=[0.7, 0.7, 0.7], alpha=0.5, ymax=ymax_span)
-        fmid = int(np.floor(finds.mean()))
+        if type(freqs_topo)==str and freqs_topo=='auto':
+            fmid = int(np.floor(finds.mean()))
+            # Create topomap axis
+            topo_pos = [topo_centres[idx] - 0.2, 1-title_prop-topo_prop, 0.4, topo_prop]
+        else:
+            fmid_tmp = np.where([ifreq<=xvect[finds[-1]] and ifreq>xvect[finds[0]] for ifreq in freqs_topo])[0]
+            if len(fmid_tmp)>0:
+                fmid = np.argmin(np.abs(xvect - freqs_topo[fmid_tmp[0]]))
+                # Create topomap axis
+                topo_pos = [topo_centres[len(topo_centres)-len(freqs_topo)] - 0.2, 1-title_prop-topo_prop, 0.4, topo_prop]
+                
+                freqs_topo.pop(fmid_tmp[0])
+            else:
+                continue
+        
+        # Create topomap axis
+        topo_ax = ax.inset_axes(topo_pos)
 
         # Plot connecting line to topo
         xy_main = (fx[0][fmid], yl[1])
