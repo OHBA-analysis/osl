@@ -59,6 +59,7 @@ setup(name=name,
           'console_scripts': [
               'osl_maxfilter = osl.maxfilter.maxfilter:main',
               'osl_preproc = osl.preprocessing.batch:main',
+              'osl_func = osl.utils.run_func:main',
           ]},
 
       packages=['osl', 'osl.tests', 'osl.report', 'osl.maxfilter',
