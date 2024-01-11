@@ -745,9 +745,9 @@ def plot_joint_spectrum(xvect, psd, info, ax=None, freqs='auto', base=1,
     fx = prep_scaled_freq(base, xvect)
 
     if freqs == 'auto':
-        topo_freq_inds = signal.find_peaks(psd.mean(axis=1), distance=xvect.shape[0]/3)[0]
+        topo_freq_inds = signal.find_peaks(np.abs(psd.mean(axis=1)), distance=xvect.shape[0]/3)[0]
         if len(topo_freq_inds) > 2:
-            I = np.argsort(psd.mean(axis=1)[topo_freq_inds])[-2:]
+            I = np.argsort(np.abs(psd.mean(axis=1))[topo_freq_inds])[-2:]
             topo_freq_inds = topo_freq_inds[I]
         freqs = xvect[topo_freq_inds]
     else:
