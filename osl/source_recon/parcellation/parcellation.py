@@ -63,6 +63,46 @@ def find_file(filename):
     return filename
 
 
+def guess_parcellation(data, return_path=False):
+    """Guess parcellation file from data.
+    
+    Parameters
+    ----------
+    data : vector or matrix
+        Data to guess parcellation from. first dimension is assumed to be parcels.
+    return_path : bool
+        If True, return path to parcellation file, otherwise return filename.
+        
+    returns
+    -------
+    filename : str
+        Path to parcellation file.
+    """
+    if type(data) is int:
+        nparc = data
+    else:
+        nparc = data.shape[0]
+        
+    # print('Guessing parcellation from data with {} parcels'.format(nparc))
+    if nparc==52:
+        fname = "Glasser52_binary_space-MNI152NLin6_res-8x8x8.nii.gz"
+    elif nparc==50:
+        fname = "Glasser50_space-MNI152NLin6_res-8x8x8.nii.gz"
+    elif nparc==38:
+        fname = "fMRI_parcellation_ds8mm.nii.gz"
+    elif nparc==39:
+        fname = "fmri_d100_parcellation_with_PCC_tighterMay15_v2_8mm.nii.gz"
+    elif nparc==78:
+        fname = "aal_cortical_merged_8mm_stacked.nii.gz"
+    else:
+        raise ValueError("Can't guess parcellation for {} channels".format(nparc))
+    # print('Guessing parcellation is {}'.format(fname))
+    if return_path:
+        return find_file(fname)
+    else:
+        return find_file(fname).split('/')[-1]
+ 
+
 def parcellate_timeseries(parcellation_file, voxel_timeseries, voxel_coords, method, working_dir):
     """Parcellate a voxel time series.
 
