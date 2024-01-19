@@ -15,6 +15,7 @@ import argparse
 import tempfile
 import pickle
 import pathlib
+import re
 
 import numpy as np
 import matplotlib.pyplot as plt
@@ -192,6 +193,7 @@ def gen_html_data(raw, outdir, ica=None, preproc_fif_filename=None):
     
     # Generate plots for the report
     data["plt_config"] = plot_flowchart(raw, savebase)
+    data["txt_extra_funcs"] = save_extra_funcs(raw, savebase.replace('.png', '.txt'))
     data['plt_temporalsumsq'] = plot_channel_time_series(raw, savebase, exclude_bads=False)
     data['plt_temporalsumsq_exclude_bads'] = plot_channel_time_series(raw, savebase, exclude_bads=True)
     data['plt_badchans'] = plot_sensors(raw, savebase)
@@ -317,6 +319,7 @@ def gen_html_summary(reportdir):
     os.makedirs(f"{reportdir}/summary", exist_ok=True)
 
     data["plt_config"] = subject_data[0]["plt_config"]
+    data["txt_extra_funcs"] = subject_data[0]["txt_extra_funcs"]
     data["plt_summary_bad_segs"] = plot_summary_bad_segs(subject_data, reportdir)
     data["plt_summary_bad_chans"] = plot_summary_bad_chans(subject_data, reportdir)
 
@@ -418,6 +421,39 @@ def plot_flowchart(raw, savebase=None):
     else:
         fpath = None
     return fpath
+
+
+def save_extra_funcs(raw, savebase=None):
+    """ Saves extra functions from the raw.info['description'] to a text file.
+    
+    Parameters
+    ----------
+    raw : :py:class:`mne.io.Raw <mne.io.Raw>`
+        MNE Raw object.
+    savebase : str
+        Base string for saving figures.
+        
+    Returns
+    -------
+    fpath : str
+        Path to saved text file.
+    
+    """
+    extra_funcs = re.findall(
+    "%% extra_funcs start %%(.*?)%% extra_funcs end %%",
+    raw.info["description"],
+    flags=re.DOTALL,
+    )
+    
+    if savebase is not None:
+        fpath = savebase.format(f"extra_funcs")
+        with(open(fpath, 'w')) as file:
+            [print(func, file=file) for func in extra_funcs]
+        return fpath
+    else:
+        return None
+    
+        
 
 def plot_channel_time_series(raw, savebase=None, exclude_bads=False):
     """Plots sum-square time courses.
