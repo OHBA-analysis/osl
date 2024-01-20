@@ -814,13 +814,12 @@ def plot_spectra(raw, savebase=None):
             continue
 
         # Plot spectra
-        raw.plot_psd(
-            show=False,
-            picks=chan_inds,
-            ax=ax[row],
+        raw.compute_psd(
+            picks=chan_inds, 
             n_fft=int(raw.info['sfreq']*2),
-            verbose=0,
-        )
+            verbose=0).plot(
+                        axes=ax[row],
+                        show=False)
 
         ax[row].set_title(name, fontsize=12)
 
@@ -843,15 +842,14 @@ def plot_spectra(raw, savebase=None):
             continue
 
         # Plot zoomed in spectra
-        raw.plot_psd(
-            show=False,
-            picks=chan_inds,
-            ax=ax[row],
-            fmin=1,
-            fmax=48,
-            n_fft=int(raw.info['sfreq']*2),
-            verbose=0,
-        )
+        raw.compute_psd(
+        picks=chan_inds, 
+        fmin=1,
+        fmax=48,
+        n_fft=int(raw.info['sfreq']*2),
+        verbose=0).plot(
+                    axes=ax[row],
+                    show=False)
 
         ax[row].set_title(name, fontsize=12)
 
