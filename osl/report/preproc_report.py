@@ -194,6 +194,7 @@ def gen_html_data(raw, outdir, ica=None, preproc_fif_filename=None):
     # Generate plots for the report
     data["plt_config"] = plot_flowchart(raw, savebase)
     data["txt_extra_funcs"] = save_extra_funcs(raw, savebase.replace('.png', '.txt'))
+    data["plt_rawdata"] = plot_rawdata(raw, savebase)
     data['plt_temporalsumsq'] = plot_channel_time_series(raw, savebase, exclude_bads=False)
     data['plt_temporalsumsq_exclude_bads'] = plot_channel_time_series(raw, savebase, exclude_bads=True)
     data['plt_badchans'] = plot_sensors(raw, savebase)
@@ -454,6 +455,39 @@ def save_extra_funcs(raw, savebase=None):
         return None
     
         
+
+def plot_rawdata(raw, savebase):
+    """Plots raw data.
+    
+    Parameters
+    ----------
+    raw : :py:class:`mne.io.Raw <mne.io.Raw>`
+        MNE Raw object.
+    savebase : str
+        Base string for saving figures.
+        
+    Returns
+    -------
+    fpath : str
+        Path to saved figure.      
+    
+    """
+
+    fig = raw.pick(['meg', 'eeg']).plot(n_channels=np.inf, duration=raw.times[-1])
+
+    if savebase is not None:
+        figname = savebase.format('rawdata')
+        fig.savefig(figname, dpi=150, transparent=True)
+        plt.close(fig)
+
+        # Return the filename
+        savebase = pathlib.Path(savebase)
+        filebase = savebase.parent.name + "/" + savebase.name
+        fpath = filebase.format('rawdata')
+    else:
+        fpath = None
+    return fpath
+
 
 def plot_channel_time_series(raw, savebase=None, exclude_bads=False):
     """Plots sum-square time courses.
