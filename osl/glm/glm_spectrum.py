@@ -949,11 +949,11 @@ def plot_sensor_spectrum(xvect, psd, info, ax=None, sensor_proj=False,
         axins = ax.inset_axes([0.6, 0.6, 0.37, 0.37])
         if np.any(['parcel' in ch for ch in info['ch_names']]):
             parcellation_file = guess_parcellation(psd.T)
-            colors, order = get_source_cols(parcellation_file, return_order=True)
+            colors = get_source_cols(parcellation_file)
             cmap = ListedColormap(colors)
             parc_centers = parcel_centers(parcellation_file)
             n_parcels = parc_centers.shape[0]
-            plot_markers(np.arange(n_parcels), parc_centers, axes=axins, node_size=10, node_cmap=cmap)
+            plot_markers(np.arange(n_parcels), parc_centers, axes=axins, node_size=6, node_cmap=cmap, annotate=False, colorbar=False)
         else:
             plot_channel_layout(axins, info)
 
