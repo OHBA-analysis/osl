@@ -684,13 +684,7 @@ def plot_joint_spectrum_clusters(xvect, psd, clusters, info, ax=None, freqs='aut
             arrowstyle="-", color=[0.7, 0.7, 0.7])
         main_ax.figure.add_artist(con)
 
-        # Plot topo
-        # dat = psd[fmid, :]
-        # if np.any(['parcel' in ch for ch in info['ch_names']]): # source level data
-        #     im = plot_source_topo(dat, axis=topo_ax, cmap=topo_cmap) 
-        # else:
-        #     im, cn = mne.viz.plot_topomap(dat, info, axes=topo_ax, show=False, mask=channels, ch_type='planar1', cmap=topo_cmap)
-        # topos.append(im)
+        # save the topo axis and data for later
         data_toplot.append(psd[fmid, :])
         topo_ax_toplot.append(topo_ax)
         
@@ -715,9 +709,6 @@ def plot_joint_spectrum_clusters(xvect, psd, clusters, info, ax=None, freqs='aut
                 im, cn = mne.viz.plot_topomap(topo, info, axes=topo_ax, show=False, mask=channels, ch_type='planar1', cmap=topo_cmap)
             im.set_clim(vmin, vmax)
             topos.append(im)
-            
-        # for t in topos:
-        #     t.set_clim(vmin, vmax)
 
         cb_pos = [0.95, 1-title_prop-topo_prop, 0.025, topo_prop]
         cax =  ax.inset_axes(cb_pos)
