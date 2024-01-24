@@ -680,7 +680,7 @@ def plot_joint_spectrum_clusters(xvect, psd, clusters, info, ax=None, freqs='aut
         # Plot topo
         dat = psd[fmid, :]
         if np.any(['parcel' in ch for ch in info['ch_names']]): # source level data
-            im = plot_source_topo(dat, axis=topo_ax) 
+            im = plot_source_topo(dat, axis=topo_ax, cmap=cmap) 
         else:
             im, cn = mne.viz.plot_topomap(dat, info, axes=topo_ax, show=False, mask=channels, ch_type='planar1')
         topos.append(im)
@@ -854,6 +854,14 @@ def plot_joint_spectrum(xvect, psd, info, ax=None, freqs='auto', base=1,
     ax.yaxis.offsetText.set_visible(False)
     ax.text(0, yl[1], offset, ha='right')
 
+    # determine colorbar
+    if psd[topo_freq_inds, :].min() < 0 and psd[topo_freq_inds, :].max() > 0:
+        cmap = 'RdBu_r'
+    elif psd[topo_freq_inds, :].min() >= 0:
+        cmap = 'Reds'
+    else:
+        cmap = 'Blues'
+    
     topo_centres = np.linspace(0, 1, len(freqs)+2)[1:-1]
     topo_width = 0.4
     topos = []
@@ -877,7 +885,7 @@ def plot_joint_spectrum(xvect, psd, info, ax=None, freqs='auto', base=1,
         if np.any(['parcel' in ch for ch in info['ch_names']]): # source data
             im = plot_source_topo(dat, axis=topo_ax)
         else:
-            im, cn = mne.viz.plot_topomap(dat, info, axes=topo_ax, show=False)
+            im, cn = mne.viz.plot_topomap(dat, info, axes=topo_ax, show=False, cmap=cmap)
         topos.append(im)
 
     if topo_scale == 'joint':
@@ -886,6 +894,8 @@ def plot_joint_spectrum(xvect, psd, info, ax=None, freqs='auto', base=1,
 
         for t in topos:
             t.set_clim(vmin, vmax)
+        if vmin<0 and vmax>0:
+            cmap = 'RdBu_r'
     else:
         vmin = 0
         vmax = 1
