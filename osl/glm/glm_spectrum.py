@@ -539,7 +539,7 @@ def read_glm_spectrum(infile):
 
 def plot_joint_spectrum_clusters(xvect, psd, clusters, info, ax=None, freqs='auto', base=1,
                                  topo_scale='joint', lw=0.5, ylabel='Power', title='', ylim=None,
-                                 xtick_skip=1, topo_prop=1/5):
+                                 xtick_skip=1, topo_prop=1/5, topo_cmap=None):
     """ Plot a GLM-Spectrum contrast from cluster objects, with spatial line colouring and topograpies.
 
     Parameters
@@ -573,6 +573,10 @@ def plot_joint_spectrum_clusters(xvect, psd, clusters, info, ax=None, freqs='aut
         Number of xaxis ticks to skip, useful for tight plots (Default value = 1)
     topo_prop : float
         Proportion of plot dedicted to topomaps(Default value = 1/3)
+    topo_cmap: {None or matplotlib colormap}
+        Colormap to use for plotting (Default is 'RdBu_r' if pooled topo data range 
+        is positive and negative, otherwise 'Reds' or 'Blues' depending on sign of
+        pooled data range)
     """
     if ax is None:
         fig = plt.figure()
@@ -627,6 +631,9 @@ def plot_joint_spectrum_clusters(xvect, psd, clusters, info, ax=None, freqs='aut
     topo_width = 0.4
     topos = []
     ymax_span = (np.abs(yl[0]) + yl[1]) / (np.abs(yl[0]) + yl[1]*1.2)
+    
+    data_toplot = []
+    topo_ax_toplot = []
     for idx in range(len(clusters)):
         clu = clusters[idx]
 
@@ -678,19 +685,39 @@ def plot_joint_spectrum_clusters(xvect, psd, clusters, info, ax=None, freqs='aut
         main_ax.figure.add_artist(con)
 
         # Plot topo
-        dat = psd[fmid, :]
-        if np.any(['parcel' in ch for ch in info['ch_names']]): # source level data
-            im = plot_source_topo(dat, axis=topo_ax, cmap=cmap) 
-        else:
-            im, cn = mne.viz.plot_topomap(dat, info, axes=topo_ax, show=False, mask=channels, ch_type='planar1')
-        topos.append(im)
+        # dat = psd[fmid, :]
+        # if np.any(['parcel' in ch for ch in info['ch_names']]): # source level data
+        #     im = plot_source_topo(dat, axis=topo_ax, cmap=topo_cmap) 
+        # else:
+        #     im, cn = mne.viz.plot_topomap(dat, info, axes=topo_ax, show=False, mask=channels, ch_type='planar1', cmap=topo_cmap)
+        # topos.append(im)
+        data_toplot.append(psd[fmid, :])
+        topo_ax_toplot.append(topo_ax)
+        
+    if topo_scale == 'joint' and len(data_toplot) > 0:
+        vmin = np.min([t.min() for t in data_toplot])
+        vmax = np.max([t.max() for t in data_toplot])
+        
+        # determine colorbar
+        if topo_cmap is None:
+            if vmin < 0 and vmax > 0:
+                topo_cmap = 'RdBu_r'
+                vmin, vmax = np.array([-1,1]) * np.max(np.abs([vmin,vmax]))
+            elif vmin >= 0:
+                topo_cmap = 'Reds'
+            else:
+                topo_cmap = 'Blues_r'
 
-    if topo_scale == 'joint' and len(topos) > 0:
-        vmin = np.min([t.get_clim()[0] for t in topos])
-        vmax = np.max([t.get_clim()[1] for t in topos])
-
-        for t in topos:
-            t.set_clim(vmin, vmax)
+        for topo, topo_ax in zip(data_toplot, topo_ax_toplot):
+            if np.any(['parcel' in ch for ch in info['ch_names']]): # source level data
+                im = plot_source_topo(topo, axis=topo_ax, cmap=topo_cmap) 
+            else:
+                im, cn = mne.viz.plot_topomap(topo, info, axes=topo_ax, show=False, mask=channels, ch_type='planar1', cmap=topo_cmap)
+            im.set_clim(vmin, vmax)
+            topos.append(im)
+            
+        # for t in topos:
+        #     t.set_clim(vmin, vmax)
 
         cb_pos = [0.95, 1-title_prop-topo_prop, 0.025, topo_prop]
         cax =  ax.inset_axes(cb_pos)
@@ -763,7 +790,7 @@ def plot_source_topo(data_map, parcellation_file=None, mask_file='MNI152_T1_8mm_
 
 def plot_joint_spectrum(xvect, psd, info, ax=None, freqs='auto', base=1,
         topo_scale='joint', lw=0.5, ylabel='Power', title='', ylim=None,
-        xtick_skip=1, topo_prop=1/5):
+        xtick_skip=1, topo_prop=1/5, topo_cmap=None):
     """Plot a GLM-Spectrum contrast with spatial line colouring and topograpies.
 
     Parameters
@@ -799,7 +826,12 @@ def plot_joint_spectrum(xvect, psd, info, ax=None, freqs='auto', base=1,
             Whether the data is in source level (Default value = False)
     parcellation_file : str
             Filepath of parcellation file to plot data on (Default value = None)
-            
+    topo_cmap : {None or matplotlib colormap}
+        Colormap to use for plotting (Default value is 'RdBu_r' if pooled topo data range
+        is positive and negative, otherwise 'Reds' or 'Blues' depending on sign of
+        pooled data range)
+        
+        
     Notes
     -----
     This function assumes the data are in MNE-Python format unless parcellation_file is specified.
@@ -855,12 +887,13 @@ def plot_joint_spectrum(xvect, psd, info, ax=None, freqs='auto', base=1,
     ax.text(0, yl[1], offset, ha='right')
 
     # determine colorbar
-    if psd[topo_freq_inds, :].min() < 0 and psd[topo_freq_inds, :].max() > 0:
-        cmap = 'RdBu_r'
-    elif psd[topo_freq_inds, :].min() >= 0:
-        cmap = 'Reds'
-    else:
-        cmap = 'Blues'
+    if topo_cmap is None:
+        if psd[topo_freq_inds, :].min() < 0 and psd[topo_freq_inds, :].max() > 0:
+            topo_cmap = 'RdBu_r'
+        elif psd[topo_freq_inds, :].min() >= 0:
+            topo_cmap = 'Reds'
+        else:
+            topo_cmap = 'Blues_r'
     
     topo_centres = np.linspace(0, 1, len(freqs)+2)[1:-1]
     topo_width = 0.4
@@ -883,9 +916,9 @@ def plot_joint_spectrum(xvect, psd, info, ax=None, freqs='auto', base=1,
 
         dat = psd[topo_freq_inds[idx], :]
         if np.any(['parcel' in ch for ch in info['ch_names']]): # source data
-            im = plot_source_topo(dat, axis=topo_ax)
+            im = plot_source_topo(dat, axis=topo_ax, cmap=topo_cmap)
         else:
-            im, cn = mne.viz.plot_topomap(dat, info, axes=topo_ax, show=False, cmap=cmap)
+            im, cn = mne.viz.plot_topomap(dat, info, axes=topo_ax, show=False, cmap=topo_cmap)
         topos.append(im)
 
     if topo_scale == 'joint':
