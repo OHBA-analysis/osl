@@ -752,11 +752,26 @@ def plot_source_topo(data_map, parcellation_file=None, mask_file='MNI152_T1_8mm_
     parcellation_file = find_file(parcellation_file)
     mask_file = find_file(mask_file)
     
+    if vmin is None:
+        vmin = data_map.min()
+    if vmax is None:
+        vmax = data_map.max()
+    
+    if vmin < 0 and vmax>0:
+        vmax = np.max(np.abs([vmin,vmax]))
+        vmin = -vmax
+    
+    if cmap is None:
+        if vmin<0 and vmax>0:
+            cmap = 'RdBu_r'
+        elif vmin >= 0:
+            cmap = 'Reds'
+        else:
+            cmap = 'Blues_r'
+    
     # prepare figure
     if axis is None:
         fig, axis = plt.subplots()
-    if cmap is None:
-        cmap = plt.cm.RdBu_r
 
     # prepare data
     data_map = power.parcel_vector_to_voxel_grid(mask_file, parcellation_file, data_map)
@@ -776,6 +791,9 @@ def plot_source_topo(data_map, parcellation_file=None, mask_file='MNI152_T1_8mm_
         plot_abs=False,
         annotate=False,
     )
+    
+    # despite the options of vmin, vmax, the colorbar is always set to -vmax to vmax. correct this
+    # plt.gca().get_images()[0].set_clim(vmin, vmax)
     return plt.gca().get_images()[0]
     
 
@@ -889,6 +907,7 @@ def plot_joint_spectrum(xvect, psd, info, ax=None, freqs='auto', base=1,
     topo_centres = np.linspace(0, 1, len(freqs)+2)[1:-1]
     topo_width = 0.4
     topos = []
+    dats=[]
     for idx in range(len(freqs)):
         # Create topomap axis
         topo_pos = [topo_centres[idx] - 0.2, 1-title_prop-topo_prop, 0.4, topo_prop]
@@ -911,15 +930,16 @@ def plot_joint_spectrum(xvect, psd, info, ax=None, freqs='auto', base=1,
         else:
             im, cn = mne.viz.plot_topomap(dat, info, axes=topo_ax, show=False, cmap=topo_cmap)
         topos.append(im)
-
+        dats.append(dat)
+        
     if topo_scale == 'joint':
-        vmin = np.min([t.get_clim()[0] for t in topos])
-        vmax = np.max([t.get_clim()[1] for t in topos])
-
+        vmin = np.min([t.min() for t in dats])
+        vmax = np.max([t.max() for t in dats])
+        if vmin < 0 and vmax > 0:
+            vmax = np.max(np.abs([vmin,vmax]))
+            vmin = -vmax
         for t in topos:
             t.set_clim(vmin, vmax)
-        if vmin<0 and vmax>0:
-            cmap = 'RdBu_r'
     else:
         vmin = 0
         vmax = 1
