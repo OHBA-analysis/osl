@@ -130,6 +130,12 @@ def import_data(infile, preload=True):
             "Detected EEGLAB file format, using: mne.io.read_raw_eeglab"
         )
         raw = mne.io.read_raw_eeglab(infile, preload=preload)
+
+    elif os.path.splitext(infile[1]) == ".con" or os.path.splitext(infile[1]) == ".sqd":
+        logger.info(
+            "Detected Ricoh/KIT file format, using: mne.io.read_raw_kit"
+        )
+        raw = mne.io.read_raw_kit(infile, preload=preload)
         
     # Other formats not accepted
     else:
