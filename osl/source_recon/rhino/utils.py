@@ -315,6 +315,12 @@ def _get_orient(nii_file):
     return orient
 
 
+def _check_nii_for_nan(filename):
+    img = nib.load(filename)
+    data = img.get_fdata()
+    return np.isnan(data).any()
+
+
 @cfunc(intc(CPointer(float64), intp, CPointer(float64), voidptr))
 def majority(values_ptr, len_values, result, data):
     """
