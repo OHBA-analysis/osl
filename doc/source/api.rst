@@ -656,7 +656,7 @@ Report
 Sensor level
 ++++++++++++
 
-.. currentmodule:: osl.report.raw_report
+.. currentmodule:: osl.report.preproc_report
 
 .. autosummary::
    :toctree: stubs

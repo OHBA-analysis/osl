@@ -6,14 +6,18 @@
 
 # -- Path setup --------------------------------------------------------------
 
+import os
+import sys
+import inspect
+
+__location__ = os.path.join(
+    os.getcwd(), os.path.dirname(inspect.getfile(inspect.currentframe()))
+)
+
 # If extensions (or modules to document with autodoc) are in another directory,
 # add these directories to sys.path here. If the directory is relative to the
 # documentation root, use os.path.abspath to make it absolute, like shown here.
-#
-# import os
-# import sys
-# sys.path.insert(0, os.path.abspath('.'))
-
+sys.path.insert(0, os.path.join(__location__, "../.."))
 
 # -- Project information -----------------------------------------------------
 
@@ -31,7 +35,7 @@ release = '0.0.1dev'
 # extensions coming with Sphinx (named 'sphinx.ext.*') or your custom
 # ones.
 extensions = [
-    #'sphinx_gallery.gen_gallery',
+    'sphinx_gallery.gen_gallery',
     'sphinx.ext.autosummary',
     'sphinx.ext.autodoc',
     'sphinx.ext.intersphinx',
@@ -69,11 +73,11 @@ html_static_path = ['_static',]
 
 # -- Sphinx Options ---------------------------------------------------------
 
-#sphinx_gallery_conf = {
-#     'examples_dirs': 'tutorials',   # path to your example scripts
-#     'gallery_dirs': 'build_tutorials',  # path to where to save gallery generated output
-#     'filename_pattern': '/osl_tutorial_',
-#}
+sphinx_gallery_conf = {
+     'examples_dirs': 'tutorials',   # path to your example scripts
+     'gallery_dirs': 'build_tutorials',  # path to where to save gallery generated output
+     'filename_pattern': '/osl_tutorial_',
+}
 
 intersphinx_mapping = {'mne': ('https://mne.tools/stable/', None), 
                        'osl': ('https://osl.readthedocs.io/en/improve_docs/', None), 
