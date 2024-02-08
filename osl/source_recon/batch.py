@@ -204,7 +204,7 @@ def run_src_chain(
         return False
 
     # Generate HTML data for the report
-    src_report.gen_html_data(config, src_dir, subject, reportdir)
+    src_report.gen_html_data(config, src_dir, subject, reportdir, extra_funcs=extra_funcs)
 
     return True
 
