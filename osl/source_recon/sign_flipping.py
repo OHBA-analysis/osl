@@ -95,7 +95,7 @@ def find_flips(
 
         # Randomly permute the sign of different channels and calculate the metric
         if use_tqdm:
-            iterator = trange(n_iter, desc="sign flipping", ncols=98)
+            iterator = trange(n_iter, desc="sign flipping")
         else:
             iterator = range(n_iter)
         for j in iterator:
@@ -142,7 +142,7 @@ def load_covariances(parc_files, n_embeddings=1, standardize=True, loader=None, 
     """
     covs = []
     if use_tqdm:
-        iterator = trange(len(parc_files), desc="Calculating covariances", ncols=98)
+        iterator = trange(len(parc_files), desc="Calculating covariances")
     else:
         iterator = range(len(parc_files))
     for i in iterator:
@@ -195,7 +195,7 @@ def find_template_subject(covs, diag_offset=0):
     # Calculate the similarity between subjects
     n_subjects = len(covs)
     metric = np.zeros([n_subjects, n_subjects])
-    for i in trange(n_subjects, desc="Comparing subjects", ncols=98):
+    for i in trange(n_subjects, desc="Comparing subjects"):
         for j in range(i + 1, n_subjects):
             metric[i, j] = covariance_matrix_correlation(covs[i], covs[j], diag_offset, mode="abs")
             metric[j, i] = metric[i, j]
