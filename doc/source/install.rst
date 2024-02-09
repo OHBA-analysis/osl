@@ -1,15 +1,12 @@
 Installation
 ============
 
-Conda
------
-
 We recommend installing OSL within a virtual environment. You can do this with `Anaconda <https://docs.anaconda.com/free/anaconda/install/index.html>`_ (or `miniconda <https://docs.conda.io/projects/miniconda/en/latest/miniconda-install.html>`_).
 
 Linux
 -----
 
-1. Install FSL using the instructions [here](https://fsl.fmrib.ox.ac.uk/fsl/fslwiki/FslInstallation/Linux).
+1. Install FSL using the instructions `here <https://fsl.fmrib.ox.ac.uk/fsl/fslwiki/FslInstallation/Linux>`_.
 
 2. Install OSL either via pip using::
 
@@ -26,4 +23,6 @@ or from source (in editable mode) using::
 Windows
 -------
 
-If you're using a Windows machine, installing [Ubuntu](https://ubuntu.com/wsl) (linux) using a Windows subsystem. We recommend following the FSL instructions [here](https://fsl.fmrib.ox.ac.uk/fsl/fslwiki/FslInstallation/Windows) then installing OSL using the instructions above.
+If you're using a Windows machine, we recommend you install FSL within a `Ubuntu <https://ubuntu.com/wsl>`_ (linux) subsystem following the instructions `here <https://fsl.fmrib.ox.ac.uk/fsl/fslwiki/FslInstallation/Windows>`_.
+
+Then install OSL using the instructions above.

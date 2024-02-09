@@ -21,7 +21,7 @@ sys.path.insert(0, os.path.join(__location__, "../.."))
 
 # -- Project information -----------------------------------------------------
 
-project = 'osl'
+project = 'OSL'
 copyright = '2023, OHBA Analysis Group'
 author = 'OHBA Analysis Group'
 
