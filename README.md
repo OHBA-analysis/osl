@@ -1,6 +1,8 @@
 OHBA Software Library (OSL)
 ===========================
 
+Documentation: https://osl.readthedocs.io/en/latest/.
+
 Install from Source Code
 ------------------------
 The recommended installation depends on your operating system. OSL can be installed from source using:
