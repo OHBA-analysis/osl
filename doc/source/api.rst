@@ -1,5 +1,5 @@
 API
-================
+===
 
 This page is the reference for the functions in OSL.
 
@@ -162,9 +162,11 @@ Utility functions for running an OSL Preprocessing pipeline.
 
 
 GLM
-******
+***
+
 GLM Base
 ++++++++
+
 Modality specific wrappers for glmtools.
 
 .. currentmodule:: osl.glm.glm_base
@@ -193,7 +195,7 @@ Modality specific wrappers for glmtools.
    SensorClusterPerm.get_sig_clusters
 
 GLM Epochs
-++++++++++++++++++++++++
+++++++++++
 
 .. currentmodule:: osl.glm.glm_epochs
 
@@ -227,7 +229,7 @@ GLM Epochs
 
 
 GLM Spectrum
-++++++++++++++++++++++++
+++++++++++++
 
 GLM-Spectrum classes and functions designed to work with GLM-Spectra computed from  MNE format sensorspace data
 
@@ -284,11 +286,13 @@ GLM-Spectrum classes and functions designed to work with GLM-Spectra computed fr
 
 
 RHINO
-********************
+*****
+
 Tools for Coregistration and forward modeling 
 
 Coregistration
 ++++++++++++++
+
 Deep-level RHINO functions used by wrappers
 
 .. currentmodule:: osl.source_recon.rhino.coreg
@@ -309,6 +313,7 @@ Deep-level RHINO functions used by wrappers
 
 Forward modeling
 ++++++++++++++++
+
 Deep-level RHINO functions used by wrappers
 
 .. currentmodule:: osl.source_recon.rhino.forward_model
@@ -324,7 +329,8 @@ Deep-level RHINO functions used by wrappers
 
 
 FSL-utils
-+++++++++++
++++++++++
+
 Deep-level RHINO functions used by wrappers
 
 .. currentmodule:: osl.source_recon.rhino.fsl_utils
@@ -342,7 +348,8 @@ Deep-level RHINO functions used by wrappers
 
 
 Polhemus
-+++++++++++
+++++++++
+
 Deep-level RHINO functions used by wrappers
 
 .. currentmodule:: osl.source_recon.rhino.polhemus
@@ -358,7 +365,8 @@ Deep-level RHINO functions used by wrappers
 
 
 Surfaces
-+++++++++++
+++++++++
+
 Deep-level RHINO functions used by wrappers
 
 .. currentmodule:: osl.source_recon.rhino.surfaces
@@ -378,7 +386,8 @@ Deep-level RHINO functions used by wrappers
 
 
 Utils
-+++++++++++
++++++
+
 Deep-level RHINO functions used by wrappers
 
 .. currentmodule:: osl.source_recon.rhino.utils
@@ -448,7 +457,7 @@ Deep-level RHINO functions used by wrappers
 
 
 Source Reconstruction
-**********************
+*********************
 
 Pipeline Functions
 ++++++++++++++++++
@@ -467,6 +476,7 @@ Primary user-level functions for running OSL coregistration and source_recon fun
 
 Wrappers
 ++++++++
+
 Primary wrapper functions to use in a source_recon configuration
 
 .. currentmodule:: osl.source_recon.wrappers
@@ -499,6 +509,7 @@ Primary wrapper functions to use in a source_recon configuration
 
 Beamforming
 +++++++++++
+
 Second-level beamforming functions used by wrappers
 
 .. currentmodule:: osl.source_recon.beamforming
@@ -533,9 +544,9 @@ Second-level beamforming functions used by wrappers
     _prepare_beamformer_input
 
 
-
 Sign-flipping
 +++++++++++++
+
 Second-level sign-flipping functions used by wrappers
 
 .. currentmodule:: osl.source_recon.sign_flipping
@@ -566,6 +577,7 @@ Second-level sign-flipping functions used by wrappers
 
 Utils
 +++++
+
 Utility functions for running an OSL Source Recon pipeline.
 
 .. currentmodule:: osl.source_recon.batch
@@ -580,6 +592,7 @@ Utility functions for running an OSL Source Recon pipeline.
 
 Parcellation
 ************
+
 Second-level Parcellation functions used by wrappers
 
 .. currentmodule:: osl.source_recon.parcellation.parcellation
@@ -620,6 +633,7 @@ Second-level Parcellation functions used by wrappers
 
 Nifti Utils
 ++++++++++++
+
 Second-level Parcellation functions used by wrappers
 
 .. currentmodule:: osl.source_recon.parcellation.nii
@@ -638,9 +652,11 @@ Second-level Parcellation functions used by wrappers
 
 Report
 ******
+
 Sensor level
 ++++++++++++
-.. currentmodule:: osl.report.raw_report
+
+.. currentmodule:: osl.report.preproc_report
 
 .. autosummary::
    :toctree: stubs
@@ -656,6 +672,7 @@ Sensor level
    
 Source level
 ++++++++++++
+
 .. currentmodule:: osl.report.src_report
 
 .. autosummary::
@@ -685,7 +702,7 @@ File handling
 
 
 Logger
-++++++++++++
+++++++
 
 .. currentmodule:: osl.utils.logger
 
