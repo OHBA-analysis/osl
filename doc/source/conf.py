@@ -18,11 +18,11 @@
 # -- Project information -----------------------------------------------------
 
 project = 'osl'
-copyright = '2023, OMG'
-author = 'OMG'
+copyright = '2023, OHBA Analysis Group'
+author = 'OHBA Analysis Group'
 
 # The full version, including alpha/beta/rc tags
-release = '0.0.1dev'
+release = '0.5.1'
 
 
 # -- General configuration ---------------------------------------------------
