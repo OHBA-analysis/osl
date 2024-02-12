@@ -1,5 +1,5 @@
-Manual ICA Pipeline
--------------------
+SSP Pipeline
+------------
 
 The scripts in this directory contain the recommended settings for preprocessing continuous data collected using the new scanner (Neo) at OHBA, Oxford. It doesn't matter if the data was recorded during a task or at rest.
 
