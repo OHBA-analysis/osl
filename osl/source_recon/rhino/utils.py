@@ -80,7 +80,7 @@ def get_rhino_files(subjects_dir, subject):
         "bet_outskin_plus_nose_mesh_file": op.join(surfaces_dir, "outskin_plus_nose_mesh.nii.gz"),
         "bet_inskull_mesh_file": op.join(surfaces_dir, "inskull_mesh.nii.gz"),
         "bet_outskull_mesh_file": op.join(surfaces_dir, "outskull_mesh.nii.gz"),
-        "std_brain": op.join(os.environ["FSLDIR"], "data", "standard", "MNI152_T1_1mm_brain.nii.gz"),
+        "std_brain": op.join(os.environ["FSLDIR"], "data", "standard", "MNI152_T1_1mm.nii.gz"),
         "std_brain_bigfov": op.join(os.environ["FSLDIR"], "data", "standard", "MNI152_T1_1mm_BigFoV_facemask.nii.gz"),
         "completed": op.join(surfaces_dir, "completed.txt"),
     }
@@ -119,7 +119,7 @@ def get_rhino_files(subjects_dir, subject):
         "bet_outskin_plus_nose_mesh_file": op.join(coreg_dir, "scaled_outskin_plus_nose_mesh.nii.gz"),
         "bet_inskull_mesh_file": op.join(coreg_dir, "scaled_inskull_mesh.nii.gz"),
         "bet_outskull_mesh_file": op.join(coreg_dir, "scaled_outskull_mesh.nii.gz"),
-        "std_brain": op.join(os.environ["FSLDIR"], "data", "standard", "MNI152_T1_1mm_brain.nii.gz"),
+        "std_brain": op.join(os.environ["FSLDIR"], "data", "standard", "MNI152_T1_1mm.nii.gz"),
     }
 
     # All RHINO files
