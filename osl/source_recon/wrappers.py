@@ -411,7 +411,6 @@ def beamform(
     freq_range,
     chantypes,
     rank,
-    reg=0,
 ):
     """Wrapper function for beamforming.
 
@@ -434,8 +433,6 @@ def beamform(
         Channel types to use in beamforming.
     rank : dict
         Keys should be the channel types and the value should be the rank to use.
-    reg : float
-        The regularization for the whitened data covariance.
     """
     logger.info("beamforming")
 
@@ -473,7 +470,6 @@ def beamform(
         chantypes=chantypes,
         weight_norm="nai",
         rank=rank,
-        reg=reg,
         save_filters=True,
     )
 
@@ -489,7 +485,6 @@ def beamform(
             "beamform": True,
             "chantypes": chantypes,
             "rank": rank,
-            "reg": reg,
             "freq_range": freq_range,
             "filters_cov_plot": filters_cov_plot,
             "filters_svd_plot": filters_svd_plot,
@@ -670,7 +665,6 @@ def beamform_and_parcellate(
     spatial_resolution=None,
     reference_brain="mni",
     extra_chans="stim",
-    reg=0,
 ):
     """Wrapper function for beamforming and parcellation.
 
@@ -710,8 +704,6 @@ def beamform_and_parcellate(
     extra_chans : str or list of str
         Extra channels to include in the parc-raw.fif file. Defaults to 'stim'.
         Stim channels are always added to parc-raw.fif in addition to extra_chans.
-    reg : float
-        The regularization for the whitened data covariance in the beamforming stage.
     """
     logger.info("beamform_and_parcellate")
 
@@ -749,7 +741,6 @@ def beamform_and_parcellate(
         chantypes=chantypes,
         weight_norm="nai",
         rank=rank,
-        reg=reg,
         save_filters=True,
     )
 
@@ -832,7 +823,6 @@ def beamform_and_parcellate(
             "parcellate": True,
             "chantypes": chantypes,
             "rank": rank,
-            "reg": reg,
             "freq_range": freq_range,
             "filters_cov_plot": filters_cov_plot,
             "filters_svd_plot": filters_svd_plot,

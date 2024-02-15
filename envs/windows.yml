@@ -42,5 +42,5 @@ dependencies:
   - tensorflow_probability==0.17.0
   - tqdm==4.65.0
   - osfclient==0.0.5
-  - osl
-  - osl-dynamics
+  - osl==0.5.1
+  - osl-dynamics==1.2.11
