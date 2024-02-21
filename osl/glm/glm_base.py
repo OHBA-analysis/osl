@@ -2,11 +2,13 @@
 import pickle
 from pathlib import Path
 
-import glmtools as glm
 import mne
 import numpy as np
 from scipy.sparse import csr_array
-from ..source_recon.parcellation import spatial_dist_adjacency, guess_parcellation
+
+import glmtools as glm
+
+from ..source_recon import parcellation
 
 
 class GLMBaseResult:
@@ -107,12 +109,14 @@ class GroupGLMBaseResult:
         else:
             self.fl_contrast_names = fl_contrast_names
 
-    def get_channel_adjacency(self, dist=np.inf):
+    def get_channel_adjacency(self, dist=40):
         """Return adjacency matrix of channels.
         
         Parameters
         ----------
-        None
+        dist : float
+            Distance in mm between parcel centroids to consider neighbours.
+            Only used if data is parcellated.
         
         Returns
         -------
@@ -123,8 +127,8 @@ class GroupGLMBaseResult:
         """
         if np.any(['parcel' in ch for ch in self.info['ch_names']]):
             # We have parcellated data
-            parcellation_file = guess_parcellation(int(np.sum(['parcel' in ch for ch in self.info['ch_names']])))
-            adjacency = csr_array(spatial_dist_adjacency(parcellation_file, dist=dist))
+            parcellation_file = parcellation.guess_parcellation(int(np.sum(['parcel' in ch for ch in self.info['ch_names']])))
+            adjacency = csr_array(parcellation.spatial_dist_adjacency(parcellation_file, dist=dist))
         elif np.any(['state' in ch for ch in self.info['ch_names']]) or np.any(['mode' in ch for ch in self.info['ch_names']]):
             adjacency = csr_array(np.eye(len(self.info['ch_names'])))
         else:
