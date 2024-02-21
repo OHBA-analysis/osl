@@ -3,6 +3,7 @@
 """
 
 # Authors: Chetan Gohil <chetan.gohil@psych.ox.ac.uk>
+# Mats van Es <mats.vanes@psych.ox.ac.uk>
 
 import os
 import os.path as op
@@ -13,12 +14,13 @@ import pickle
 import numpy as np
 import matplotlib.pyplot as plt
 from tabulate import tabulate
+import inspect
 
 from . import preproc_report
 from ..source_recon import parcellation
 
 
-def gen_html_data(config, src_dir, subject, reportdir, logger=None):
+def gen_html_data(config, src_dir, subject, reportdir, logger=None, extra_funcs=None):
     """Generate data for HTML report.
 
     Parameters
@@ -33,6 +35,8 @@ def gen_html_data(config, src_dir, subject, reportdir, logger=None):
         Report directory.
     logger : logging.getLogger
         Logger.
+    extra_funcs : list
+        List of extra functions to run
     """
     src_dir = Path(src_dir)
     reportdir = Path(reportdir)
@@ -63,6 +67,8 @@ def gen_html_data(config, src_dir, subject, reportdir, logger=None):
         data = {}
         data["config"] = config
 
+    data['extra_funcs'] = save_extra_funcs(extra_funcs, reportdir / subject)
+    
     data["fif_id"] = subject
     data["filename"] = subject
 
@@ -114,6 +120,31 @@ def gen_html_data(config, src_dir, subject, reportdir, logger=None):
 
     # Save data in the report directory
     pickle.dump(data, open(f"{reportdir}/{subject}/data.pkl", "wb"))
+
+
+def save_extra_funcs(extra_funcs, reportdir):
+    """ Saves extra functions to a text file.
+    
+    Parameters
+    ----------
+    extra_funcs : list
+        List of extra functions to save.
+    reportdir : str
+        Subject report directory.
+        
+    Returns
+    -------
+    fpath : str
+        Path to saved text file.
+    """
+    
+    if reportdir is not None:
+        fpath = reportdir / 'extra_funcs.txt'
+        with(open(fpath, 'w')) as file:
+            [print(f"{inspect.getsource(func)}\n\n", file=file) for func in extra_funcs]
+        return fpath
+    else:
+        return None
 
 
 def gen_html_page(reportdir):
@@ -215,6 +246,7 @@ def gen_html_summary(reportdir):
     data = {}
     data["total"] = total
     data["config"] = subject_data[0]["config"]
+    data["extra_funcs"] = subject_data[0]["extra_funcs"]
     data["coregister"] = subject_data[0]["coregister"]
     data["beamform"] = subject_data[0]["beamform"]
     data["beamform_and_parcellate"] = subject_data[0]["beamform_and_parcellate"]

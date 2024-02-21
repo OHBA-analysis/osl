@@ -516,12 +516,16 @@ def plot_psd(parc_ts, fs, freq_range, parcellation_file, filename):
         Output filename.
     """
     if parc_ts.ndim == 3:
-        # (parcels, time, epochs) -> (parcels, time)
-        shape = parc_ts.shape
-        parc_ts = parc_ts.reshape(shape[0], shape[1] * shape[2])
+        # Calculate PSD for each epoch individually and average
+        psd = []
+        for i in range(parc_ts.shape[-1]):
+            f, p = welch(parc_ts[..., i], fs=fs)
+            psd.append(p)
+        psd = np.mean(psd, axis=0)
+    else:
+        # Calcualte PSD of continuous data
+        f, psd = welch(parc_ts, fs=fs)
 
-    # Calculate PSD
-    f, psd = welch(parc_ts, fs=fs)
     n_parcels = psd.shape[0]
 
     # Re-order to use colour to indicate anterior->posterior location

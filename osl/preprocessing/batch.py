@@ -22,6 +22,7 @@ from copy import deepcopy
 from functools import partial, wraps
 from time import localtime, strftime
 from datetime import datetime
+import inspect
 
 import mne
 import numpy as np
@@ -299,7 +300,7 @@ def get_config_from_fif(inst):
     return config
 
 
-def append_preproc_info(dataset, config):
+def append_preproc_info(dataset, config, extra_funcs=None):
     """Add to the config of already preprocessed data to ``inst.info['description']``.
 
     Parameters
@@ -325,6 +326,12 @@ def append_preproc_info(dataset, config):
         + f"VERSION: {__version__}\n"
         + f"%% config start %% \n{config} \n%% config end %%"
     )
+    
+    if extra_funcs is not None:
+        preproc_info += "\n\nCUSTOM FUNCTIONS USED:\n"
+        for func in extra_funcs:
+            preproc_info += f"%% extra_funcs start %% \n{inspect.getsource(func)}\n%% extra_funcs end %%"
+    
     dataset["raw"].info["description"] = (
         dataset["raw"].info["description"] + preproc_info
     )
@@ -745,7 +752,7 @@ def run_proc_chain(
             dataset = func(dataset, userargs)
 
         # Add preprocessing info to dataset dict
-        dataset = append_preproc_info(dataset, config)
+        dataset = append_preproc_info(dataset, config, extra_funcs)
 
         fif_outname = None
         if outdir is not None:

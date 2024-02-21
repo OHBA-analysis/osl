@@ -281,7 +281,10 @@ def _get_sform(nii_file):
     if sformcode == 1 or sformcode == 4:
         sform = nib.load(nii_file).header.get_sform()
     else:
-        raise ValueError("sform code for {} is {}, and needs to be 4 or 1".format(nii_file, sformcode))
+        raise ValueError(
+            f"sform code for {nii_file} is {sformcode}, and needs to be 4 or 1.\n"
+            "To fix see: https://github.com/OHBA-analysis/osl/blob/main/examples/fix_smri_files.py"
+        )
 
     sform = Transform("mri_voxel", "mri", sform)
     return sform
@@ -299,7 +302,10 @@ def _get_mni_sform(nii_file):
     if sformcode == 1 or sformcode == 4:
         sform = nib.load(nii_file).header.get_sform()
     else:
-        raise ValueError("sform code for {} is {}, and needs to be 4 or 1".format(nii_file, sformcode))
+        raise ValueError(
+            f"sform code for {nii_file} is {sformcode}, and needs to be 4 or 1.\n"
+            "To fix see: https://github.com/OHBA-analysis/osl/blob/main/examples/fix_smri_files.py"
+        )
 
     sform = Transform("unknown", "mni_tal", sform)
     return sform
@@ -313,6 +319,12 @@ def _get_orient(nii_file):
     orient = os.popen(cmd).read().strip()
 
     return orient
+
+
+def _check_nii_for_nan(filename):
+    img = nib.load(filename)
+    data = img.get_fdata()
+    return np.isnan(data).any()
 
 
 @cfunc(intc(CPointer(float64), intp, CPointer(float64), voidptr))

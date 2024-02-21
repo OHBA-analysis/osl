@@ -49,6 +49,10 @@
     </div>
     
     <div class="tabpage" style="width: 100%; display: none" id={{ data.fif_id }}_timeseries>
+        <div style="width: 100%">
+            <h4>Raw data</h4>
+            <img src="{{ data.plt_rawdata }}" alt="" style='max-width: 60%'/>
+        </div>
         {% if data.bad_seg != [] %}
             <div style="width: 100%">
                 <h4>Bad segments</h4>

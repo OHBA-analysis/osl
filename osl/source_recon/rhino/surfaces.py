@@ -163,7 +163,7 @@ def compute_surfaces(
     if smri_ext not in [".nii", ".nii.gz"]:
         raise ValueError("smri_file needs to be a niftii file with a .nii or .nii.gz extension")
 
-    # Copy smri to new file for modification
+    # Copy sMRI to new file for modification
     img = nib.load(smri_file)
     nib.save(img, filenames["smri_file"])
 
@@ -233,6 +233,14 @@ def compute_surfaces(
 
     # -------------------------------------------------------
     # 2) Use BET to skull strip sMRI so that flirt works well
+
+    # Check sMRI doesn't contain nans (this can cause segmentation faults with FSL's bet)
+    if rhino_utils._check_nii_for_nan(filenames["smri_file"]):
+        log_or_print("WARNING: nan found in sMRI file. This might cause issues with BET.")
+        old_smri_file = Path(smri_file)
+        new_smri_file = old_smri_file.with_name(old_smri_file.stem + '_fixed' + old_smri_file.suffix)
+        log_or_print("If you encounter an error, it might be possible to fix the file with:")
+        log_or_print(f"fslmaths {old_smri_file} -nan {new_smri_file}")
 
     log_or_print("Running BET pre-FLIRT...")
 
