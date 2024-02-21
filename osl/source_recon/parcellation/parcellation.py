@@ -913,3 +913,60 @@ def spatial_dist_adjacency(parcellation_file, dist, verbose=False):
                 adj_mat[j, i] = 1
 
     return adj_mat
+
+
+def parcel_vector_to_voxel_grid(mask_file, parcellation_file, vector):
+    """Takes a vector of parcel values and return a 3D voxel grid.
+
+    Parameters
+    ----------
+    mask_file : str
+        Mask file for the voxel grid. Must be a NIFTI file.
+    parcellation_file : str
+        Parcellation file. Must be a NIFTI file.
+    vector : np.ndarray
+        Value at each parcel. Shape must be (n_parcels,).
+
+    Returns
+    -------
+    voxel_grid : np.ndarray
+        Value at each voxel. Shape is (x, y, z), where :code:`x`,
+        :code:`y` and :code:`z` correspond to 3D voxel locations.
+    """
+    # Validation
+    mask_file = find_file(mask_file)
+    parcellation_file = find_file(parcellation_file)
+
+    # Load the mask
+    mask = nib.load(mask_file)
+    mask_grid = mask.get_fdata()
+    mask_grid = mask_grid.ravel(order="F")
+
+    # Get indices of non-zero elements, i.e. those which contain the brain
+    non_zero_voxels = mask_grid != 0
+
+    # Load the parcellation
+    parcellation = nib.load(parcellation_file)
+    parcellation_grid = parcellation.get_fdata()
+
+    # Make a 2D array of voxel weights for each parcel
+    n_parcels = parcellation.shape[-1]
+
+    # Check parcellation is compatible
+    if vector.shape[0] != n_parcels:
+        raise ValueError("parcellation_file has a different number of parcels to the vector")
+
+    voxel_weights = parcellation_grid.reshape(-1, n_parcels, order="F")[non_zero_voxels]
+
+    # Normalise the voxels weights
+    voxel_weights /= voxel_weights.max(axis=0, keepdims=True)
+
+    # Generate a vector containing value at each voxel
+    voxel_values = voxel_weights @ vector
+
+    # Final 3D voxel grid
+    voxel_grid = np.zeros(mask_grid.shape[0])
+    voxel_grid[non_zero_voxels] = voxel_values
+    voxel_grid = voxel_grid.reshape(mask.shape[0], mask.shape[1], mask.shape[2], order="F")
+
+    return voxel_grid

@@ -3,26 +3,24 @@ import pickle
 from copy import deepcopy
 from pathlib import Path
 
-import glmtools as glm
-import matplotlib.pyplot as plt
 import mne
 import numpy as np
-from sails.stft import glm_periodogram
-from scipy import signal, stats
-from .glm_base import GLMBaseResult, GroupGLMBaseResult, SensorClusterPerm, SensorMaxStatPerm
-from ..source_recon.parcellation import guess_parcellation, find_file, parcel_centers
+import glmtools as glm
+import matplotlib.pyplot as plt
 from matplotlib.patches import ConnectionPatch
 from matplotlib.colors import ListedColormap
+from scipy import signal, stats
 
-    # TODO: should replace with osl functions or make a soft import here
-from osl_dynamics.analysis import power 
+from sails.stft import glm_periodogram
+
+from .glm_base import GLMBaseResult, GroupGLMBaseResult, SensorClusterPerm, SensorMaxStatPerm
+from ..source_recon import parcellation
+
 import nibabel as nib
 from nilearn.plotting import plot_glass_brain, plot_markers
 
-#%% ---------------------------------------
-#
-# GLM-Spectrum classes designed to work with GLM-Spectra computed from  MNE
-# format sensorspace data
+# --------------------------------------------------------------------------------------------------
+# GLM-Spectrum classes designed to work with GLM-Spectra computed from  MNE format sensor space data
 
 class SensorGLMSpectrum(GLMBaseResult):
     """A class for GLM-Spectra fitted from MNE-Python Raw objects."""
@@ -34,7 +32,6 @@ class SensorGLMSpectrum(GLMBaseResult):
         glmsp : :py:class:`glmtools.fit.OLSModel <glmtools.fit.OLSModel>`
             The fitted model object
         info : dict
-            
         """
         self.f = glmsp.f
         self.config = glmsp.config
@@ -189,7 +186,6 @@ class GroupSensorGLMSpectrum(GroupGLMBaseResult):
         save_data : bool
              Save STFT data in pickle? This is omitted by default to save disk
              space (Default value = False)
-
         """
         if Path(outname).exists() and not overwrite:
             msg = "{} already exists. Please delete or do use overwrite=True."
@@ -215,7 +211,7 @@ class GroupSensorGLMSpectrum(GroupGLMBaseResult):
     def plot_joint_spectrum(self, gcontrast=0, fcontrast=0, freqs='auto', base=1, ax=None,
                             topo_scale='joint', lw=0.5,  ylabel='Power', title=None,
                             ylim=None, xtick_skip=1, topo_prop=1/5, metric='copes'):
-        """ Plot a GLM-Spectrum contrast with spatial line colouring and topograpies.
+        """Plot a GLM-Spectrum contrast with spatial line colouring and topograpies.
 
         Parameters
         ----------
@@ -246,7 +242,6 @@ class GroupSensorGLMSpectrum(GroupGLMBaseResult):
              Proportion of plot dedicted to topomaps(Default value = 1/3)
         metric : {'copes' or 'tstats}
              Which metric to plot(Default value = 'copes')
-
         """
         if metric == 'copes':
             spec = self.model.copes[gcontrast, fcontrast, :, :].T
@@ -280,7 +275,6 @@ class GroupSensorGLMSpectrum(GroupGLMBaseResult):
         -------
         ret_con : :py:class:`GroupSensorGLMSpectrum <osl.glm.glm_spectrum.GroupSensorGLMSpectrum>`
             GroupSensorGLMSpectrum instance containing a single first level contrast.
-
         """
         ret_con = deepcopy(self.data)
         ret_con.data = ret_con.data[:, fl_con, :, :]
@@ -335,11 +329,9 @@ class ClusterPermuteGLMSpectrum(SensorClusterPerm):
         plot_joint_spectrum_clusters(self.f, obs, clu, self.info, base=base, ax=ax, title=title, ylabel='t-stat')
 
 
-#%% ---------------------------------------
-#
+# ------------------------------------------------------------------------------
 # GLM-Spectrum helper functions that take raw objects (or numpy arrays with MNE
-# dim-order), compute GLM-Spectra and return class objects containing the
-# result
+# dim-order), compute GLM-Spectra and return class objects containing the result
 
 def group_glm_spectrum(inspectra, design_config=None, datainfo=None, metric='copes'):
     """Compute a group GLM-Spectrum from a set of first-level GLM-Spectra.
@@ -363,15 +355,12 @@ def group_glm_spectrum(inspectra, design_config=None, datainfo=None, metric='cop
     :py:class:`GroupSensorGLMSpectrum <osl.glm.GroupSensorGLMSpectrum>`
         GroupSensorGLMSpectrum instance containing the group level GLM-Spectrum.
 
-
     References
     ----------
     .. [1] Quinn, A. J., Atkinson, L., Gohil, C., Kohl, O., Pitt, J., Zich, C., Nobre,
        A. C., & Woolrich, M. W. (2022). The GLM-Spectrum: A multilevel framework
        for spectrum analysis with covariate and confound modelling. Cold Spring
        Harbor Laboratory. https://doi.org/10.1101/2022.11.14.516449
-
-
     """
     datainfo = {} if datainfo is None else datainfo
 
@@ -475,7 +464,6 @@ def glm_spectrum(XX, reg_categorical=None, reg_ztrans=None, reg_unitmax=None,
        A. C., & Woolrich, M. W. (2022). The GLM-Spectrum: A multilevel framework
        for spectrum analysis with covariate and confound modelling. Cold Spring
        Harbor Laboratory. https://doi.org/10.1101/2022.11.14.516449
-
     """
     if isinstance(XX, mne.io.base.BaseRaw):
         fs = XX.info['sfreq']
@@ -532,15 +520,14 @@ def read_glm_spectrum(infile):
         glmsp = pickle.load(outp)
     return glmsp
 
-##% ---------------------------
-#
-# Plotting!
+# --------
+# Plotting
 
 
 def plot_joint_spectrum_clusters(xvect, psd, clusters, info, ax=None, freqs='auto', base=1,
                                  topo_scale='joint', lw=0.5, ylabel='Power', title='', ylim=None,
                                  xtick_skip=1, topo_prop=1/5, topo_cmap=None):
-    """ Plot a GLM-Spectrum contrast from cluster objects, with spatial line colouring and topograpies.
+    """Plot a GLM-Spectrum contrast from cluster objects, with spatial line colouring and topograpies.
 
     Parameters
     ----------
@@ -719,7 +706,16 @@ def plot_joint_spectrum_clusters(xvect, psd, clusters, info, ax=None, freqs='aut
     ax.set_title(title, x=0.5, y=1-title_prop)
 
 
-def plot_source_topo(data_map, parcellation_file=None, mask_file='MNI152_T1_8mm_brain.nii.gz', axis=None, cmap=None, vmin=None, vmax=None, alpha=0.7):
+def plot_source_topo(
+    data_map,
+    parcellation_file=None,
+    mask_file='MNI152_T1_8mm_brain.nii.gz',
+    axis=None,
+    cmap=None,
+    vmin=None,
+    vmax=None,
+    alpha=0.7,
+):
     """Plot a data map on a cortical surface. Wrapper for nilearn.plotting.plot_glass_brain.
     
     Parameters
@@ -748,9 +744,9 @@ def plot_source_topo(data_map, parcellation_file=None, mask_file='MNI152_T1_8mm_
     """
     
     if parcellation_file is None:
-        parcellation_file = guess_parcellation(data_map)
-    parcellation_file = find_file(parcellation_file)
-    mask_file = find_file(mask_file)
+        parcellation_file = parcellation.guess_parcellation(data_map)
+    parcellation_file = parcellation.find_file(parcellation_file)
+    mask_file = parcellation.find_file(mask_file)
     
     if vmin is None:
         vmin = data_map.min()
@@ -769,15 +765,16 @@ def plot_source_topo(data_map, parcellation_file=None, mask_file='MNI152_T1_8mm_
         else:
             cmap = 'Blues_r'
     
-    # prepare figure
     if axis is None:
+        # Create figure
         fig, axis = plt.subplots()
 
-    # prepare data
-    data_map = power.parcel_vector_to_voxel_grid(mask_file, parcellation_file, data_map)
+    # Fill parcel values into a 3D voxel grid
     mask = nib.load(mask_file)
     nii = nib.Nifti1Image(data_map, mask.affine, mask.header)   
+    data_map = parcellation.parcel_vector_to_voxel_grid(mask_file, parcellation_file, data_map)
     
+    # Plot
     plot_glass_brain(
         nii,
         output_file=None,
@@ -839,7 +836,6 @@ def plot_joint_spectrum(xvect, psd, info, ax=None, freqs='auto', base=1,
         Colormap to use for plotting (Default value is 'RdBu_r' if pooled topo data range
         is positive and negative, otherwise 'Reds' or 'Blues' depending on sign of
         pooled data range)
-        
         
     Notes
     -----
@@ -986,7 +982,6 @@ def plot_sensor_spectrum(xvect, psd, info, ax=None, sensor_proj=False,
             Y-axis label(Default value = None)
     xtick_skip: int
             Number of xaxis ticks to skip, useful for tight plots (Default value = 1)
-
     """
 
     if ax is None:
@@ -1002,10 +997,10 @@ def plot_sensor_spectrum(xvect, psd, info, ax=None, sensor_proj=False,
     if sensor_proj:
         axins = ax.inset_axes([0.6, 0.6, 0.37, 0.37])
         if np.any(['parcel' in ch for ch in info['ch_names']]):
-            parcellation_file = guess_parcellation(psd.T)
+            parcellation_file = parcellation.guess_parcellation(psd.T)
             colors = get_source_cols(parcellation_file)
             cmap = ListedColormap(colors)
-            parc_centers = parcel_centers(parcellation_file)
+            parc_centers = parcellation.parcel_centers(parcellation_file)
             n_parcels = parc_centers.shape[0]
             plot_markers(np.arange(n_parcels), parc_centers, axes=axins, node_size=6, node_cmap=cmap, annotate=False, colorbar=False)
         else:
@@ -1030,7 +1025,7 @@ def plot_sensor_data(xvect, data, info, ax=None, lw=0.5,
 
     if sensor_cols:
         if np.any(['parcel' in ch for ch in info['ch_names']]):
-            parcellation_file = guess_parcellation(data.T)
+            parcellation_file = parcellation.guess_parcellation(data.T)
             colors = get_source_cols(parcellation_file)
         elif np.any(['state' in ch for ch in info['ch_names']]) or np.any(['mode' in ch for ch in info['ch_names']]):
             colors = None
@@ -1049,7 +1044,7 @@ def plot_sensor_data(xvect, data, info, ax=None, lw=0.5,
 
 
 def prep_scaled_freq(base, freq_vect):
-    """ Prepare frequency vector for plotting with a given scaling.
+    """Prepare frequency vector for plotting with a given scaling.
 
     Parameters
     ----------
@@ -1066,7 +1061,6 @@ def prep_scaled_freq(base, freq_vect):
         Normal frequency ticks
     ftickscaled : array_like
         Scaled frequency ticks
-
     
     Notes
     -----
@@ -1085,8 +1079,7 @@ def prep_scaled_freq(base, freq_vect):
 
 
 def get_source_cols(parcellation_file, return_order=False):
-    parc_centers = stats.zscore(parcel_centers(parcellation_file), axis=0)
-    # parc_centers = parcel_centers(parcellation_file)
+    parc_centers = stats.zscore(parcellation.parcel_centers(parcellation_file), axis=0)
     x = parc_centers[:, 0]
     y = parc_centers[:, 1]
     z = parc_centers[:, 2]
@@ -1106,13 +1099,12 @@ def get_source_cols(parcellation_file, return_order=False):
 
 
 def get_mne_sensor_cols(info):
-    """ Get sensor colours from MNE info object.
+    """Get sensor colours from MNE info object.
 
     Parameters
     ----------
     info : :py:class:`mne.Info <mne.Info>`
         MNE-Python info object
-
 
     Returns
     -------
@@ -1136,8 +1128,7 @@ def get_mne_sensor_cols(info):
 
 
 def plot_channel_layout(ax, info, size=30, marker='o'):
-    """ Plot sensor layout.
-    
+    """Plot sensor layout.
 
     Parameters
     ----------
@@ -1149,7 +1140,6 @@ def plot_channel_layout(ax, info, size=30, marker='o'):
         Size of sensor § (Default value = 30)
     marker : str
         Marker type (Default value = 'o')
-
     """
 
     ax.set_adjustable('box')
@@ -1165,7 +1155,7 @@ def plot_channel_layout(ax, info, size=30, marker='o'):
 
 
 def plot_with_cols(ax, data, xvect, cols=None, lw=0.5):
-    """ Plot data with spatial line colouring.
+    """Plot data with spatial line colouring.
 
     Parameters
     ----------
@@ -1179,7 +1169,6 @@ def plot_with_cols(ax, data, xvect, cols=None, lw=0.5):
         Array of RGB values for each sensor (Default value = None)
     lw : flot
         Line width(Default value = 0.5)
-
     """
     if cols is not None:
         for ii in range(data.shape[1]):
@@ -1189,7 +1178,7 @@ def plot_with_cols(ax, data, xvect, cols=None, lw=0.5):
 
 
 def decorate_spectrum(ax, ylabel='Power'):
-    """ Decorate a spectrum plot.
+    """Decorate a spectrum plot.
     
     Parameters
     ----------
@@ -1197,7 +1186,6 @@ def decorate_spectrum(ax, ylabel='Power'):
         Axis to plot into
     ylabel : str
         Y-axis label(Default value = 'Power')
-
     """
     for tag in ['top', 'right']:
         ax.spines[tag].set_visible(False)
