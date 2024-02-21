@@ -828,20 +828,10 @@ def plot_joint_spectrum(xvect, psd, info, ax=None, freqs='auto', base=1,
          Number of xaxis ticks to skip, useful for tight plots (Default value = 1)
     topo_prop : float
          Proportion of plot dedicted to topomaps(Default value = 1/3)
-    source : bool
-            Whether the data is in source level (Default value = False)
-    parcellation_file : str
-            Filepath of parcellation file to plot data on (Default value = None)
     topo_cmap : {None or matplotlib colormap}
         Colormap to use for plotting (Default value is 'RdBu_r' if pooled topo data range
         is positive and negative, otherwise 'Reds' or 'Blues' depending on sign of
         pooled data range)
-        
-    Notes
-    -----
-    This function assumes the data are in MNE-Python format unless parcellation_file is specified.
-    If parcellation_file is not specified, and MNE-Python doesn't recognise the channel format,
-    the parcellation is guessed from the number of channels. 
     """
     if ax is None:
         fig = plt.figure()
@@ -950,8 +940,7 @@ def plot_joint_spectrum(xvect, psd, info, ax=None, freqs='auto', base=1,
 
 def plot_sensor_spectrum(xvect, psd, info, ax=None, sensor_proj=False,
                          xticks=None, xticklabels=None, lw=0.5, title=None,
-                         sensor_cols=True, base=1, ylabel=None, xtick_skip=1, 
-                         source=False, parcellation_file=None):
+                         sensor_cols=True, base=1, ylabel=None, xtick_skip=1):
     """Plot a GLM-Spectrum contrast with spatial line colouring.
 
     Parameters
