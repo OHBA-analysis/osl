@@ -602,7 +602,7 @@ def run_cbu_3stage_maxfilter(infif, outbase, args):
 
     # Fixed Args
     stage2_args = {'autobad': None, 'bads': bads,
-                   'origin': origin, 'frame': 'head', 'movecompinter': True,
+                   'origin': origin, 'frame': 'head', 'movecompinter': False,
                    'st': 10, 'corr': 0.98, 'tsss': True,
                    'linefreq': 50, 'hpisubt': 'amp'}
     # User args
