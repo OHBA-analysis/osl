@@ -770,9 +770,10 @@ def plot_source_topo(
         fig, axis = plt.subplots()
 
     # Fill parcel values into a 3D voxel grid
+    data_map = parcellation.parcel_vector_to_voxel_grid(mask_file, parcellation_file, data_map)
+    data_map = data_map[..., np.newaxis]
     mask = nib.load(mask_file)
     nii = nib.Nifti1Image(data_map, mask.affine, mask.header)   
-    data_map = parcellation.parcel_vector_to_voxel_grid(mask_file, parcellation_file, data_map)
     
     # Plot
     plot_glass_brain(
@@ -987,11 +988,19 @@ def plot_sensor_spectrum(xvect, psd, info, ax=None, sensor_proj=False,
         axins = ax.inset_axes([0.6, 0.6, 0.37, 0.37])
         if np.any(['parcel' in ch for ch in info['ch_names']]):
             parcellation_file = parcellation.guess_parcellation(psd.T)
-            colors = get_source_cols(parcellation_file)
+            colors = get_source_colors(parcellation_file)
             cmap = ListedColormap(colors)
             parc_centers = parcellation.parcel_centers(parcellation_file)
             n_parcels = parc_centers.shape[0]
-            plot_markers(np.arange(n_parcels), parc_centers, axes=axins, node_size=6, node_cmap=cmap, annotate=False, colorbar=False)
+            plot_markers(
+                np.arange(n_parcels),
+                parc_centers,
+                axes=axins,
+                node_size=6,
+                node_cmap=cmap,
+                annotate=False,
+                colorbar=False,
+            )
         else:
             plot_channel_layout(axins, info)
 
@@ -1015,7 +1024,7 @@ def plot_sensor_data(xvect, data, info, ax=None, lw=0.5,
     if sensor_cols:
         if np.any(['parcel' in ch for ch in info['ch_names']]):
             parcellation_file = parcellation.guess_parcellation(data.T)
-            colors = get_source_cols(parcellation_file)
+            colors = get_source_colors(parcellation_file)
         elif np.any(['state' in ch for ch in info['ch_names']]) or np.any(['mode' in ch for ch in info['ch_names']]):
             colors = None
         else:
@@ -1067,24 +1076,14 @@ def prep_scaled_freq(base, freq_vect):
     return fx, ftick, ftickscaled
 
 
-def get_source_cols(parcellation_file, return_order=False):
+def get_source_colors(parcellation_file):
     parc_centers = stats.zscore(parcellation.parcel_centers(parcellation_file), axis=0)
-    x = parc_centers[:, 0]
-    y = parc_centers[:, 1]
-    z = parc_centers[:, 2]
-    # Re-order to use colour to indicate anterior->posterior location
-    # ref = np.argsort(y)[-1]
-    # dist = np.sqrt((x[ref]-x)**2 + (y[ref]-y)**2 + (z[ref]-z)**2)
+    x, y, z = parc_centers.T
     ref = [-5, -5, -3]
-    # dist = np.sqrt((ref[0]-x)**2 + (ref[1]-y)**2 + (ref[2]-z)**2)
-    # order = np.argsort(dist)
     colors = mne.viz.evoked._rgb(x, y, z)
-    order = [np.argsort(np.sqrt(ref[i]-parc_centers[:,i])**2) for i in range(3)]
+    order = [np.argsort(np.sqrt(ref[i] - parc_centers[:, i]) ** 2) for i in range(3)]
     colors = np.vstack([colors[order[0],0], colors[order[1],1], colors[order[2],2]]).T
-    if return_order:
-        return colors, order
-    else:
-        return colors
+    return colors
 
 
 def get_mne_sensor_cols(info):
