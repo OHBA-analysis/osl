@@ -382,21 +382,25 @@ def write_dataset(dataset, outbase, run_id, ftype='preproc_raw', overwrite=False
         )
     dataset["raw"].save(fif_outname, overwrite=overwrite)
 
-    if dataset["events"] is not None:
+    if "events" in dataset and dataset['events'] is not None:
         outname = outbase.format(run_id=run_id, ftype="events", fext="npy")
         np.save(outname, dataset["events"])
 
-    if dataset["event_id"] is not None:
+    if "event_id" in dataset and dataset['event_id'] is not None:
         outname = outbase.format(run_id=run_id, ftype="event-id", fext="yml")
         yaml.dump(dataset["event_id"], open(outname, "w"))
 
-    if dataset["epochs"] is not None:
+    if "epochs" in dataset and dataset['epochs'] is not None:
         outname = outbase.format(run_id=run_id, ftype="epo", fext="fif")
         dataset["epochs"].save(outname, overwrite=overwrite)
 
-    if dataset["ica"] is not None:
+    if "ica" in dataset and dataset['ica'] is not None:
         outname = outbase.format(run_id=run_id, ftype="ica", fext="fif")
         dataset["ica"].save(outname, overwrite=overwrite)
+
+    if "tfr" in dataset and dataset['tfr'] is not None:
+        outname = outbase.format(run_id=run_id, ftype="tfr", fext="fif")
+        dataset["tfr"].save(outname, overwrite=overwrite)
 
     return fif_outname
 
