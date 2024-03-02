@@ -17,7 +17,11 @@ from mne.transforms import read_trans, Transform
 from mne.io import read_info
 from mne.io.constants import FIFF
 from mne.surface import read_surface, write_surface
-from mne.source_space import _make_volume_source_space, _complete_vol_src
+
+try:
+    from mne.source_space import _make_volume_source_space, _complete_vol_src
+except ImportError:
+    from mne.source_space._source_space import _make_volume_source_space, _complete_vol_src
 
 import osl.source_recon.rhino.utils as rhino_utils
 from osl.source_recon.rhino import get_coreg_filenames

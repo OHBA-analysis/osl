@@ -20,8 +20,18 @@ from mne.viz._3d import _sensor_shape
 from mne.viz.backends.renderer import _get_renderer
 from mne.transforms import write_trans, read_trans, apply_trans, _get_trans, combine_transforms, Transform, rotation, invert_transform
 from mne.forward import _create_meg_coils
-from mne.io import _loc_to_coil_trans, read_info, read_raw, RawArray
-from mne.io.pick import pick_types
+from mne.io import read_info, read_raw, RawArray
+
+try:
+    from mne import pick_types
+except ImportError:
+    # Depreciated in mne 1.6
+    from mne.io.pick import pick_types
+
+try:
+    from mne._fiff.tag import _coil_trans_to_loc
+except ImportError:
+    from mne.io import _coil_trans_to_loc
 
 from fsl import wrappers as fsl_wrappers
 

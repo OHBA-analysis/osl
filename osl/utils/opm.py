@@ -11,9 +11,14 @@ import nibabel as nib
 import numpy as np
 
 import mne
-from mne.io import _coil_trans_to_loc
 from mne.io.constants import FIFF
 from mne.transforms import Transform, apply_trans
+
+try:
+    from mne._fiff.tag import _coil_trans_to_loc
+except ImportError:
+    # Depreciated in mne 1.6
+    from mne.io import _coil_trans_to_loc
 
 import pandas as pd
 import scipy
