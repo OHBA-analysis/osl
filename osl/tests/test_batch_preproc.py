@@ -49,6 +49,26 @@ class TestPreprocessingChain(unittest.TestCase):
         assert(isinstance(dataset["raw"], mne.io.fiff.raw.Raw))
 
 
+class TestVersions(unittest.TestCase):
+    def test_simple_chain(self):
+        from ..preprocessing import load_config
+        from ..utils.version_utils import check_version
+
+        cfg = """
+        meta:
+          event_codes:
+          version_assert: [osl==0.6.dev0, numpy>1.2]
+          version_warn: [mne==1.6.1, sails>1.2]
+        preproc:
+          - filter:         {l_freq: 1, h_freq: 30}
+          - notch_filter:   {freqs: 50}
+          - bad_channels:   {picks: 'grad'}
+          - bad_segments:   {segment_len: 800, picks: 'grad'}
+        """
+        config = load_config(cfg)
+
+
+
 class TestPreprocessingBatch(unittest.TestCase):
 
     @classmethod
