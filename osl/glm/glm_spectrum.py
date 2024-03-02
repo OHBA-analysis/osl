@@ -251,7 +251,7 @@ class GroupSensorGLMSpectrum(GroupGLMBaseResult):
             spec = self.model.varcopes[gcontrast, fcontrast, :, :].T
             kwargs['ylabel'] = 'Varcopes' if kwargs.get('ylabel') is None else kwargs.get('ylabel')
         elif metric == 'tstats':
-            spec = self.model.tstats[gcontrast, fcontrast,, :, :].T
+            spec = self.model.tstats[gcontrast, fcontrast, :, :].T
             kwargs['ylabel'] = 't-statistics' if kwargs.get('ylabel') is None else kwargs.get('ylabel')
         else:
             raise ValueError("Metric '{}' not recognised".format(metric))
