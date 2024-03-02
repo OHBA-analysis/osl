@@ -66,8 +66,8 @@ class TestVersions(unittest.TestCase):
         """
         config = load_config(cfg)
 
-        config['meta']['version_assert'] = 'numpy>1.0'
-        config['meta']['warn'] = 'scipy>1.0'
+        config['meta']['version_assert'] = ['numpy>1.0', 'scipy>1.0']
+        config['meta']['version_warn'] = ['mne>1.0']
 
         check_config_versions(config)
 
