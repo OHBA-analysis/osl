@@ -41,6 +41,7 @@ try:
     from mne._fiff.pick import pick_channels_cov, pick_info
     from mne._fiff.proj import make_projector
 except ImportError:
+    # Depreciated in mne 1.6
     from mne.io.meas_info import _simplify_info
     from mne.io.pick import pick_channels_cov, pick_info
     from mne.io.proj import make_projector

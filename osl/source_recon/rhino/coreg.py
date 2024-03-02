@@ -31,6 +31,7 @@ except ImportError:
 try:
     from mne._fiff.tag import _coil_trans_to_loc
 except ImportError:
+    # Depreciated in mne 1.6
     from mne.io import _coil_trans_to_loc
 
 from fsl import wrappers as fsl_wrappers

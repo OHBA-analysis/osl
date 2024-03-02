@@ -21,6 +21,7 @@ from mne.surface import read_surface, write_surface
 try:
     from mne.source_space import _make_volume_source_space, _complete_vol_src
 except ImportError:
+    # Depreciated in mne 1.6
     from mne.source_space._source_space import _make_volume_source_space, _complete_vol_src
 
 import osl.source_recon.rhino.utils as rhino_utils
