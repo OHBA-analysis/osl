@@ -247,7 +247,23 @@ def load_lcmv(subjects_dir, subject):
 
 
 def apply_lcmv(data, filters, reject_by_annotation="omit"):
-    """Apply a LCMV filter to an MNE Raw or Epochs object."""
+    """Apply a LCMV filter to an MNE Raw or Epochs object.
+    
+    Parameters
+    ----------
+    data : instance of :py:class:`mne.io.Raw` or :py:class:`mne.Epochs`
+        The data to apply the LCMV filter to.
+    filters : instance of :py:class:`mne.beamformer.Beamformer`
+        The LCMV filter to apply.
+    reject_by_annotation : str | list of str | None
+        If string, the annotation description to use to reject epochs.
+        If list of str, the annotation descriptions to use to reject epochs.
+        If None, do not reject epochs.
+        
+    Returns
+    -------
+    :py:class:`mne.SourceEstimate`
+    """
     log_or_print("beamforming.apply_lcmv")
     if isinstance(data, mne.io.Raw):
         return apply_lcmv_raw(data, filters, reject_by_annotation)
@@ -256,7 +272,24 @@ def apply_lcmv(data, filters, reject_by_annotation="omit"):
 
 
 def apply_lcmv_raw(raw, filters, reject_by_annotation="omit"):
-    """Modified version of mne.beamformer.apply_lcmv_raw."""
+    """Modified version of mne.beamformer.apply_lcmv_raw.
+    
+    Parameters
+    ----------
+    raw : instance of :py:class:`mne.io.Raw`
+        The raw data to apply the LCMV filter to.
+    filters : instance of :py:class:`mne.beamformer.Beamformer`
+        The LCMV filter to apply.
+    reject_by_annotation : str | list of str | None
+        If string, the annotation description to use to reject epochs.
+        If list of str, the annotation descriptions to use to reject epochs.
+        If None, do not reject epochs.
+        
+    Returns
+    -------
+    :py:class:`mne.SourceEstimate`
+    
+    """
 
     _check_reference(raw)
 
@@ -475,7 +508,9 @@ def transform_leadfield(
         'mri' indicates that the reference_brain is the subject's sMRI in the scaled native/mri space.
         'unscaled_mri' indicates that the reference_brain is the subject's sMRI in unscaled native/mri space.
         Note that Scaled/unscaled relates to the allow_smri_scaling option in coreg. If allow_scaling was False, then the unscaled MRI will be the same as the scaled MRI.
-
+    verbose : bool
+        If True, print out more information.
+    
     Returns
     -------
     leadfield_out : numpy.ndarray
@@ -595,6 +630,59 @@ def _make_lcmv(
     """Compute LCMV spatial filter.
 
     Modified version of mne.beamformer._make_lcmv.
+    
+    Parameters
+    ----------
+    info : instance of :py:class:`mne.Info`
+        The measurement info to specify the channels to include.
+    forward : instance of :py:class:`mne.Forward`
+        The forward solution.
+    data_cov : instance of :py:class:`mne.Covariance`
+        The data covariance object.
+    reg : float
+        The regularization for the whitened data covariance.
+    noise_cov : instance of :py:class:`mne.Covariance`
+        The noise covariance object.
+    label : instance of :py:class:`mne.Label`
+        Restricts the LCMV solution to a given label.
+    pick_ori : None | 'normal' | 'max-power' | max-power-pre-weight-norm
+        The source orientation to compute the beamformer in.
+    rank : dict | None | 'full' | 'info'
+        This controls the rank computation that can be read from the measurement info or estimated from the data. When a noise covariance is used for whitening, this should reflect the rank of that covariance, otherwise amplification of noise components can occur in whitening (e.g., often during source localization).
+    
+        ``None``
+            The rank will be estimated from the data after proper scaling of different channel types. 
+        
+        ``'info'``
+            The rank is inferred from info. If data have been processed with Maxwell filtering, the Maxwell filtering header is used. Otherwise, the channel counts themselves are used. In both cases, the number of projectors is subtracted from the (effective) number of channels in the data. For example, if Maxwell filtering reduces the rank to 68, with two projectors the returned value will be 66. 
+        
+        ``'full'``
+            The rank is assumed to be full, i.e. equal to the number of good channels. If a Covariance is passed, this can make sense if it has been (possibly improperly) regularized without taking into account the true data rank. 
+        
+        dict
+            Calculate the rank only for a subset of channel types, and explicitly specify the rank for the remaining channel types. This can be extremely useful if you already know the rank of (part of) your data, for instance in case you have calculated it earlier.
+            This parameter must be a dictionary whose keys correspond to channel types in the data (e.g. 'meg', 'mag', 'grad', 'eeg'), and whose values are integers representing the respective ranks. For example, {'mag': 90, 'eeg': 45} will assume a rank of 90 and 45 for magnetometer data and EEG data, respectively.
+            The ranks for all channel types present in the data, but not specified in the dictionary will be estimated empirically. That is, if you passed a dataset containing magnetometer, gradiometer, and EEG data together with the dictionary from the previous example, only the gradiometer rank would be determined, while the specified magnetometer and EEG ranks would be taken for granted. 
+
+        The default is ``'info'``. 
+    noise_rank : dict | None | 'full' | 'info'
+        This controls the rank computation that can be read from the measurement info or estimated from the data. When a noise covariance is used for whitening, this should reflect the rank of that covariance, otherwise amplification of noise components can occur in whitening (e.g., often during source localization).
+    weight_norm : None | 'unit-noise-gain' | 'nai'
+        The weight normalization scheme to use.
+    reduce_rank : bool
+        Whether to reduce the rank by one during computation of the filter.
+    depth : None | float | dict
+        How to weight (or normalize) the forward using a depth prior (see Notes).
+    inversion : 'matrix' | 'single'
+        The inversion scheme to compute the weights.
+    verbose : bool, str, int, or None
+        If not None, override default verbose level (see mne.verbose).
+        
+    Returns
+    -------
+    filters : instance of :py:class:`mne.beamformer.Beamformer`
+        Dictionary containing filter weights from LCMV beamformer. See MNE docs.
+        
     """
     # Code that is different to mne.beamformer.make_lcmv is labelled with MWW
 
@@ -972,6 +1060,54 @@ def _prepare_beamformer_input(
     """Input preparation common for LCMV, DICS, and RAP-MUSIC.
 
     Modified version of mne.beamformer._prepare_beamformer_input.
+    
+    Parameters
+    ----------
+    info : instance of :py:class:`mne.Info`
+        Measurement info
+    forward : instance of :py:class:`mne.Forward`
+        The forward solution.
+    label : instance of :py:class:`mne.Label` | None
+        Restricts the forward solution to a given label.
+    pick_ori : None | 'normal' | 'max-power' | 'vector' | 'max-power-pre-weight-norm'
+        The source orientation to compute the beamformer in.
+    noise_cov : instance of :py:class:`mne.Covariance` | None
+        The noise covariance.
+    rank : dict | None | 'full' | 'info'
+        See :py:func:`mne.compute_rank`.
+    pca : bool
+        If True, the rank of the forward is reduced to match the rank of the noise covariance matrix.
+    loose : float | None
+        Value that weights the source variances of the dipole components defining the tangent space of the cortical surfaces. If ``None``, no loose orientation constraint is applied.
+    combine_xyz : str
+        How to combine the dipoles in the same locations of the forward model when picking normals. See :py:func:`mne.forward._pick_ori`.
+    exp : float | None
+        Exponent for the depth weighting. If None, no depth weighting is performed.
+    limit : float | None
+        Limit on depth weighting factors. If None, no upper limit is applied.
+    allow_fixed_depth : bool
+        If True, fixed depth weighting is allowed.
+    limit_depth_chs : bool
+        If True, use only grad channels for depth weighting. 
+        
+    Returns
+    -------
+    is_free_ori : bool
+        Whether the forward operator is free orientation.
+    info : instance of :py:class:`mne.Info`
+        Measurement info restricted to selected channels.
+    proj : array
+        The SSP/PCA projector.
+    vertno : array
+        The indices of the vertices corresponding to the source space.
+    G : array
+        The forward operator restricted to selected channels.
+    whitener : array  
+        The whitener for the selected channels.
+    nn : array
+        The normals of the source space.
+    orient_std : array
+        The standard deviation of the orientation prior.
     """
     # Lines marked MWW are where code has been changed.
 

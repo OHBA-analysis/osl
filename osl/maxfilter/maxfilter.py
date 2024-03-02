@@ -306,6 +306,33 @@ def fit_cbu_origin(infif, outbase=None, remove_nose=True):
 
 
 def run_maxfilter(infif, outfif, args, logfile_tag=''):
+    """Wrapper for Elekta Maxfilter.
+
+    Parameters
+    ----------
+        infif : str
+            Path to input fif file (raw data).
+        outfif : str
+            Path to output fif file (maxfiltered).
+        args : dict
+            Dictionary of arguments to pass to maxfilter.  See ``help(osl.maxfilter)`` for all options, and 
+            Notes for recommendations.
+        logfile_tag : str, optional
+            Tag to append to logfile name. The default is ''. This is used to
+            differentiate between different stages of maxfiltering (e.g., ``'_trans'``, ``'_tsss'``).
+
+    Returns
+    -------
+        outfif : str
+            Path to output fif file (maxfiltered).
+        stdlog : str
+            Path to logfile.
+            
+    Notes
+    -----
+    The recommended use for maxfilter at OHBA is to run multistage maxfiltering, with the following options:
+    ``args = {'maxpath': '/neuro/bin/util/maxfilter', 'scanner': 'Neo', 'mode': 'multistage', 'tsss': {}, 'headpos': {}, 'movecomp': {}}``
+    """
 
     basecmd = '{maxpath} -f {infif} -o {outfif}'
 
@@ -314,6 +341,8 @@ def run_maxfilter(infif, outfif, args, logfile_tag=''):
 
     if ('tsss' in args) and args['tsss']:
         outfif = outfif.replace('.fif', 'tsss.fif')
+    elif ('trans' in args) and args['trans']:
+        outfif = outfif.replace('.fif', 'trans.fif')
     elif logfile_tag != '_trans':
         outfif = outfif.replace('.fif', 'sss.fif')
 
@@ -375,13 +404,41 @@ def run_maxfilter(infif, outfif, args, logfile_tag=''):
 # -------------------------------------------------
 
 def run_multistage_maxfilter(infif, outbase, args):
-    """
+    """Wrapper for running :py:func:`run_maxfilter <osl.maxfilter.run_maxfilter>` in three sequential steps:
+         
+    1. Find Bad Channels
+         
+    2. Signal Space Separation
+         
+    3. Translate to reference file
+    
+    Parameters
+    ----------
+        infif : str
+            Path to input fif file (raw data).
+        outbase : str
+            output directory.
+        args : dict
+            Dictionary of arguments to pass to maxfilter. See ``help(osl.maxfilter)`` for all options.
+
+    
+    Notes
+    -----
+    All files are written to disk and the output of each stage is used as the input to the next. 
+    
+    General advice (from CBU):
+    
+    * don't use ``'trans'`` with ``'movecomp'``
+    
+    * don't use ``'autobad'`` with ``'headpos'`` or ``'movecomp'``
+    
+    * don't use ``'autobad'`` with ``'st'``
+    
+    References
+    ----------
+    
     https://imaging.mrc-cbu.cam.ac.uk/meg/Maxfilter
     https://imaging.mrc-cbu.cam.ac.uk/meg/maxbugs
-
-    Camb advice - don't use trans with movecomp
-                - don't use autobad with headpos or movecomp
-                - don't use autobad with st
     """
 
     # --------------------------------------
@@ -443,8 +500,8 @@ def run_multistage_maxfilter(infif, outbase, args):
     if ('trans' in args) and args['trans'] is not None:
 
         infif = outfif  # input is output from previous stage
-        outfif = outbase.format('trans.fif')
-        outlog = outbase.format('trans.log')
+        outfif = outbase.format('.fif')
+        outlog = outbase.format('.log')
 
         if os.path.exists(outfif):
             os.remove(outfif)
@@ -461,9 +518,41 @@ def run_multistage_maxfilter(infif, outbase, args):
 
 
 def run_cbu_3stage_maxfilter(infif, outbase, args):
+    """Wrapper for running :py:func:`run_maxfilter <osl.maxfilter.run_maxfilter>` in three 
+    sequential steps used by MRC Cognition and Brain Sciences Unit (CBU) in Cambridge:
+         
+    0. Fit Origin without nose
+         
+    1. Find Bad Channels
+         
+    2. Signal Space Separation
+    
+    3. Translate to default
+    
+    Parameters
+    ----------
+        infif : str
+            Path to input fif file (raw data).
+        outbase : str
+            output directory.
+        args : dict
+            Dictionary of arguments to pass to maxfilter.  See ``help(osl.maxfilter)`` for all options.
 
+    
+    Notes
+    -----
+    All files are written to disk and the output of each stage is used as the input to the next. 
+
+    
+    References
+    ----------
+    
+    https://imaging.mrc-cbu.cam.ac.uk/meg/Maxfilter
+    https://imaging.mrc-cbu.cam.ac.uk/meg/maxbugs
+    """
+    
     # --------------------------------------
-    # Stage 0 - Fit Origin without noce
+    # Stage 0 - Fit Origin without nose
     origin = fit_cbu_origin(infif, outbase, remove_nose=True)
 
     # --------------------------------------
@@ -528,8 +617,8 @@ def run_cbu_3stage_maxfilter(infif, outbase, args):
     # Stage 3 - Translate to default
 
     infif = outfif  # input is output from previous stage
-    outfif = outbase.format('trans.fif')
-    outlog = outbase.format('trans.log')
+    outfif = outbase.format('.fif')
+    outlog = outbase.format('.log')
 
     if os.path.exists(outfif):
         os.remove(outfif)
@@ -551,11 +640,6 @@ def run_cbu_3stage_maxfilter(infif, outbase, args):
 def run_maxfilter_batch(files, outdir, args=None):
     """Batch Maxfiltering.
 
-    Example use:
-    run_maxfilter_batch(files="/path/to/fif", outdir="/path/to/outdir",
-    args="--maxpath /neuro/bin/util/maxfilter --scanner Neo --tsss --mode
-    multistage --headpos --movecomp")
-
     Parameters
     ----------
     files : str or list of str
@@ -563,10 +647,20 @@ def run_maxfilter_batch(files, outdir, args=None):
     outdir : str
         Path to directory to save output to.
     args : str
-        List of additional optional arguments to pass to osl_maxfilter.
+        List of additional optional arguments to pass to osl_maxfilter.  See ``help(osl.maxfilter)`` for all options.
         If a string is passed it it split input a list (delimited by spaces).
-        E.g. args="--maxpath /neuro/bin/util/maxfilter"
-        is equivalent to args=["--maxpath", "/neuro/bin/util/maxfilter"].
+        E.g. ``args="--maxpath /neuro/bin/util/maxfilter"``
+        is equivalent to ``args=["--maxpath", "/neuro/bin/util/maxfilter"]``.
+        
+    Notes
+    -----
+    Example use:
+    
+    
+    >>> run_maxfilter_batch(files="/path/to/fif", outdir="/path/to/outdir",
+        args="--maxpath /neuro/bin/util/maxfilter --scanner Neo --tsss --mode
+        multistage --headpos --movecomp")
+    
     """
 
     if args is None:

@@ -4,6 +4,7 @@
 
 # Authors: Mark Woolrich <mark.woolrich@ohba.ox.ac.uk>
 #          Chetan Gohil <chetan.gohil@psych.ox.ac.uk>
+#          Mats van Es <mats.vanes@psych.ox.ac.uk>
 
 import numpy as np
 import matplotlib.pyplot as plt
@@ -83,6 +84,21 @@ def extract_polhemus_from_info(
 
 
 def plot_polhemus_points(txt_fnames, colors=None, scales=None, markers=None, alphas=None):
+    """Plot polhemus points.
+    
+    Parameters
+    ----------
+    txt_fnames : list of strings
+        List of filenames containing polhemus points.
+    colors : list of tuples
+        List of colors for each set of points.
+    scales : list of floats
+        List of scales for each set of points.
+    markers : list of strings
+        List of markers for each set of points.
+    alphas : list of floats
+        List of alphas for each set of points.
+    """
     plt.figure()
     ax = plt.axes(projection="3d")
     for ss in range(len(txt_fnames)):
@@ -142,6 +158,7 @@ def delete_headshape_points(recon_dir=None, subject=None, polhemus_headshape_fil
         polhemus_headshape_file = coreg_filenames["polhemus_headshape_file"]
     elif polhemus_headshape_file is not None:
         polhemus_headshape_file = polhemus_headshape_file
+        coreg_filenames = {'polhemus_headshape_file': polhemus_headshape_file}
     else:
         ValueError('Invalid inputs. See function\'s documentation.')
       
@@ -150,6 +167,7 @@ def delete_headshape_points(recon_dir=None, subject=None, polhemus_headshape_fil
     print("Num headshape points={}".format(polhemus_headshape_polhemus.shape[1]))
     print('Click on points to delete them.')
     print('Press "w" to write changes to the file')
+    print('Press "q" to close the figure')
     sys.stdout.flush()
 
     def scatter_headshapes(ax, x, y, z):
@@ -190,6 +208,9 @@ def delete_headshape_points(recon_dir=None, subject=None, polhemus_headshape_fil
             print("Num headshape points remaining={}".format(polhemus_headshape_polhemus_new.shape[1]))
             np.savetxt(coreg_filenames["polhemus_headshape_file"], polhemus_headshape_polhemus_new)
             print('Changes saved to file {}'.format(coreg_filenames["polhemus_headshape_file"]))
+        elif event.key == 'q':
+            print('Closing figure')
+            plt.close(fig)
                     
     # Connect click event to function
     fig.canvas.mpl_connect('pick_event', on_click)

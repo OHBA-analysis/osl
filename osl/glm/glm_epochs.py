@@ -11,15 +11,44 @@ from .glm_base import GLMBaseResult, GroupGLMBaseResult, SensorClusterPerm
 
 
 class GLMEpochsResult(GLMBaseResult):
-
+    """A class for first-level GLM-Spectra fitted to MNE-Python Epochs objects"""
     def __init__(self, model, design, info, tmin=0, data=None, times=None):
-
+        """
+        Parameters
+        ----------
+        model : :py:class:`glmtools.fit.OLSModel <glmtools.fit.OLSModel>'
+            The  model object.
+        design : :py:class:`glmtools.design.GLMDesign <glmtools.design.GLMDesign>`
+            The  GLM design object.
+        info : mne.Info
+            The MNE-Python Info object for the data
+        tmin : float
+            The time of the first time point in the epoch (Default value = 0)
+        data : glmtools.data.TrialGLMData
+            The data object used to fit the model (Default value = None)
+        times : array-like
+            The time points for the data (Default value = None)
+        
+        """
         self.tmin = tmin
         self.times = times
         super().__init__(model, design, info, data=data)
 
     def get_evoked_contrast(self, contrast=0, metric='copes'):
-
+        """Get the evoked response for a given contrast.
+        
+        Parameters
+        ----------
+        contrast : int
+            Contrast index to return
+        metric : {'copes', or 'tsats'}
+            Which metric to plot (Default value = 'copes')
+            
+        Returns
+        -------
+        :py:class:`mne.Evoked <mne.Evoked>`
+            The evoked response for the contrast.
+        """
         if metric == 'copes':
             erf = self.model.copes[contrast, :, :]
         elif metric == 'tstats':
@@ -28,7 +57,17 @@ class GLMEpochsResult(GLMBaseResult):
         return mne.EvokedArray(erf, self.info, tmin=self.tmin)
 
     def plot_joint_contrast(self, contrast=0, metric='copes', title=None):
-
+        """Plot the evoked response for a given contrast.
+        
+        Parameters
+        ----------
+        contrast : int
+            Contrast index to return
+        metric : {'copes', or 'tsats'}
+            Which metric to plot (Default value = 'copes')
+        title : str
+            Title for the plot
+        """
         evo = self.get_evoked_contrast(contrast=contrast, metric=metric)
 
         if title is None:
@@ -42,13 +81,43 @@ class GroupGLMEpochs(GroupGLMBaseResult):
     GLM-Spectra computed from MNE-Python Raw objects"""
 
     def __init__(self, model, design, info, fl_contrast_names=None, data=None, tmin=0, times=None):
-
+        """
+        Parameters
+        ----------
+        model : :py:class:`glmtools.fit.OLSModel <glmtools.fit.OLSModel>'
+            The  model object.
+        design : :py:class:`glmtools.design.GLMDesign <glmtools.design.GLMDesign>`
+            The  GLM design object.
+        info : mne.Info
+            The MNE-Python Info object for the data
+        fl_contrast_names : {None, list}
+            List of first-level contrast names (Default value = None)
+        data : glmtools.data.TrialGLMData
+            The data object used to fit the model (Default value = None)
+        tmin : float
+            The time of the first time point in the epoch (Default value = 0)
+        times : array-like
+            The time points for the data (Default value = None)
+        """
         self.tmin = tmin
         self.times = times
         super().__init__(model, design, info, fl_contrast_names=fl_contrast_names, data=data)
 
     def get_evoked_contrast(self, gcontrast=0, fcontrast=0, metric='copes'):
-
+        """Get the evoked response for a given contrast.
+        
+        Parameters
+        ----------
+        contrast : int
+            Contrast index to return
+        metric : {'copes', or 'tsats'}
+            Which metric to plot (Default value = 'copes')
+            
+        Returns
+        -------
+        :py:class:`mne.Evoked <mne.Evoked>`
+            The evoked response for the contrast.
+        """
         if metric == 'copes':
             erf = self.model.copes[gcontrast, fcontrast, :, :]
         elif metric == 'tstats':
@@ -57,7 +126,17 @@ class GroupGLMEpochs(GroupGLMBaseResult):
         return mne.EvokedArray(erf, self.info, tmin=self.tmin)
 
     def plot_joint_contrast(self, gcontrast=0, fcontrast=0, metric='copes', title=None, joint_args=None):
-
+        """Plot the evoked response for a given contrast.
+        
+        Parameters
+        ----------
+        contrast : int
+            Contrast index to return
+        metric : {'copes', or 'tsats'}
+            Which metric to plot (Default value = 'copes')
+        title : str
+            Title for the plot
+        """
         evo = self.get_evoked_contrast(gcontrast=0, fcontrast=0, metric=metric)
 
         joint_args = {} if joint_args is None else joint_args
@@ -92,7 +171,7 @@ class GroupGLMEpochs(GroupGLMBaseResult):
 
         Returns
         -------
-        GroupGLMEpochs instance containing a single first level contrast.
+        :py:class:`GLMEpochsResult <glmtools.glm_epochs.GLMEpochsResult>`  instance containing a single first level contrast.
 
         """
         ret_con = deepcopy(self.data)
@@ -105,7 +184,19 @@ class GroupGLMEpochs(GroupGLMBaseResult):
 
 
 def glm_epochs(config, epochs):
-
+    """Compute a GLM-Epochs from an MNE-Python Epochs object.
+    
+    Parameters
+    ---------- 
+    config : glmtools.design.DesignConfig
+         The design specification for the model
+    epochs : str, :py:class:`mne.Epochs <mne.Epochs>`
+         The epochs object to use for the model
+    
+    Returns
+    -------
+    :py:class:`GLMEpochsResult <glmtools.glm_epochs.GLMEpochsResult>`
+         """
     data = read_mne_epochs(epochs)
     design = config.design_from_datainfo(data.info)
 
@@ -132,7 +223,7 @@ def group_glm_epochs(inspectra, design_config=None, datainfo=None, metric='copes
 
     Returns
     -------
-    GroupGLMEpochs
+    :py:class:`GroupGLMEpochs <glmtools.glm_epochs.GroupGLMEpochs>`
 
     """
     datainfo = {} if datainfo is None else datainfo
@@ -164,7 +255,20 @@ def group_glm_epochs(inspectra, design_config=None, datainfo=None, metric='copes
 #%% ------------------------------------------------------
 
 def read_mne_epochs(X, picks=None):
-
+    """Read in an MNE-Python Epochs object and convert it to a GLM data object.
+    
+    Parameters
+    ----------
+    X : str, :py:class:`mne.Epochs <mne.Epochs>`
+        The epochs object to use for the model
+    picks : list
+        List of channels to use for the model (Default value = None)
+        
+    Returns
+    -------
+    :py:class:`glmtools.data.TrialGLMData <glmtools.data.TrialGLMData>`
+        The data object used to fit the model.
+    """
     import mne
     if isinstance(X, str) and os.path.isfile(X):
         epochs = mne.read_epochs(X)
@@ -189,7 +293,7 @@ def read_glm_epochs(infile):
 
     Returns
     -------
-    GLMEpochs
+    :py:class:`GLMEpochsResult <glmtools.glm_epochs.GLMEpochsResult>`
 
     """
     with open(infile, 'rb') as outp:

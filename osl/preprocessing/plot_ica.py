@@ -21,7 +21,8 @@ def plot_ica(
     n_channels=10,
     bad_labels_list=["eog", "ecg", "emg", "hardware", "other"],
 ):
-    """Plot estimated latent sources given the unmixing matrix.
+    """OSL adaptation of MNE's :py:meth:`mne.preprocessing.ICA.plot_sources <mne.preprocessing.ICA.plot_sources>` function to 
+    plot estimated latent sources given the unmixing matrix.
 
     Typical usecases:
 
@@ -31,19 +32,20 @@ def plot_ica(
 
     Parameters
     ----------
-    ica : instance of mne.preprocessing.ICA
+    ica : :py:class:`mne.preprocessing.ICA <mne.preprocessing.ICA>`.
         The ICA solution.
-    inst : instance of mne.io.Raw, mne.Epochs, mne.Evoked
+    inst : :py:class:`mne.io.Raw <mne.io.Raw>`, :py:class:`mne.Epochs <mne.Epochs>`, or :py:class:`mne.Evoked <mne.Evoked>`.
         The object to plot the sources from.
-    %(picks_base)s all sources in the order as fitted.
+    picks : str
+        Channel types to pick.
     start, stop : float | int | None
-       If ``inst`` is a `~mne.io.Raw` or an `~mne.Evoked` object, the first and
-       last time point (in seconds) of the data to plot. If ``inst`` is a
-       `~mne.io.Raw` object, ``start=None`` and ``stop=None`` will be
-       translated into ``start=0.`` and ``stop=3.``, respectively. For
-       `~mne.Evoked`, ``None`` refers to the beginning and end of the evoked
-       signal. If ``inst`` is an `~mne.Epochs` object, specifies the index of
-       the first and last epoch to show.
+        If ``inst`` is a :py:class:`mne.io.Raw <mne.io.Raw>` or an  :py:class:`mne.Evoked <mne.Evoked>` object, the first and
+        last time point (in seconds) of the data to plot. If ``inst`` is a
+        :py:class:`mne.io.Raw <mne.io.Raw>` object, ``start=None`` and ``stop=None`` will be
+        translated into ``start=0.`` and ``stop=3.``, respectively. For
+        :py:class:`mne.Evoked <mne.Evoked>`, ``None`` refers to the beginning and end of the evoked
+        signal. If ``inst`` is an  :py:class:`mne.Epochs <mne.Epochs>` object, specifies the index of
+        the first and last epoch to show.
     title : str | None
         The window title. If None a default is provided.
     show : bool
@@ -55,11 +57,11 @@ def plot_ica(
     show_first_samp : bool
         If True, show time axis relative to the ``raw.first_samp``.
     n_channels : int
-        OSL ADDITION - Number of channels to show at the same time
+        Number of channels to show at the same time (default: 10)
     bad_labels_list : list of str
-        OSL ADDITION -
-    %(show_scrollbars)s
-    %(time_format)s
+        list of bad labels to show in the bad labels list that can be used to mark the type of 
+        bad component. Defaults to ``["eog", "ecg", "emg", "hardware", "other"]``.
+ 
 
     Returns
     -------
@@ -136,6 +138,8 @@ def _plot_sources(
     n_channels,
     bad_labels_list,
 ):
+    """Adaptation of MNE's `mne.preprocessing.ica._plot_sources` function to allow for OSL additions.
+    """    
     """Plot the ICA components as a RawArray or EpochsArray."""
     # from mne.viz._figure import _get_browser
     from mne.viz.utils import _compute_scalings, _make_event_color_dict, plt_show
@@ -329,7 +333,10 @@ backend = None
 
 
 def _get_browser(**kwargs):
-    """Instantiate a new MNE browse-style figure."""
+    """OSL Adaptation of MNE's `mne.viz._figure._get_browser` function 
+    that instantiate a new MNE browse-style figure.
+
+    """    
     from mne.viz.utils import _get_figsize_from_config
     from mne.viz._figure import _init_browser_backend
     import numpy as np
@@ -350,8 +357,10 @@ def _get_browser(**kwargs):
 
 def _init_browser(backend, **kwargs):  # OSL ADDITION IN ORDER TO USE OSL'S FIGURE CLASS
     from mne.viz._mpl_figure import _figure
-
-    """Instantiate a new MNE browse-style figure."""
+    """OSL's adaptation of MNE's `mne.viz._mpl_figure._init_browser` that 
+    instantiate a new MNE browse-style figure.
+    """
+    
     fig = _figure(toolbar=False, FigureClass=osl_MNEBrowseFigure, **kwargs)
 
     # initialize zen mode
@@ -370,7 +379,9 @@ def _init_browser(backend, **kwargs):  # OSL ADDITION IN ORDER TO USE OSL'S FIGU
 
 
 class osl_MNEBrowseFigure(MNEBrowseFigure):
-    """Interactive figure with scrollbars, for data browsing."""
+    """OSL's adaptatation of MNE's `mne.viz._mpl_figure.MNEBrowseFigure` that
+    creates an interactive figure with scrollbars, for data browsing."""
+    
 
     def __init__(self, inst, figsize, ica=None,
                  xlabel='Time (s)', **kwargs):
@@ -663,6 +674,7 @@ class osl_MNEBrowseFigure(MNEBrowseFigure):
 
     def _draw_traces(self):
         """Draw (or redraw) the channel data."""
+        
         from matplotlib.colors import to_rgba_array
         from matplotlib.patches import Rectangle
 

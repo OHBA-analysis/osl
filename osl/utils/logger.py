@@ -106,7 +106,15 @@ def set_up(prefix='', log_file=None, level=None, console_format=None, startup=Tr
 
 
 def set_level(level, handler='console'):
-    """Set new logging level for OSL module."""
+    """Set new logging level for OSL module.
+    
+    Parameters
+    ----------
+    level : {'CRITICAL', 'WARNING', 'INFO', 'DEBUG'}
+        String indicating new logging level
+    handler : str
+        The handler to set the level for. Defaults to 'console'.
+    """
     osl_logger = logging.getLogger('osl')
     for handler in osl_logger.handlers:
         if handler.get_name() == 'console':
@@ -116,7 +124,19 @@ def set_level(level, handler='console'):
 
 
 def get_level(handler='console'):
-    """Return current logging level for OSL module."""
+    """Return current logging level for OSL module.
+    
+    Parameters
+    ----------
+    handler : str
+        The handler to get the level for. Defaults to 'console'.
+        
+    Returns
+    -------
+    level : {'CRITICAL', 'WARNING', 'INFO', 'DEBUG'}
+        String indicating current logging level
+    
+    """
     osl_logger = logging.getLogger('osl')
     for handler in osl_logger.handlers:
         if handler.get_name() == 'console':

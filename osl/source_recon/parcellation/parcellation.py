@@ -76,8 +76,8 @@ def parcellate_timeseries(parcellation_file, voxel_timeseries, voxel_coords, met
     voxel_coords : numpy.ndarray
         (nvoxels x 3) coordinates of voxel_timeseries in mm in same space as parcellation (e.g. typically corresponds to the output from beamforming.transform_recon_timeseries).
     method : str
-        'pca' - take 1st PC in each parcel
-        'spatial_basis' - The parcel time-course for each spatial map is the 1st PC from all voxels, weighted by the spatial map.
+        ``'pca'`` - take 1st PC in each parcel
+        ``'spatial_basis'`` - The parcel time-course for each spatial map is the 1st PC from all voxels, weighted by the spatial map.
         If the parcellation is unweighted and non-overlapping, 'spatialBasis' will give the same result as 'PCA' except with a different normalization.
     working_dir : str
         Directory to put temporary file in. If None, attempt to use same directory as passed in parcellation.
@@ -105,8 +105,8 @@ def _get_parcel_timeseries(voxel_timeseries, parcellation_asmatrix, method="spat
     parcellation_asmatrix: numpy.ndarray
         (nvoxels x nparcels) and is assumed to be on the same grid as voxel_timeseries.
     method : str
-        'pca' - take 1st PC of voxels
-        'spatial_basis' - The parcel time-course for each spatial map is the 1st PC from all voxels, weighted by the spatial map.
+        ``'pca'`` - take 1st PC of voxels
+        ``'spatial_basis'`` - The parcel time-course for each spatial map is the 1st PC from all voxels, weighted by the spatial map.
         If the parcellation is unweighted and non-overlapping, 'spatialBasis' will give the same result as 'PCA' except with a different normalization.
 
     Returns
@@ -357,8 +357,8 @@ def symmetric_orthogonalise(timeseries, maintain_magnitudes=False, compute_weigh
     weights : numpy.ndarray
         (optional output depending on compute_weights flag) weighting matrix such that, ortho_timeseries = timeseries * weights
 
-    Notes
-    -----
+    References
+    ----------
     Colclough, G. L., Brookes, M., Smith, S. M. and Woolrich, M. W., "A symmetric multivariate leakage correction for MEG connectomes," NeuroImage 117, pp. 439-448 (2015)
     """
 
@@ -476,12 +476,16 @@ def plot_psd(parc_ts, fs, freq_range, parcellation_file, filename):
         Output filename.
     """
     if parc_ts.ndim == 3:
-        # (parcels, time, epochs) -> (parcels, time)
-        shape = parc_ts.shape
-        parc_ts = parc_ts.reshape(shape[0], shape[1] * shape[2])
+        # Calculate PSD for each epoch individually and average
+        psd = []
+        for i in range(parc_ts.shape[-1]):
+            f, p = welch(parc_ts[..., i], fs=fs)
+            psd.append(p)
+        psd = np.mean(psd, axis=0)
+    else:
+        # Calcualte PSD of continuous data
+        f, psd = welch(parc_ts, fs=fs)
 
-    # Calculate PSD
-    f, psd = welch(parc_ts, fs=fs)
     n_parcels = psd.shape[0]
 
     # Re-order to use colour to indicate anterior->posterior location
@@ -813,7 +817,7 @@ def convert2mne_epochs(parc_data, epochs, parcel_names=None):
     Returns
     -------
     parc_epo : mne.Epochs
-        Generated parcellation in mne.Epochs format.
+        Generated parcellation in :py:class: mne.Epochs` format.
     """
 
     # Epochs info

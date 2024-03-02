@@ -22,7 +22,14 @@ class SensorGLMSpectrum(GLMBaseResult):
     """A class for GLM-Spectra fitted from MNE-Python Raw objects."""
 
     def __init__(self, glmsp, info):
-
+        """
+        Parameters
+        ----------
+        glmsp : :py:class:`glmtools.fit.OLSModel <glmtools.fit.OLSModel>`
+            The fitted model object
+        info : dict
+            
+        """
         self.f = glmsp.f
         self.config = glmsp.config
         super().__init__(glmsp.model, glmsp.design, info, data=glmsp.data)
@@ -132,7 +139,24 @@ class GroupSensorGLMSpectrum(GroupGLMBaseResult):
     GLM-Spectra computed from MNE-Python Raw objects"""
 
     def __init__(self, model, design, config, info, fl_contrast_names=None, data=None):
-
+        """
+        Parameters
+        ----------
+        model : :py:class:`glmtools.fit.OLSModel <glmtools.fit.OLSModel>'
+            The  model object.
+        design : :py:class:`glmtools.design.GLMDesign <glmtools.design.GLMDesign>`
+            The  GLM design object.
+        config : :py:class:`glmtools.config.GLMConfig <glmtools.config.GLMConfig>`
+            The  GLM configuration object.
+        info : :py:class:`mne.Info <mne.Info>`
+            The MNE-Python Info object.
+        fl_contrast_names : {None, list}
+            List of first-level contrast names (Default value = None)
+        data : :py:class:`glmtools.data.TrialGLMData <glmtools.data.TrialGLMData>`
+            The data object used to fit the model (Default value = None)
+        """
+            
+            
         self.f = config.freqvals
         super().__init__(model, design, info, config, fl_contrast_names=fl_contrast_names, data=data)
 
@@ -186,7 +210,7 @@ class GroupSensorGLMSpectrum(GroupGLMBaseResult):
     def plot_joint_spectrum(self, gcontrast=0, fcontrast=0, freqs='auto', base=1, ax=None,
                             topo_scale='joint', lw=0.5,  ylabel='Power', title=None,
                             ylim=None, xtick_skip=1, topo_prop=1/5, metric='copes'):
-        """
+        """ Plot a GLM-Spectrum contrast with spatial line colouring and topograpies.
 
         Parameters
         ----------
@@ -249,7 +273,8 @@ class GroupSensorGLMSpectrum(GroupGLMBaseResult):
 
         Returns
         -------
-        GroupSensorGLMSpectrum instance containing a single first level contrast.
+        ret_con : :py:class:`GroupSensorGLMSpectrum <osl.glm.glm_spectrum.GroupSensorGLMSpectrum>`
+            GroupSensorGLMSpectrum instance containing a single first level contrast.
 
         """
         ret_con = deepcopy(self.data)
@@ -269,14 +294,10 @@ class MaxStatPermuteGLMSpectrum(SensorMaxStatPerm):
         ----------
         thresh : float
             The threshold to consider a cluster significant eg 95 or 99
-        ax :
-             (Default value = None)
-        base :
-             (Default value = 1)
-
-        Returns
-        -------
-
+        ax : :py:class:`matplotlib.axes <matplotlib.axes>`
+            Matplotlib axes to plot on. (Default value = None)
+        base : float
+            The x-axis scaling, set to 0.5 for sqrt freq axis (Default value = 1)
         """
         title = 'group-con: {}\nfirst-level-con: {}'
         title = title.format(self.gl_contrast_name, self.fl_contrast_name)
@@ -296,13 +317,10 @@ class ClusterPermuteGLMSpectrum(SensorClusterPerm):
         ----------
         thresh : float
             The threshold to consider a cluster significant eg 95 or 99
-        ax :
-             (Default value = None)
-        base :
-             (Default value = 1)
-
-        Returns
-        -------
+        ax : :py:class:`matplotlib.axes <matplotlib.axes>`
+            Matplotlib axes to plot on. (Default value = None)
+        base : float
+             The x-axis scaling, set to 0.5 for sqrt freq axis (Default value = 1). (Default value = 1)
 
         """
         title = 'group-con: {}\nfirst-level-con: {}'
@@ -326,7 +344,7 @@ def group_glm_spectrum(inspectra, design_config=None, datainfo=None, metric='cop
     inspectra : list, tuple
         A list containing either the filepaths of a set of saved GLM-Spectra
         objects, or the GLM-Spectra objects themselves.
-    design_config : glmtools.design.DesignConfig
+    design_config : :py:class:`glmtools.design.DesignConfig <glmtools.design.DesignConfig>`
          The design specification for the group level model (Default value = None)
     datainfo : dict
          Dictionary of data values to use as covariates. The length of each
@@ -337,7 +355,9 @@ def group_glm_spectrum(inspectra, design_config=None, datainfo=None, metric='cop
 
     Returns
     -------
-    GroupSensorGLMSpectrum
+    :py:class:`GroupSensorGLMSpectrum <osl.glm.GroupSensorGLMSpectrum>`
+        GroupSensorGLMSpectrum instance containing the group level GLM-Spectrum.
+
 
     References
     ----------
@@ -441,7 +461,8 @@ def glm_spectrum(XX, reg_categorical=None, reg_ztrans=None, reg_unitmax=None,
 
     Returns
     -------
-    SensorGLMSpectrum
+    :py:class:`SensorGLMSpectrum <osl.glm.glm_spectrum.SensorGLMSpectrum>`
+        SensorGLMSpectrum instance containing the fitted GLM-Spectrum.
 
     References
     ----------
@@ -499,8 +520,8 @@ def read_glm_spectrum(infile):
 
     Returns
     -------
-    SensorGLMSpectrum
-
+    glmsp: :py:class:`SensorGLMSpectrum <osl.glm.glm_spectrum.SensorGLMSpectrum>`
+        SensorGLMSpectrum instance containing the fitted GLM-Spectrum.
     """
     with open(infile, 'rb') as outp:
         glmsp = pickle.load(outp)
@@ -514,41 +535,39 @@ def read_glm_spectrum(infile):
 def plot_joint_spectrum_clusters(xvect, psd, clusters, info, ax=None, freqs='auto', base=1,
                                  topo_scale='joint', lw=0.5, ylabel='Power', title='', ylim=None,
                                  xtick_skip=1, topo_prop=1/5):
-    """
+    """ Plot a GLM-Spectrum contrast from cluster objects, with spatial line colouring and topograpies.
 
     Parameters
     ----------
-    xvect :
-
-    psd :
-
-    clusters :
-
-    info :
-
-    ax :
-         (Default value = None)
-    freqs :
-         (Default value = 'auto')
-    base :
-         (Default value = 1)
-    topo_scale :
-         (Default value = 'joint')
-    lw :
-         (Default value = 0.5)
-    ylabel :
-         (Default value = 'Power')
-    title :
-         (Default value = '')
-    ylim :
-         (Default value = None)
-    xtick_skip :
-         (Default value = 1)
-    topo_prop :
-         (Default value = 1/3)
-
-    Returns
-    -------
+    xvect : array_like
+        Frequency vector
+    psd : array_like
+        Spectrum values
+    clusters : list
+        List of cluster objects
+    info : dict 
+        MNE-Python info object
+    ax : {None or axis handle}
+        Axis to plot into (Default value = None)
+    freqs : {list, tuple or 'auto'}
+        Which frequencies to plot topos for (Default value = 'auto')
+    base : float
+        The x-axis scaling, set to 0.5 for sqrt freq axis (Default value = 1)
+    topo_scale : {'joint' or None}  
+        Whether to fix topomap colour scales across all topos ('joint') or
+        leave them individual (Default value = 'joint')
+    lw : float
+        Line width(Default value = 0.5)
+    ylabel : str
+        Y-axis label(Default value = 'Power')
+    title : str
+        Plot title(Default value = None) 
+    ylim : {tuple or list}
+        min and max values for y-axis (Default value = None)
+    xtick_skip : int
+        Number of xaxis ticks to skip, useful for tight plots (Default value = 1)
+    topo_prop : float
+        Proportion of plot dedicted to topomaps(Default value = 1/3)
 
     """
     if ax is None:
@@ -595,16 +614,17 @@ def plot_joint_spectrum_clusters(xvect, psd, clusters, info, ax=None, freqs='aut
     print(table_header.format('Cluster', 'Statistic', 'Freq Min', 'Freq Max', 'Num Channels'))
     table_template = '{0:<12d}{1:<16.3f}{2:<12.2f}{3:<12.2f}{4:<14d}'
 
-    topo_centres = np.linspace(0, 1, len(clusters)+2)[1:-1]
+    if type(freqs)==str and freqs=='auto':
+        topo_centres = np.linspace(0, 1, len(clusters)+2)[1:-1]
+        freqs_topo = freqs
+    else:
+        topo_centres = np.linspace(0, 1, len(freqs)+2)[1:-1]
+        freqs_topo = list(np.sort(freqs.copy()))
     topo_width = 0.4
     topos = []
     ymax_span = (np.abs(yl[0]) + yl[1]) / (np.abs(yl[0]) + yl[1]*1.2)
     for idx in range(len(clusters)):
         clu = clusters[idx]
-
-        # Create topomap axis
-        topo_pos = [topo_centres[idx] - 0.2, 1-title_prop-topo_prop, 0.4, topo_prop]
-        topo_ax = ax.inset_axes(topo_pos)
 
         # Extract cluster location in space and frequency
         channels = np.zeros((psd.shape[1], ))
@@ -615,7 +635,10 @@ def plot_joint_spectrum_clusters(xvect, psd, clusters, info, ax=None, freqs='aut
         freqs[clu[2][0]] = 1
         finds = np.where(freqs)[0]
         if len(finds) == 1:
-            finds = np.array([finds[0], finds[0]+1])
+            if finds[0]<len(fx[0])-1: 
+                finds = np.array([finds[0], finds[0]+1])
+            else: # can't extend to next freq if last freq
+                finds = np.array([finds[0], finds[0]])
 
         msg = 'Cluster {} - stat: {}, freq range: {}, num channels {}'
         freq_range = (fx[0][finds[0]], fx[0][finds[-1]])
@@ -623,7 +646,23 @@ def plot_joint_spectrum_clusters(xvect, psd, clusters, info, ax=None, freqs='aut
 
         # Plot cluster span overlay on spectrum
         main_ax.axvspan(fx[0][finds[0]], fx[0][finds[-1]], facecolor=[0.7, 0.7, 0.7], alpha=0.5, ymax=ymax_span)
-        fmid = int(np.floor(finds.mean()))
+        if type(freqs_topo)==str and freqs_topo=='auto':
+            fmid = int(np.floor(finds.mean()))
+            # Create topomap axis
+            topo_pos = [topo_centres[idx] - 0.2, 1-title_prop-topo_prop, 0.4, topo_prop]
+        else:
+            fmid_tmp = np.where([ifreq<=xvect[finds[-1]] and ifreq>xvect[finds[0]] for ifreq in freqs_topo])[0]
+            if len(fmid_tmp)>0:
+                fmid = np.argmin(np.abs(xvect - freqs_topo[fmid_tmp[0]]))
+                # Create topomap axis
+                topo_pos = [topo_centres[len(topo_centres)-len(freqs_topo)] - 0.2, 1-title_prop-topo_prop, 0.4, topo_prop]
+                
+                freqs_topo.pop(fmid_tmp[0])
+            else:
+                continue
+        
+        # Create topomap axis
+        topo_ax = ax.inset_axes(topo_pos)
 
         # Plot connecting line to topo
         xy_main = (fx[0][fmid], yl[1])
@@ -666,8 +705,8 @@ def plot_joint_spectrum(xvect, psd, info, ax=None, freqs='auto', base=1,
         Vector of frequency values for x-axis
     psd : array_like
         Array of spectrum values to plot
-    info : MNE Raw info
-        Sensor info for spatial map
+    info : :py:class:`mne.Info <mne.Info>`
+        MNE-Python info object
     ax : {None or axis handle}
          Axis to plot into (Default value = None)
     freqs : {list, tuple or 'auto'}
@@ -706,9 +745,9 @@ def plot_joint_spectrum(xvect, psd, info, ax=None, freqs='auto', base=1,
     fx = prep_scaled_freq(base, xvect)
 
     if freqs == 'auto':
-        topo_freq_inds = signal.find_peaks(psd.mean(axis=1), distance=xvect.shape[0]/3)[0]
+        topo_freq_inds = signal.find_peaks(np.abs(psd.mean(axis=1)), distance=xvect.shape[0]/3)[0]
         if len(topo_freq_inds) > 2:
-            I = np.argsort(psd.mean(axis=1)[topo_freq_inds])[-2:]
+            I = np.argsort(np.abs(psd.mean(axis=1))[topo_freq_inds])[-2:]
             topo_freq_inds = topo_freq_inds[I]
         freqs = xvect[topo_freq_inds]
     else:
@@ -770,39 +809,36 @@ def plot_joint_spectrum(xvect, psd, info, ax=None, freqs='auto', base=1,
 def plot_sensor_spectrum(xvect, psd, info, ax=None, sensor_proj=False,
                          xticks=None, xticklabels=None, lw=0.5, title=None,
                          sensor_cols=True, base=1, ylabel=None, xtick_skip=1):
-    """
+    """Plot a GLM-Spectrum contrast with spatial line colouring.
 
     Parameters
     ----------
-    xvect :
-
-    psd :
-
-    info :
-
-    ax :
-         (Default value = None)
-    sensor_proj :
-         (Default value = False)
-    xticks :
-         (Default value = None)
-    xticklabels :
-         (Default value = None)
-    lw :
-         (Default value = 0.5)
-    title :
-         (Default value = None)
-    sensor_cols :
-         (Default value = True)
-    base :
-         (Default value = 1)
-    ylabel :
-         (Default value = None)
-    xtick_skip :
-         (Default value = 1)
-
-    Returns
-    -------
+    xvect: array_like
+        Vector of frequency values for x-axis
+    psd: array_like
+        Array of spectrum values to plot
+    info: MNE Raw info
+        Sensor info for spatial map
+    ax: {None or axis handle}
+            Axis to plot into (Default value = None)
+    sensor_proj: bool
+            Whether to plot a topomap inset (Default value = False)
+    xticks: array_like
+            xtick positions (Default value = None)
+    xticklabels: array_like of str  
+            xtick labels (Default value = None)
+    lw: flot
+            Line width(Default value = 0.5)
+    title: str  
+            Plot title(Default value = None)
+    sensor_cols: bool
+            Whether to colour lines by sensor (Default value = True)
+    base: float
+            The x-axis scaling, set to 0.5 for sqrt freq axis (Default value = 1)
+    ylabel: str
+            Y-axis label(Default value = None)
+    xtick_skip: int
+            Number of xaxis ticks to skip, useful for tight plots (Default value = 1)
 
     """
 
@@ -827,33 +863,7 @@ def plot_sensor_spectrum(xvect, psd, info, ax=None, sensor_proj=False,
 def plot_sensor_data(xvect, data, info, ax=None, lw=0.5,
                      xticks=None, xticklabels=None,
                      sensor_cols=True, base=1, xtick_skip=1):
-    """
-
-    Parameters
-    ----------
-    xvect :
-
-    data :
-
-    info :
-
-    ax :
-         (Default value = None)
-    lw :
-         (Default value = 0.5)
-    xticks :
-         (Default value = None)
-    xticklabels :
-         (Default value = None)
-    sensor_cols :
-         (Default value = True)
-    base :
-         (Default value = 1)
-    xtick_skip :
-         (Default value = 1)
-
-    Returns
-    -------
+    """Plot sensor data with spatial line colouring.
 
     """
 
@@ -878,18 +888,30 @@ def plot_sensor_data(xvect, data, info, ax=None, lw=0.5,
 
 
 def prep_scaled_freq(base, freq_vect):
-    """Assuming ephy freq ranges for now - around 1-40Hz
+    """ Prepare frequency vector for plotting with a given scaling.
+    
+    
 
     Parameters
     ----------
-    base :
-
-    freq_vect :
-
-
+    base : float
+        The x-axis scaling, set to 0.5 for sqrt freq axis (Default value = 1)  
+    freq_vect : array_like
+        Vector of frequency values for x-axis
+        
     Returns
     -------
+    fx : array_like
+        Scaled frequency vector
+    ftick : array_like
+        Normal frequency ticks
+    ftickscaled : array_like
+        Scaled frequency ticks
 
+    
+    Notes
+    -----
+        Assuming ephy freq ranges for now - around 1-40Hz
     """
     fx = freq_vect**base
     if base < 1:
@@ -904,16 +926,22 @@ def prep_scaled_freq(base, freq_vect):
 
 
 def get_mne_sensor_cols(info):
-    """
+    """ Get sensor colours from MNE info object.
 
     Parameters
     ----------
-    info :
+    info : :py:class:`mne.Info <mne.Info>`
+        MNE-Python info object
 
 
     Returns
     -------
-
+    colors : array_like
+        Array of RGB values for each sensor
+    pos : array_like
+        Sensor positions
+    outlines : array_like
+        Sensor outlines
     """
 
     chs = [info['chs'][i] for i in range(len(info['chs']))]
@@ -928,21 +956,19 @@ def get_mne_sensor_cols(info):
 
 
 def plot_channel_layout(ax, info, size=30, marker='o'):
-    """
+    """ Plot sensor layout.
+    
 
     Parameters
     ----------
-    ax :
-
-    info :
-
-    size :
-         (Default value = 30)
-    marker :
-         (Default value = 'o')
-
-    Returns
-    -------
+    ax : :py:class:`matplotlib.axes <matplotlib.axes>`
+        Axis to plot into
+    info : :py:class:`mne.Info <mne.Info>`
+        MNE-Python info object
+    size : int
+        Size of sensor markers (Default value = 30)
+    marker : str
+        Marker type (Default value = 'o')
 
     """
 
@@ -959,23 +985,20 @@ def plot_channel_layout(ax, info, size=30, marker='o'):
 
 
 def plot_with_cols(ax, data, xvect, cols=None, lw=0.5):
-    """
+    """ Plot data with spatial line colouring.
 
     Parameters
     ----------
-    ax :
-
-    data :
-
-    xvect :
-
-    cols :
-         (Default value = None)
-    lw :
-         (Default value = 0.5)
-
-    Returns
-    -------
+    ax : :py:class:`matplotlib.axes <matplotlib.axes>`
+        Axis to plot into
+    data : array_like
+        Data to plot
+    xvect : array_like
+        Vector of frequency values for x-axis
+    cols : array_like
+        Array of RGB values for each sensor (Default value = None)
+    lw : flot
+        Line width(Default value = 0.5)
 
     """
     if cols is not None:
@@ -986,17 +1009,14 @@ def plot_with_cols(ax, data, xvect, cols=None, lw=0.5):
 
 
 def decorate_spectrum(ax, ylabel='Power'):
-    """
-
+    """ Decorate a spectrum plot.
+    
     Parameters
     ----------
-    ax :
-
-    ylabel :
-         (Default value = 'Power')
-
-    Returns
-    -------
+    ax : :py:class:`matplotlib.axes <matplotlib.axes>`
+        Axis to plot into
+    ylabel : str
+        Y-axis label(Default value = 'Power')
 
     """
     for tag in ['top', 'right']:

@@ -9,7 +9,7 @@ HERE = pathlib.Path(__file__).parent
 README = (HERE / "README.md").read_text()
 
 # Requirement categories
-reqs = ['numpy', 'scipy', 'matplotlib', 'mne>=1.0.0', 'scikit-learn', 'fslpy',
+reqs = ['numpy', 'scipy', 'matplotlib', 'mne~=1.3.1', 'scikit-learn', 'fslpy',
         'sails', 'tabulate', 'pyyaml>=5.1', 'neurokit2', 'jinja2==3.0.3',
         'glmtools', 'numba', 'nilearn', 'dask', 'distributed', 'parse',
         'opencv-python', 'panel', 'h5io']
@@ -59,6 +59,7 @@ setup(name=name,
           'console_scripts': [
               'osl_maxfilter = osl.maxfilter.maxfilter:main',
               'osl_preproc = osl.preprocessing.batch:main',
+              'osl_func = osl.utils.run_func:main',
           ]},
 
       packages=['osl', 'osl.tests', 'osl.report', 'osl.maxfilter',

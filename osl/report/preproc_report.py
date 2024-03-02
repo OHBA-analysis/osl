@@ -15,6 +15,7 @@ import argparse
 import tempfile
 import pickle
 import pathlib
+import re
 
 import numpy as np
 import matplotlib.pyplot as plt
@@ -50,7 +51,7 @@ def gen_report_from_fif(infiles, outdir, ftype=None):
     outdir : str
         Directory to save HTML report and figures to.
     ftype : str
-        Type of fif file, e.g., 'raw' or 'preproc_raw'.
+        Type of fif file, e.g., ``'raw'`` or ``'preproc_raw'``.
         
     """
 
@@ -75,7 +76,19 @@ def gen_report_from_fif(infiles, outdir, ftype=None):
 
 
 def get_header_id(raw):
-    """Extract scan name from MNE data object."""
+    """Extract scan name from MNE data object.
+    
+    Parameters
+    ----------
+    raw : mne.io.:py:class:`mne.io.Raw <mne.io.Raw>`.
+        MNE Raw object.
+        
+    Returns
+    -------
+    id : str
+        Scan name.
+    
+    """
     return raw.filenames[0].split('/')[-1].strip('.fif')
 
 
@@ -84,11 +97,11 @@ def gen_html_data(raw, outdir, ica=None, preproc_fif_filename=None):
 
     Parameters
     ----------
-    raw : mne.Raw
+    raw : :py:class:`mne.io.Raw <mne.io.Raw>`
         MNE Raw object.
     outdir : string
         Directory to write HTML data and plots to.
-    ica : mne.preprocessing.ICA
+    ica : :py:class:`mne.preprocessing.ICA <mne.preprocessing.ICA>`
         ICA object.
     preproc_fif_filename : str
         Filename of file output by preprocessing
@@ -180,6 +193,8 @@ def gen_html_data(raw, outdir, ica=None, preproc_fif_filename=None):
     
     # Generate plots for the report
     data["plt_config"] = plot_flowchart(raw, savebase)
+    data["txt_extra_funcs"] = save_extra_funcs(raw, savebase.replace('.png', '.txt'))
+    data["plt_rawdata"] = plot_rawdata(raw, savebase)
     data['plt_temporalsumsq'] = plot_channel_time_series(raw, savebase, exclude_bads=False)
     data['plt_temporalsumsq_exclude_bads'] = plot_channel_time_series(raw, savebase, exclude_bads=True)
     data['plt_badchans'] = plot_sensors(raw, savebase)
@@ -209,6 +224,11 @@ def gen_html_page(outdir):
     ----------
     outdir : str
         Directory to generate HTML report with.
+        
+    Returns
+    -------
+    success : bool
+        Whether the report was successfully generated.
     """
     outdir = pathlib.Path(outdir)
 
@@ -300,6 +320,7 @@ def gen_html_summary(reportdir):
     os.makedirs(f"{reportdir}/summary", exist_ok=True)
 
     data["plt_config"] = subject_data[0]["plt_config"]
+    data["txt_extra_funcs"] = subject_data[0]["txt_extra_funcs"]
     data["plt_summary_bad_segs"] = plot_summary_bad_segs(subject_data, reportdir)
     data["plt_summary_bad_chans"] = plot_summary_bad_chans(subject_data, reportdir)
 
@@ -326,6 +347,18 @@ def gen_html_summary(reportdir):
 
 
 def load_template(tname):
+    """Load an HTML template from the templates directory.
+
+    Parameters
+    ----------
+    tname : str
+        Name of the template to load.
+        
+    Returns
+    -------
+    template : jinja2.Template
+        The loaded template.
+    """
     basedir = os.path.dirname(os.path.realpath(__file__))
     fname = os.path.join(basedir, 'templates', '{0}.html'.format(tname))
     with open(fname, 'r') as file:
@@ -337,7 +370,21 @@ def load_template(tname):
 # Scan stats and figures
 
 def plot_flowchart(raw, savebase=None):
-    """Plots preprocessing flowchart(s)"""
+    """Plots preprocessing flowchart(s)
+    
+    Parameters
+    ----------
+    raw : :py:class:`mne.io.Raw <mne.io.Raw>`
+        MNE Raw object.
+    savebase : str
+        Base string for saving figures.
+        
+    Returns
+    -------
+    fpath : str
+        Path to saved figure.    
+    
+    """
     
     # Get config info from raw.info['description']
     config_list = get_config_from_fif(raw)
@@ -376,8 +423,90 @@ def plot_flowchart(raw, savebase=None):
         fpath = None
     return fpath
 
+
+def save_extra_funcs(raw, savebase=None):
+    """ Saves extra functions from the raw.info['description'] to a text file.
+    
+    Parameters
+    ----------
+    raw : :py:class:`mne.io.Raw <mne.io.Raw>`
+        MNE Raw object.
+    savebase : str
+        Base string for saving figures.
+        
+    Returns
+    -------
+    fpath : str
+        Path to saved text file.
+    
+    """
+    extra_funcs = re.findall(
+    "%% extra_funcs start %%(.*?)%% extra_funcs end %%",
+    raw.info["description"],
+    flags=re.DOTALL,
+    )
+    
+    if savebase is not None:
+        fpath = savebase.format(f"extra_funcs")
+        with(open(fpath, 'w')) as file:
+            [print(func, file=file) for func in extra_funcs]
+        return fpath
+    else:
+        return None
+    
+        
+
+def plot_rawdata(raw, savebase):
+    """Plots raw data.
+    
+    Parameters
+    ----------
+    raw : :py:class:`mne.io.Raw <mne.io.Raw>`
+        MNE Raw object.
+    savebase : str
+        Base string for saving figures.
+        
+    Returns
+    -------
+    fpath : str
+        Path to saved figure.      
+    
+    """
+
+    fig = raw.pick(['meg', 'eeg']).plot(n_channels=np.inf, duration=raw.times[-1])
+
+    if savebase is not None:
+        figname = savebase.format('rawdata')
+        fig.savefig(figname, dpi=150, transparent=True)
+        plt.close(fig)
+
+        # Return the filename
+        savebase = pathlib.Path(savebase)
+        filebase = savebase.parent.name + "/" + savebase.name
+        fpath = filebase.format('rawdata')
+    else:
+        fpath = None
+    return fpath
+
+
 def plot_channel_time_series(raw, savebase=None, exclude_bads=False):
-    """Plots sum-square time courses."""
+    """Plots sum-square time courses.
+    
+    Parameters
+    ----------
+    raw : :py:class:`mne.io.Raw <mne.io.Raw>`
+        MNE Raw object.
+    savebase : str
+        Base string for saving figures.
+    exclude_bads : bool
+        Whether to exclude bad channels and bad segments.
+        
+    Returns
+    -------
+    fpath : str
+        Path to saved figure.    
+    
+    """
 
     if exclude_bads:
         # excludes bad channels and bad segments
@@ -486,7 +615,21 @@ def plot_channel_time_series(raw, savebase=None, exclude_bads=False):
 
 
 def plot_sensors(raw, savebase=None):
-    """Plots sensors with bad channels highlighted."""
+    """Plots sensors with bad channels highlighted.
+    
+    Parameters
+    ----------
+    raw : :py:class:`mne.io.Raw <mne.io.Raw>`
+        MNE Raw object.
+    savebase : str
+        Base string for saving figures.
+        
+    Returns
+    -------
+    fpath : str
+        Path to saved figure.    
+    
+    """
     # plot channel types seperately for neuromag306 (3 coils in same location)
 
     if 3012 in np.unique([i['coil_type'] for i in raw.info['chs']]):
@@ -522,7 +665,22 @@ def plot_sensors(raw, savebase=None):
 
 
 def plot_channel_dists(raw, savebase=None, exclude_bads=True):
-    """Plot distributions of temporal standard deviation."""
+    """Plot distributions of temporal standard deviation.
+    
+    Parameters
+    ----------
+    raw : :py:class:`mne.io.Raw <mne.io.Raw>`
+        MNE Raw object.
+    savebase : str 
+        Base string for saving figures.
+    exclude_bads : bool
+        Whether to exclude bad channels and bad segments.
+        
+    Returns
+    -------
+    fpath : str
+        Path to saved figure.    
+    """
 
     if exclude_bads:
         # excludes bad channels and bad segments
@@ -604,7 +762,22 @@ def plot_channel_dists(raw, savebase=None, exclude_bads=True):
 
 
 def plot_spectra(raw, savebase=None):
-    """Plot power spectra for each sensor modality."""
+    """Plot power spectra for each sensor modality.
+    
+    Parameters
+    ----------
+    raw : :py:class:`mne.io.Raw <mne.io.Raw>`   
+        MNE Raw object.
+    savebase : str  
+        Base string for saving figures.
+        
+    Returns
+    -------
+    fpath1 : str
+        Path to saved figure (full spectra).
+    fpath2 : str
+        Path to saved figure (zoomed in spectra).
+    """
 
     is_ctf = raw.info["dev_ctf_t"] is not None
     if is_ctf:
@@ -641,13 +814,12 @@ def plot_spectra(raw, savebase=None):
             continue
 
         # Plot spectra
-        raw.plot_psd(
-            show=False,
-            picks=chan_inds,
-            ax=ax[row],
+        raw.compute_psd(
+            picks=chan_inds, 
             n_fft=int(raw.info['sfreq']*2),
-            verbose=0,
-        )
+            verbose=0).plot(
+                        axes=ax[row],
+                        show=False)
 
         ax[row].set_title(name, fontsize=12)
 
@@ -670,15 +842,14 @@ def plot_spectra(raw, savebase=None):
             continue
 
         # Plot zoomed in spectra
-        raw.plot_psd(
-            show=False,
-            picks=chan_inds,
-            ax=ax[row],
-            fmin=1,
-            fmax=48,
-            n_fft=int(raw.info['sfreq']*2),
-            verbose=0,
-        )
+        raw.compute_psd(
+        picks=chan_inds, 
+        fmin=1,
+        fmax=48,
+        n_fft=int(raw.info['sfreq']*2),
+        verbose=0).plot(
+                    axes=ax[row],
+                    show=False)
 
         ax[row].set_title(name, fontsize=12)
 
@@ -702,7 +873,20 @@ def plot_spectra(raw, savebase=None):
 
 
 def plot_digitisation_2d(raw, savebase=None):
-    """Plots the digitisation and headshape."""
+    """Plots the digitisation and headshape.
+    
+    Parameters
+    ----------
+    raw : :py:class:`mne.io.Raw <mne.io.Raw>`
+        MNE Raw object.
+    savebase : str
+        Base string for saving figures.
+        
+    Returns
+    -------
+    fpath : str
+        Path to saved figure.
+    """
 
     # Return if no digitisation available
     if not raw.info['dig']:
@@ -818,7 +1002,20 @@ def plot_eog_summary(raw, savebase=None):
 
 
 def plot_ecg_summary(raw, savebase=None):
-    """Plot ECG summary."""
+    """Plot ECG summary.
+    
+    Parameters
+    ----------
+    raw : :py:class:`mne.io.Raw <mne.io.Raw>`
+        MNE Raw object.
+    savebase : str
+        Base string for saving figures.
+        
+    Returns
+    -------
+    fpath : str
+        Path to saved figure.
+    """
 
     # Get the raw ECG data
     chan_inds = mne.pick_types(raw.info, ecg=True)
@@ -849,7 +1046,23 @@ def plot_ecg_summary(raw, savebase=None):
 
 
 def plot_bad_ica(raw, ica, savebase):
-    """Plot ICA characteristics for rejected components."""
+    """Plot ICA characteristics for rejected components.
+    
+    Parameters
+    ----------
+    raw : :py:class:`mne.io.Raw <mne.io.Raw>`
+        MNE Raw object.
+    ica : :py:class:`mne.preprocessing.ICA <mne.preprocessing.ICA>` 
+        MNE ICA object.
+    savebase : str  
+        Base string for saving figures.
+        
+    Returns
+    -------
+    fpath : str
+        Path to saved figure.
+    
+    """
 
     exclude_uniq = np.sort(np.unique(ica.exclude))[::-1]
     nbad = len(exclude_uniq)
@@ -1018,7 +1231,20 @@ def plot_summary_bad_chans(subject_data, reportdir):
     return f"summary/bad_chans.png"
 
 def plot_artefact_scan(raw, savebase=None):
-
+    """Plot artefact scan.
+    
+    Parameters
+    ----------
+    raw : :py:class:`mne.io.Raw <mne.io.Raw>`
+        MNE Raw object.
+    savebase : str
+        Base string for saving figures.
+        
+    Returns
+    -------
+    fpath : str
+        Path to saved figure.
+    """
     events = mne.find_events(raw, min_duration=2/raw.info['sfreq'])
     modalities = ['mag', 'grad']
 
@@ -1187,7 +1413,13 @@ def plot_artefact_scan(raw, savebase=None):
 
 
 def print_scan_summary(raw):
-    """Print a text summary of an MNE file."""
+    """Print a text summary of an MNE file.
+    
+    Parameters
+    ----------
+    raw : :py:class:`mne.io.Raw <mne.io.Raw>`
+        MNE Raw object.    
+    """
     print('Datafile : {0}'.format(raw.filenames))
 
     # Project name - set by user during acquisition

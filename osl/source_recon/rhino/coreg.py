@@ -64,28 +64,36 @@ def coreg(
 ):
     """Coregistration.
 
-    Calculates a linear, affine transform from native sMRI space to polhemus (head) space, using headshape points that include the nose (if useheadshape = True).
+    Calculates a linear, affine transform from native sMRI space to 
+    polhemus (head) space, using headshape points that include the 
+    nose (if useheadshape = True). Requires ``rhino.compute_surfaces``
+    to have been run. This is based on the OSL Matlab version of 
+    RHINO.
+    Call ``get_coreg_filenames(subjects_dir, subject)`` to get a file 
+    list of generated files. RHINO firsts registers the polhemus-
+    derived fiducials (nasion, rpa, lpa) in polhemus space to the 
+    sMRI-derived fiducials in native sMRI space.
 
-    Requires rhino.compute_surfaces to have been run.
+    RHINO then refines this by making use of polhemus-derived headshape 
+    points that trace out the surface of the head (scalp), and ideally 
+    include the nose.
 
-    This is based on the OSL Matlab version of RHINO.
-
-    Call get_coreg_filenames(subjects_dir, subject) to get a file list of generated files.
-
-    RHINO firsts registers the polhemus-derived fiducials (nasion, rpa, lpa) in polhemus space to the sMRI-derived fiducials in native sMRI space.
-
-    RHINO then refines this by making use of polhemus-derived headshape points that trace out the surface of the head (scalp), and ideally include the nose.
-
-    Finally, these polhemus-derived headshape points in polhemus space are registered to the sMRI-derived scalp surface in native sMRI space.
+    Finally, these polhemus-derived headshape points in polhemus space 
+    are registered to the sMRI-derived scalp surface in native sMRI space.
 
     In more detail:
+    
     1)  Map location of fiducials in MNI standard space brain to native sMRI space. These are then used as the location of the sMRI-derived fiducials in native sMRI space.
+    
     2a) We have polhemus-derived fids in polhemus space and sMRI-derived fids in native sMRI space. Use these to estimate the affine xform from native sMRI space to polhemus
         (head) space.
+        
     2b) We can also optionally learn the best scaling to add to this affine xform, such that the sMRI-derived fids are scaled in size to better match the polhemus-derived fids.
         This assumes that we trust the size (e.g. in mm) of the polhemus-derived fids, but not the size of sMRI-derived fids. E.g. this might be the case if we do not trust
         the size (e.g. in mm) of the sMRI, or if we are using a template sMRI that would has not come from this subject.
+        
     3)  If a scaling is learnt in step 2, we apply it to sMRI, and to anything derived from sMRI
+    
     4)  Transform sMRI-derived headshape pnts into polhemus space 5)  We have the polhemus-derived headshape points in polhemus space and the sMRI-derived headshape (scalp
         surface) in native sMRI space.  Use these to estimate the affine xform from native sMRI space using the ICP algorithm initilaised using the xform estimate in step 2.
 

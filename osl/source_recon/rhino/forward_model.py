@@ -122,13 +122,13 @@ def make_fwd_solution(
 
     The coords of points to reconstruct to can be found in the output here:
 
-        fwd['src'][0]['rr'][fwd['src'][0]['vertno']]
+    >>> fwd['src'][0]['rr'][fwd['src'][0]['vertno']]
 
     where they are in head space in metres.
 
     The same coords of points to reconstruct to can be found in the input here:
 
-        src[0]['rr'][src[0]['vertno']]
+    >>> src[0]['rr'][src[0]['vertno']]
 
     where they are in native MRI space in metres.
     """
@@ -211,35 +211,36 @@ def setup_volume_source_space(subjects_dir, subject, gridstep=5, mindist=5.0, ex
 
     Returns
     -------
-    src : SourceSpaces
+    src : :py:class:`mne.SourceSpaces`
         A single source space object.
 
     See Also
     --------
-    mne.setup_volume_source_space
+    :py:func:`mne.setup_volume_source_space`
+
 
     Notes
     -----
     This is a RHINO specific version of mne.setup_volume_source_space, which can handle smri's that are niftii files.
     This specifically uses the inner skull surface in:
 
-        get_coreg_filenames(subjects_dir, subject)['bet_inskull_surf_file']
+    >>> get_coreg_filenames(subjects_dir, subject)['bet_inskull_surf_file']
 
     to define the source space grid.
 
     This will also copy the:
 
-        get_coreg_filenames(subjects_dir, subject)['bet_inskull_surf_file']
+    >>> get_coreg_filenames(subjects_dir, subject)['bet_inskull_surf_file']
 
     file to:
 
-        subjects_dir/subject/bem/inner_skull.surf
+        ``subjects_dir/subject/bem/inner_skull.surf`
 
     since this is where mne expects to find it when mne.make_bem_model is called.
 
     The coords of points to reconstruct to can be found in the output here:
 
-        src[0]['rr'][src[0]['vertno']]
+    >>> src[0]['rr'][src[0]['vertno']]
 
     where they are in native MRI space in metres.
     """
