@@ -412,7 +412,7 @@ def glm_spectrum(XX, reg_categorical=None, reg_ztrans=None, reg_unitmax=None,
                  contrasts=None, fit_intercept=True, standardise_data=False,
                  window_type='hann', nperseg=None, noverlap=None, nfft=None,
                  detrend='constant', return_onesided=True, scaling='density',
-                 mode='psd', fmin=None, fmax=None, axis=-1, fs=1):
+                 mode='psd', fmin=None, fmax=None, axis=-1, fs=1, verbose='WARNING'):
     """Compute a GLM-Spectrum from a MNE-Python Raw data object.
 
     Parameters
@@ -520,7 +520,8 @@ def glm_spectrum(XX, reg_categorical=None, reg_ztrans=None, reg_unitmax=None,
                             scaling=scaling,
                             mode=mode,
                             fmin=fmin,
-                            fmax=fmax)
+                            fmax=fmax,
+                            verbose=verbose)
 
     if isinstance(XX, mne.io.base.BaseRaw):
         return SensorGLMSpectrum(glmsp, XX.info)
@@ -533,7 +534,7 @@ def glm_irasa(XX, method='modified', resample_factors=None, aperiodic_average='m
                  contrasts=None, fit_intercept=True, standardise_data=False,
                  window_type='hann', nperseg=None, noverlap=None, nfft=None,
                  detrend='constant', return_onesided=True, scaling='density',
-                 mode='psd', fmin=None, fmax=None, axis=-1, fs=1, verbose='INFO'):
+                 mode='psd', fmin=None, fmax=None, axis=-1, fs=1, verbose='WARNING'):
     """Compute a GLM-IRASA from a MNE-Python Raw data object.
 
     Parameters
@@ -738,7 +739,7 @@ def plot_joint_spectrum_clusters(xvect, psd, clusters, info, ax=None, freqs='aut
     plot_sensor_spectrum(xvect, psd, info, ax=main_ax, base=base, lw=0.25, ylabel=ylabel)
     fx = prep_scaled_freq(base, xvect)
 
-    yl = main_ax.get_ylim() if yl is None else yl
+    yl = main_ax.get_ylim() if ylim is None else ylim
     yfactor = 1.2 if yl[1] > 0 else 0.8
     main_ax.set_ylim(yl[0], yfactor*yl[1])
 
