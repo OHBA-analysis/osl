@@ -51,14 +51,13 @@ class TestPreprocessingChain(unittest.TestCase):
 
 class TestVersions(unittest.TestCase):
     def test_simple_chain(self):
-        from ..preprocessing import load_config
-        from ..utils.version_utils import check_version
+        from ..preprocessing import load_config, check_config_versions
 
         cfg = """
         meta:
           event_codes:
-          version_assert: [osl==0.6.dev0, numpy>1.2]
-          version_warn: [mne==1.6.1, sails>1.2]
+          version_assert: 
+          version_warn: 
         preproc:
           - filter:         {l_freq: 1, h_freq: 30}
           - notch_filter:   {freqs: 50}
@@ -67,6 +66,10 @@ class TestVersions(unittest.TestCase):
         """
         config = load_config(cfg)
 
+        config['meta']['version_assert'] = 'numpy>1.0'
+        config['meta']['warn'] = 'scipy>1.0'
+
+        check_config_versions(config)
 
 
 class TestPreprocessingBatch(unittest.TestCase):
