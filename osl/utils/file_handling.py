@@ -71,7 +71,7 @@ def process_file_inputs(inputs):
                 for row in inputs:
                     infiles.append(sanitise_filepath(row[0]))
                     outnames.append(row[1])
-            elif isinstance(inputs[0], mne.io.fiff.raw.Raw):
+            elif isinstance(inputs[0], mne.io.Raw):
                 # We have a list of MNE objects
                 infiles = infiles
                 check_paths = False
@@ -125,7 +125,7 @@ def find_run_id(infile, preload=True):
     # the fif option for everything except BTI scans? They're basically the
     # same now.
 
-    if isinstance(infile, mne.io.fiff.raw.Raw):
+    if isinstance(infile, mne.io.Raw):
         infile = infile.filenames[0]
 
     if os.path.split(infile)[1] == 'c,rfDC':

@@ -22,10 +22,14 @@ import matplotlib.pyplot as plt
 from jinja2 import Template
 from tabulate import tabulate
 from mne.channels.channels import channel_type
-from scipy.ndimage.filters import uniform_filter1d
 from matplotlib.lines import Line2D
 from matplotlib.patches import Rectangle
 from pathlib import Path
+
+try:
+    from scipy.ndimage import uniform_filter1d
+except ImportError:
+    from scipy.ndimage.filters import uniform_filter1d
 
 from ..utils import process_file_inputs, validate_outdir
 from ..utils.logger import log_or_print

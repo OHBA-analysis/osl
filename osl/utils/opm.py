@@ -11,9 +11,14 @@ import nibabel as nib
 import numpy as np
 
 import mne
-from mne.io import _coil_trans_to_loc
 from mne.io.constants import FIFF
 from mne.transforms import Transform, apply_trans
+
+try:
+    from mne._fiff.tag import _coil_trans_to_loc
+except ImportError:
+    # Depreciated in mne 1.6
+    from mne.io import _coil_trans_to_loc
 
 import pandas as pd
 import scipy
@@ -234,10 +239,9 @@ def correct_mri(smri_file, smri_fixed_file):
 
     return sform_std
 
-#########################################################################
-
 # -------------------------------------------------------------
 # %% Debug and plotting code for checking sensor locs and oris
+
 if False:
 
     from mne.io.pick import pick_types
