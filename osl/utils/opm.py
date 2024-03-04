@@ -239,10 +239,9 @@ def correct_mri(smri_file, smri_fixed_file):
 
     return sform_std
 
-#########################################################################
-
 # -------------------------------------------------------------
 # %% Debug and plotting code for checking sensor locs and oris
+
 if False:
 
     from mne.io.pick import pick_types

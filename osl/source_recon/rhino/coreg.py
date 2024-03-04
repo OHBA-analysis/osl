@@ -29,10 +29,10 @@ except ImportError:
     from mne.io.pick import pick_types
 
 try:
-    from mne._fiff.tag import _coil_trans_to_loc
+    from mne._fiff.tag import _loc_to_coil_trans
 except ImportError:
     # Depreciated in mne 1.6
-    from mne.io import _coil_trans_to_loc
+    from mne.io import _loc_to_coil_trans
 
 from fsl import wrappers as fsl_wrappers
 
@@ -615,7 +615,7 @@ def coreg_display(
 
         meg_picks = pick_types(info, meg=True, ref_meg=False, exclude=())
 
-        coil_transs = [_loc_to_coil_trans(info["chs"][pick]["loc"]) for pick in meg_picks ]
+        coil_transs = [_loc_to_coil_trans(info["chs"][pick]["loc"]) for pick in meg_picks]
         coils = _create_meg_coils([info["chs"][pick] for pick in meg_picks], acc="normal")
 
         meg_rrs, meg_tris, meg_sensor_locs, meg_sensor_oris = (list(), list(), list(), list())
