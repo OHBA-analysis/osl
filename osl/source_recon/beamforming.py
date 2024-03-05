@@ -12,9 +12,6 @@ import numpy as np
 import matplotlib.pyplot as plt
 import mne
 from mne import read_forward_solution, Covariance, compute_covariance, compute_raw_covariance
-from mne.io.meas_info import _simplify_info
-from mne.io.pick import pick_channels_cov, pick_info
-from mne.io.proj import make_projector
 from mne.rank import compute_rank
 from mne.minimum_norm.inverse import _check_depth, _prepare_forward, _get_vertno
 from mne.source_estimate import _get_src_type
@@ -38,6 +35,16 @@ from mne.utils import (
     warn,
 )
 from mne.utils import logger as mne_logger
+
+try:
+    from mne._fiff.meas_info import _simplify_info
+    from mne._fiff.pick import pick_channels_cov, pick_info
+    from mne._fiff.proj import make_projector
+except ImportError:
+    # Depreciated in mne 1.6
+    from mne.io.meas_info import _simplify_info
+    from mne.io.pick import pick_channels_cov, pick_info
+    from mne.io.proj import make_projector
 
 from osl.source_recon import rhino
 from osl.source_recon.rhino import utils as rhino_utils
