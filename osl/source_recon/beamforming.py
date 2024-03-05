@@ -333,7 +333,7 @@ def get_recon_timeseries(subjects_dir, subject, coord_mni, recon_timeseries_head
         The timecourse in recon_timeseries_head nearest to coord_mni.
     """
 
-    rhino_files = rhino_utils.get_rhino_files(subjects_dir, subjects)
+    rhino_files = rhino_utils.get_rhino_files(subjects_dir, subject)
     surfaces_filenames = rhino_files["surf"]
     coreg_filenames = rhino_files["coreg"]
 
