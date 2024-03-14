@@ -16,9 +16,9 @@ from osl import preprocessing
 
 
 # Directories
-preproc_dir = "output/preproc"
-ssp_preproc_dir = "output/preproc_ssp"
-report_dir = "output/preproc_ssp/report"
+preproc_dir = "data/preproc"
+ssp_preproc_dir = "data/preproc_ssp"
+report_dir = "data/preproc_ssp/report"
 
 os.makedirs(ssp_preproc_dir, exist_ok=True)
 os.makedirs(report_dir, exist_ok=True)
