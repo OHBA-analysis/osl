@@ -9,12 +9,12 @@ from osl.maxfilter import run_maxfilter_batch
 
 # Setup paths to raw (pre-maxfiltered) fif files
 input_files = [
-    "path/to/file1.fif",
-    "path/to/file2.fif",
+    "data/raw/file1.fif",
+    "data/raw/file2.fif",
 ]
 
 # Directory to save the maxfiltered data to
-output_directory = "output/maxfilter"
+output_directory = "data/maxfilter"
 
 # Run MaxFiltering
 #
@@ -24,5 +24,5 @@ output_directory = "output/maxfilter"
 run_maxfilter_batch(
     input_files,
     output_directory,
-    "--scanner Neo --mode multistage -tsss --headpos --movecomp",
+    "--scanner Neo --mode multistage --tsss --headpos --movecomp",
 )

@@ -11,9 +11,9 @@ from dask.distributed import Client
 from osl import source_recon, utils
 
 # Directories
-preproc_dir = "output/preproc_ica"
-coreg_dir = "output/coreg"
-src_dir = "output/src"
+preproc_dir = "data/preproc_ica"
+coreg_dir = "data/coreg"
+src_dir = "data/src"
 fsl_dir = "/opt/ohba/fsl/6.0.5"  # this is where FSL is installed on hbaws
 
 # Files
@@ -31,7 +31,7 @@ config = """
         freq_range: [1, 45]
         chantypes: [mag, grad]
         rank: {meg: 60}
-        parcellation_file: fmri_d100_parcellation_with_PCC_reduced_2mm_ss5mm_ds8mm.nii.gz
+        parcellation_file: Glasser52_binary_space-MNI152NLin6_res-8x8x8.nii.gz
         method: spatial_basis
         orthogonalisation: symmetric
 """

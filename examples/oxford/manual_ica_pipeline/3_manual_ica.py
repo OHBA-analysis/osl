@@ -39,8 +39,8 @@ def plot_psd(raw, save_dir):
 #%% Setup paths
 
 # Directories
-preproc_dir = "output/preproc"
-output_dir = "output/preproc_ica"
+preproc_dir = "data/preproc"
+output_dir = "data/preproc_ica"
 
 # Subjects
 subjects = ["sub-001", "sub-002"]

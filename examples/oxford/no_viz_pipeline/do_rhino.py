@@ -11,9 +11,9 @@ from osl.source_recon import setup_fsl, rhino
 setup_fsl("/opt/ohba/fsl/6.0.5")  # this is where FSL is installed on hbaws
 
 # Directories
-preproc_dir = "output/preproc"
-anat_dir = "path/to/smri/dir"
-coreg_dir = "output/coreg"
+preproc_dir = "data/preproc"
+anat_dir = "data/smri"
+coreg_dir = "data/coreg"
 
 # Files ({subject} will be replaced by the name for the subject)
 preproc_file = preproc_dir + "/{subject}_tsss_preproc_raw.fif"

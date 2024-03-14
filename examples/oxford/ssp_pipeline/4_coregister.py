@@ -17,9 +17,9 @@ from dask.distributed import Client
 from osl import source_recon, utils
 
 # Directories
-preproc_dir = "output/preproc_ssp"
-anat_dir = "path/to/smri/dir"
-coreg_dir = "output/coreg"
+preproc_dir = "data/preproc_ssp"
+anat_dir = "data/smri"
+coreg_dir = "data/coreg"
 fsl_dir = "/opt/ohba/fsl/6.0.5"  # this is where FSL is installed on hbaws
 
 # Files ({subject} will be replaced by the name for the subject)
