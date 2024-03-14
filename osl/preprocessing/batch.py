@@ -32,6 +32,7 @@ from . import mne_wrappers, osl_wrappers
 from ..utils import find_run_id, validate_outdir, process_file_inputs, add_subdir
 from ..utils import logger as osl_logger
 from ..utils.parallel import dask_parallel_bag
+from ..utils.version_utils import check_version
 
 logger = logging.getLogger(__name__)
 
@@ -240,6 +241,8 @@ def load_config(config):
         config["meta"] = {"event_codes": None}
     elif "event_codes" not in config["meta"]:
         config["meta"]["event_codes"] = None
+    elif "versions" not in config['meta']:
+        config["meta"]["versions"] = None
 
     if "preproc" not in config:
         raise KeyError("Please specify preprocessing steps in config.")
@@ -270,6 +273,36 @@ def load_config(config):
             )
 
     return config
+
+
+def check_config_versions(config):
+    """Get config from a preprocessed fif file.
+
+    Parameters
+    ----------
+    config : dictionary or yaml string
+        Preprocessing configuration to check.
+
+    Raises
+    ------
+    AssertionError
+        Raised if package version mismatch found in 'version_assert'
+
+    WARNING
+        Raised if package version mismatch found in 'version_warn'
+
+    """
+    config = load_config(config)
+
+    # Check for version and raise an error if mismatch found
+    if 'version_assert' in config['meta']:
+        for vers in config['meta']['version_assert']:
+            check_version(vers, mode='assert')
+
+    # Check for version and raise a warning if mismatch found
+    if 'version_warn' in config['meta']:
+        for vers in config['meta']['version_warn']:
+            check_version(vers, mode='warn')
 
 
 def get_config_from_fif(inst):
@@ -382,21 +415,25 @@ def write_dataset(dataset, outbase, run_id, ftype='preproc_raw', overwrite=False
         )
     dataset["raw"].save(fif_outname, overwrite=overwrite)
 
-    if dataset["events"] is not None:
+    if "events" in dataset and dataset['events'] is not None:
         outname = outbase.format(run_id=run_id, ftype="events", fext="npy")
         np.save(outname, dataset["events"])
 
-    if dataset["event_id"] is not None:
+    if "event_id" in dataset and dataset['event_id'] is not None:
         outname = outbase.format(run_id=run_id, ftype="event-id", fext="yml")
         yaml.dump(dataset["event_id"], open(outname, "w"))
 
-    if dataset["epochs"] is not None:
+    if "epochs" in dataset and dataset['epochs'] is not None:
         outname = outbase.format(run_id=run_id, ftype="epo", fext="fif")
         dataset["epochs"].save(outname, overwrite=overwrite)
 
-    if dataset["ica"] is not None:
+    if "ica" in dataset and dataset['ica'] is not None:
         outname = outbase.format(run_id=run_id, ftype="ica", fext="fif")
         dataset["ica"].save(outname, overwrite=overwrite)
+
+    if "tfr" in dataset and dataset['tfr'] is not None:
+        outname = outbase.format(run_id=run_id, ftype="tfr", fext="fif")
+        dataset["tfr"].save(outname, overwrite=overwrite)
 
     return fif_outname
 

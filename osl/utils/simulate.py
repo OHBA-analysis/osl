@@ -10,7 +10,7 @@ import sails
 import numpy as np
 
 
-def simulate_data(model, num_samples=1000, num_realisations=1, use_cov=True):
+def simulate_data(model, num_samples=1000, num_realisations=1, use_cov=True, noise=None):
     """Simulate data from a linear model.
     
     Parameters
@@ -31,7 +31,6 @@ def simulate_data(model, num_samples=1000, num_realisations=1, use_cov=True):
     
     """
     
-    
     num_sources = model.nsignals
 
     # Preallocate output
@@ -50,10 +49,15 @@ def simulate_data(model, num_samples=1000, num_realisations=1, use_cov=True):
         for t in range(model.order, num_samples):
             for p in range(1, model.order):
                 Y[:, t, ep] -= -model.parameters[:, :, p].dot(Y[:, t-p, ep])
+
+        if noise is not None:
+            scale = Y.std()
+            Y += np.random.randn(*Y.shape) * (scale * noise)
+
     return Y
 
 
-def simulate_raw_from_template(sim_samples, bad_segments=None, bad_channels=None, flat_channels=None):
+def simulate_raw_from_template(sim_samples, bad_segments=None, bad_channels=None, flat_channels=None, noise=None):
     """Simulate raw MEG data from a 306-channel MEGIN template.
     
     Parameters
@@ -90,7 +94,7 @@ def simulate_raw_from_template(sim_samples, bad_segments=None, bad_channels=None
         fname = 'reduced_mvar_pcacomp_{0}.npy'.format(mod)
         pcacomp = np.load(os.path.join(basedir, fname))
 
-        Xsim = simulate_data(red_model, num_samples=sim_samples) * 2e-12
+        Xsim = simulate_data(red_model, num_samples=sim_samples, noise=noise) * 2e-12
         Xsim = pcacomp.T.dot(Xsim[:,:,0])[:,:,None]  # back to full space
 
         Y[mne.pick_types(info, meg=mod), :] = Xsim[:, :, 0]

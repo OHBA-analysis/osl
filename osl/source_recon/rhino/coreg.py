@@ -20,8 +20,19 @@ from mne.viz._3d import _sensor_shape
 from mne.viz.backends.renderer import _get_renderer
 from mne.transforms import write_trans, read_trans, apply_trans, _get_trans, combine_transforms, Transform, rotation, invert_transform
 from mne.forward import _create_meg_coils
-from mne.io import _loc_to_coil_trans, read_info, read_raw, RawArray
-from mne.io.pick import pick_types
+from mne.io import read_info, read_raw, RawArray
+
+try:
+    from mne import pick_types
+except ImportError:
+    # Depreciated in mne 1.6
+    from mne.io.pick import pick_types
+
+try:
+    from mne._fiff.tag import _loc_to_coil_trans
+except ImportError:
+    # Depreciated in mne 1.6
+    from mne.io import _loc_to_coil_trans
 
 from fsl import wrappers as fsl_wrappers
 
@@ -604,7 +615,7 @@ def coreg_display(
 
         meg_picks = pick_types(info, meg=True, ref_meg=False, exclude=())
 
-        coil_transs = [_loc_to_coil_trans(info["chs"][pick]["loc"]) for pick in meg_picks ]
+        coil_transs = [_loc_to_coil_trans(info["chs"][pick]["loc"]) for pick in meg_picks]
         coils = _create_meg_coils([info["chs"][pick] for pick in meg_picks], acc="normal")
 
         meg_rrs, meg_tris, meg_sensor_locs, meg_sensor_oris = (list(), list(), list(), list())
