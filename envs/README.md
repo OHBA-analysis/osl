@@ -4,12 +4,12 @@ See the official documentation for the [installation instructions](https://osl.r
 
 OSL only environments:
 
-- `linux.yml`: for linux computers.
+- `linux.yml`: for Linux computers.
 - `mac.yml`: for Mac computers.
 
 OSL + osl-dynamics environments:
 
-- **`linux-full.yml`: recommended environment for linux computers.**
+- **`linux-full.yml`: recommended environment for Linux computers.**
 - **`mac-full.yml`: recommended environment for Mac computers.**
 - `osl-workshop-23.yml`: used in the [2023 OSL Workshop](https://osf.io/zxb6c/).
 
