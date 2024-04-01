@@ -6,6 +6,7 @@ OSL only environments:
 
 - `linux.yml`: for Linux computers.
 - `mac.yml`: for Mac computers.
+- `bmrc.yml`: for the Oxford BMRC cluster.
 
 OSL + osl-dynamics environments:
 
