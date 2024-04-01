@@ -39,9 +39,6 @@ dependencies:
   - panel==1.2.3
   - pqdm==0.2.0
   - seaborn==0.13.0
-  - tensorflow-macos==2.9.1
-  - tensorflow_probability==0.17.0
   - tqdm==4.66.1
   - osfclient==0.0.5
   - osl
-  - osl-dynamics

@@ -4,7 +4,8 @@ See the official documentation for the [installation instructions](https://osl.r
 
 OSL only environments:
 
-- `linux.yml`: most generic environment for linux computers.
+- `linux.yml`: for linux computers.
+- `mac.yml`: for Mac computers.
 
 OSL + osl-dynamics environments:
 
@@ -12,4 +13,4 @@ OSL + osl-dynamics environments:
 - **`mac-full.yml`: recommended environment for Mac computers.**
 - `osl-workshop-23.yml`: used in the [2023 OSL Workshop](https://osf.io/zxb6c/).
 
-All environments come with Jupyter Notebook.
+All environments come with Jupyter Notebook and Spyder.
