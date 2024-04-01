@@ -4,13 +4,13 @@ Documentation: https://osl.readthedocs.io/en/latest/.
 
 ## Installation
 
-See the [official documentation](https://osl.readthedocs.io/en/latest/install.html) for comprehensive installation instructions.
+See the [official documentation](https://osl.readthedocs.io/en/latest/install.html) for recommended installation instructions.
 
-OSL can be installed from source code within a [Miniconda](https://docs.conda.io/projects/miniconda/en/latest/miniconda-install.html) (or [Anaconda](https://docs.anaconda.com/free/anaconda/install/index.html)) environment using:
+Alternatively, OSL can be installed from source code within a [Miniconda](https://docs.conda.io/projects/miniconda/en/latest/miniconda-install.html) (or [Anaconda](https://docs.anaconda.com/free/anaconda/install/index.html)) environment using:
 ```
 git clone https://github.com/OHBA-analysis/osl.git
 cd osl
-conda env create -f envs/linux-generic.yml
+conda env create -f envs/linux.yml
 conda activate osl
 pip install -e .
 ```

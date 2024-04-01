@@ -94,6 +94,24 @@ with::
 
     source activate osl
 
+Integrated Development Environments (IDEs)
+------------------------------------------
+
+OSL comes with `Jupyter Notebook <https://jupyter.org/>`_ installed. To open Jupyter Notebook use::
+
+    conda activate osl
+    jupyter notebook
+
+If you'd like to use Spyder, this can be installed with::
+
+    conda activate osl
+    conda install spyder
+
+and launched with::
+
+    conda activate osl
+    spyder
+
 Test the installation
 ---------------------
 
