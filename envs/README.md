@@ -4,11 +4,7 @@ See the official documentation for the [installation instructions](https://osl.r
 
 OSL only environments:
 
-- `linux-generic.yml`: most generic environment for linux computers.
-- `bmrc.yml`: for the Oxford BMRC cluster.
-- `hbaws.yml`: for the OHBA workstation. Comes with Spyder.
-- `m1-mac.yml`: for M1 Macs. Comes with Spyder.
-- `m2-mac.yml`: for M2 Macs. Comes with Spyder.
+- `linux.yml`: most generic environment for linux computers.
 
 OSL + osl-dynamics environments:
 
