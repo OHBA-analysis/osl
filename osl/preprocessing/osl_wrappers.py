@@ -329,7 +329,10 @@ def detect_badsegments(
     ref_meg : str
         ref_meg argument to pass with :py:func:`mne.pick_types <mne.pick_types>`.
     mode : str
-        Should be ``'diff'`` or ``None``. When ``mode='diff'`` we calculate a difference time series before detecting bad segments.
+        Should be ``None`` ``'diff'`` or ``'maxfilter'``.
+        When ``mode='diff'`` we calculate a difference time series before
+        detecting bad segments. When ``mode='maxfilter'`` we only mark the
+        segments with zeros from MaxFiltering as bad.
     detect_zeros : bool
         Should we detect segments of zeros based on the maxfilter files?
 
@@ -378,6 +381,8 @@ def detect_badsegments(
         XX, XX_times = raw.get_data(picks=chinds, reject_by_annotation='omit', return_times=True)
         XX = np.diff(XX, axis=1)
         XX_times = XX_times[1:] # remove the first time point
+    elif mode == "maxfilter":
+        bdinds_maxfilt = detect_maxfilt_zeros(raw)
 
     allowed_metrics = ["std", "var", "kurtosis"]
     if metric not in allowed_metrics:
@@ -391,17 +396,21 @@ def detect_badsegments(
             return stats.kurtosis(inputs, axis=None)
         metric_func = kurtosis
     
-    bdinds = detect_artefacts(
-        XX,
-        axis=1,
-        reject_mode="segments",
-        metric_func=metric_func,
-        segment_len=segment_len,
-        ret_mode="bad_inds",
-        gesd_args=gesd_args,
-    )
+    if mode == "maxfilter":
+        bad_indices = [bdinds_maxfilt]
+    else:
+        bdinds = detect_artefacts(
+            XX,
+            axis=1,
+            reject_mode="segments",
+            metric_func=metric_func,
+            segment_len=segment_len,
+            ret_mode="bad_inds",
+            gesd_args=gesd_args,
+        )
+        bad_indices = [bdinds, bdinds_maxfilt]
 
-    for count, bdinds in enumerate([bdinds, bdinds_maxfilt]):
+    for count, bdinds in enumerate(bad_indices):
         if bdinds is None:
             continue
         if count==1:
