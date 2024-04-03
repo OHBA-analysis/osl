@@ -383,6 +383,7 @@ def detect_badsegments(
         XX_times = XX_times[1:] # remove the first time point
     elif mode == "maxfilter":
         bdinds_maxfilt = detect_maxfilt_zeros(raw)
+        XX, XX_times = raw.get_data(picks=chinds, reject_by_annotation='omit', return_times=True)
 
     allowed_metrics = ["std", "var", "kurtosis"]
     if metric not in allowed_metrics:
