@@ -445,9 +445,9 @@ def save_extra_funcs(raw, savebase=None):
     
     """
     extra_funcs = re.findall(
-    "%% extra_funcs start %%(.*?)%% extra_funcs end %%",
-    raw.info["description"],
-    flags=re.DOTALL,
+        "%% extra_funcs start %%(.*?)%% extra_funcs end %%",
+        raw.info["description"],
+        flags=re.DOTALL,
     )
     
     if savebase is not None:

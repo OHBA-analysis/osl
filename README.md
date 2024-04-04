@@ -1,36 +1,45 @@
-OHBA Software Library (OSL)
-===========================
+# OHBA Software Library (OSL)
+
+Tools for MEG/EEG analysis.
 
 Documentation: https://osl.readthedocs.io/en/latest/.
 
-Install from Source Code
-------------------------
-The recommended installation depends on your operating system. OSL can be installed from source using:
+## Installation
+
+See the [official documentation](https://osl.readthedocs.io/en/latest/install.html) for recommended installation instructions.
+
+Alternatively, OSL can be installed from source code within a [Miniconda](https://docs.conda.io/projects/miniconda/en/latest/miniconda-install.html) (or [Anaconda](https://docs.anaconda.com/free/anaconda/install/index.html)) environment using the following.
+
+### Linux
+
 ```
 git clone https://github.com/OHBA-analysis/osl.git
 cd osl
-conda env create -f envs/<os>.yml
+conda env create -f envs/linux.yml
 conda activate osl
 pip install -e .
 ```
-where the environment file `<os>.yml` can be:
 
-- `linux.yml` for a generic linux machine.
-- `hbaws.yml` if you are using an OHBA workstation at Oxford.
-- `bmrc.yml` if you are using the BMRC at Oxford.
+### Mac
 
-Note, all of the above environments come with Jupyter Notebook installed. The `hbaws.yml` environment also comes with Spyder installed.
+```
+git clone https://github.com/OHBA-analysis/osl.git
+cd osl
+conda env create -f envs/mac.yml
+conda activate osl
+pip install -e .
+```
 
-Deleting osl
-------------
-If you installed osl using the instructions above then to completely remove it simply delete the conda environment and delete the repo on your local machine:
+## Removing OSL
+
+Simply removing the conda environment and delete the repository:
 ```
 conda env remove -n osl
 rm -rf osl
 ```
 
-For Developers
---------------
+## For Developers
+
 Run tests:
 ```
 cd osl

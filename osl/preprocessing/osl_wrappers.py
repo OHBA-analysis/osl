@@ -329,8 +329,10 @@ def detect_badsegments(
     ref_meg : str
         ref_meg argument to pass with :py:func:`mne.pick_types <mne.pick_types>`.
     mode : str
-        Should be ``'diff'`` or ``None``. When ``mode='diff'`` we calculate a difference time
-        series before detecting bad segments.
+        Should be ``None`` ``'diff'`` or ``'maxfilter'``.
+        When ``mode='diff'`` we calculate a difference time series before
+        detecting bad segments. When ``mode='maxfilter'`` we only mark the
+        segments with zeros from MaxFiltering as bad.
     detect_zeros : bool
         Should we detect segments of zeros based on the maxfilter files?
 
@@ -341,14 +343,12 @@ def detect_badsegments(
         
     Notes
     -----
-    Note that for Elekta/MEGIN data, we recommend using ``picks: 'mag'`` or ``picks: 'grad'`` 
-        separately (in no particular order).
+    Note that for Elekta/MEGIN data, we recommend using ``picks: 'mag'`` or ``picks: 'grad'`` separately (in no particular order).
     
     Note that with CTF data, mne.pick_types will return:
         ~274 axial grads (as magnetometers) if ``{picks: 'mag', ref_meg: False}``
-        ~28 reference axial grads if ``{picks: 'grad'}``. Thus, it is recommended to
-        use ``picks:'mag'`` in combination with ``ref_mag: False``,  and ``picks:'grad'`` separately (in no particular order).
-        
+        ~28 reference axial grads if ``{picks: 'grad'}``.
+        Thus, it is recommended to use ``picks:'mag'`` in combination with ``ref_mag: False``, and ``picks:'grad'`` separately (in no particular order).
     """
 
     gesd_args = {'alpha': significance_level}
@@ -365,6 +365,8 @@ def detect_badsegments(
         chinds = mne.pick_types(raw.info, ecg=True, ref_meg=ref_meg, exclude='bads')
     elif picks == "emg":
         chinds = mne.pick_types(raw.info, emg=True, ref_meg=ref_meg, exclude='bads')
+    elif picks == "misc":
+        chinds = mne.pick_types(raw.info, misc=True, exclude='bads')
     else:
         raise NotImplementedError(f"picks={picks} not available.")
 
@@ -379,6 +381,9 @@ def detect_badsegments(
         XX, XX_times = raw.get_data(picks=chinds, reject_by_annotation='omit', return_times=True)
         XX = np.diff(XX, axis=1)
         XX_times = XX_times[1:] # remove the first time point
+    elif mode == "maxfilter":
+        bdinds_maxfilt = detect_maxfilt_zeros(raw)
+        XX, XX_times = raw.get_data(picks=chinds, reject_by_annotation='omit', return_times=True)
 
     allowed_metrics = ["std", "var", "kurtosis"]
     if metric not in allowed_metrics:
@@ -392,17 +397,21 @@ def detect_badsegments(
             return stats.kurtosis(inputs, axis=None)
         metric_func = kurtosis
     
-    bdinds = detect_artefacts(
-        XX,
-        axis=1,
-        reject_mode="segments",
-        metric_func=metric_func,
-        segment_len=segment_len,
-        ret_mode="bad_inds",
-        gesd_args=gesd_args,
-    )
+    if mode == "maxfilter":
+        bad_indices = [bdinds_maxfilt]
+    else:
+        bdinds = detect_artefacts(
+            XX,
+            axis=1,
+            reject_mode="segments",
+            metric_func=metric_func,
+            segment_len=segment_len,
+            ret_mode="bad_inds",
+            gesd_args=gesd_args,
+        )
+        bad_indices = [bdinds, bdinds_maxfilt]
 
-    for count, bdinds in enumerate([bdinds, bdinds_maxfilt]):
+    for count, bdinds in enumerate(bad_indices):
         if bdinds is None:
             continue
         if count==1:
@@ -459,13 +468,12 @@ def detect_badchannels(raw, picks, ref_meg="auto", significance_level=0.05):
         
     Notes
     -----
-    Note that for Elekta/MEGIN data, we recommend using ``picks:'mag'`` or ``picks:'grad'`` 
-        separately (in no particular order).
+    Note that for Elekta/MEGIN data, we recommend using ``picks:'mag'`` or ``picks:'grad'`` separately (in no particular order).
     
     Note that with CTF data, mne.pick_types will return:
         ~274 axial grads (as magnetometers) if ``{picks: 'mag', ref_meg: False}``
-        ~28 reference axial grads if ``{picks: 'grad'}``. Thus, it is recommended to
-        use ``picks:'mag'`` in combination with ``ref_mag: False``,  and ``picks:'grad'`` separately (in no particular order).
+        ~28 reference axial grads if ``{picks: 'grad'}``.
+        Thus, it is recommended to use ``picks:'mag'`` in combination with ``ref_mag: False``,  and ``picks:'grad'`` separately (in no particular order).
     """
 
     gesd_args = {'alpha': significance_level}
@@ -480,6 +488,8 @@ def detect_badchannels(raw, picks, ref_meg="auto", significance_level=0.05):
         chinds = mne.pick_types(raw.info, eog=True, ref_meg=ref_meg, exclude='bads')
     elif picks == "ecg":
         chinds = mne.pick_types(raw.info, ecg=True, ref_meg=ref_meg, exclude='bads')
+    elif picks == "misc":
+        chinds = mne.pick_types(raw.info, misc=True, exclude='bads')
     else:
         raise NotImplementedError(f"picks={picks} not available.")
     ch_names = np.array(raw.ch_names)[chinds]

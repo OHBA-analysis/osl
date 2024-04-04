@@ -9,11 +9,11 @@ from osl.maxfilter import run_maxfilter_batch
 
 # Setup paths to raw (pre-maxfiltered) fif files
 input_files = [
-    "/ohba/pi/knobre/datasets/covid/rawbids/sub-004/meg/sub-004_task-restEO.fif",
+    "data/raw/file1.fif",
 ]
 
 # Directory to save the maxfiltered data to
-output_directory = "/ohba/pi/knobre/cgohil/covid/maxfilter"
+output_directory = "data/maxfilter"
 
 # Run MaxFiltering
 run_maxfilter_batch(

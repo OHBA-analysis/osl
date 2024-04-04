@@ -137,7 +137,6 @@ def save_extra_funcs(extra_funcs, reportdir):
     fpath : str
         Path to saved text file.
     """
-    
     if reportdir is not None and extra_funcs is not None:
         fpath = reportdir / 'extra_funcs.txt'
         with(open(fpath, 'w')) as file:
