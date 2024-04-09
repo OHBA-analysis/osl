@@ -156,6 +156,7 @@ def _get_parcel_timeseries(voxel_timeseries, parcellation_asmatrix, method="spat
             # Weight all voxels by the spatial map in question. Apply the mask first then weight to reduce memory use
             weighted_ts = voxel_timeseries_reshaped[scaled_parcellation > 0, :]
             weighted_ts = np.multiply(weighted_ts, np.reshape(scaled_parcellation[scaled_parcellation > 0], [-1, 1]))
+            weighted_ts = weighted_ts - np.reshape(np.mean(weighted_ts, axis=1), [-1, 1])
 
             # Perform SVD and take scores of 1st PC as the node time-series
             #
