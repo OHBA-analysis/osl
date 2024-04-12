@@ -37,4 +37,4 @@ osl_logger = logging.getLogger(__name__)
 osl_logger.debug('osl main init complete')
 
 # --------------------------------------------------------
-__version__ = '0.6.0'
+__version__ = '0.7.dev0'
