@@ -488,15 +488,14 @@ def transform_recon_timeseries(
     return recon_timeseries_out, reference_brain_resampled, coords_out, recon_indices
 
 
-def transform_leadfield(
+def get_leadfields(
     subjects_dir,
     subject,
-    leadfield,
     spatial_resolution=None,
     reference_brain="mni",
-    verbose = None,
+    verbose=None,
 ):
-    """Spatially resamples a (nsensors x ndipoles) array of lead fields (in head/polhemus space) to dipoles on the brain grid of the specified reference brain.
+    """Spatially resamples a (nsensors x ndipoles) array of leadfields (in head/polhemus space) to dipoles on the brain grid of the specified reference brain.
 
     Parameters
     ----------
@@ -522,21 +521,30 @@ def transform_leadfield(
     -------
     leadfield_out : numpy.ndarray
         (nsensors, ndipoles) np.array of lead fields resampled on the reference brain grid.
+    coords_out : (3, ndipoles) numpy.ndarray
+        Array of coordinates (in mm) of dipoles in leadfield_out in "reference_brain" space.
     """
 
     rhino_files = rhino_utils.get_rhino_files(subjects_dir, subject)
     surfaces_filenames = rhino_files["surf"]
     coreg_filenames = rhino_files["coreg"]
 
-    # -------------------------------------------------------------------------------------
-    # Get hold of coords of points reconstructed to.
-    #
-    # Note, MNE forward model is done in head space in metres. RHINO does everything in mm.
-    fwd = read_forward_solution(rhino_files["fwd_model"], verbose = verbose)
+    # ------------------
+    # Load forward model
+
+    fwd = read_forward_solution(rhino_files["fwd_model"], verbose=verbose)
+
+    # ---------------------------------------------
+    # Get hold of coords of points reconstructed to
+
+    # MNE forward model is done in head space in metres
+    # RHINO does everything in mm
     vs = fwd["src"][0]
     recon_coords_head = vs["rr"][vs["vertno"]] * 1000  # in mm
 
-    # ----------------------------
+    # ----------------------
+    # Get spatial resolution
+
     if spatial_resolution is None:
         # Estimate gridstep from forward model
         rr = fwd["src"][0]["rr"]
@@ -548,6 +556,9 @@ def transform_leadfield(
         spatial_resolution = int(np.round(np.min(store[np.where(store > 0)]) * 1000))
 
     spatial_resolution = int(spatial_resolution)
+
+    # ----------------
+    # Define reference
 
     if reference_brain == "mni":
         # Reference is mni stdbrain
@@ -600,11 +611,15 @@ def transform_leadfield(
 
     coords_out, _ = rhino_utils.niimask2mmpointcloud(reference_brain_resampled)
 
+    # ------------------------
+    # Leadfields in head space
+
+    leadfield = fwd['sol']['data']
+
     # --------------------------------------------------------------
     # For each mni_coords_out find nearest coord in recon_coords_out
 
     leadfield_out = np.zeros((leadfield.shape[0], coords_out.shape[1]))
-
     recon_indices = np.zeros([coords_out.shape[1]])
 
     for cc in range(coords_out.shape[1]):
@@ -614,7 +629,7 @@ def transform_leadfield(
             leadfield_out[:, cc] = leadfield[:, recon_index]
             recon_indices[cc] = recon_index
 
-    return leadfield_out
+    return leadfield_out, coords_out
 
 
 @verbose
