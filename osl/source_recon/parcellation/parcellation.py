@@ -500,7 +500,7 @@ def plot_parcellation(parcellation_file, **kwargs):
     return plot_markers(np.zeros(n_parcels), parc_centers, colorbar=False, node_cmap="binary_r", **kwargs)
 
 
-def plot_psd(parc_ts, fs, freq_range, parcellation_file, filename):
+def plot_psd(parc_ts, fs, parcellation_file, filename, freq_range=None):
     """Plot PSD of each parcel time course.
 
     Parameters
@@ -509,12 +509,12 @@ def plot_psd(parc_ts, fs, freq_range, parcellation_file, filename):
         (parcels, time) or (parcels, time, epochs) time series.
     fs : float
         Sampling frequency in Hz.
-    freq_range : list of len 2
-        Low and high frequency in Hz.
     parcellation_file : str
         Path to parcellation file.
     filename : str
         Output filename.
+    freq_range : list of len 2
+        Low and high frequency in Hz.
     """
     if parc_ts.ndim == 3:
         # Calculate PSD for each epoch individually and average
@@ -528,6 +528,9 @@ def plot_psd(parc_ts, fs, freq_range, parcellation_file, filename):
         f, psd = welch(parc_ts, fs=fs)
 
     n_parcels = psd.shape[0]
+
+    if freq_range is None:
+        freq_range = [f[0], f[-1]]
 
     # Re-order to use colour to indicate anterior->posterior location
     parc_centers = parcel_centers(parcellation_file)
