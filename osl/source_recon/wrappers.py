@@ -435,6 +435,8 @@ def beamform(
     chantypes,
     rank,
     freq_range=None,
+    weight_norm="nai",
+    pick_ori="max-power-pre-weight-norm",
     reg=0,
 ):
     """Wrapper function for beamforming.
@@ -460,6 +462,10 @@ def beamform(
     freq_range : list, optional
         Lower and upper band to bandpass filter before beamforming.
         If None, no filtering is done.
+    weight_norm : str, optional
+        Beamformer weight normalisation.
+    pick_ori : str, optional
+        Orientation of the dipoles.
     reg : float, optional
         The regularization for the whitened data covariance.
     """
@@ -497,9 +503,10 @@ def beamform(
         subject=subject,
         data=data,
         chantypes=chantypes,
-        weight_norm="nai",
-        rank=rank,
         reg=reg,
+        weight_norm=weight_norm,
+        pick_ori=pick_ori,
+        rank=rank,
         save_filters=True,
     )
 
@@ -705,10 +712,12 @@ def beamform_and_parcellate(
     method,
     orthogonalisation,
     freq_range=None,
+    weight_norm="nai",
+    pick_ori="max-power-pre-weight-norm",
+    reg=0,
     spatial_resolution=None,
     reference_brain="mni",
     extra_chans="stim",
-    reg=0,
 ):
     """Wrapper function for beamforming and parcellation.
 
@@ -739,6 +748,12 @@ def beamform_and_parcellate(
     freq_range : list, optional
         Lower and upper band to bandpass filter before beamforming.
         If None, no filtering is done.
+    weight_norm : str, optional
+        Beamformer weight normalisation.
+    pick_ori : str, optional
+        Orientation of the dipoles.
+    reg : float, optional
+        The regularization for the whitened data covariance.
     spatial_resolution : int, optional
         Resolution for beamforming to use for the reference brain in mm
         (must be an integer, or will be cast to nearest int). If None,
@@ -757,9 +772,6 @@ def beamform_and_parcellate(
         Extra channels to include in the parc-raw.fif file.
         Defaults to 'stim'. Stim channels are always added to parc-raw.fif
         in addition to extra_chans.
-    reg : float
-        The regularization for the whitened data covariance in the beamforming
-        stage.
     """
     logger.info("beamform_and_parcellate")
 
@@ -793,11 +805,12 @@ def beamform_and_parcellate(
     filters = beamforming.make_lcmv(
         subjects_dir=src_dir,
         subject=subject,
-        data=chantype_data,
+        data=data,
         chantypes=chantypes,
-        weight_norm="nai",
-        rank=rank,
         reg=reg,
+        weight_norm=weight_norm,
+        pick_ori=pick_ori,
+        rank=rank,
         save_filters=True,
     )
 
