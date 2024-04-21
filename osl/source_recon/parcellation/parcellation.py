@@ -131,7 +131,7 @@ def parcellate_timeseries(parcellation_file, voxel_timeseries, voxel_coords, met
     voxel_assignments: bool numpy.ndarray
         nvoxels x nparcels, Boolean assignments indicating for each voxel the winner takes all parcel it belongs to.
     """
-    parcellation_asmatrix = _resample_parcellation(parcellation_file, voxel_coords, working_dir)
+    parcellation_asmatrix = resample_parcellation(parcellation_file, voxel_coords, working_dir)
     return _get_parcel_timeseries(voxel_timeseries, parcellation_asmatrix, method=method)
 
 
@@ -311,7 +311,7 @@ def _get_parcel_timeseries(voxel_timeseries, parcellation_asmatrix, method="spat
     return parcel_timeseries, voxel_weightings, voxel_assignments
 
 
-def _resample_parcellation(parcellation_file, voxel_coords, working_dir=None):
+def resample_parcellation(parcellation_file, voxel_coords, working_dir=None):
     """Resample parcellation so that its voxel coords correspond (using nearest neighbour) to passed in voxel_coords.
     Passed in voxel_coords and parcellation must be in the same space, e.g. MNI.
 

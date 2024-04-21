@@ -614,6 +614,8 @@ Second-level Parcellation functions used by wrappers
 
    parcellate_timeseries
 
+   resample_parcellation
+
    plot_correlation
    
    plot_parcellation
@@ -628,7 +630,6 @@ Second-level Parcellation functions used by wrappers
 
    _parcel_timeseries2nii
 
-   _resample_parcellation
 
 
 Nifti Utils
