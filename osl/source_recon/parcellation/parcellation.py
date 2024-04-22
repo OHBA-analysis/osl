@@ -131,7 +131,7 @@ def parcellate_timeseries(parcellation_file, voxel_timeseries, voxel_coords, met
     voxel_assignments: bool numpy.ndarray
         nvoxels x nparcels, Boolean assignments indicating for each voxel the winner takes all parcel it belongs to.
     """
-    parcellation_asmatrix = _resample_parcellation(parcellation_file, voxel_coords, working_dir)
+    parcellation_asmatrix = resample_parcellation(parcellation_file, voxel_coords, working_dir)
     return _get_parcel_timeseries(voxel_timeseries, parcellation_asmatrix, method=method)
 
 
@@ -311,7 +311,7 @@ def _get_parcel_timeseries(voxel_timeseries, parcellation_asmatrix, method="spat
     return parcel_timeseries, voxel_weightings, voxel_assignments
 
 
-def _resample_parcellation(parcellation_file, voxel_coords, working_dir=None):
+def resample_parcellation(parcellation_file, voxel_coords, working_dir=None):
     """Resample parcellation so that its voxel coords correspond (using nearest neighbour) to passed in voxel_coords.
     Passed in voxel_coords and parcellation must be in the same space, e.g. MNI.
 
@@ -500,7 +500,7 @@ def plot_parcellation(parcellation_file, **kwargs):
     return plot_markers(np.zeros(n_parcels), parc_centers, colorbar=False, node_cmap="binary_r", **kwargs)
 
 
-def plot_psd(parc_ts, fs, freq_range, parcellation_file, filename):
+def plot_psd(parc_ts, fs, parcellation_file, filename, freq_range=None):
     """Plot PSD of each parcel time course.
 
     Parameters
@@ -509,12 +509,12 @@ def plot_psd(parc_ts, fs, freq_range, parcellation_file, filename):
         (parcels, time) or (parcels, time, epochs) time series.
     fs : float
         Sampling frequency in Hz.
-    freq_range : list of len 2
-        Low and high frequency in Hz.
     parcellation_file : str
         Path to parcellation file.
     filename : str
         Output filename.
+    freq_range : list of len 2
+        Low and high frequency in Hz.
     """
     if parc_ts.ndim == 3:
         # Calculate PSD for each epoch individually and average
@@ -528,6 +528,9 @@ def plot_psd(parc_ts, fs, freq_range, parcellation_file, filename):
         f, psd = welch(parc_ts, fs=fs)
 
     n_parcels = psd.shape[0]
+
+    if freq_range is None:
+        freq_range = [f[0], f[-1]]
 
     # Re-order to use colour to indicate anterior->posterior location
     parc_centers = parcel_centers(parcellation_file)
