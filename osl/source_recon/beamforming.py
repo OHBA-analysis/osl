@@ -640,7 +640,7 @@ def get_leadfields(
     # Get coordinates from reference brain at resolution spatial_resolution
 
     # Create std brain of the required resolution
-    rhino_utils.system_call("flirt -in {} -ref {} -out {} -applyisoxfm {}".format( reference_brain, reference_brain, reference_brain_resampled, spatial_resolution))
+    rhino_utils.system_call("flirt -in {} -ref {} -out {} -applyisoxfm {}".format(reference_brain, reference_brain, reference_brain_resampled, spatial_resolution))
 
     coords_out, _ = rhino_utils.niimask2mmpointcloud(reference_brain_resampled)
 
@@ -648,6 +648,8 @@ def get_leadfields(
     # Leadfields in head space
 
     leadfield = fwd['sol']['data']
+    leadfield = leadfield.reshape((leadfield.shape[0], -1, 3))
+    leadfield = np.linalg.norm(leadfield, axis=-1)
 
     # --------------------------------------------------------------
     # For each mni_coords_out find nearest coord in recon_coords_out
