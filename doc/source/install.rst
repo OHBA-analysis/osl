@@ -97,12 +97,12 @@ with::
 Integrated Development Environments (IDEs)
 ------------------------------------------
 
-The OSL installation comes with two different IDEs: `Jupyter Notebook <https://jupyter.org/>`_ and `Sypder <https://www.spyder-ide.org/>`_. To open Jupyter Notebook use::
+The OSL installation comes with `Jupyter Notebook <https://jupyter.org/>`_. To open Jupyter Notebook use::
 
     conda activate osl
     jupyter notebook
 
-To open Spyder::
+There is also an installaiton with `Sypder <https://www.spyder-ide.org/>`_. To install this use the ``envs/linux-full-with-spyder.yml`` environment. To open Spyder use::
 
     conda activate osl
     spyder
