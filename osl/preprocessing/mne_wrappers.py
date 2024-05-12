@@ -39,8 +39,8 @@ logger = logging.getLogger(__name__)
 
 
 def run_mne_anonymous(dataset, userargs, method):
-    """OSL-Batch function which runs a method directly on a target MNE object 
-    in ``dataset``, typically an :py:class:`mne.io.Raw <mne.io.Raw>` or :py:class:`mne.Epochs <mne.Epochs>` object.
+    """OSL-Batch function which runs a method directly on a target MNE object in ``dataset``,
+    typically an :py:class:`mne.io.Raw <mne.io.Raw>` or :py:class:`mne.Epochs <mne.Epochs>` object.
     
     OSL Batch will first look for OSL/MNE wrapper functions for the method, and 
     otherwise will try to run the method directly on the target object.
@@ -66,9 +66,7 @@ def run_mne_anonymous(dataset, userargs, method):
     if hasattr(dataset[target], method) and callable(getattr(dataset[target], method)):
         getattr(dataset[target], method)(**userargs)
     else:
-        raise ValueError(
-            "Method '{0}' not found on target '{1}'".format(method, target)
-        )
+        raise ValueError("Method '{0}' not found on target '{1}'".format(method, target))
     return dataset
 
 
