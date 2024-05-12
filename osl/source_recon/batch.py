@@ -242,13 +242,14 @@ def run_src_batch(
         Source reconstruction config.
     src_dir : str
         Source reconstruction directory.
-    subjects : list of strs
+    subjects : list of str
         Subject names.
-    preproc_files : list of strs
+    preproc_files : list of str
         Preprocessed fif files.
-    smri_files : list of strs
-        Structural MRI files.
-    epoch_files : str
+    smri_files : list of str or str
+        Structural MRI files. Can be 'standard' to use MNI152_T1_2mm.nii
+        for the structural.
+    epoch_files : list of str
         Epoched fif file.
     logsdir : str
         Directory to save log files to.
@@ -299,10 +300,11 @@ def run_src_batch(
         any(["compute_surfaces" in method for method in config["source_recon"]]) or
         any(["coregister" in method for method in config["source_recon"]])
     )
+
     if doing_coreg and smri_files is None:
         raise ValueError("smri_files must be passed if we are coregistering.")
-    elif smri_files is None:
-        smri_files = [None] * n_subjects
+    elif smri_files is None or isinstance(smri_files, str):
+        smri_files = [smri_files] * n_subjects
 
     if preproc_files is None:
         preproc_files = [None] * n_subjects

@@ -14,6 +14,7 @@ also conform to this.
 # Authors: Chetan Gohil <chetan.gohil@psych.ox.ac.uk>
 
 
+import os
 import pickle
 from pathlib import Path
 
@@ -133,6 +134,11 @@ def compute_surfaces(
         sMRI to be aligned with the MNI axes. Sometimes needed when the sMRI
         goes out of the MNI FOV after step 1).
     """
+    if smri_file == "standard":
+        std_struct = "MNI152_T1_2mm.nii.gz"
+        logger.info(f"Using standard structural: {std_struct}")
+        smri_file = os.path.join(os.environ["FSLDIR"], "data", "standard", std_struct)
+
     # Compute surfaces
     already_computed = rhino.compute_surfaces(
         smri_file=smri_file,
