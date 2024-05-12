@@ -213,8 +213,9 @@ def run_src_chain(
         return False
 
     if gen_report:
-        # Generate HTML data for the report
+        # Generate data and individual HTML for the report
         src_report.gen_html_data(config, src_dir, subject, reportdir, extra_funcs=extra_funcs)
+        src_report.gen_html_page(reportdir)
 
     return True
 
