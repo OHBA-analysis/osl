@@ -108,6 +108,13 @@ def extract_polhemus_from_info(
     log_or_print(f"saved: {headshape_outfile}")
     np.savetxt(headshape_outfile, np.array(polhemus_headshape).T * 1000)
 
+    # Warning if 'trans' in filename we assume -trans was applied using MaxFiltering
+    # This may make the coregistration appear incorrect, but this is not an issue.
+    if "_trans" in fif_file:
+        log_or_print("Filename contains '_trans' which suggests -trans was passed during MaxFiltering", warning=True)
+        log_or_print("This means the location of the head in the coregistration plot may not be correct", warning=True)
+        log_or_print("Either use the _tsss.fif file or ignore the centroid of the head in coregistration plot", warning=True)
+
 
 def save_mni_fiducials(
     fiducials_file,
