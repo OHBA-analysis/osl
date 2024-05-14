@@ -349,14 +349,14 @@ def save_polhemus_from_pos(src_dir, subject, pos_filepath):
     subject : str
         Subject subdirectory/ID.
     pos_filepath : str
-        Full path to the pos file for this subject. Any reference to '{subject}'
+        Full path to the .pos file for this subject. Any reference to '{subject}'
         (or '{0}') is replaced by the subject ID.
         E.g. 'data/{subject}/meg/{subject}_headshape.pos' with subject='sub-001'
         becomes 'data/sub-001/meg/sub-001_headshape.pos'.
     """
 
     # Get coreg filenames
-    filenames = source_recon.rhino.get_coreg_filenames(src_dir, subject)
+    filenames = get_coreg_filenames(src_dir, subject)
 
     # Load file
     if "{0}" in pos_filepath:
@@ -386,3 +386,60 @@ def save_polhemus_from_pos(src_dir, subject, pos_filepath):
     np.savetxt(filenames["polhemus_rpa_file"], polhemus_rpa)
     np.savetxt(filenames["polhemus_lpa_file"], polhemus_lpa)
     np.savetxt(filenames["polhemus_headshape_file"], polhemus_headshape)
+
+
+def extract_polhemus_from_elc(src_dir, subject, elc_filepath, remove_headshape_near_nose=False):
+    """Saves fiducials/headshape from an elc file.
+
+    Parameters
+    ----------
+    src_dir : str
+        Subjects directory.
+    subject : str
+        Subject subdirectory/ID.
+    elc_filepath : str
+        Full path to the .elc file for this subject. Any reference to '{subject}'
+        (or '{0}') is replaced by the subject ID.
+        E.g. 'data/{subject}/meg/{subject}_headshape.elc' with subject='sub-001'
+        becomes 'data/sub-001/meg/sub-001_headshape.elc'.
+    remove_headshape_near_nose : bool, optional
+        Should we remove any headshape points near the nose?
+    """
+
+    # Get coreg filenames
+    filenames = get_coreg_filenames(src_dir, subject)
+
+    # Load elc file
+    if "{0}" in elc_filepath:
+        elc_file = elc_filepath.format(subject)
+    else:
+        elc_file = elc_filepath.format(subject=subject)
+    log_or_print(f"Saving polhemus from {elc_file}")
+
+    with open(elc_file, "r") as file:
+        lines = file.readlines()
+
+        # Polhemus fiducial points in polhemus space
+        for i in range(len(lines)):
+            if lines[i] == "Positions\n":
+                nasion = np.array(lines[i + 1].split()[-3:]).astype(np.float64).T
+                lpa = np.array(lines[i + 2].split()[-3:]).astype(np.float64).T
+                rpa = np.array(lines[i + 3].split()[-3:]).astype(np.float64).T
+                break
+
+        # Polhemus headshape points in polhemus space
+        for i in range(len(lines)):
+            if lines[i] == "HeadShapePoints\n":
+                headshape = np.array([l.split() for l in lines[i + 1:]]).astype(np.float64).T
+                break
+
+    if remove_headshape_near_nose:
+        # Remove headshape points on the nose
+        remove = np.logical_and(headshape[0] > max(lpa[0], rpa[0]), headshape[2] < nasion[2])
+        headshape = headshape[:, ~remove]
+
+    # Save
+    np.savetxt(filenames["polhemus_nasion_file"], nasion)
+    np.savetxt(filenames["polhemus_rpa_file"], rpa)
+    np.savetxt(filenames["polhemus_lpa_file"], lpa)
+    np.savetxt(filenames["polhemus_headshape_file"], headshape)
