@@ -154,7 +154,7 @@ def save_polhemus_from_pos(
     preproc_file,
     smri_file,
     epoch_file,
-    fids_dir,
+    pos_filepath,
 ):
     """Wrapper to save polhemus data from a .pos file.
 
@@ -178,6 +178,43 @@ def save_polhemus_from_pos(
         becomes 'data/sub-001/meg/sub-001_headshape.pos'.
     """
     rhino.save_polhemus_from_pos(src_dir, subject, pos_filepath)
+
+
+def save_polhemus_from_elc(
+    src_dir,
+    subject,
+    preproc_file,
+    smri_file,
+    epoch_file,
+    elc_filepath,
+    remove_headshape_near_nose=False,
+):
+    """Wrapper to save polhemus data from an .elc file.
+
+    Parameters
+    ----------
+    src_dir : str
+        Path to where to output the source reconstruction files.
+    subject : str
+        Subject name/id.
+    preproc_file : str
+        Path to the preprocessed fif file. Not used.
+    smri_file : str
+        Path to the T1 weighted structural MRI file to use in source
+        reconstruction. Not used.
+    epoch_file : str
+        Path to epoched preprocessed fif file. Not used.
+    elc_filepath : str
+        Full path to the elc file for this subject. Any reference to '{subject}'
+        (or '{0}') is replaced by the subject ID.
+        E.g. 'data/{subject}/meg/{subject}_headshape.elc' with subject='sub-001'
+        becomes 'data/sub-001/meg/sub-001_headshape.elc'.
+    remove_headshape_near_nose : bool, optional
+        Should we remove any headshape points near the nose?
+    """
+    rhino.save_polhemus_from_elc(
+        src_dir, subject, elc_filepath, remove_headshape_near_nose
+    )
 
 
 def compute_surfaces(

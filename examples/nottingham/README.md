@@ -1,4 +1,4 @@
 Nottingham Datasets
 -------------------
 
-This directory contains data provided by Nottingham University.
+This directory contains scripts for preprocessing/source reconstructing data provided by Nottingham University.
