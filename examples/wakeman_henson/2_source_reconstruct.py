@@ -51,13 +51,13 @@ if __name__ == "__main__":
     """
 
     raw_dir = f"/well/woolrich/projects/wakeman_henson/ds117"
-    src_dir = "/well/woolrich/projects/wakeman_henson/spring23/src"
+    src_dir = "/well/woolrich/projects/wakeman_henson/src"
 
     subjects = []
     preproc_files = []
     smri_files = []
     for sub in range(1, 20):
-        preproc_dir = f"/well/woolrich/projects/wakeman_henson/spring23/preproc/sub{sub:02d}"
+        preproc_dir = f"/well/woolrich/projects/wakeman_henson/preproc/sub{sub:02d}"
         for run in range(1, 7):
             subjects.append(f"sub{sub:02d}_run{run:02d}")
             preproc_files.append(f"{preproc_dir}/run_{run:02d}_sss/run_{run:02d}_sss_preproc_raw.fif")

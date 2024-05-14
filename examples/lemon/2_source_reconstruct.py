@@ -19,8 +19,8 @@ logger = logging.getLogger("osl")
 # Directories
 BASE_DIR = "/well/woolrich/projects/lemon"
 RAW_DIR = BASE_DIR + "/raw"
-PREPROC_DIR = BASE_DIR + "/osl_example/preproc"
-SRC_DIR = BASE_DIR + "/osl_example/src"
+PREPROC_DIR = BASE_DIR + "/preproc"
+SRC_DIR = BASE_DIR + "/src"
 
 # Files
 PREPROC_FILE = PREPROC_DIR + "/{0}/{0}_preproc_raw.fif"

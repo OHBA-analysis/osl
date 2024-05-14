@@ -22,7 +22,7 @@ logger = logging.getLogger("osl")
 # Directories
 RAW_DIR = "/well/woolrich/projects/lemon/raw"
 LOCALIZER_DIR = RAW_DIR + "/EEG_MPILMBB_LEMON/EEG_Localizer_BIDS_ID"
-PREPROC_DIR = "/well/woolrich/projects/lemon/osl_example/preproc"
+PREPROC_DIR = "/well/woolrich/projects/lemon/preproc"
 
 # Files
 RAW_FILE = RAW_DIR + "/{0}/RSEEG/{0}.vhdr"

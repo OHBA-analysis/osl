@@ -30,7 +30,7 @@ if __name__ == "__main__":
         inputs = []
         for run in range(1, 7):
             inputs.append(f"{raw_dir}/sub{sub:03d}/MEG/run_{run:02d}_sss.fif")
-        preproc_dir = f"/well/woolrich/projects/wakeman_henson/spring23/preproc/sub{sub:02d}"
+        preproc_dir = f"/well/woolrich/projects/wakeman_henson/preproc/sub{sub:02d}"
         preprocessing.run_proc_batch(
             config,
             inputs,

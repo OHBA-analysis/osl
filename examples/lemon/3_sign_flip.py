@@ -10,9 +10,7 @@ from dask.distributed import Client
 from osl import utils
 from osl.source_recon import find_template_subject, run_src_batch
 
-# Directories
-SRC_DIR = "/well/woolrich/projects/lemon/osl_example/src"
-FSL_DIR = "/well/woolrich/projects/software/fsl"
+SRC_DIR = "/well/woolrich/projects/lemon/src"
 
 # Subjects not to include (due to bad coregistration)
 EXCLUDE = [

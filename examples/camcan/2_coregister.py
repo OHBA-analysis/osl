@@ -16,8 +16,8 @@ from osl import source_recon, utils
 
 # Directories
 BASE_DIR = "/well/woolrich/projects/camcan"
-PREPROC_DIR = BASE_DIR + "/summer23/preproc"
-COREG_DIR = BASE_DIR + "/summer23/coreg"
+PREPROC_DIR = BASE_DIR + "/preproc"
+COREG_DIR = BASE_DIR + "/coreg"
 ANAT_DIR = BASE_DIR + "/cc700/mri/pipeline/release004/BIDS_20190411/anat"
 
 # Files

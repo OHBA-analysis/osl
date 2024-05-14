@@ -8,7 +8,7 @@ from dask.distributed import Client
 from osl import source_recon, utils
 
 # Directory containing source reconstructed data
-src_dir = "/well/woolrich/projects/wakeman_henson/spring23/src"
+src_dir = "/well/woolrich/projects/wakeman_henson/src"
 src_files = sorted(glob(src_dir + "/*/parc/parc-raw.fif"))
 
 if __name__ == "__main__":

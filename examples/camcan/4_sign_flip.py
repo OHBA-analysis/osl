@@ -10,9 +10,7 @@ from dask.distributed import Client
 from osl import utils
 from osl.source_recon import find_template_subject, run_src_batch
 
-# Directories
-SRC_DIR = "/well/woolrich/projects/camcan/summer23/src"
-FSL_DIR = "/well/woolrich/projects/software/fsl"
+SRC_DIR = "/well/woolrich/projects/camcan/src"
 
 if __name__ == "__main__":
     utils.logger.set_up(level="INFO")
@@ -33,8 +31,8 @@ if __name__ == "__main__":
             template: {template}
             n_embeddings: 15
             standardize: True
-            n_init: 5
-            n_iter: 5000
+            n_init: 3
+            n_iter: 3000
             max_flips: 20
     """
 
