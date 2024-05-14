@@ -14,6 +14,7 @@ from mne.io.constants import FIFF
 
 import sys
 from osl.source_recon.rhino.coreg import get_coreg_filenames
+from osl.utils.logger import log_or_print
 
 def extract_polhemus_from_info(
     fif_file,
@@ -46,6 +47,8 @@ def extract_polhemus_from_info(
     include_hpi_as_headshape : bool
         Should we include HPI locations as headshape points?
     """
+    log_or_print("Extracting polhemus from fif info")
+
     # Lists to hold polhemus data
     polhemus_headshape = []
     polhemus_rpa = []
@@ -77,9 +80,13 @@ def extract_polhemus_from_info(
             polhemus_headshape.append(dig["r"])
 
     # Save
+    log_or_print(f"saved: {nasion_outfile}")
     np.savetxt(nasion_outfile, polhemus_nasion * 1000)
+    log_or_print(f"saved: {rpa_outfile}")
     np.savetxt(rpa_outfile, polhemus_rpa * 1000)
+    log_or_print(f"saved: {lpa_outfile}")
     np.savetxt(lpa_outfile, polhemus_lpa * 1000)
+    log_or_print(f"saved: {headshape_outfile}")
     np.savetxt(headshape_outfile, np.array(polhemus_headshape).T * 1000)
 
 
@@ -123,8 +130,10 @@ def plot_polhemus_points(txt_fnames, colors=None, scales=None, markers=None, alp
         ax.scatter(pnts[0], pnts[1], pnts[2], color=color, s=scale, alpha=alpha, marker=marker)
 
 def delete_headshape_points(recon_dir=None, subject=None, polhemus_headshape_file=None):
-    '''
+    """Interactively delete headshape points.
+
     Shows an interactive figure of the polhemus derived headshape points in polhemus space. Points can be clicked on to delete them.
+
     The figure should be closed upon completion, at which point there is the option to save the deletions.
 
     Parameters
@@ -151,7 +160,7 @@ def delete_headshape_points(recon_dir=None, subject=None, polhemus_headshape_fil
     2) Specify the full path to the .npy file containing the (3 x num_headshapepoints) numpy array of headshape points:
     
             delete_headshape_points(polhemus_headshape_file=polhemus_headshape_file)
-    '''
+    """
 
     if recon_dir is not None and subject is not None:
         coreg_filenames = get_coreg_filenames(recon_dir, subject)
@@ -217,3 +226,39 @@ def delete_headshape_points(recon_dir=None, subject=None, polhemus_headshape_fil
     fig.canvas.mpl_connect('key_press_event', on_press)
 
     plt.show()
+
+def remove_stray_headshape_points(src_dir, subject):
+    """Remove stray headshape points.
+
+    Removes headshape points near the nose, on the neck or far away from the head.
+
+    Parameters
+    ----------
+    src_dir : str
+        Path to subjects directory.
+    subject : str
+        Subject directory name.
+    """
+    filenames = get_coreg_filenames(src_dir, subject)
+
+    # Load saved headshape and nasion files
+    hs = np.loadtxt(filenames["polhemus_headshape_file"])
+    nas = np.loadtxt(filenames["polhemus_nasion_file"])
+    lpa = np.loadtxt(filenames["polhemus_lpa_file"])
+    rpa = np.loadtxt(filenames["polhemus_rpa_file"])
+
+    # Remove headshape points on the nose
+    remove = np.logical_and(hs[1] > max(lpa[1], rpa[1]), hs[2] < nas[2])
+    hs = hs[:, ~remove]
+
+    # Remove headshape points on the neck
+    remove = hs[2] < min(lpa[2], rpa[2]) - 4
+    hs = hs[:, ~remove]
+
+    # Remove headshape points far from the head in any direction
+    remove = np.logical_or(hs[0] < lpa[0] - 5, np.logical_or(hs[0] > rpa[0] + 5, hs[1] > nas[1] + 5))
+    hs = hs[:, ~remove]
+
+    # Overwrite headshape file
+    log_or_print(f"overwritting {filenames['polhemus_headshape_file']}")
+    np.savetxt(filenames["polhemus_headshape_file"], hs)

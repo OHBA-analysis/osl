@@ -119,15 +119,15 @@ for subject in subjects:
 # Settings
 config = """
     source_recon:
-    - extract_fiducials_from_fif: {}
+    - extract_polhemus_from_info: {}
     - fix_headshape_points:  # will overwrite headshape point from extract_fiducials_from_fif
-        save_hs: false
-        make_plot: false
+        save_hs: False
+        make_plot: False
     - compute_surfaces:
-        include_nose: true
+        include_nose: True
     - coregister:
-        use_nose: true
-        use_headshape: true
+        use_nose: True
+        use_headshape: True
 """
 
 # Run source reconstruction

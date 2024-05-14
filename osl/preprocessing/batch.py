@@ -99,9 +99,7 @@ def import_data(infile, preload=True):
             head_shape_fname = "hs_file"
         else:
             head_shape_fname = None
-        raw = mne.io.read_raw_bti(
-            infile, head_shape_fname=head_shape_fname, preload=preload
-        )
+        raw = mne.io.read_raw_bti(infile, head_shape_fname=head_shape_fname, preload=preload)
 
     # FIF file
     elif os.path.splitext(infile)[1] == ".fif":
@@ -121,23 +119,21 @@ def import_data(infile, preload=True):
 
     # Brainvision
     elif os.path.splitext(infile)[1] == ".vhdr":
-        logger.info(
-            "Detected brainvision file format, using: mne.io.read_raw_brainvision"
-        )
+        logger.info("Detected brainvision file format, using: mne.io.read_raw_brainvision")
         raw = mne.io.read_raw_brainvision(infile, preload=preload)
 
     # EEGLAB .set
     elif os.path.splitext(infile)[1] == ".set":
-        logger.info(
-            "Detected EEGLAB file format, using: mne.io.read_raw_eeglab"
-        )
+        logger.info("Detected EEGLAB file format, using: mne.io.read_raw_eeglab")
         raw = mne.io.read_raw_eeglab(infile, preload=preload)
 
     elif os.path.splitext(infile)[1] == ".con" or os.path.splitext(infile)[1] == ".sqd":
-        logger.info(
-            "Detected Ricoh/KIT file format, using: mne.io.read_raw_kit"
-        )
+        logger.info("Detected Ricoh/KIT file format, using: mne.io.read_raw_kit")
         raw = mne.io.read_raw_kit(infile, preload=preload)
+
+    elif os.path.splitext(infile)[1] == ".bdf":
+        logger.info("Detected BDF file format, using: mne.io.read_raw_bdf")
+        raw = mne.io.read_raw_bdf(infile, preload=preload)
         
     # Other formats not accepted
     else:
@@ -314,8 +310,7 @@ def check_config_versions(config):
 def get_config_from_fif(inst):
     """Get config from a preprocessed fif file.
 
-    Reads the ``inst.info['description']`` field of a fif file to get the
-    preprocessing config.
+    Reads the ``inst.info['description']`` field of a fif file to get the preprocessing config.
     
     Parameters
     ----------
@@ -688,10 +683,8 @@ def run_proc_chain(
     Returns
     -------
     dict or bool
-        If ``ret_dataset=True``, a dict containing the preprocessed dataset with the
-        following keys: ``raw``, ``ica``, ``epochs``, ``events``, ``event_id``. An empty dict is returned
-        if preprocessing fails. If ``ret_dataset=False``, we return a flag indicating whether 
-        preprocessing was successful.
+        If ``ret_dataset=True``, a dict containing the preprocessed dataset with the following keys: ``raw``, ``ica``, ``epochs``, ``events``, ``event_id``.
+        An empty dict is returned if preprocessing fails. If ``ret_dataset=False``, we return a flag indicating whether preprocessing was successful.
     """
 
     # Generate a run ID
@@ -860,7 +853,6 @@ def run_proc_chain(
     if fif_outname is not None:
         logger.info("Output file is {}".format(fif_outname))
 
-
     if ret_dataset:
         return dataset
     else:
@@ -922,8 +914,7 @@ def run_proc_batch(
     strictrun : bool
         Should we ask for confirmation of user inputs before starting?
     dask_client : bool
-        Indicate whether to use a previously initialised :py:class:`dask.distributed.Client <distributed.Client>`
-        instance. 
+        Indicate whether to use a previously initialised :py:class:`dask.distributed.Client <distributed.Client>` instance. 
 
     Returns
     -------

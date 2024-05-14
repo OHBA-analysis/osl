@@ -6,7 +6,6 @@ dependencies:
 - pip=23.3.1
 - vtk=9.1.0=*osmesa*
 - pyvista=0.38.5
-- spyder=5.1.5
 - pip:
   - jupyter==1.0.0
   - ipympl==0.9.3

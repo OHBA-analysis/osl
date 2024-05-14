@@ -6,7 +6,7 @@ particular subject with a higher n_init.
 
 Note, these scripts do not include/use the nose in the coregistration.
 If you want to use the nose you need to change the config to include the nose
-and you may not want to call the fix_headshape_points function.
+and you may not want to call the remove_stray_headshape_points function.
 """
 
 # Authors: Chetan Gohil <chetan.gohil@psych.ox.ac.uk>
@@ -32,8 +32,8 @@ subjects = ["sub-001", "sub-002"]
 # Settings
 config = """
     source_recon:
-    - extract_fiducials_from_fif: {}
-    - fix_headshape_points: {}
+    - extract_polhemus_from_info: {}
+    - remove_stray_headshape_points: {}
     - compute_surfaces:
         include_nose: False
     - coregister:
@@ -41,37 +41,6 @@ config = """
         use_headshape: True
         #n_init: 50
 """
-
-def fix_headshape_points(src_dir, subject, preproc_file, smri_file, epoch_file):
-    filenames = source_recon.rhino.get_coreg_filenames(src_dir, subject)
-
-    # Load saved headshape and nasion files
-    hs = np.loadtxt(filenames["polhemus_headshape_file"])
-    nas = np.loadtxt(filenames["polhemus_nasion_file"])
-    lpa = np.loadtxt(filenames["polhemus_lpa_file"])
-    rpa = np.loadtxt(filenames["polhemus_rpa_file"])
-
-    # Remove headshape points on the nose
-    remove = np.logical_and(hs[1] > max(lpa[1], rpa[1]), hs[2] < nas[2])
-    hs = hs[:, ~remove]
-
-    # Remove headshape points on the neck
-    remove = hs[2] < min(lpa[2], rpa[2]) - 4
-    hs = hs[:, ~remove]
-
-    # Remove headshape points far from the head in any direction
-    remove = np.logical_or(
-        hs[0] < lpa[0] - 5,
-        np.logical_or(
-            hs[0] > rpa[0] + 5,
-            hs[1] > nas[1] + 5,
-        ),
-    )
-    hs = hs[:, ~remove]
-
-    # Overwrite headshape file
-    utils.logger.log_or_print(f"overwritting {filenames['polhemus_headshape_file']}")
-    np.savetxt(filenames["polhemus_headshape_file"], hs)
 
 if __name__ == "__main__":
     utils.logger.set_up(level="INFO")
@@ -97,6 +66,5 @@ if __name__ == "__main__":
         subjects=subjects,
         preproc_files=preproc_files,
         smri_files=smri_files,
-        extra_funcs=[fix_headshape_points],
         dask_client=True,
     )

@@ -14,6 +14,7 @@ also conform to this.
 # Authors: Chetan Gohil <chetan.gohil@psych.ox.ac.uk>
 
 
+import os
 import pickle
 from pathlib import Path
 
@@ -32,7 +33,7 @@ logger = logging.getLogger(__name__)
 # RHINO wrappers
 
 
-def extract_fiducials_from_fif(
+def extract_polhemus_from_info(
     src_dir,
     subject,
     preproc_file,
@@ -52,16 +53,14 @@ def extract_fiducials_from_fif(
         Path to the preprocessed fif file.
     smri_file : str
         Path to the T1 weighted structural MRI file to use in source
-        reconstruction.
+        reconstruction. Not used.
     epoch_file : str
-        Path to epoched preprocessed fif file.
+        Path to epoched preprocessed fif file. Not used.
     userargs : keyword arguments
         Keyword arguments to pass to
         osl.source_recon.rhino.extract_polhemus_from_info.
     """
     filenames = rhino.get_coreg_filenames(src_dir, subject)
-
-    logger.info("Setting up polhemus files")
     rhino.extract_polhemus_from_info(
         fif_file=preproc_file,
         headshape_outfile=filenames["polhemus_headshape_file"],
@@ -70,10 +69,40 @@ def extract_fiducials_from_fif(
         lpa_outfile=filenames["polhemus_lpa_file"],
         **userargs,
     )
-    logger.info(f"saved: {filenames['polhemus_headshape_file']}")
-    logger.info(f"saved: {filenames['polhemus_nasion_file']}")
-    logger.info(f"saved: {filenames['polhemus_rpa_file']}")
-    logger.info(f"saved: {filenames['polhemus_lpa_file']}")
+
+
+def extract_fiducials_from_fif(*args, **kwargs):
+    """Wrapper for extract_polhemus_from_info."""
+    # Kept for backwards compatibility
+    extract_polhemus_from_info(*args, **kwargs)
+
+
+def remove_stray_headshape_points(
+    src_dir,
+    subject,
+    preproc_file,
+    smri_file,
+    epoch_file,
+):
+    """Remove stray headshape points.
+
+    This function removes headshape points on the nose, neck and far from the head.
+
+    Parameters
+    ----------
+    src_dir : str
+        Path to where to output the source reconstruction files.
+    subject : str
+        Subject name/id.
+    preproc_file : str
+        Path to the preprocessed fif file. Not used.
+    smri_file : str
+        Path to the T1 weighted structural MRI file to use in source
+        reconstruction. Not used.
+    epoch_file : str
+        Path to epoched preprocessed fif file. Not used.
+    """
+    rhino.remove_stray_headshape_points(src_dir, subject)
 
 
 def compute_surfaces(
@@ -111,6 +140,11 @@ def compute_surfaces(
         sMRI to be aligned with the MNI axes. Sometimes needed when the sMRI
         goes out of the MNI FOV after step 1).
     """
+    if smri_file == "standard":
+        std_struct = "MNI152_T1_2mm.nii.gz"
+        logger.info(f"Using standard structural: {std_struct}")
+        smri_file = os.path.join(os.environ["FSLDIR"], "data", "standard", std_struct)
+
     # Compute surfaces
     already_computed = rhino.compute_surfaces(
         smri_file=smri_file,

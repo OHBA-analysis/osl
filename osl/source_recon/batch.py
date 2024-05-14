@@ -95,6 +95,9 @@ def run_src_chain(
     preproc_file=None,
     smri_file=None,
     epoch_file=None,
+    logsdir=None,
+    reportdir=None,
+    gen_report=True,
     verbose="INFO",
     mneverbose="WARNING",
     extra_funcs=None,
@@ -115,6 +118,12 @@ def run_src_chain(
         Structural MRI file.
     epoch_file : str
         Epoched fif file.
+    logsdir : str
+        Directory to save log files to.
+    reportdir : str
+        Directory to save report files to.
+    gen_report : bool
+        Should we generate a report?
     verbose : str
         Level of verbose.
     mneverbose : str
@@ -131,8 +140,8 @@ def run_src_chain(
 
     # Directories
     src_dir = validate_outdir(src_dir)
-    logsdir = validate_outdir(src_dir / "logs")
-    reportdir = validate_outdir(src_dir / "report")
+    logsdir = validate_outdir(logsdir or src_dir / "logs")
+    reportdir = validate_outdir(reportdir or src_dir / "report")
 
     # Get run ID
     if preproc_file is None:
@@ -203,8 +212,10 @@ def run_src_chain(
 
         return False
 
-    # Generate HTML data for the report
-    src_report.gen_html_data(config, src_dir, subject, reportdir, extra_funcs=extra_funcs)
+    if gen_report:
+        # Generate data and individual HTML for the report
+        src_report.gen_html_data(config, src_dir, subject, reportdir, extra_funcs=extra_funcs)
+        src_report.gen_html_page(reportdir)
 
     return True
 
@@ -216,6 +227,9 @@ def run_src_batch(
     preproc_files=None,
     smri_files=None,
     epoch_files=None,
+    logsdir=None,
+    reportdir=None,
+    gen_report=False,
     verbose="INFO",
     mneverbose="WARNING",
     extra_funcs=None,
@@ -229,14 +243,21 @@ def run_src_batch(
         Source reconstruction config.
     src_dir : str
         Source reconstruction directory.
-    subjects : list of strs
+    subjects : list of str
         Subject names.
-    preproc_files : list of strs
+    preproc_files : list of str
         Preprocessed fif files.
-    smri_files : list of strs
-        Structural MRI files.
-    epoch_files : str
+    smri_files : list of str or str
+        Structural MRI files. Can be 'standard' to use MNI152_T1_2mm.nii
+        for the structural.
+    epoch_files : list of str
         Epoched fif file.
+    logsdir : str
+        Directory to save log files to.
+    reportdir : str
+        Directory to save report files to.
+    gen_report : bool
+        Should we generate a report?
     verbose : str
         Level of verbose.
     mneverbose : str
@@ -255,8 +276,8 @@ def run_src_batch(
 
     # Directories
     src_dir = validate_outdir(src_dir)
-    logsdir = validate_outdir(src_dir / "logs")
-    reportdir = validate_outdir(src_dir / "report")
+    logsdir = validate_outdir(logsdir or src_dir / "logs")
+    reportdir = validate_outdir(reportdir or src_dir / "report")
 
     # Initialise Loggers
     mne.set_log_level(mneverbose)
@@ -280,10 +301,11 @@ def run_src_batch(
         any(["compute_surfaces" in method for method in config["source_recon"]]) or
         any(["coregister" in method for method in config["source_recon"]])
     )
+
     if doing_coreg and smri_files is None:
         raise ValueError("smri_files must be passed if we are coregistering.")
-    elif smri_files is None:
-        smri_files = [None] * n_subjects
+    elif smri_files is None or isinstance(smri_files, str):
+        smri_files = [smri_files] * n_subjects
 
     if preproc_files is None:
         preproc_files = [None] * n_subjects
@@ -294,6 +316,9 @@ def run_src_batch(
     # Create partial function with fixed options
     pool_func = partial(
         run_src_chain,
+        logsdir=logsdir,
+        reportdir=reportdir,
+        gen_report=gen_report,
         verbose=verbose,
         mneverbose=mneverbose,
         extra_funcs=extra_funcs,
@@ -313,7 +338,7 @@ def run_src_batch(
     osl_logger.set_up(log_file=logfile, level=verbose, startup=False)
     logger.info("Processed {0}/{1} files successfully".format(int(np.sum(flags)), len(flags)))
 
-    if int(np.sum(flags)) > 0:
+    if gen_report and int(np.sum(flags)) > 0:
         # Generate individual subject HTML report
         src_report.gen_html_page(reportdir)
 
