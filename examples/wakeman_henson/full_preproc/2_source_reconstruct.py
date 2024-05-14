@@ -34,12 +34,14 @@ if __name__ == "__main__":
 
     config = """
         source_recon:
-        - extract_fiducials_from_fif: {}
+        - extract_polhemus_from_info: {}
         - fix_headshape_points: {}
-        - compute_surfaces_coregister_and_forward_model:
+        - compute_surfaces:
             include_nose: False
+        - coregister:
             use_nose: False
             use_headshape: True
+        - forward_model:
             model: Single Layer
         - beamform_and_parcellate:
             freq_range: [1, 45]

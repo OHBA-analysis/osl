@@ -33,7 +33,7 @@ logger = logging.getLogger(__name__)
 # RHINO wrappers
 
 
-def extract_fiducials_from_info(
+def extract_polhemus_from_info(
     src_dir,
     subject,
     preproc_file,
@@ -72,7 +72,9 @@ def extract_fiducials_from_info(
 
 
 def extract_fiducials_from_fif(*args, **kwargs):
-    extract_fiducials_from_info(*args, **kwargs)
+    """Wrapper for extract_polhemus_from_info."""
+    # Kept for backwards compatibility
+    extract_polhemus_from_info(*args, **kwargs)
 
 
 def remove_stray_headshape_points(

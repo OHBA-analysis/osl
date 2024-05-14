@@ -82,7 +82,7 @@ if __name__ == "__main__":
     # Settings
     config = """
         source_recon:
-        - extract_fiducials_from_fif: {}
+        - extract_polhemus_from_info: {}
         - fix_headshape_points: {}
         - compute_surfaces:
             include_nose: False

@@ -32,11 +32,13 @@ for subject in subjects:
 # Settings
 config = """
     source_recon:
-    - extract_fiducials_from_fif: {}
-    - compute_surfaces_coregister_and_forward_model:
-        include_nose: false
-        use_nose: false
-        use_headshape: true
+    - extract_polhemus_from_info: {}
+    - compute_surfaces:
+        include_nose: False
+    - coregister:
+        use_nose: False
+        use_headshape: True
+    - forward_model:
         model: Single Layer
     - beamform_and_parcellate:
         freq_range: [1, 45]
