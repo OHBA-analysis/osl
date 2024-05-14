@@ -234,10 +234,25 @@ def coreg(
         # 1) Map location of fiducials in MNI standard space brain to native sMRI space. These are then used as the
         #    location of the sMRI-derived fiducials in native sMRI space.
 
-        # Known locations of MNI derived fiducials in MNI coords in mm
-        mni_nasion_mni = np.asarray([1, 85, -41])
-        mni_rpa_mni = np.asarray([83, -20, -65])
-        mni_lpa_mni = np.asarray([-83, -20, -65])
+        if Path(filenames["mni_nasion_mni_file"]).exists() and Path(filenames["mni_rpa_mni_file"]).exists() and Path(filenames["mni_lpa_mni_file"]).exists():
+            # Load recorded fiducials in MNI space
+            log_or_print("Reading MNI fiducials from file")
+
+            log_or_print(f"loading: {filenames['mni_nasion_mni_file']}")
+            mni_nasion_mni = np.loadtxt(filenames["mni_nasion_mni_file"])
+
+            log_or_print(f"loading: {filenames['mni_rpa_mni_file']}")
+            mni_rpa_mni = np.loadtxt(filenames["mni_rpa_mni_file"])
+
+            log_or_print(f"loading: {filenames['mni_lpa_mni_file']}")
+            mni_lpa_mni = np.loadtxt(filenames["mni_lpa_mni_file"])
+
+        else:
+            # Known locations of MNI derived fiducials in MNI coords in mm
+            log_or_print("Using known MNI fiducials")
+            mni_nasion_mni = np.asarray([1, 85, -41])
+            mni_rpa_mni = np.asarray([83, -20, -65])
+            mni_lpa_mni = np.asarray([-83, -20, -65])
 
         mni_mri_t = read_trans(surfaces_filenames["mni_mri_t_file"])
 

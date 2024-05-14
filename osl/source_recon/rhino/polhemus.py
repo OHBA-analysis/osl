@@ -37,13 +37,13 @@ def extract_polhemus_from_info(
     fif_file : string
         Full path to MNE-derived fif file.
     headshape_outfile : string
-        Filename to save naison to.
+        Filename to save headshape points to.
     nasion_outfile : string
-        Filename to save naison to.
+        Filename to save nasion to.
     rpa_outfile : string
-        Filename to save naison to.
+        Filename to save rpa to.
     lpa_outfile : string
-        Filename to save naison to.
+        Filename to save lpa to.
     include_eeg_as_headshape : bool, optional
         Should we include EEG locations as headshape points?
     include_hpi_as_headshape : bool, optional
@@ -106,6 +106,53 @@ def extract_polhemus_from_info(
     np.savetxt(lpa_outfile, polhemus_lpa * 1000)
     log_or_print(f"saved: {headshape_outfile}")
     np.savetxt(headshape_outfile, np.array(polhemus_headshape).T * 1000)
+
+
+def save_mni_fiducials(
+    fiducials_file,
+    nasion_outfile,
+    rpa_outfile,
+    lpa_outfile,
+):
+    """Save MNI fiducials used to calculate sMRI fiducials.
+
+    The file must be in MNI space with the following format:
+
+    nas -0.5 77.5 -32.6
+    lpa -74.4 -20.0 -27.2
+    rpa 75.4 -21.1 -21.9
+
+    Note, the first column (fiducial naming) is ignored but the rows must be in the above order, i.e. be (nasion, right, left).
+
+    The order of the coordinates is the same as given in FSLeyes.
+
+    Parameters
+    ----------
+    fiducials_file : str
+        Full path to text file containing the sMRI fiducials.
+    headshape_outfile : str
+        Filename to save nasion to.
+    nasion_outfile : str
+        Filename to save naison to.
+    rpa_outfile : str
+        Filename to save rpa to.
+    lpa_outfile : str
+        Filename to save lpa to.
+    """
+
+    with open(fiducials_file, "r") as file:
+        data = file.readlines()
+
+    nas = np.array([float(x) for x in data[0].split()[1:]])
+    lpa = np.array([float(x) for x in data[1].split()[1:]])
+    rpa = np.array([float(x) for x in data[2].split()[1:]])
+
+    log_or_print(f"saved: {nasion_outfile}")
+    np.savetxt(nasion_outfile, nas)
+    log_or_print(f"saved: {rpa_outfile}")
+    np.savetxt(rpa_outfile, rpa)
+    log_or_print(f"saved: {lpa_outfile}")
+    np.savetxt(lpa_outfile, lpa)
 
 
 def plot_polhemus_points(txt_fnames, colors=None, scales=None, markers=None, alphas=None):
