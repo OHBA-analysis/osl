@@ -24,10 +24,12 @@ def extract_polhemus_from_info(
     lpa_outfile,
     include_eeg_as_headshape=False,
     include_hpi_as_headshape=True,
+    ctf=False,
 ):
     """Extract polhemus from FIF info.
 
     Extract polhemus fids and headshape points from MNE raw.info and write them out in the required file format for rhino (in head/polhemus space in mm).
+
     Should only be used with MNE-derived .fif files that have the expected digitised points held in info['dig'] of fif_file.
 
     Parameters
@@ -42,10 +44,12 @@ def extract_polhemus_from_info(
         Filename to save naison to.
     lpa_outfile : string
         Filename to save naison to.
-    include_eeg_as_headshape : bool
+    include_eeg_as_headshape : bool, optional
         Should we include EEG locations as headshape points?
-    include_hpi_as_headshape : bool
+    include_hpi_as_headshape : bool, optional
         Should we include HPI locations as headshape points?
+    ctf : bool, optional
+        Is the fif file from CTF data?
     """
     log_or_print("Extracting polhemus from fif info")
 
@@ -78,6 +82,20 @@ def extract_polhemus_from_info(
             polhemus_headshape.append(dig["r"])
         elif dig["kind"] == FIFF.FIFFV_POINT_HPI and include_hpi_as_headshape:
             polhemus_headshape.append(dig["r"])
+
+    if ctf:
+        nas = np.copy(polhemus_nasion)
+        lpa = np.copy(polhemus_lpa)
+        rpa = np.copy(polhemus_rpa)
+
+        nas[0], nas[1], nas[2] = nas[1], -nas[0], nas[2]
+        lpa[0], lpa[1], lpa[2] = lpa[1], -lpa[0], lpa[2]
+        rpa[0], rpa[1], rpa[2] = rpa[1], -rpa[0], rpa[2]
+
+        polhemus_nasion = nas
+        polhemus_rpa = rpa
+        polhemus_lpa = lpa
+        polhemus_headshape = [0, 0, 0]
 
     # Save
     log_or_print(f"saved: {nasion_outfile}")
