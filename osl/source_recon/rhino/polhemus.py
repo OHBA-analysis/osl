@@ -6,6 +6,7 @@
 #          Chetan Gohil <chetan.gohil@psych.ox.ac.uk>
 #          Mats van Es <mats.vanes@psych.ox.ac.uk>
 
+import os
 import numpy as np
 import matplotlib.pyplot as plt
 
@@ -118,9 +119,9 @@ def save_mni_fiducials(
 
     The file must be in MNI space with the following format:
 
-    nas -0.5 77.5 -32.6
-    lpa -74.4 -20.0 -27.2
-    rpa 75.4 -21.1 -21.9
+        nas -0.5 77.5 -32.6
+        lpa -74.4 -20.0 -27.2
+        rpa 75.4 -21.1 -21.9
 
     Note, the first column (fiducial naming) is ignored but the rows must be in the above order, i.e. be (nasion, right, left).
 
@@ -139,6 +140,8 @@ def save_mni_fiducials(
     lpa_outfile : str
         Filename to save lpa to.
     """
+    if not os.path.exists(fiducials_file):
+        raise FileNotFoundError(fiducials_file)
 
     with open(fiducials_file, "r") as file:
         data = file.readlines()
@@ -327,3 +330,52 @@ def remove_stray_headshape_points(src_dir, subject):
     # Overwrite headshape file
     log_or_print(f"overwritting {filenames['polhemus_headshape_file']}")
     np.savetxt(filenames["polhemus_headshape_file"], hs)
+
+
+def save_polhemus_from_pos(src_dir, subject, pos_filepath):
+    """Saves fiducials/headshape from a pos file.
+
+    Parameters
+    ----------
+    src_dir : str
+        Subjects directory.
+    subject : str
+        Subject subdirectory/ID.
+    pos_filepath : str
+        Full path to the pos file for this subject. Any reference to '{subject}'
+        (or '{0}') is replaced by the subject ID.
+        E.g. 'data/{subject}/meg/{subject}_headshape.pos' with subject='sub-001'
+        becomes 'data/sub-001/meg/sub-001_headshape.pos'.
+    """
+
+    # Get coreg filenames
+    filenames = source_recon.rhino.get_coreg_filenames(src_dir, subject)
+
+    # Load file
+    if "{0}" in pos_filepath:
+        pos_file = pos_filepath.format(subject)
+    else:
+        pos_file = pos_filepath.format(subject=subject)
+    log_or_print(f"Saving polhemus from {pos_file}")
+
+    # These values are in cm in polhemus space:
+    num_headshape_pnts = int(pd.read_csv(pos_file, header=None).to_numpy()[0])
+    data = pd.read_csv(pos_file, header=None, skiprows=[0], delim_whitespace=True)
+
+    # RHINO is going to work with distances in mm
+    # So convert to mm from cm, note that these are in polhemus space
+    data.iloc[:, 1:4] = data.iloc[:, 1:4] * 10
+
+    # Polhemus fiducial points in polhemus space
+    polhemus_nasion = data[data.iloc[:, 0].str.match("nasion")].iloc[0, 1:4].to_numpy().astype("float64").T
+    polhemus_rpa = data[data.iloc[:, 0].str.match("right")].iloc[0, 1:4].to_numpy().astype("float64").T
+    polhemus_lpa = data[data.iloc[:, 0].str.match("left")].iloc[0, 1:4].to_numpy().astype("float64").T
+
+    # Polhemus headshape points in polhemus space in mm
+    polhemus_headshape = data[0:num_headshape_pnts].iloc[:, 1:4].to_numpy().astype("float64").T
+
+    # Save
+    np.savetxt(filenames["polhemus_nasion_file"], polhemus_nasion)
+    np.savetxt(filenames["polhemus_rpa_file"], polhemus_rpa)
+    np.savetxt(filenames["polhemus_lpa_file"], polhemus_lpa)
+    np.savetxt(filenames["polhemus_headshape_file"], polhemus_headshape)

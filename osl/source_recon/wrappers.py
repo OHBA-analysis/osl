@@ -105,6 +105,81 @@ def remove_stray_headshape_points(
     rhino.remove_stray_headshape_points(src_dir, subject)
 
 
+def save_mni_fiducials(
+    src_dir,
+    subject,
+    preproc_file,
+    smri_file,
+    epoch_file,
+    fids_dir,
+):
+    """Wrapper to save MNI fiducials.
+
+    This function expects a fids_dir to contain text files with the
+    name <fids_dir>/<subject>_smri_fids.txt, which contains fiducials
+    in the format:
+
+        nas -0.5 77.5 -32.6
+        lpa -74.4 -20.0 -27.2
+        rpa 75.4 -21.1 -21.9
+
+    Parameters
+    ----------
+    src_dir : str
+        Path to where to output the source reconstruction files.
+    subject : str
+        Subject name/id.
+    preproc_file : str
+        Path to the preprocessed fif file. Not used.
+    smri_file : str
+        Path to the T1 weighted structural MRI file to use in source
+        reconstruction. Not used.
+    epoch_file : str
+        Path to epoched preprocessed fif file. Not used.
+    fids_dir : str
+        Path to directory containing the text files with the fiducials.
+    """
+    filenames = rhino.get_coreg_filenames(src_dir, subject)
+    rhino.save_mni_fiducials(
+        fiducials_file=f"{fids_dir}/{subject}_smri_fid.txt",
+        nasion_outfile=filenames["mni_nasion_mni_file"],
+        rpa_outfile=filenames["mni_rpa_mni_file"],
+        lpa_outfile=filenames["mni_lpa_mni_file"],
+    )
+
+
+def save_polhemus_from_pos(
+    src_dir,
+    subject,
+    preproc_file,
+    smri_file,
+    epoch_file,
+    fids_dir,
+):
+    """Wrapper to save polhemus data from a .pos file.
+
+    Parameters
+    ----------
+    src_dir : str
+        Path to where to output the source reconstruction files.
+    subject : str
+        Subject name/id.
+    preproc_file : str
+        Path to the preprocessed fif file. Not used.
+    smri_file : str
+        Path to the T1 weighted structural MRI file to use in source
+        reconstruction. Not used.
+    epoch_file : str
+        Path to epoched preprocessed fif file. Not used.
+    pos_filepath : str
+        Full path to the pos file for this subject. Any reference to '{subject}'
+        (or '{0}') is replaced by the subject ID.
+        E.g. 'data/{subject}/meg/{subject}_headshape.pos' with subject='sub-001'
+        becomes 'data/sub-001/meg/sub-001_headshape.pos'.
+    """
+    rhino.save_polhemus_from_pos(src_dir, subject, pos_filepath)
+
+
 def compute_surfaces(
     src_dir,
     subject,

@@ -29,71 +29,21 @@ POS_FILE = RAW_DIR + "/{0}/meg/{0}_headshape.pos"
 # Setup FSL
 source_recon.setup_fsl("/well/woolrich/projects/software/fsl")
 
-def save_polhemus_from_pos(src_dir, subject, preproc_file, smri_file, epoch_file):
-    """Saves fiducials/headshape from a pos file."""
-
-    # Load pos file
-    pos_file = POS_FILE.format(subject)
-    utils.logger.log_or_print(f"Saving polhemus from {pos_file}")
-
-    # Get coreg filenames
-    filenames = source_recon.rhino.get_coreg_filenames(src_dir, subject)
-
-    # Load in txt file, these values are in cm in polhemus space:
-    num_headshape_pnts = int(pd.read_csv(pos_file, header=None).to_numpy()[0])
-    data = pd.read_csv(pos_file, header=None, skiprows=[0], delim_whitespace=True)
-
-    # RHINO is going to work with distances in mm
-    # So convert to mm from cm, note that these are in polhemus space
-    data.iloc[:, 1:4] = data.iloc[:, 1:4] * 10
-
-    # Polhemus fiducial points in polhemus space
-    polhemus_nasion = (
-        data[data.iloc[:, 0].str.match("nasion")]
-        .iloc[0, 1:4]
-        .to_numpy()
-        .astype("float64")
-        .T
-    )
-    polhemus_rpa = (
-        data[data.iloc[:, 0].str.match("right")]
-        .iloc[0, 1:4]
-        .to_numpy()
-        .astype("float64")
-        .T
-    )
-    polhemus_lpa = (
-        data[data.iloc[:, 0].str.match("left")]
-        .iloc[0, 1:4]
-        .to_numpy()
-        .astype("float64")
-        .T
-    )
-
-    # Polhemus headshape points in polhemus space in mm
-    polhemus_headshape = (
-        data[0:num_headshape_pnts].iloc[:, 1:4].to_numpy().astype("float64").T
-    )
-
-    # Save
-    np.savetxt(filenames["polhemus_nasion_file"], polhemus_nasion)
-    np.savetxt(filenames["polhemus_rpa_file"], polhemus_rpa)
-    np.savetxt(filenames["polhemus_lpa_file"], polhemus_lpa)
-    np.savetxt(filenames["polhemus_headshape_file"], polhemus_headshape)
-
-
 if __name__ == "__main__":
     utils.logger.set_up(level="INFO")
     client = Client(n_workers=16, threads_per_worker=1)
 
     # Settings
-    config = """
+    config = f"""
         source_recon:
-        - save_polhemus_from_pos: {}
-        - compute_surfaces_coregister_and_forward_model:
-            include_nose: true
-            use_nose: true
-            use_headshape: true
+        - save_polhemus_from_pos:
+            pos_filepath: {POS_FILE}
+        - compute_surfaces:
+            include_nose: True
+        - coregister:
+            use_nose: True
+            use_headshape: True
+        - forward_model:
             model: Single Layer
         - beamform_and_parcellate:
             freq_range: [1, 45]
@@ -121,6 +71,5 @@ if __name__ == "__main__":
         subjects=subjects,
         preproc_files=preproc_files,
         smri_files=smri_files,
-        extra_funcs=[save_polhemus_from_pos],
         dask_client=True,
     )
