@@ -9,8 +9,6 @@ from dask.distributed import Client
 
 from osl import source_recon, utils
 
-source_recon.setup_fsl("/well/woolrich/projects/software/fsl")
-
 def fix_headshape_points(src_dir, subject, preproc_file, smri_file, epoch_file):
     filenames = source_recon.rhino.get_coreg_filenames(src_dir, subject)
 

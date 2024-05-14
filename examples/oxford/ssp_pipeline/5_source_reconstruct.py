@@ -14,7 +14,6 @@ from osl import source_recon, utils
 preproc_dir = "data/preproc_ssp"
 coreg_dir = "data/coreg"
 src_dir = "data/src"
-fsl_dir = "/opt/ohba/fsl/6.0.5"  # this is where FSL is installed on hbaws
 
 # Files
 preproc_file = preproc_dir + "/{subject}_tsss_preproc_raw.fif"  # {subject} will be replaced by the subject name
@@ -38,7 +37,6 @@ config = """
 
 if __name__ == "__main__":
     utils.logger.set_up(level="INFO")
-    source_recon.setup_fsl(fsl_dir)
 
     # Copy directory containing the coregistration
     if not os.path.exists(src_dir):

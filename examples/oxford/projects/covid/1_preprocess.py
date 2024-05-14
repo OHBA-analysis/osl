@@ -25,10 +25,8 @@ config = """
     - ica_autoreject: {apply: False}
 """
 
-# Setup
-inputs = []
-for subject in subjects:
-    inputs.append(raw_file.format(subject))
+# Input files
+inputs = [raw_file.format(subject) for subject in subjects]
 
 # Preprocess
 preprocessing.run_proc_batch(

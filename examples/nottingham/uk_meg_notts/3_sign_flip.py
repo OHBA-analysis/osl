@@ -14,7 +14,6 @@ SRC_DIR = "/well/woolrich/projects/uk_meg_notts/eo/oslpy22/src"
 
 if __name__ == "__main__":
     utils.logger.set_up(level="INFO")
-    source_recon.setup_fsl("/well/woolrich/projects/software/fsl")
 
     subjects = []
     for path in sorted(glob(SRC_DIR + "/*/rhino/parc-raw.fif")):

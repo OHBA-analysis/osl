@@ -8,7 +8,7 @@ from glob import glob
 from dask.distributed import Client
 
 from osl import utils
-from osl.source_recon import find_template_subject, run_src_batch, setup_fsl
+from osl.source_recon import find_template_subject, run_src_batch
 
 # Directories
 SRC_DIR = "/well/woolrich/projects/camcan/summer23/src"
@@ -16,7 +16,6 @@ FSL_DIR = "/well/woolrich/projects/software/fsl"
 
 if __name__ == "__main__":
     utils.logger.set_up(level="INFO")
-    setup_fsl(FSL_DIR)
 
     # Subjects to sign flip
     subjects = []

@@ -8,15 +8,13 @@ from glob import glob
 from dask.distributed import Client
 
 from osl import utils
-from osl.source_recon import find_template_subject, run_src_batch, setup_fsl
+from osl.source_recon import find_template_subject, run_src_batch
 
 # Directories
 src_dir = "data/src"
-fsl_dir = "/opt/ohba/fsl/6.0.5"  # this is where FSL is installed on hbaws
 
 if __name__ == "__main__":
     utils.logger.set_up(level="INFO")
-    setup_fsl(fsl_dir)
 
     # Subjects to sign flip
     # We create a list by looking for subjects that have a parc/parc-raw.fif file

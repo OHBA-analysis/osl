@@ -21,7 +21,6 @@ BASE_DIR = "/well/woolrich/projects/lemon"
 RAW_DIR = BASE_DIR + "/raw"
 PREPROC_DIR = BASE_DIR + "/osl_example/preproc"
 SRC_DIR = BASE_DIR + "/osl_example/src"
-FSL_DIR = "/well/woolrich/projects/software/fsl"
 
 # Files
 PREPROC_FILE = PREPROC_DIR + "/{0}/{0}_preproc_raw.fif"
@@ -29,7 +28,6 @@ SMRI_FILE = RAW_DIR + "/{0}/ses-01/anat/{0}_ses-01_inv-2_mp2rage.nii.gz"
 
 if __name__ == "__main__":
     utils.logger.set_up(level="INFO")
-    source_recon.setup_fsl(FSL_DIR)
 
     # Settings
     config = """

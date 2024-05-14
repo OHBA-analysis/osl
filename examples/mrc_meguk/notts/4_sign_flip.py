@@ -12,9 +12,6 @@ from osl import source_recon, utils
 
 TASK = "resteyesopen"  # resteyesopen or resteyesclosed
 
-# Setup FSL
-source_recon.setup_fsl("/well/woolrich/projects/software/fsl")
-
 # Directories
 SRC_DIR = f"/well/woolrich/projects/mrc_meguk/notts/{TASK}/src"
 

@@ -11,8 +11,6 @@ import nibabel as nib
 
 from osl import source_recon
 
-source_recon.setup_fsl("/path/to/fsl")
-
 # Paths to files to fix
 files = [
     "smri/sub-001.nii.gz",

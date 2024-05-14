@@ -8,9 +8,6 @@ from glob import glob
 from pathlib import Path
 from dask.distributed import Client
 
-import numpy as np
-import pandas as pd
-
 from osl import source_recon, utils
 
 
@@ -45,8 +42,6 @@ config = f"""
 
 if __name__ == "__main__":
     utils.logger.set_up(level="INFO")
-
-    source_recon.setup_fsl("/well/woolrich/projects/software/fsl")
 
     subjects = []
     preproc_files = []

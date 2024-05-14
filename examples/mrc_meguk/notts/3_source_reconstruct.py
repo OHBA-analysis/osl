@@ -26,9 +26,6 @@ SMRI_FILE = f"/well/woolrich/projects/mrc_meguk/notts/{TASK}/smri/{0}_T1w.nii.gz
 PREPROC_FILE = PREPROC_DIR + "/{0}_task-resteyesopen_meg/{0}_task-" + TASK + "_meg_preproc_raw.fif"
 POS_FILE = RAW_DIR + "/{0}/meg/{0}_headshape.pos"
 
-# Setup FSL
-source_recon.setup_fsl("/well/woolrich/projects/software/fsl")
-
 if __name__ == "__main__":
     utils.logger.set_up(level="INFO")
     client = Client(n_workers=16, threads_per_worker=1)

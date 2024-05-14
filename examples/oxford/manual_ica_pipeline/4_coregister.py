@@ -20,7 +20,6 @@ from osl import source_recon, utils
 preproc_dir = "data/preproc_ica"
 anat_dir = "data/smri"
 coreg_dir = "data/coreg"
-fsl_dir = "/opt/ohba/fsl/6.0.5"  # this is where FSL is installed on hbaws
 
 # Files ({subject} will be replaced by the name for the subject)
 preproc_file = preproc_dir + "/{subject}_tsss_preproc_raw.fif"
@@ -44,7 +43,6 @@ config = """
 
 if __name__ == "__main__":
     utils.logger.set_up(level="INFO")
-    source_recon.setup_fsl(fsl_dir)
 
     # Setup files
     preproc_files = []

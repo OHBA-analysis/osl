@@ -21,9 +21,6 @@ PREPROC_DIR = f"/well/woolrich/projects/mrc_meguk/notts/{TASK}/preproc"
 SMRI_FILE = "/well/woolrich/projects/mrc_meguk/raw/Nottingham/{0}/anat/{0}_T1w.nii.gz"
 FIXED_SMRI_DIR = f"/well/woolrich/projects/mrc_meguk/notts/{TASK}/smri"
 
-# Setup FSL
-source_recon.setup_fsl("/well/woolrich/projects/software/fsl")
-
 # Look up which subjects we preprocessed to see what SMRI files we need to fix
 smri_files = []
 for path in sorted(glob(PREPROC_DIR + "/*/sub-*_preproc_raw.fif")):

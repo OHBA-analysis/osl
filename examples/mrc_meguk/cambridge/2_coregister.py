@@ -18,7 +18,6 @@ PREPROC_DIR = BASE_DIR + "/preproc"
 SRC_DIR = BASE_DIR + "/src"
 PREPROC_FILE = PREPROC_DIR + "/{0}_task-{1}_proc-sss_meg/{0}_task-{1}_proc-sss_meg_preproc_raw.fif"
 SMRI_FILE = "/well/woolrich/projects/mrc_meguk/raw/Cambridge/{0}/anat/{0}_T1w.nii.gz"
-FSL_DIR = "/well/woolrich/projects/software/fsl"
 
 
 def fix_headshape_points(src_dir, subject, preproc_file, smri_file, epoch_file):
@@ -58,18 +57,19 @@ def fix_headshape_points(src_dir, subject, preproc_file, smri_file, epoch_file):
 
 config = """
     source_recon:
-    - extract_fiducials_from_fif: {}
+    - extract_polhemus_from_info: {}
     - fix_headshape_points: {}
-    - compute_surfaces_coregister_and_forward_model:
-        include_nose: false
-        use_nose: false
-        use_headshape: true
+    - compute_surfaces:
+        include_nose: False
+    - coregister:
+        use_nose: False
+        use_headshape: True
+    - forward_model:
         model: Single Layer
 """
 
 if __name__ == "__main__":
     utils.logger.set_up(level="INFO")
-    source_recon.setup_fsl(FSL_DIR)
 
     subjects = []
     smri_files = []
