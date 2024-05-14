@@ -5,7 +5,6 @@
 # Authors: Mark Woolrich <mark.woolrich@ohba.ox.ac.uk>
 #          Chetan Gohil <chetan.gohil@psych.ox.ac.uk>
 
-import warnings
 import os
 import os.path as op
 from pathlib import Path
@@ -671,8 +670,6 @@ def coreg_display(
     # Do plots
 
     if plot_type == "surf":
-        warnings.filterwarnings("ignore", category=Warning)
-
         # Initialize figure
         renderer = _get_renderer(None, bgcolor=(0.5, 0.5, 0.5), size=(500, 500))
 
@@ -848,9 +845,6 @@ def coreg_display(
     else:
         raise ValueError("invalid plot_type.")
 
-    with warnings.catch_warnings(record=True):
-        warnings.simplefilter("ignore", Warning)
-
 
 def bem_display(
     subjects_dir,
@@ -985,8 +979,6 @@ def bem_display(
     # Do plots
 
     if plot_type == "surf":
-        warnings.filterwarnings("ignore", category=Warning)
-
         # Initialize figure
         renderer = _get_renderer(None, bgcolor=(0.5, 0.5, 0.5), size=(500, 500))
 
@@ -1106,6 +1098,3 @@ def bem_display(
             plt.close()
     else:
         raise ValueError("invalid plot_type")
-
-    with warnings.catch_warnings(record=True):
-        warnings.simplefilter("ignore", Warning)
