@@ -335,11 +335,11 @@ def remove_stray_headshape_points(src_dir, subject):
     hs = hs[:, ~remove]
 
     # Overwrite headshape file
-    log_or_print(f"overwritting {filenames['polhemus_headshape_file']}")
+    log_or_print(f"overwritting: {filenames['polhemus_headshape_file']}")
     np.savetxt(filenames["polhemus_headshape_file"], hs)
 
 
-def save_polhemus_from_pos(src_dir, subject, pos_filepath):
+def extract_polhemus_from_pos(src_dir, subject, filepath):
     """Saves fiducials/headshape from a pos file.
 
     Parameters
@@ -348,7 +348,7 @@ def save_polhemus_from_pos(src_dir, subject, pos_filepath):
         Subjects directory.
     subject : str
         Subject subdirectory/ID.
-    pos_filepath : str
+    filepath : str
         Full path to the .pos file for this subject. Any reference to '{subject}'
         (or '{0}') is replaced by the subject ID.
         E.g. 'data/{subject}/meg/{subject}_headshape.pos' with subject='sub-001'
@@ -359,10 +359,10 @@ def save_polhemus_from_pos(src_dir, subject, pos_filepath):
     filenames = get_coreg_filenames(src_dir, subject)
 
     # Load file
-    if "{0}" in pos_filepath:
-        pos_file = pos_filepath.format(subject)
+    if "{0}" in filepath:
+        pos_file = filepath.format(subject)
     else:
-        pos_file = pos_filepath.format(subject=subject)
+        pos_file = filepath.format(subject=subject)
     log_or_print(f"Saving polhemus from {pos_file}")
 
     # These values are in cm in polhemus space:
@@ -382,13 +382,17 @@ def save_polhemus_from_pos(src_dir, subject, pos_filepath):
     polhemus_headshape = data[0:num_headshape_pnts].iloc[:, 1:4].to_numpy().astype("float64").T
 
     # Save
+    log_or_print(f"saved: {filenames['polhemus_nasion_file']}")
     np.savetxt(filenames["polhemus_nasion_file"], polhemus_nasion)
+    log_or_print(f"saved: {filenames['polhemus_rpa_file']}")
     np.savetxt(filenames["polhemus_rpa_file"], polhemus_rpa)
+    log_or_print(f"saved: {filenames['polhemus_lpa_file']}")
     np.savetxt(filenames["polhemus_lpa_file"], polhemus_lpa)
+    log_or_print(f"saved: {filenames['polhemus_headshape_file']}")
     np.savetxt(filenames["polhemus_headshape_file"], polhemus_headshape)
 
 
-def extract_polhemus_from_elc(src_dir, subject, elc_filepath, remove_headshape_near_nose=False):
+def extract_polhemus_from_elc(src_dir, subject, filepath, remove_headshape_near_nose=False):
     """Saves fiducials/headshape from an elc file.
 
     Parameters
@@ -397,7 +401,7 @@ def extract_polhemus_from_elc(src_dir, subject, elc_filepath, remove_headshape_n
         Subjects directory.
     subject : str
         Subject subdirectory/ID.
-    elc_filepath : str
+    filepath : str
         Full path to the .elc file for this subject. Any reference to '{subject}'
         (or '{0}') is replaced by the subject ID.
         E.g. 'data/{subject}/meg/{subject}_headshape.elc' with subject='sub-001'
@@ -410,10 +414,10 @@ def extract_polhemus_from_elc(src_dir, subject, elc_filepath, remove_headshape_n
     filenames = get_coreg_filenames(src_dir, subject)
 
     # Load elc file
-    if "{0}" in elc_filepath:
-        elc_file = elc_filepath.format(subject)
+    if "{0}" in filepath:
+        elc_file = filepath.format(subject)
     else:
-        elc_file = elc_filepath.format(subject=subject)
+        elc_file = filepath.format(subject=subject)
     log_or_print(f"Saving polhemus from {elc_file}")
 
     with open(elc_file, "r") as file:
@@ -439,7 +443,11 @@ def extract_polhemus_from_elc(src_dir, subject, elc_filepath, remove_headshape_n
         headshape = headshape[:, ~remove]
 
     # Save
+    log_or_print(f"saved: {filenames['polhemus_nasion_file']}")
     np.savetxt(filenames["polhemus_nasion_file"], nasion)
+    log_or_print(f"saved: {filenames['polhemus_rpa_file']}")
     np.savetxt(filenames["polhemus_rpa_file"], rpa)
+    log_or_print(f"saved: {filenames['polhemus_lpa_file']}")
     np.savetxt(filenames["polhemus_lpa_file"], lpa)
+    log_or_print(f"saved: {filenames['polhemus_headshape_file']}")
     np.savetxt(filenames["polhemus_headshape_file"], headshape)

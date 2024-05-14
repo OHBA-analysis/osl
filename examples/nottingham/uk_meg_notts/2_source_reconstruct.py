@@ -22,8 +22,8 @@ POS_FILE = RAW_DIR + "/{0}/{0}.pos"
 
 config = f"""
     source_recon:
-    - save_polhemus_from_pos:
-        pos_filepath: {POS_FILE}
+    - extract_polhemus_from_pos:
+        filepath: {POS_FILE}
     - compute_surfaces:
         include_nose: True
     - coregister:

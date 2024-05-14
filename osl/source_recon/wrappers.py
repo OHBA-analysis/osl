@@ -111,7 +111,7 @@ def save_mni_fiducials(
     preproc_file,
     smri_file,
     epoch_file,
-    fids_dir,
+    filepath,
 ):
     """Wrapper to save MNI fiducials.
 
@@ -136,25 +136,32 @@ def save_mni_fiducials(
         reconstruction. Not used.
     epoch_file : str
         Path to epoched preprocessed fif file. Not used.
-    fids_dir : str
-        Path to directory containing the text files with the fiducials.
+    filepath : str
+        Full path to the text file containing the fiducials.
+        Any reference to '{subject}' (or '{0}') is replaced by the subject ID.
+        E.g. 'data/fiducials/{subject}_smri_fids.txt' with subject='sub-001'
+        will become 'data/fiducials/sub-001_smri_fids.txt'.
     """
     filenames = rhino.get_coreg_filenames(src_dir, subject)
+    if "{0}" in filepath:
+        fiducials_file = filepath.format(subject)
+    else:
+        fiducials_file = filepath.format(subject=subject)
     rhino.save_mni_fiducials(
-        fiducials_file=f"{fids_dir}/{subject}_smri_fid.txt",
+        fiducials_file=fiducials_file,
         nasion_outfile=filenames["mni_nasion_mni_file"],
         rpa_outfile=filenames["mni_rpa_mni_file"],
         lpa_outfile=filenames["mni_lpa_mni_file"],
     )
 
 
-def save_polhemus_from_pos(
+def extract_polhemus_from_pos(
     src_dir,
     subject,
     preproc_file,
     smri_file,
     epoch_file,
-    pos_filepath,
+    filepath,
 ):
     """Wrapper to save polhemus data from a .pos file.
 
@@ -171,22 +178,22 @@ def save_polhemus_from_pos(
         reconstruction. Not used.
     epoch_file : str
         Path to epoched preprocessed fif file. Not used.
-    pos_filepath : str
+    filepath : str
         Full path to the pos file for this subject. Any reference to '{subject}'
         (or '{0}') is replaced by the subject ID.
         E.g. 'data/{subject}/meg/{subject}_headshape.pos' with subject='sub-001'
         becomes 'data/sub-001/meg/sub-001_headshape.pos'.
     """
-    rhino.save_polhemus_from_pos(src_dir, subject, pos_filepath)
+    rhino.extract_polhemus_from_pos(src_dir, subject, filepath)
 
 
-def save_polhemus_from_elc(
+def extract_polhemus_from_elc(
     src_dir,
     subject,
     preproc_file,
     smri_file,
     epoch_file,
-    elc_filepath,
+    filepath,
     remove_headshape_near_nose=False,
 ):
     """Wrapper to save polhemus data from an .elc file.
@@ -204,7 +211,7 @@ def save_polhemus_from_elc(
         reconstruction. Not used.
     epoch_file : str
         Path to epoched preprocessed fif file. Not used.
-    elc_filepath : str
+    filepath : str
         Full path to the elc file for this subject. Any reference to '{subject}'
         (or '{0}') is replaced by the subject ID.
         E.g. 'data/{subject}/meg/{subject}_headshape.elc' with subject='sub-001'
@@ -212,8 +219,8 @@ def save_polhemus_from_elc(
     remove_headshape_near_nose : bool, optional
         Should we remove any headshape points near the nose?
     """
-    rhino.save_polhemus_from_elc(
-        src_dir, subject, elc_filepath, remove_headshape_near_nose
+    rhino.extract_polhemus_from_elc(
+        src_dir, subject, filepath, remove_headshape_near_nose
     )
 
 
