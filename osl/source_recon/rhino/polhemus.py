@@ -130,7 +130,7 @@ def save_mni_fiducials(
         lpa -74.4 -20.0 -27.2
         rpa 75.4 -21.1 -21.9
 
-    Note, the first column (fiducial naming) is ignored but the rows must be in the above order, i.e. be (nasion, right, left).
+    Note, the first column (fiducial naming) is ignored but the rows must be in the above order, i.e. be (nasion, left, right).
 
     The order of the coordinates is the same as given in FSLeyes.
 
@@ -349,8 +349,8 @@ def extract_polhemus_from_pos(src_dir, subject, filepath):
     subject : str
         Subject subdirectory/ID.
     filepath : str
-        Full path to the .pos file for this subject. Any reference to '{subject}'
-        (or '{0}') is replaced by the subject ID.
+        Full path to the .pos file for this subject.
+        Any reference to '{subject}' (or '{0}') is replaced by the subject ID.
         E.g. 'data/{subject}/meg/{subject}_headshape.pos' with subject='sub-001'
         becomes 'data/sub-001/meg/sub-001_headshape.pos'.
     """
@@ -402,8 +402,8 @@ def extract_polhemus_from_elc(src_dir, subject, filepath, remove_headshape_near_
     subject : str
         Subject subdirectory/ID.
     filepath : str
-        Full path to the .elc file for this subject. Any reference to '{subject}'
-        (or '{0}') is replaced by the subject ID.
+        Full path to the .elc file for this subject.
+        Any reference to '{subject}' (or '{0}') is replaced by the subject ID.
         E.g. 'data/{subject}/meg/{subject}_headshape.elc' with subject='sub-001'
         becomes 'data/sub-001/meg/sub-001_headshape.elc'.
     remove_headshape_near_nose : bool, optional

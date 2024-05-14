@@ -115,14 +115,6 @@ def save_mni_fiducials(
 ):
     """Wrapper to save MNI fiducials.
 
-    This function expects a fids_dir to contain text files with the
-    name <fids_dir>/<subject>_smri_fids.txt, which contains fiducials
-    in the format:
-
-        nas -0.5 77.5 -32.6
-        lpa -74.4 -20.0 -27.2
-        rpa 75.4 -21.1 -21.9
-
     Parameters
     ----------
     src_dir : str
@@ -138,9 +130,21 @@ def save_mni_fiducials(
         Path to epoched preprocessed fif file. Not used.
     filepath : str
         Full path to the text file containing the fiducials.
+
         Any reference to '{subject}' (or '{0}') is replaced by the subject ID.
         E.g. 'data/fiducials/{subject}_smri_fids.txt' with subject='sub-001'
         will become 'data/fiducials/sub-001_smri_fids.txt'.
+
+        The file must be in MNI space with the following format:
+
+            nas -0.5 77.5 -32.6
+            lpa -74.4 -20.0 -27.2
+            rpa 75.4 -21.1 -21.9
+
+        Note, the first column (fiducial naming) is ignored but the rows must
+        be in the above order, i.e. be (nasion, left, right).
+
+        The order of the coordinates is the same as given in FSLeyes.
     """
     filenames = rhino.get_coreg_filenames(src_dir, subject)
     if "{0}" in filepath:
@@ -179,8 +183,8 @@ def extract_polhemus_from_pos(
     epoch_file : str
         Path to epoched preprocessed fif file. Not used.
     filepath : str
-        Full path to the pos file for this subject. Any reference to '{subject}'
-        (or '{0}') is replaced by the subject ID.
+        Full path to the pos file for this subject.
+        Any reference to '{subject}' (or '{0}') is replaced by the subject ID.
         E.g. 'data/{subject}/meg/{subject}_headshape.pos' with subject='sub-001'
         becomes 'data/sub-001/meg/sub-001_headshape.pos'.
     """
@@ -212,8 +216,8 @@ def extract_polhemus_from_elc(
     epoch_file : str
         Path to epoched preprocessed fif file. Not used.
     filepath : str
-        Full path to the elc file for this subject. Any reference to '{subject}'
-        (or '{0}') is replaced by the subject ID.
+        Full path to the elc file for this subject.
+        Any reference to '{subject}' (or '{0}') is replaced by the subject ID.
         E.g. 'data/{subject}/meg/{subject}_headshape.elc' with subject='sub-001'
         becomes 'data/sub-001/meg/sub-001_headshape.elc'.
     remove_headshape_near_nose : bool, optional
