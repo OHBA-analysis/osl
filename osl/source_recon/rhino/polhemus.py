@@ -25,7 +25,6 @@ def extract_polhemus_from_info(
     lpa_outfile,
     include_eeg_as_headshape=False,
     include_hpi_as_headshape=True,
-    ctf=False,
 ):
     """Extract polhemus from FIF info.
 
@@ -49,8 +48,6 @@ def extract_polhemus_from_info(
         Should we include EEG locations as headshape points?
     include_hpi_as_headshape : bool, optional
         Should we include HPI locations as headshape points?
-    ctf : bool, optional
-        Is the fif file from CTF data?
     """
     log_or_print("Extracting polhemus from fif info")
 
@@ -62,6 +59,8 @@ def extract_polhemus_from_info(
 
     # Read info from fif file
     info = read_info(fif_file)
+
+    # Get fiducials/headshape points
     for dig in info["dig"]:
 
         # Check dig is in HEAD/Polhemus space
@@ -84,7 +83,10 @@ def extract_polhemus_from_info(
         elif dig["kind"] == FIFF.FIFFV_POINT_HPI and include_hpi_as_headshape:
             polhemus_headshape.append(dig["r"])
 
-    if ctf:
+    # Check if info is from a CTF scanner
+    if info["dev_ctf_t"] is not None:
+        log_or_print("Detected CTF data")
+
         nas = np.copy(polhemus_nasion)
         lpa = np.copy(polhemus_lpa)
         rpa = np.copy(polhemus_rpa)
@@ -96,6 +98,8 @@ def extract_polhemus_from_info(
         polhemus_nasion = nas
         polhemus_rpa = rpa
         polhemus_lpa = lpa
+
+        # CTF data won't contain headshape points, use a dummy point to avoid errors
         polhemus_headshape = [0, 0, 0]
 
     # Save
@@ -108,10 +112,13 @@ def extract_polhemus_from_info(
     log_or_print(f"saved: {headshape_outfile}")
     np.savetxt(headshape_outfile, np.array(polhemus_headshape).T * 1000)
 
+    if info["dev_ctf_t"] is not None:
+        log_or_print(f"dummy headshape points saved, overwrite {headshape_outfile} or set use_headshape=False in coregisteration")
+
     # Warning if 'trans' in filename we assume -trans was applied using MaxFiltering
     # This may make the coregistration appear incorrect, but this is not an issue.
     if "_trans" in fif_file:
-        log_or_print("Filename contains '_trans' which suggests -trans was passed during MaxFiltering", warning=True)
+        log_or_print("fif filename contains '_trans' which suggests -trans was passed during MaxFiltering", warning=True)
         log_or_print("This means the location of the head in the coregistration plot may not be correct", warning=True)
         log_or_print("Either use the _tsss.fif file or ignore the centroid of the head in coregistration plot", warning=True)
 

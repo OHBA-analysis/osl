@@ -160,7 +160,7 @@ def coreg(
     if use_dev_ctf_t:
         dev_ctf_t = raw.info["dev_ctf_t"]
         if dev_ctf_t is not None:
-            log_or_print("CTF data")
+            log_or_print("Detected CTF data")
             log_or_print("Setting dev_head_t equal to dev_ctf_t in fif file info.")
             log_or_print("To turn this off, set use_dev_ctf_t=False")
             dev_head_t, _ = _get_trans(raw.info["dev_head_t"], "meg", "head")
