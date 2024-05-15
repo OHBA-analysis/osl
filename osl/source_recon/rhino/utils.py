@@ -229,12 +229,12 @@ def niimask2mmpointcloud(nii_mask, volindex=None):
     values = np.asarray(vol[vol != 0])
 
     # Move from native voxel indices to native space coordinates (in mm)
-    pc = xform_points(_get_sform(nii_mask)["trans"], pc_nativeindex)
+    pc = xform_points(get_sform(nii_mask)["trans"], pc_nativeindex)
 
     return pc, values
 
 
-def _closest_node(node, nodes):
+def closest_node(node, nodes):
     """Find nearest node in nodes to the passed in node.
 
     Returns
@@ -254,7 +254,7 @@ def _closest_node(node, nodes):
     return index, distance
 
 
-def _get_vol_info_from_nii(mri):
+def get_vol_info_from_nii(mri):
     """Read volume info from an MRI file.
 
     Parameters
@@ -272,7 +272,7 @@ def _get_vol_info_from_nii(mri):
     return out
 
 
-def _get_sform(nii_file):
+def get_sform(nii_file):
     """
     sform allows mapping from simple voxel index cordinates (e.g. from 0 to 256) in scanner space to continuous coordinates (in mm)
 
@@ -286,35 +286,14 @@ def _get_sform(nii_file):
     else:
         raise ValueError(
             f"sform code for {nii_file} is {sformcode}, and needs to be 4 or 1.\n"
-            "To fix see: https://github.com/OHBA-analysis/osl/blob/main/examples/fix_smri_files.py"
+            "To fix see: https://github.com/OHBA-analysis/osl/blob/main/examples/miscellaneous/fix_smri_files.py"
         )
 
     sform = Transform("mri_voxel", "mri", sform)
     return sform
 
 
-def _get_mni_sform(nii_file):
-    """
-    sform allows mapping from simple voxel index cordinates (e.g. from 0 to 256) in scanner space to continuous coordinates (in mm)
-
-    sformcode = os.popen('fslorient -getsformcode {}'.format(nii_file)).read().strip()
-    """
-
-    sformcode = int(nib.load(nii_file).header["sform_code"])
-
-    if sformcode == 1 or sformcode == 4:
-        sform = nib.load(nii_file).header.get_sform()
-    else:
-        raise ValueError(
-            f"sform code for {nii_file} is {sformcode}, and needs to be 4 or 1.\n"
-            "To fix see: https://github.com/OHBA-analysis/osl/blob/main/examples/fix_smri_files.py"
-        )
-
-    sform = Transform("unknown", "mni_tal", sform)
-    return sform
-
-
-def _get_orient(nii_file):
+def get_orient(nii_file):
     cmd = "fslorient -getorient {}".format(nii_file)
 
     # use os.popen rather than os.system as we want to return a value, note that this will wait until the read() works before continuing.
@@ -324,7 +303,7 @@ def _get_orient(nii_file):
     return orient
 
 
-def _check_nii_for_nan(filename):
+def check_nii_for_nan(filename):
     img = nib.load(filename)
     data = img.get_fdata()
     return np.isnan(data).any()
@@ -719,7 +698,7 @@ def rhino_icp(smri_headshape_polhemus, polhemus_headshape_polhemus, n_init=10):
     return xform, err, err_old
 
 
-def _get_vtk_mesh_native(vtk_mesh_file, nii_mesh_file):
+def get_vtk_mesh_native(vtk_mesh_file, nii_mesh_file):
     """
     Returns mesh rrs in native space in mm and the mesh tris for the passed in vtk_mesh_file
 
@@ -734,7 +713,7 @@ def _get_vtk_mesh_native(vtk_mesh_file, nii_mesh_file):
     rrs_flirtcoords = data.iloc[4 : num_rrs + 4, 0:3].to_numpy().astype(np.float64)
 
     # move from flirtcoords mm to mri mm (native) space
-    xform_flirtcoords2nii = _get_flirtcoords2native_xform(nii_mesh_file)
+    xform_flirtcoords2nii = get_flirtcoords2native_xform(nii_mesh_file)
     rrs_nii = xform_points(xform_flirtcoords2nii, rrs_flirtcoords.T).T
 
     num_tris = int(data.iloc[num_rrs + 4, 1])
@@ -743,7 +722,7 @@ def _get_vtk_mesh_native(vtk_mesh_file, nii_mesh_file):
     return rrs_nii, tris_nii
 
 
-def _get_flirtcoords2native_xform(nii_mesh_file):
+def get_flirtcoords2native_xform(nii_mesh_file):
     """
     Returns xform_flirtcoords2native transform that transforms from flirtcoords space in mm into native space in mm, where the passed in nii_mesh_file specifies the native space
 
@@ -760,11 +739,11 @@ def _get_flirtcoords2native_xform(nii_mesh_file):
 
     # We will assume orientation of the smri is RADIOLOGICAL as RHINO will have made the smri the same orientation as the standard brain nii.
     # But let's just double check that is the case:
-    smri_orient = _get_orient(nii_mesh_file)
+    smri_orient = get_orient(nii_mesh_file)
     if smri_orient != "RADIOLOGICAL":
         raise ValueError("Orientation of file must be RADIOLOGICAL, please check output of: fslorient -getorient {}".format(nii_mesh_file))
 
-    xform_nativevox2native = _get_sform(nii_mesh_file)["trans"]
+    xform_nativevox2native = get_sform(nii_mesh_file)["trans"]
     dims = np.append(nib.load(nii_mesh_file).header.get_zooms(), 1)
 
     # Then calc xform based on x_mm = x_dim * x (see above)
@@ -774,9 +753,7 @@ def _get_flirtcoords2native_xform(nii_mesh_file):
     return xform_flirtcoords2native
 
 
-def _transform_vtk_mesh(
-    vtk_mesh_file_in, nii_mesh_file_in, out_vtk_file, nii_mesh_file_out, xform_file
-):
+def transform_vtk_mesh(vtk_mesh_file_in, nii_mesh_file_in, out_vtk_file, nii_mesh_file_out, xform_file):
     """
     Outputs mesh to out_vtk_file, which is the result of applying the transform xform to vtk_mesh_file_in
 
@@ -785,9 +762,9 @@ def _transform_vtk_mesh(
     nii_mesh_file_out needs to be the corresponding niftii file from bet that corresponds to the same mesh as in out_vtk_file
     """
 
-    rrs_in, tris_in = _get_vtk_mesh_native(vtk_mesh_file_in, nii_mesh_file_in)
+    rrs_in, tris_in = get_vtk_mesh_native(vtk_mesh_file_in, nii_mesh_file_in)
 
-    xform_flirtcoords2native_out = _get_flirtcoords2native_xform(nii_mesh_file_out)
+    xform_flirtcoords2native_out = get_flirtcoords2native_xform(nii_mesh_file_out)
 
     if isinstance(xform_file, str):
         xform = read_trans(xform_file)["trans"]
@@ -809,22 +786,22 @@ def _transform_vtk_mesh(
     data.to_csv(out_vtk_file, sep=" ", index=False)
 
 
-def _get_mne_xform_from_flirt_xform(flirt_xform, nii_mesh_file_in, nii_mesh_file_out):
+def get_mne_xform_from_flirt_xform(flirt_xform, nii_mesh_file_in, nii_mesh_file_out):
     """
     Returns a mm coordinates to mm coordinates MNE xform that corresponds to the passed in flirt xform.
 
-    Note that we need to do this as flirt xforms include an extra xform based on the voxel dimensions (see _get_flirtcoords2native_xform).
+    Note that we need to do this as flirt xforms include an extra xform based on the voxel dimensions (see get_flirtcoords2native_xform).
     """
 
-    flirtcoords2native_xform_in = _get_flirtcoords2native_xform(nii_mesh_file_in)
-    flirtcoords2native_xform_out = _get_flirtcoords2native_xform(nii_mesh_file_out)
+    flirtcoords2native_xform_in = get_flirtcoords2native_xform(nii_mesh_file_in)
+    flirtcoords2native_xform_out = get_flirtcoords2native_xform(nii_mesh_file_out)
 
     xform = flirtcoords2native_xform_out @ flirt_xform @ np.linalg.inv(flirtcoords2native_xform_in)
 
     return xform
 
 
-def _get_flirt_xform_between_axes(from_nii, target_nii):
+def get_flirt_xform_between_axes(from_nii, target_nii):
     """
     Computes flirt xform that moves from_nii to have voxel indices on the same axis as  the voxel indices for target_nii.
 
@@ -854,15 +831,15 @@ def _get_flirt_xform_between_axes(from_nii, target_nii):
       from2targetaxes = inv(targetvox2target) * fromvox2from
     """
 
-    to2tovox = np.linalg.inv(_get_sform(target_nii)["trans"])
-    fromvox2from = _get_sform(from_nii)["trans"]
+    to2tovox = np.linalg.inv(get_sform(target_nii)["trans"])
+    fromvox2from = get_sform(from_nii)["trans"]
 
     from2to = to2tovox @ fromvox2from
 
     return from2to
 
 
-def _timeseries2nii(timeseries, timeseries_coords, reference_mask_fname, out_nii_fname, times=None):
+def timeseries2nii(timeseries, timeseries_coords, reference_mask_fname, out_nii_fname, times=None):
     """Maps the (ndipoles,tpts) array of timeseries to the grid defined by reference_mask_fname and outputs them as a niftii file.
 
     Assumes the timeseries' dipoles correspond to those in reference_mask_fname. Both timeseries and reference_mask_fname are often output from rhino.transform_recon_timeseries.
@@ -972,7 +949,7 @@ def recon_timeseries2niftii(
     # ----------------------------------
     # Output recon_ts_out as niftii file
 
-    out_nii_fname = _timeseries2nii(recon_ts_out, recon_coords_out, reference_brain_fname, out_nii_fname, times=times)
+    out_nii_fname = timeseries2nii(recon_ts_out, recon_coords_out, reference_brain_fname, out_nii_fname, times=times)
 
     return out_nii_fname, reference_brain_fname
 
@@ -1004,25 +981,25 @@ def save_or_show_renderer(renderer, filename):
             renderer.figure.plotter.save_graphic(filename)
 
 
-def _create_freesurfer_meshes_from_bet_surfaces(filenames, xform_mri_voxel2mri):
+def create_freesurfer_meshes_from_bet_surfaces(filenames, xform_mri_voxel2mri):
 
     # Create sMRI-derived freesurfer surfaces in native/mri space in mm, for use by forward modelling
 
-    _create_freesurfer_mesh_from_bet_surface(
+    create_freesurfer_mesh_from_bet_surface(
         infile=filenames["bet_inskull_mesh_vtk_file"],
         surf_outfile=filenames["bet_inskull_surf_file"],
         nii_mesh_file=filenames["bet_inskull_mesh_file"],
         xform_mri_voxel2mri=xform_mri_voxel2mri,
     )
 
-    _create_freesurfer_mesh_from_bet_surface(
+    create_freesurfer_mesh_from_bet_surface(
         infile=filenames["bet_outskull_mesh_vtk_file"],
         surf_outfile=filenames["bet_outskull_surf_file"],
         nii_mesh_file=filenames["bet_outskull_mesh_file"],
         xform_mri_voxel2mri=xform_mri_voxel2mri,
     )
 
-    _create_freesurfer_mesh_from_bet_surface(
+    create_freesurfer_mesh_from_bet_surface(
         infile=filenames["bet_outskin_mesh_vtk_file"],
         surf_outfile=filenames["bet_outskin_surf_file"],
         nii_mesh_file=filenames["bet_outskin_mesh_file"],
@@ -1030,7 +1007,7 @@ def _create_freesurfer_meshes_from_bet_surfaces(filenames, xform_mri_voxel2mri):
     )
 
 
-def _create_freesurfer_mesh_from_bet_surface(infile, surf_outfile, xform_mri_voxel2mri, nii_mesh_file=None):
+def create_freesurfer_mesh_from_bet_surface(infile, surf_outfile, xform_mri_voxel2mri, nii_mesh_file=None):
     """Creates surface mesh in .surf format and in native mri space in mm from infile.
 
     Parameters
@@ -1090,7 +1067,7 @@ def _create_freesurfer_mesh_from_bet_surface(infile, surf_outfile, xform_mri_vox
         if nii_mesh_file is None:
             raise ValueError("You must specify a nii_mesh_file (niftii format), if infile format is vtk")
 
-        rrs_native, tris_native = _get_vtk_mesh_native(infile, nii_mesh_file)
+        rrs_native, tris_native = get_vtk_mesh_native(infile, nii_mesh_file)
 
         write_surface(surf_outfile, rrs_native, tris_native, file_format="freesurfer", overwrite=True)
 
@@ -1098,7 +1075,7 @@ def _create_freesurfer_mesh_from_bet_surface(infile, surf_outfile, xform_mri_vox
         raise ValueError("Invalid infile. Needs to be a .nii.gz or .vtk file")
 
 
-def _transform_bet_surfaces(flirt_xform_file, mne_xform_file, filenames, smri_file):
+def transform_bet_surfaces(flirt_xform_file, mne_xform_file, filenames, smri_file):
     """Transforms bet surfaces into mne space.
     
     Parameters
@@ -1127,7 +1104,7 @@ def _transform_bet_surfaces(flirt_xform_file, mne_xform_file, filenames, smri_fi
         )
 
         # xform vtk mesh
-        _transform_vtk_mesh(
+        transform_vtk_mesh(
             op.join(filenames["basedir"], "flirt_" + mesh_name + ".vtk"),
             op.join(filenames["basedir"], "flirt_" + mesh_name + ".nii.gz"),
             op.join(filenames["basedir"], mesh_name + ".vtk"),

@@ -299,7 +299,7 @@ def setup_volume_source_space(subjects_dir, subject, gridstep=5, mindist=5.0, ex
     pos = float(int(gridstep))
     pos /= 1000.0  # convert pos to m from mm for MNE
 
-    vol_info = rhino_utils._get_vol_info_from_nii(filenames["smri_file"])
+    vol_info = rhino_utils.get_vol_info_from_nii(filenames["smri_file"])
 
     surface = op.join(bem_dir, "inner_skull.surf")
     surf = read_surface(surface, return_dict=True)[-1]
