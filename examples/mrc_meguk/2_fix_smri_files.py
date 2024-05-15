@@ -1,6 +1,8 @@
 """Fix sform code of structurals.
 """
 
+# Authors: Chetan Gohil <chetan.gohil@psych.ox.ac.uk>
+
 import os
 import numpy as np
 import nibabel as nib

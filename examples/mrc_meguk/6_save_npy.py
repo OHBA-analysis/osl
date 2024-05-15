@@ -2,6 +2,8 @@
 
 """
 
+# Authors: Chetan Gohil <chetan.gohil@psych.ox.ac.uk>
+
 import os
 import mne
 import numpy as np

@@ -2,6 +2,8 @@
 
 """
 
+# Authors: Chetan Gohil <chetan.gohil@psych.ox.ac.uk>
+
 import os
 from glob import glob
 from dask.distributed import Client
