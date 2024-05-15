@@ -1223,9 +1223,6 @@ def extract_rhino_files(old_subjects_dir, new_subjects_dir, subjects="all", excl
         "polhemus_rpa.txt",
         "polhemus_nasion.txt",
         "polhemus_headshape.txt",
-        "mni_nasion_mni_file",
-        "mni_lpa_mni_file",
-        "mni_rpa_mni_file",
         "smri_lpa.txt",
         "smri_rpa.txt",
         "smri_nasion.txt",
@@ -1244,6 +1241,11 @@ def extract_rhino_files(old_subjects_dir, new_subjects_dir, subjects="all", excl
         "scaled_inskull_mesh.vtk",
         "scaled_smri.nii.gz",
     ]
+    optional_files = [
+        "mni_nasion.txt",
+        "mni_lpa.txt",
+        "mni_rpa.txt",
+    ]
 
     for subject in subjects_to_copy:
         old_dir = f"{old_subjects_dir}/{subject}/rhino/coreg"
@@ -1258,6 +1260,11 @@ def extract_rhino_files(old_subjects_dir, new_subjects_dir, subjects="all", excl
                 copy(old_file, new_file)
             else:
                 raise FileNotFoundError(old_file)
+        for file in optional_files:
+            old_file = f"{old_dir}/{file}"
+            new_file = f"{new_dir}/{file}"
+            if op.exists(old_file):
+                copy(old_file, new_file)
 
         # Special case
         std_brains = glob(f"{old_dir}/MNI152_T1_*_brain.nii.gz")
