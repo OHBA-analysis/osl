@@ -383,7 +383,7 @@ def get_recon_timeseries(subjects_dir, subject, coord_mni, recon_timeseries_head
     head_scaledmri_t = rhino_utils.read_trans(coreg_filenames["head_scaledmri_t_file"])
     recon_coords_scaledmri = rhino_utils.xform_points(head_scaledmri_t["trans"], recon_coords_head.T).T
 
-    recon_index, d = rhino_utils._closest_node(coord_mri.T, recon_coords_scaledmri)
+    recon_index, d = rhino_utils.closest_node(coord_mri.T, recon_coords_scaledmri)
 
     recon_timeseries = np.abs(recon_timeseries_head[recon_index, :]).T
 
@@ -512,7 +512,7 @@ def transform_recon_timeseries(
     recon_indices = np.zeros([coords_out.shape[1]])
 
     for cc in range(coords_out.shape[1]):
-        recon_index, dist = rhino_utils._closest_node(coords_out[:, cc], recon_coords_out)
+        recon_index, dist = rhino_utils.closest_node(coords_out[:, cc], recon_coords_out)
 
         if dist < spatial_resolution:
             recon_timeseries_out[cc, :] = recon_timeseries[recon_index, ...]
@@ -693,7 +693,7 @@ def get_leadfields(
     recon_indices = np.zeros([coords_out.shape[1]])
 
     for cc in range(coords_out.shape[1]):
-        recon_index, dist = rhino_utils._closest_node(coords_out[:, cc], recon_coords_out)
+        recon_index, dist = rhino_utils.closest_node(coords_out[:, cc], recon_coords_out)
 
         if dist < spatial_resolution:
             leadfield_out[:, cc] = leadfield[:, recon_index]

@@ -26,7 +26,6 @@ if __name__ == "__main__":
     anat_dir = "/ohba/pi/mwoolrich/datasets/CamCan_2021/cc700/mri/pipeline/release004/BIDS_20190411/anat"
     preproc_dir = "/ohba/pi/mwoolrich/cgohil/camcan/preproc"
     src_dir = "/ohba/pi/mwoolrich/cgohil/camcan/src"
-    fsl_dir = "/home/cgohil/local/fsl"
 
     # Files
     SMRI_FILE = anat_dir + "/{0}/anat/{0}_T1w.nii"
@@ -76,9 +75,6 @@ if __name__ == "__main__":
         # Overwrite headshape file
         logger.info(f"overwritting {filenames['polhemus_headshape_file']}")
         np.savetxt(filenames["polhemus_headshape_file"], hs)
-
-    # Setup FSL
-    source_recon.setup_fsl(fsl_dir)
 
     # Get subjects
     subjects = []

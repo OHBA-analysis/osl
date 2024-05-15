@@ -174,12 +174,12 @@ def compute_surfaces(
     fsl_wrappers.misc.fslorient(filenames['smri_file'], copysform2qform=True)
 
     # We will assume orientation of standard brain is RADIOLOGICAL. But let's check that is the case:
-    std_orient = rhino_utils._get_orient(filenames["std_brain"])
+    std_orient = rhino_utils.get_orient(filenames["std_brain"])
     if std_orient != "RADIOLOGICAL":
         raise ValueError("Orientation of standard brain must be RADIOLOGICAL, please check output of:\n fslorient -orient {}".format(filenames["std_brain"]))
 
     # We will assume orientation of sMRI brain is RADIOLOGICAL. But let's check that is the case:
-    smri_orient = rhino_utils._get_orient(filenames["smri_file"])
+    smri_orient = rhino_utils.get_orient(filenames["smri_file"])
 
     if smri_orient != "RADIOLOGICAL" and smri_orient != "NEUROLOGICAL":
         raise ValueError("Cannot determine orientation of subject brain, please check output of:\n fslorient -getorient {}".format(filenames["smri_file"]))
@@ -208,7 +208,7 @@ def compute_surfaces(
 
     # Calculate mri2mniaxes
     if do_mri2mniaxes_xform:
-        flirt_mri2mniaxes_xform = rhino_utils._get_flirt_xform_between_axes(filenames["smri_file"], filenames["std_brain"])
+        flirt_mri2mniaxes_xform = rhino_utils.get_flirt_xform_between_axes(filenames["smri_file"], filenames["std_brain"])
     else:
         flirt_mri2mniaxes_xform = np.eye(4)
 
@@ -235,7 +235,7 @@ def compute_surfaces(
     # 2) Use BET to skull strip sMRI so that flirt works well
 
     # Check sMRI doesn't contain nans (this can cause segmentation faults with FSL's bet)
-    if rhino_utils._check_nii_for_nan(filenames["smri_file"]):
+    if rhino_utils.check_nii_for_nan(filenames["smri_file"]):
         log_or_print("WARNING: nan found in sMRI file. This might cause issues with BET.")
         old_smri_file = Path(smri_file)
         new_smri_file = old_smri_file.with_name(old_smri_file.stem + '_fixed' + old_smri_file.suffix)
@@ -302,7 +302,7 @@ def compute_surfaces(
     # We do this in MNI big FOV space, to allow the full nose to be included
 
     # Calculate flirt_mni2mnibigfov_xform
-    mni2mnibigfov_xform = rhino_utils._get_flirt_xform_between_axes(from_nii=flirt_smri_mni_file, target_nii=filenames["std_brain_bigfov"])
+    mni2mnibigfov_xform = rhino_utils.get_flirt_xform_between_axes(from_nii=flirt_smri_mni_file, target_nii=filenames["std_brain_bigfov"])
     flirt_mni2mnibigfov_xform_file = op.join(filenames["basedir"], "flirt_mni2mnibigfov_xform.txt")
     np.savetxt(flirt_mni2mnibigfov_xform_file, mni2mnibigfov_xform)
 
@@ -439,7 +439,7 @@ def compute_surfaces(
     # 6) Output the transform from sMRI space to MNI
 
     flirt_mni2mri = np.loadtxt(mni2mri_flirt_xform_file)
-    xform_mni2mri = rhino_utils._get_mne_xform_from_flirt_xform(flirt_mni2mri, filenames["std_brain"], filenames["smri_file"])
+    xform_mni2mri = rhino_utils.get_mne_xform_from_flirt_xform(flirt_mni2mri, filenames["std_brain"], filenames["smri_file"])
     mni_mri_t = Transform("mni_tal", "mri", xform_mni2mri)
     write_trans(filenames["mni_mri_t_file"], mni_mri_t, overwrite=True)
 
@@ -447,7 +447,7 @@ def compute_surfaces(
     # 7) Output surfaces in sMRI(native) space
 
     # Transform betsurf output mask/mesh output from MNI to sMRI space
-    rhino_utils._transform_bet_surfaces(mni2mri_flirt_xform_file, filenames["mni_mri_t_file"], filenames, filenames["smri_file"])
+    rhino_utils.transform_bet_surfaces(mni2mri_flirt_xform_file, filenames["mni_mri_t_file"], filenames, filenames["smri_file"])
 
     # -------------------------------------------
     # Write a file to indicate RHINO has been run

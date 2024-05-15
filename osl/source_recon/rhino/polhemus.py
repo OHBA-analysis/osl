@@ -6,6 +6,7 @@
 #          Chetan Gohil <chetan.gohil@psych.ox.ac.uk>
 #          Mats van Es <mats.vanes@psych.ox.ac.uk>
 
+import os
 import numpy as np
 import matplotlib.pyplot as plt
 
@@ -28,6 +29,7 @@ def extract_polhemus_from_info(
     """Extract polhemus from FIF info.
 
     Extract polhemus fids and headshape points from MNE raw.info and write them out in the required file format for rhino (in head/polhemus space in mm).
+
     Should only be used with MNE-derived .fif files that have the expected digitised points held in info['dig'] of fif_file.
 
     Parameters
@@ -35,16 +37,16 @@ def extract_polhemus_from_info(
     fif_file : string
         Full path to MNE-derived fif file.
     headshape_outfile : string
-        Filename to save naison to.
+        Filename to save headshape points to.
     nasion_outfile : string
-        Filename to save naison to.
+        Filename to save nasion to.
     rpa_outfile : string
-        Filename to save naison to.
+        Filename to save rpa to.
     lpa_outfile : string
-        Filename to save naison to.
-    include_eeg_as_headshape : bool
+        Filename to save lpa to.
+    include_eeg_as_headshape : bool, optional
         Should we include EEG locations as headshape points?
-    include_hpi_as_headshape : bool
+    include_hpi_as_headshape : bool, optional
         Should we include HPI locations as headshape points?
     """
     log_or_print("Extracting polhemus from fif info")
@@ -57,6 +59,8 @@ def extract_polhemus_from_info(
 
     # Read info from fif file
     info = read_info(fif_file)
+
+    # Get fiducials/headshape points
     for dig in info["dig"]:
 
         # Check dig is in HEAD/Polhemus space
@@ -79,6 +83,25 @@ def extract_polhemus_from_info(
         elif dig["kind"] == FIFF.FIFFV_POINT_HPI and include_hpi_as_headshape:
             polhemus_headshape.append(dig["r"])
 
+    # Check if info is from a CTF scanner
+    if info["dev_ctf_t"] is not None:
+        log_or_print("Detected CTF data")
+
+        nas = np.copy(polhemus_nasion)
+        lpa = np.copy(polhemus_lpa)
+        rpa = np.copy(polhemus_rpa)
+
+        nas[0], nas[1], nas[2] = nas[1], -nas[0], nas[2]
+        lpa[0], lpa[1], lpa[2] = lpa[1], -lpa[0], lpa[2]
+        rpa[0], rpa[1], rpa[2] = rpa[1], -rpa[0], rpa[2]
+
+        polhemus_nasion = nas
+        polhemus_rpa = rpa
+        polhemus_lpa = lpa
+
+        # CTF data won't contain headshape points, use a dummy point to avoid errors
+        polhemus_headshape = [0, 0, 0]
+
     # Save
     log_or_print(f"saved: {nasion_outfile}")
     np.savetxt(nasion_outfile, polhemus_nasion * 1000)
@@ -88,6 +111,65 @@ def extract_polhemus_from_info(
     np.savetxt(lpa_outfile, polhemus_lpa * 1000)
     log_or_print(f"saved: {headshape_outfile}")
     np.savetxt(headshape_outfile, np.array(polhemus_headshape).T * 1000)
+
+    if info["dev_ctf_t"] is not None:
+        log_or_print(f"dummy headshape points saved, overwrite {headshape_outfile} or set use_headshape=False in coregisteration")
+
+    # Warning if 'trans' in filename we assume -trans was applied using MaxFiltering
+    # This may make the coregistration appear incorrect, but this is not an issue.
+    if "_trans" in fif_file:
+        log_or_print("fif filename contains '_trans' which suggests -trans was passed during MaxFiltering", warning=True)
+        log_or_print("This means the location of the head in the coregistration plot may not be correct", warning=True)
+        log_or_print("Either use the _tsss.fif file or ignore the centroid of the head in coregistration plot", warning=True)
+
+
+def save_mni_fiducials(
+    fiducials_file,
+    nasion_outfile,
+    rpa_outfile,
+    lpa_outfile,
+):
+    """Save MNI fiducials used to calculate sMRI fiducials.
+
+    The file must be in MNI space with the following format:
+
+        nas -0.5 77.5 -32.6
+        lpa -74.4 -20.0 -27.2
+        rpa 75.4 -21.1 -21.9
+
+    Note, the first column (fiducial naming) is ignored but the rows must be in the above order, i.e. be (nasion, left, right).
+
+    The order of the coordinates is the same as given in FSLeyes.
+
+    Parameters
+    ----------
+    fiducials_file : str
+        Full path to text file containing the sMRI fiducials.
+    headshape_outfile : str
+        Filename to save nasion to.
+    nasion_outfile : str
+        Filename to save naison to.
+    rpa_outfile : str
+        Filename to save rpa to.
+    lpa_outfile : str
+        Filename to save lpa to.
+    """
+    if not os.path.exists(fiducials_file):
+        raise FileNotFoundError(fiducials_file)
+
+    with open(fiducials_file, "r") as file:
+        data = file.readlines()
+
+    nas = np.array([float(x) for x in data[0].split()[1:]])
+    lpa = np.array([float(x) for x in data[1].split()[1:]])
+    rpa = np.array([float(x) for x in data[2].split()[1:]])
+
+    log_or_print(f"saved: {nasion_outfile}")
+    np.savetxt(nasion_outfile, nas)
+    log_or_print(f"saved: {rpa_outfile}")
+    np.savetxt(rpa_outfile, rpa)
+    log_or_print(f"saved: {lpa_outfile}")
+    np.savetxt(lpa_outfile, lpa)
 
 
 def plot_polhemus_points(txt_fnames, colors=None, scales=None, markers=None, alphas=None):
@@ -260,5 +342,119 @@ def remove_stray_headshape_points(src_dir, subject):
     hs = hs[:, ~remove]
 
     # Overwrite headshape file
-    log_or_print(f"overwritting {filenames['polhemus_headshape_file']}")
+    log_or_print(f"overwritting: {filenames['polhemus_headshape_file']}")
     np.savetxt(filenames["polhemus_headshape_file"], hs)
+
+
+def extract_polhemus_from_pos(src_dir, subject, filepath):
+    """Saves fiducials/headshape from a pos file.
+
+    Parameters
+    ----------
+    src_dir : str
+        Subjects directory.
+    subject : str
+        Subject subdirectory/ID.
+    filepath : str
+        Full path to the .pos file for this subject.
+        Any reference to '{subject}' (or '{0}') is replaced by the subject ID.
+        E.g. 'data/{subject}/meg/{subject}_headshape.pos' with subject='sub-001'
+        becomes 'data/sub-001/meg/sub-001_headshape.pos'.
+    """
+
+    # Get coreg filenames
+    filenames = get_coreg_filenames(src_dir, subject)
+
+    # Load file
+    if "{0}" in filepath:
+        pos_file = filepath.format(subject)
+    else:
+        pos_file = filepath.format(subject=subject)
+    log_or_print(f"Saving polhemus from {pos_file}")
+
+    # These values are in cm in polhemus space:
+    num_headshape_pnts = int(pd.read_csv(pos_file, header=None).to_numpy()[0])
+    data = pd.read_csv(pos_file, header=None, skiprows=[0], delim_whitespace=True)
+
+    # RHINO is going to work with distances in mm
+    # So convert to mm from cm, note that these are in polhemus space
+    data.iloc[:, 1:4] = data.iloc[:, 1:4] * 10
+
+    # Polhemus fiducial points in polhemus space
+    polhemus_nasion = data[data.iloc[:, 0].str.match("nasion")].iloc[0, 1:4].to_numpy().astype("float64").T
+    polhemus_rpa = data[data.iloc[:, 0].str.match("right")].iloc[0, 1:4].to_numpy().astype("float64").T
+    polhemus_lpa = data[data.iloc[:, 0].str.match("left")].iloc[0, 1:4].to_numpy().astype("float64").T
+
+    # Polhemus headshape points in polhemus space in mm
+    polhemus_headshape = data[0:num_headshape_pnts].iloc[:, 1:4].to_numpy().astype("float64").T
+
+    # Save
+    log_or_print(f"saved: {filenames['polhemus_nasion_file']}")
+    np.savetxt(filenames["polhemus_nasion_file"], polhemus_nasion)
+    log_or_print(f"saved: {filenames['polhemus_rpa_file']}")
+    np.savetxt(filenames["polhemus_rpa_file"], polhemus_rpa)
+    log_or_print(f"saved: {filenames['polhemus_lpa_file']}")
+    np.savetxt(filenames["polhemus_lpa_file"], polhemus_lpa)
+    log_or_print(f"saved: {filenames['polhemus_headshape_file']}")
+    np.savetxt(filenames["polhemus_headshape_file"], polhemus_headshape)
+
+
+def extract_polhemus_from_elc(src_dir, subject, filepath, remove_headshape_near_nose=False):
+    """Saves fiducials/headshape from an elc file.
+
+    Parameters
+    ----------
+    src_dir : str
+        Subjects directory.
+    subject : str
+        Subject subdirectory/ID.
+    filepath : str
+        Full path to the .elc file for this subject.
+        Any reference to '{subject}' (or '{0}') is replaced by the subject ID.
+        E.g. 'data/{subject}/meg/{subject}_headshape.elc' with subject='sub-001'
+        becomes 'data/sub-001/meg/sub-001_headshape.elc'.
+    remove_headshape_near_nose : bool, optional
+        Should we remove any headshape points near the nose?
+    """
+
+    # Get coreg filenames
+    filenames = get_coreg_filenames(src_dir, subject)
+
+    # Load elc file
+    if "{0}" in filepath:
+        elc_file = filepath.format(subject)
+    else:
+        elc_file = filepath.format(subject=subject)
+    log_or_print(f"Saving polhemus from {elc_file}")
+
+    with open(elc_file, "r") as file:
+        lines = file.readlines()
+
+        # Polhemus fiducial points in polhemus space
+        for i in range(len(lines)):
+            if lines[i] == "Positions\n":
+                nasion = np.array(lines[i + 1].split()[-3:]).astype(np.float64).T
+                lpa = np.array(lines[i + 2].split()[-3:]).astype(np.float64).T
+                rpa = np.array(lines[i + 3].split()[-3:]).astype(np.float64).T
+                break
+
+        # Polhemus headshape points in polhemus space
+        for i in range(len(lines)):
+            if lines[i] == "HeadShapePoints\n":
+                headshape = np.array([l.split() for l in lines[i + 1:]]).astype(np.float64).T
+                break
+
+    if remove_headshape_near_nose:
+        # Remove headshape points on the nose
+        remove = np.logical_and(headshape[0] > max(lpa[0], rpa[0]), headshape[2] < nasion[2])
+        headshape = headshape[:, ~remove]
+
+    # Save
+    log_or_print(f"saved: {filenames['polhemus_nasion_file']}")
+    np.savetxt(filenames["polhemus_nasion_file"], nasion)
+    log_or_print(f"saved: {filenames['polhemus_rpa_file']}")
+    np.savetxt(filenames["polhemus_rpa_file"], rpa)
+    log_or_print(f"saved: {filenames['polhemus_lpa_file']}")
+    np.savetxt(filenames["polhemus_lpa_file"], lpa)
+    log_or_print(f"saved: {filenames['polhemus_headshape_file']}")
+    np.savetxt(filenames["polhemus_headshape_file"], headshape)

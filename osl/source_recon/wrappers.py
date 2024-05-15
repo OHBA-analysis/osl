@@ -105,6 +105,129 @@ def remove_stray_headshape_points(
     rhino.remove_stray_headshape_points(src_dir, subject)
 
 
+def save_mni_fiducials(
+    src_dir,
+    subject,
+    preproc_file,
+    smri_file,
+    epoch_file,
+    filepath,
+):
+    """Wrapper to save MNI fiducials.
+
+    Parameters
+    ----------
+    src_dir : str
+        Path to where to output the source reconstruction files.
+    subject : str
+        Subject name/id.
+    preproc_file : str
+        Path to the preprocessed fif file. Not used.
+    smri_file : str
+        Path to the T1 weighted structural MRI file to use in source
+        reconstruction. Not used.
+    epoch_file : str
+        Path to epoched preprocessed fif file. Not used.
+    filepath : str
+        Full path to the text file containing the fiducials.
+
+        Any reference to '{subject}' (or '{0}') is replaced by the subject ID.
+        E.g. 'data/fiducials/{subject}_smri_fids.txt' with subject='sub-001'
+        will become 'data/fiducials/sub-001_smri_fids.txt'.
+
+        The file must be in MNI space with the following format:
+
+            nas -0.5 77.5 -32.6
+            lpa -74.4 -20.0 -27.2
+            rpa 75.4 -21.1 -21.9
+
+        Note, the first column (fiducial naming) is ignored but the rows must
+        be in the above order, i.e. be (nasion, left, right).
+
+        The order of the coordinates is the same as given in FSLeyes.
+    """
+    filenames = rhino.get_coreg_filenames(src_dir, subject)
+    if "{0}" in filepath:
+        fiducials_file = filepath.format(subject)
+    else:
+        fiducials_file = filepath.format(subject=subject)
+    rhino.save_mni_fiducials(
+        fiducials_file=fiducials_file,
+        nasion_outfile=filenames["mni_nasion_mni_file"],
+        rpa_outfile=filenames["mni_rpa_mni_file"],
+        lpa_outfile=filenames["mni_lpa_mni_file"],
+    )
+
+
+def extract_polhemus_from_pos(
+    src_dir,
+    subject,
+    preproc_file,
+    smri_file,
+    epoch_file,
+    filepath,
+):
+    """Wrapper to save polhemus data from a .pos file.
+
+    Parameters
+    ----------
+    src_dir : str
+        Path to where to output the source reconstruction files.
+    subject : str
+        Subject name/id.
+    preproc_file : str
+        Path to the preprocessed fif file. Not used.
+    smri_file : str
+        Path to the T1 weighted structural MRI file to use in source
+        reconstruction. Not used.
+    epoch_file : str
+        Path to epoched preprocessed fif file. Not used.
+    filepath : str
+        Full path to the pos file for this subject.
+        Any reference to '{subject}' (or '{0}') is replaced by the subject ID.
+        E.g. 'data/{subject}/meg/{subject}_headshape.pos' with subject='sub-001'
+        becomes 'data/sub-001/meg/sub-001_headshape.pos'.
+    """
+    rhino.extract_polhemus_from_pos(src_dir, subject, filepath)
+
+
+def extract_polhemus_from_elc(
+    src_dir,
+    subject,
+    preproc_file,
+    smri_file,
+    epoch_file,
+    filepath,
+    remove_headshape_near_nose=False,
+):
+    """Wrapper to save polhemus data from an .elc file.
+
+    Parameters
+    ----------
+    src_dir : str
+        Path to where to output the source reconstruction files.
+    subject : str
+        Subject name/id.
+    preproc_file : str
+        Path to the preprocessed fif file. Not used.
+    smri_file : str
+        Path to the T1 weighted structural MRI file to use in source
+        reconstruction. Not used.
+    epoch_file : str
+        Path to epoched preprocessed fif file. Not used.
+    filepath : str
+        Full path to the elc file for this subject.
+        Any reference to '{subject}' (or '{0}') is replaced by the subject ID.
+        E.g. 'data/{subject}/meg/{subject}_headshape.elc' with subject='sub-001'
+        becomes 'data/sub-001/meg/sub-001_headshape.elc'.
+    remove_headshape_near_nose : bool, optional
+        Should we remove any headshape points near the nose?
+    """
+    rhino.extract_polhemus_from_elc(
+        src_dir, subject, filepath, remove_headshape_near_nose
+    )
+
+
 def compute_surfaces(
     src_dir,
     subject,
@@ -314,144 +437,6 @@ def forward_model(
             "model": model,
             "gridstep": gridstep,
             "eeg": eeg,
-        },
-    )
-
-
-def compute_surfaces_coregister_and_forward_model(
-    src_dir,
-    subject,
-    preproc_file,
-    smri_file,
-    epoch_file,
-    include_nose=True,
-    do_mri2mniaxes_xform=True,
-    use_nose=True,
-    use_headshape=True,
-    model="Single Layer",
-    recompute_surfaces=False,
-    already_coregistered=False,
-    allow_smri_scaling=False,
-    n_init=1,
-    eeg=False,
-):
-    """Wrapper for: compute_surfaces, coregister and forward_model.
-
-    Parameters
-    ----------
-    src_dir : str
-        Path to where to output the source reconstruction files.
-    subject : str
-        Subject name/id.
-    preproc_file : str
-        Path to the preprocessed fif file.
-    smri_file : str
-        Path to the T1 weighted structural MRI file to use in source
-        reconstruction.
-    epoch_file : str
-        Path to epoched preprocessed fif file.
-    include_nose : bool, optional
-        Should we include the nose when we're extracting the surfaces?
-    do_mri2mniaxes_xform : bool, optional
-        Specifies whether to do step 1) of compute_surfaces, i.e. transform
-        sMRI to be aligned with the MNI axes. Sometimes needed when the sMRI
-        goes out of the MNI FOV after step 1).
-    use_nose : bool, optional
-        Should we use the nose in the coregistration?
-    use_headshape : bool, optional
-        Should we use the headshape points in the coregistration?
-    model : str, optional
-        Forward model to use.
-    recompute_surfaces : bool, optional
-        Specifies whether or not to run compute_surfaces,
-        if the passed in options have already been run.
-    already_coregistered : bool, optional
-        Indicates that the data is already coregistered.
-    allow_smri_scaling : bool, optional
-        Indicates if we are to allow scaling of the sMRI, such that
-        the sMRI-derived fids are scaled in size to better match the
-        polhemus-derived fids. This assumes that we trust the size
-        (e.g. in mm) of the polhemus-derived fids, but not the size
-        of the sMRI-derived fids. E.g. this might be the case if we
-        do not trust the size (e.g. in mm) of the sMRI, or if we are
-        using a template sMRI that has not come from this subject.
-    eeg : bool, optional
-        Are we using EEG channels in the source reconstruction?
-    n_init : int, optional
-        Number of initialisations for coregistration.
-    """
-    # Compute surfaces
-    already_computed = rhino.compute_surfaces(
-        smri_file=smri_file,
-        subjects_dir=src_dir,
-        subject=subject,
-        include_nose=include_nose,
-        recompute_surfaces=recompute_surfaces,
-        do_mri2mniaxes_xform=do_mri2mniaxes_xform,
-    )
-
-    # Plot surfaces
-    surface_plots = rhino.plot_surfaces(
-        src_dir, subject, include_nose, already_computed
-    )
-    surface_plots = [s.replace(f"{src_dir}/", "") for s in surface_plots]
-
-    # Run coregistration
-    rhino.coreg(
-        fif_file=preproc_file,
-        subjects_dir=src_dir,
-        subject=subject,
-        use_headshape=use_headshape,
-        use_nose=use_nose,
-        already_coregistered=already_coregistered,
-        allow_smri_scaling=allow_smri_scaling,
-        n_init=n_init,
-    )
-
-    # Calculate metrics
-    if already_coregistered:
-        fid_err = None
-    else:
-        fid_err = rhino.coreg_metrics(subjects_dir=src_dir, subject=subject)
-
-    # Save plots
-    coreg_dir = rhino.get_coreg_filenames(src_dir, subject)["basedir"]
-    rhino.coreg_display(
-        subjects_dir=src_dir,
-        subject=subject,
-        display_outskin_with_nose=False,
-        filename=f"{coreg_dir}/coreg.html",
-    )
-    coreg_filename = f"{coreg_dir}/coreg.html".replace(f"{src_dir}/", "")
-
-    # Compute forward model
-    rhino.forward_model(
-        subjects_dir=src_dir,
-        subject=subject,
-        model=model,
-        eeg=eeg,
-    )
-
-    # Save info for the report
-    src_report.add_to_data(
-        f"{src_dir}/{subject}/report_data.pkl",
-        {
-            "compute_surfaces": True,
-            "coregister": True,
-            "forward_model": True,
-            "include_nose": include_nose,
-            "do_mri2mniaxes_xform": do_mri2mniaxes_xform,
-            "use_nose": use_nose,
-            "use_headshape": use_headshape,
-            "already_coregistered": already_coregistered,
-            "allow_smri_scaling": allow_smri_scaling,
-            "n_init_coreg": n_init,
-            "forward_model": True,
-            "model": model,
-            "eeg": eeg,
-            "fid_err": fid_err,
-            "surface_plots": surface_plots,
-            "coreg_plot": coreg_filename,
         },
     )
 

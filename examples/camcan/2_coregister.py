@@ -16,10 +16,9 @@ from osl import source_recon, utils
 
 # Directories
 BASE_DIR = "/well/woolrich/projects/camcan"
-PREPROC_DIR = BASE_DIR + "/summer23/preproc"
-COREG_DIR = BASE_DIR + "/summer23/coreg"
+PREPROC_DIR = BASE_DIR + "/preproc"
+COREG_DIR = BASE_DIR + "/coreg"
 ANAT_DIR = BASE_DIR + "/cc700/mri/pipeline/release004/BIDS_20190411/anat"
-FSL_DIR = "/well/woolrich/projects/software/fsl"
 
 # Files
 PREPROC_FILE = (
@@ -65,7 +64,6 @@ def fix_headshape_points(src_dir, subject, preproc_file, smri_file, epoch_file):
 
 if __name__ == "__main__":
     utils.logger.set_up(level="INFO")
-    source_recon.setup_fsl(FSL_DIR)
 
     # Get subjects
     subjects = []

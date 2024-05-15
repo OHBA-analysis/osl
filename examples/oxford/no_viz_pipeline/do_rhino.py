@@ -6,9 +6,7 @@
 
 import numpy as np
 
-from osl.source_recon import setup_fsl, rhino
-
-setup_fsl("/opt/ohba/fsl/6.0.5")  # this is where FSL is installed on hbaws
+from osl.source_recon import rhino
 
 # Directories
 preproc_dir = "data/preproc"
