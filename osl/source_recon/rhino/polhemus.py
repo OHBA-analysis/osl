@@ -309,7 +309,7 @@ def delete_headshape_points(recon_dir=None, subject=None, polhemus_headshape_fil
 
     plt.show()
 
-def remove_stray_headshape_points(src_dir, subject):
+def remove_stray_headshape_points(src_dir, subject, nose=True):
     """Remove stray headshape points.
 
     Removes headshape points near the nose, on the neck or far away from the head.
@@ -320,6 +320,10 @@ def remove_stray_headshape_points(src_dir, subject):
         Path to subjects directory.
     subject : str
         Subject directory name.
+    noise : bool, optional
+        Should we remove headshape points near the nose?
+        Useful to remove these if we have defaced structurals or aren't
+        extracting the nose from the structural.
     """
     filenames = get_coreg_filenames(src_dir, subject)
 
@@ -329,9 +333,10 @@ def remove_stray_headshape_points(src_dir, subject):
     lpa = np.loadtxt(filenames["polhemus_lpa_file"])
     rpa = np.loadtxt(filenames["polhemus_rpa_file"])
 
-    # Remove headshape points on the nose
-    remove = np.logical_and(hs[1] > max(lpa[1], rpa[1]), hs[2] < nas[2])
-    hs = hs[:, ~remove]
+    if nose:
+        # Remove headshape points on the nose
+        remove = np.logical_and(hs[1] > max(lpa[1], rpa[1]), hs[2] < nas[2])
+        hs = hs[:, ~remove]
 
     # Remove headshape points on the neck
     remove = hs[2] < min(lpa[2], rpa[2]) - 4
