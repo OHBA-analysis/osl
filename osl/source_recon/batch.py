@@ -229,7 +229,7 @@ def run_src_batch(
     epoch_files=None,
     logsdir=None,
     reportdir=None,
-    gen_report=False,
+    gen_report=True,
     verbose="INFO",
     mneverbose="WARNING",
     extra_funcs=None,
