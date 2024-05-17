@@ -83,6 +83,7 @@ def remove_stray_headshape_points(
     preproc_file,
     smri_file,
     epoch_file,
+    nose=True,
 ):
     """Remove stray headshape points.
 
@@ -101,8 +102,12 @@ def remove_stray_headshape_points(
         reconstruction. Not used.
     epoch_file : str
         Path to epoched preprocessed fif file. Not used.
+    noise : bool, optional
+        Should we remove headshape points near the nose?
+        Useful to remove these if we have defaced structurals or aren't
+        extracting the nose from the structural.
     """
-    rhino.remove_stray_headshape_points(src_dir, subject)
+    rhino.remove_stray_headshape_points(src_dir, subject, nose=nose)
 
 
 def save_mni_fiducials(

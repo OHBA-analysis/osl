@@ -658,7 +658,7 @@ def get_leadfields(
     L = L.reshape((L.shape[0], -1, 3))
 
     # Reduce the 3 dimensions (x,y,z) to a scalar
-    if orientation == "norm":
+    if orientation == "l2-norm":
         leadfield = np.linalg.norm(L, axis=-1)
 
     elif orientation == "max-dim":
@@ -684,7 +684,7 @@ def get_leadfields(
         leadfield = np.sum(L * max_power_ori[None, ...], axis=-1)
 
     else:
-        raise ValueError("orientation should be 'norm', 'max' or 'max-power'.")
+        raise ValueError("orientation should be 'l2-norm', 'max' or 'max-power'.")
 
     # --------------------------------------------------------------
     # For each mni_coords_out find nearest coord in recon_coords_out
@@ -1278,9 +1278,9 @@ def voxel_timeseries(
 
     Parameters
     ----------
-    subjects_dir : string
+    subjects_dir : str
         Directory to find subject directories in.
-    subject : string
+    subject : str
         Subject name.
     preproc_file : str
         Path to the preprocessed fif file.
@@ -1291,7 +1291,7 @@ def voxel_timeseries(
     spatial_resolution : int
         Resolution for beamforming to use for the reference brain in mm (must be an integer, or will be cast to nearest int).
         If None, then the gridstep used in rhino_files['fwd_model'] is used.
-    reference_brain : string
+    reference_brain : str
         'mni' indicates that the reference_brain is the stdbrain in MNI space.
         'mri' indicates that the reference_brain is the subject's sMRI in the scaled native/mri space.
         'unscaled_mri' indicates that the reference_brain is the subject's sMRI in unscaled native/mri space.
