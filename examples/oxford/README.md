@@ -1,8 +1,3 @@
-Example Scripts for Data Collected at OHBA, Oxford
---------------------------------------------------
+# Oxford Examples
 
-This directory contains various pipelines for preprocessing continuous data collected using scanners at OHBA, Oxford.
-
-The main difference between the various pipelines is the way you clean the sensor level data after preprocessing, before source reconstruction.
-
-We recommend using the `automated_ica_pipeline` for a first pass because it contains the least intervention.
+OHBA-specific examples have been moved to: https://github.com/OHBA-analysis/OHBA-Examples/tree/main/oxford.

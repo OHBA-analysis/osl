@@ -1,6 +1,6 @@
 Example Scripts
 ---------------
 
-- See the `oxford` directory for scripts for preprocessing/source reconstructing data collected at OHBA.
-- See the `parallelisation` directory for how to parallelise a script in OSL.
-- The other directories are scripts for preprocessing/source reconstructing public M/EEG dataset.
+This directory contains generic scripts for preprocessing/source reconstructing MEG data collected with different scanners.
+
+For example scripts for various public M/EEG datasets, see https://github.com/OHBA-analysis/OHBA-Examples.
