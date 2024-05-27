@@ -1,6 +1,8 @@
 # CTF Example
 
-In this example we:
+In this example we use headshape points to coregister the MEG and sMRI data.
+
+Full pipeline:
 
 - `1_preprocess.py`: Preprocess the sensor-level data. This includes standard signal processing such as downsampling and filtering as well as artefact removal.
 - `2_coregister.py`: Coregister the MEG and sMRI data and calculate the forward model.
