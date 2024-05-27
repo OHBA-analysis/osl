@@ -9,8 +9,6 @@ import os
 import os.path as op
 from copy import deepcopy
 
-import nibabel as nib
-
 from mne import make_bem_model, make_bem_solution, make_forward_solution, write_forward_solution
 from mne.bem import ConductorModel, read_bem_solution
 from mne.transforms import read_trans, Transform
@@ -148,7 +146,7 @@ def make_fwd_solution(
 
     # The forward model is done in head space
     # We need the transformation from MRI to HEAD coordinates (or vice versa)
-    head_scaledmri_trans_file = filenames["head_scaledmri_t_file" ]
+    head_scaledmri_trans_file = filenames["head_scaledmri_t_file"]
     if isinstance(head_scaledmri_trans_file, str):
         head_mri_t = read_trans(head_scaledmri_trans_file)
     else:

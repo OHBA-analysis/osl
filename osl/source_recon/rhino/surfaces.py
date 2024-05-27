@@ -5,7 +5,6 @@
 # Authors: Mark Woolrich <mark.woolrich@ohba.ox.ac.uk>
 #          Chetan Gohil <chetan.gohil@psych.ox.ac.uk>
 
-import os
 import os.path as op
 import warnings
 from pathlib import Path
