@@ -286,7 +286,8 @@ def get_sform(nii_file):
     else:
         raise ValueError(
             f"sform code for {nii_file} is {sformcode}, and needs to be 4 or 1.\n"
-            "To fix see: https://github.com/OHBA-analysis/osl/blob/main/examples/miscellaneous/fix_smri_files.py"
+            "If the qform code is 4 or 1, then considering passing use_qform=True.\n"
+            "Also see: https://github.com/OHBA-analysis/osl/blob/main/examples/misc/fix_smri_files.py"
         )
 
     sform = Transform("mri_voxel", "mri", sform)
@@ -329,7 +330,7 @@ def majority(values_ptr, len_values, result, data):
     return 1
 
 
-def _binary_majority3d(img):
+def binary_majority3d(img):
     """
     Set a pixel to 1 if a required majority (default=14) or more pixels in its 3x3x3 neighborhood are 1, otherwise, set the pixel to 0. img is a 3D binary image
     """

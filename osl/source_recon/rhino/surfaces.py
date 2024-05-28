@@ -5,7 +5,6 @@
 # Authors: Mark Woolrich <mark.woolrich@ohba.ox.ac.uk>
 #          Chetan Gohil <chetan.gohil@psych.ox.ac.uk>
 
-import os
 import os.path as op
 import warnings
 from pathlib import Path
@@ -87,6 +86,7 @@ def compute_surfaces(
     cleanup_files=True,
     recompute_surfaces=False,
     do_mri2mniaxes_xform=True,
+    use_qform=False,
 ):
     """Compute surfaces.
 
@@ -110,22 +110,24 @@ def compute_surfaces(
 
     Parameters
     ----------
-    smri_file : string
+    smri_file : str
         Full path to structural MRI in niftii format (with .nii.gz extension). This is assumed to have a valid sform, i.e. the sform code needs to be 4 or 1, and the sform
         should transform from voxel indices to voxel coords in mm. The axis sform used to do this will be the native/sMRI axis used throughout rhino. The qform will be ignored.
-    subjects_dir : string
+    subjects_dir : str
         Directory to put RHINO subject directories in. Files will be in subjects_dir/subject/surfaces.
-    subject : string
+    subject : str
         Subject name directory to put RHINO files in. Files will be in subjects_dir/subject/surfaces.
-    include_nose : bool
+    include_nose : bool, optional
         Specifies whether to add the nose to the outer skin (scalp) surface. This can help rhino's coreg to work better, assuming that there are headshape points that also
         include the nose. Requires the smri_file to have a FOV that includes the nose!
-    cleanup_files : bool
+    cleanup_files : bool, optional
         Specifies whether to cleanup intermediate files in the coreg directory.
-    recompute_surfaces : bool
+    recompute_surfaces : bool, optional
         Specifies whether or not to run compute_surfaces if the passed in options have already been run.
-    do_mri2mniaxes_xform : bool
+    do_mri2mniaxes_xform : bool, optional
         Specifies whether to do step 1) above, i.e. transform sMRI to be aligned with the MNI axes. Sometimes needed when the sMRI goes out of the MNI FOV after step 1).
+    use_qform : bool, optional
+        Should we replace the sform with the qform? Useful if the sform code is incompatible with OSL, but the qform is compatible.
 
     Returns
     -------
@@ -169,9 +171,12 @@ def compute_surfaces(
 
     # RHINO will always use the sform, and so we will set the qform to be same as sform for sMRI,
     # to stop the original qform from being used by mistake (e.g. by flirt)
-    #
-    # Command: fslorient -copysform2qform <smri_file>
-    fsl_wrappers.misc.fslorient(filenames['smri_file'], copysform2qform=True)
+    if use_qform:
+        # Command: fslorient -copyqform2sform <smri_file>
+        fsl_wrappers.misc.fslorient(filenames['smri_file'], copyqform2sform=True)
+    else:
+        # Command: fslorient -copysform2qform <smri_file>
+        fsl_wrappers.misc.fslorient(filenames['smri_file'], copysform2qform=True)
 
     # We will assume orientation of standard brain is RADIOLOGICAL. But let's check that is the case:
     std_orient = rhino_utils.get_orient(filenames["std_brain"])
@@ -383,7 +388,7 @@ def compute_surfaces(
 
         # Clean up mask
         mask[:, :, 50:300] = morphology.binary_fill_holes(mask[:, :, 50:300])
-        mask[:, :, 50:300] = rhino_utils._binary_majority3d(mask[:, :, 50:300])
+        mask[:, :, 50:300] = rhino_utils.binary_majority3d(mask[:, :, 50:300])
         mask[:, :, 50:300] = morphology.binary_fill_holes(mask[:, :, 50:300])
 
         for i in range(mask.shape[0]):

@@ -242,6 +242,7 @@ def compute_surfaces(
     include_nose=True,
     recompute_surfaces=False,
     do_mri2mniaxes_xform=True,
+    use_qform=False,
 ):
     """Wrapper for computing surfaces.
 
@@ -267,6 +268,9 @@ def compute_surfaces(
         Specifies whether to do step 1) of compute_surfaces, i.e. transform
         sMRI to be aligned with the MNI axes. Sometimes needed when the sMRI
         goes out of the MNI FOV after step 1).
+    use_qform : bool, optional
+        Should we replace the sform with the qform? Useful if the sform code
+        is incompatible with OSL, but the qform is compatible.
     """
     if smri_file == "standard":
         std_struct = "MNI152_T1_2mm.nii.gz"
@@ -281,6 +285,7 @@ def compute_surfaces(
         include_nose=include_nose,
         recompute_surfaces=recompute_surfaces,
         do_mri2mniaxes_xform=do_mri2mniaxes_xform,
+        use_qform=use_qform,
     )
 
     # Plot surfaces
@@ -296,6 +301,7 @@ def compute_surfaces(
             "compute_surfaces": True,
             "include_nose": include_nose,
             "do_mri2mniaxes_xform": do_mri2mniaxes_xform,
+            "use_qform": use_qform,
             "surface_plots": surface_plots,
         },
     )
