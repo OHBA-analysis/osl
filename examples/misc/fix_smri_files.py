@@ -1,37 +1,56 @@
-"""Fix sform code of structurals.
+"""Fix structural MRI (sMRI) files.
 
-This script uses FSL to set the sform code of any structural
-whose sform code is not 1 or 4 to make sure it is compatible
-with OSL.
+Replaces the sform with a standard sform.
 
-This script will first create a copy of the sMRI then change
-the sform code.
+Note, this script may not be needed. Only use this script if
+OSL raises an error regarding the sform code of the sMRIs.
 """
 
+# Authors: Chetan Gohil <chetan.gohil@psych.ox.ac.uk>
+
+import os
+from pathlib import Path
+from shutil import copyfile
+
+import numpy as np
 import nibabel as nib
 
 from osl import source_recon
 
-def run(cmd):
-    print(cmd)
-    source_recon.rhino.utils.system_call(cmd)
-
-# Paths to files to fix
-files = [
-    "smri/sub-001.nii.gz",
-    "smri/sub-002.nii.gz",
+# List of sMRI files we need to fix
+smri_files = [
+    "sub-001_T1w.nii.gz",
+    "sub-002_T1w.nii.gz",
 ]
 
-# Make output directory
-output_directory = "data/smri"
-run(f"mkdir -p {output_dir}")
+# Directory to save fixed sMRIs to
+fixed_smri_dir = "data/smri"
+os.makedirs(fixed_smri_dir, exist_ok=True)
 
-for file in files:
-    # Copy the original file
-    run(f"cp {file} {output_dir}")
-    file = f"{output_dir}/{file}"
+# Loop through the sMRIs
+for input_smri_file in smri_files:
 
-    # Set the sform code to 1
-    run(f"fslorient -setsformcode 1 {file}")
+    # Copy the original sMRI file to the output directory
+    input_name = Path(input_smri_file).name
+    output_smri_file = f"{fixed_smri_dir}/{input_name}"
+    print("Saving output to:", output_smri_file)
+    copyfile(input_smri_file, output_smri_file)
 
-print("Done")
+    # Load the output SMRI file
+    smri = nib.load(output_smri_file)
+
+    # Get the original sform header
+    sform = smri.header.get_sform()
+    sform_std = np.copy(sform)
+
+    # Fix the sform header
+    sform_std[0, 0:4] = [-1, 0, 0, 128]
+    sform_std[1, 0:4] = [0, 1, 0, -128]
+    sform_std[2, 0:4] = [0, 0, 1, -90]
+    source_recon.rhino.utils.system_call(
+        "fslorient -setsform {} {}".format(
+            " ".join(map(str, sform_std.flatten())),
+            output_smri_file,
+        )
+    )
+
