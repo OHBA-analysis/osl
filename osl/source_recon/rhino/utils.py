@@ -286,7 +286,7 @@ def get_sform(nii_file):
     else:
         raise ValueError(
             f"sform code for {nii_file} is {sformcode}, and needs to be 4 or 1.\n"
-            "To fix see: https://github.com/OHBA-analysis/osl/blob/main/examples/miscellaneous/fix_smri_files.py"
+            "To fix see: https://github.com/OHBA-analysis/osl/blob/main/examples/misc/fix_smri_files.py"
         )
 
     sform = Transform("mri_voxel", "mri", sform)
