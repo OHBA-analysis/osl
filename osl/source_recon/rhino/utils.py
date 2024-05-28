@@ -329,7 +329,7 @@ def majority(values_ptr, len_values, result, data):
     return 1
 
 
-def _binary_majority3d(img):
+def binary_majority3d(img):
     """
     Set a pixel to 1 if a required majority (default=14) or more pixels in its 3x3x3 neighborhood are 1, otherwise, set the pixel to 0. img is a 3D binary image
     """

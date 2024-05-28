@@ -388,7 +388,7 @@ def compute_surfaces(
 
         # Clean up mask
         mask[:, :, 50:300] = morphology.binary_fill_holes(mask[:, :, 50:300])
-        mask[:, :, 50:300] = rhino_utils._binary_majority3d(mask[:, :, 50:300])
+        mask[:, :, 50:300] = rhino_utils.binary_majority3d(mask[:, :, 50:300])
         mask[:, :, 50:300] = morphology.binary_fill_holes(mask[:, :, 50:300])
 
         for i in range(mask.shape[0]):
