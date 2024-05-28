@@ -11,6 +11,7 @@ from matplotlib.patches import ConnectionPatch
 from matplotlib.colors import ListedColormap
 from scipy import signal, stats
 
+import glmtools as glm
 from sails.stft import glm_periodogram
 from sails.stft import glm_irasa as sails_glm_irasa
 
