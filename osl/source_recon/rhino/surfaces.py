@@ -172,6 +172,8 @@ def compute_surfaces(
     # RHINO will always use the sform, and so we will set the qform to be same as sform for sMRI,
     # to stop the original qform from being used by mistake (e.g. by flirt)
     if use_qform:
+        log_or_print("Using qform in surface extraction")
+
         # Command: fslorient -copyqform2sform <smri_file>
         fsl_wrappers.misc.fslorient(filenames['smri_file'], copyqform2sform=True)
     else:
