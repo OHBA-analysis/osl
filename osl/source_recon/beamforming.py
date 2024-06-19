@@ -932,6 +932,7 @@ def _compute_beamformer(G, Cm, reg, n_orient, weight_norm, pick_ori, reduce_rank
 
     # Tikhonov regularization using reg parameter to control for trade-off between spatial resolution and noise sensitivity
     # eq. 25 in Gross and Ioannides, 1999 Phys. Med. Biol. 44 2081
+    rank = min(rank, Cm.shape[0])
     Cm_inv, loading_factor, rank = _reg_pinv(Cm, reg, rank)
 
     assert orient_std.shape == (G.shape[1],)
