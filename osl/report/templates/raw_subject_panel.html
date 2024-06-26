@@ -16,6 +16,9 @@
         {% if data.plt_ica is defined %}
             <button class="button1" onclick="openTab(event, '{{ data.fif_id }}_ica', this.id)">ICA</button>
         {% endif %}
+        {% if data.log is defined %}
+            <button class="button1" onclick="openTab(event, '{{ data.fif_id }}_logs', this.id)">Logs</button>
+        {% endif %}
     </div>
   </div>
 
@@ -130,6 +133,16 @@
         </div>
     {% endif %}
 
+    {% if data.log is defined %}
+        <div class="tabpage" style="width: 100%; display: none" id={{ data.fif_id }}_logs>    
+            <h4>Preprocessing Log</h4>
+            <textarea id="log" rows="20" style="width: 80%;" readonly>{{ data.log }}</textarea>
+            {% if data.errlog is defined %}
+                <h4>Error Log</h4>
+                <textarea id="errlog" rows="20" style="width: 80%;" readonly>{{ data.errlog }}</textarea>
+            {% endif %}
+        </div>
+    {% endif %}
     </div>
   </div>
 </div>
@@ -161,6 +174,9 @@ function openTab(event, figTag, button) {
     }
     if (figTag.includes('ica')) {
         currentButton = 5;
+    }
+    if (figTag.includes('logs')) {
+        currentButton = 6;
     }
 }
 

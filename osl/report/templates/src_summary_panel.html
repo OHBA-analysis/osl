@@ -21,8 +21,10 @@
     <div class="tabpage" style='width: 100%' id='config'>
         <h3>Config</h3>
         <img src="{{ data.plt_config }}" alt="" style='max-width: 60%'/>
-        <h3>Extra functions</h3>
-        <iframe src="{{ data.extra_funcs }}" style="width: 80%; height: 200px;"></iframe>
+        {% if data.extra_funcs is defined %}
+            <h3>Extra functions</h3>
+            <iframe src="{{ data.extra_funcs }}" style="width: 80%; height: 200px;"></iframe>
+        {% endif %}
     </div>
 
     {% if data.coregister %}
@@ -30,7 +32,7 @@
             <h3>Coregistration</h3>
             {% if data.coreg_table is defined %}
                 Distance between polhemus and structural MRI fiducials in cm.</br></br>
-                {{ data.coreg_table }}
+                {{ data.coreg_table | safe }}
             {% else %}
                 No fiducials were used in coregistration.
             {% endif %}
@@ -50,6 +52,9 @@
             <h3>Sign Flipping</h3>
             <b>Template subject</b>: {{ data.template }}</br></br>
             <img src="{{ data.plt_sflip }}" alt="" style='max-width: 100%'/>
+            {% if data.signflip_table is defined %}
+                {{ data.signflip_table | safe }}
+            {% endif %}
         </div>
     {% endif %}
 
@@ -81,4 +86,15 @@ function openTab(event, figTag, button) {
     }
 }
 
+document.addEventListener('DOMContentLoaded', function() {
+    $('#coreg_tbl').DataTable();
+  });
+
+document.addEventListener('DOMContentLoaded', function() {
+    $('#signflip_tbl').DataTable();
+  });
 </script>
+
+<link rel="stylesheet" type="text/css" href="https://cdn.datatables.net/1.10.24/css/jquery.dataTables.css">
+<script type="text/javascript" charset="utf8" src="https://code.jquery.com/jquery-3.5.1.js"></script>
+<script type="text/javascript" charset="utf8" src="https://cdn.datatables.net/1.10.24/js/jquery.dataTables.js"></script>
