@@ -9,6 +9,9 @@
   <div class="flex-child" style="flex: 1">
     <div class="tab" style="display: grid">
         <button class="button1" onclick="openTab(event, '{{ data.fif_id }}_info', this.id)" style="border-top-style: solid">Info</button>
+        {% if data.maxlog_autobad is defined or data.maxlog_sss is defined or data.maxlog_trans is defined %}
+            <button class="button1" onclick="openTab(event, '{{ data.fif_id }}_maxfilt', this.id)">Maxfilter</button>
+        {% endif %}
         <button class="button1" onclick="openTab(event, '{{ data.fif_id }}_timeseries', this.id)">Time Series</button>
         <button class="button1" onclick="openTab(event, '{{ data.fif_id }}_channels', this.id)">Channels</button>
         <button class="button1" onclick="openTab(event, '{{ data.fif_id }}_spectra', this.id)">Power Spectra</button>
@@ -19,9 +22,7 @@
         {% if data.log is defined %}
             <button class="button1" onclick="openTab(event, '{{ data.fif_id }}_logs', this.id)">Logs</button>
         {% endif %}
-        {% if data.maxlog_autobad is defined or data.maxlog_sss is defined or data.maxlog_trans is defined %}
-            <button class="button1" onclick="openTab(event, '{{ data.fif_id }}_maxfilt', this.id)">Maxfilter</button>
-        {% endif %}
+
     </div>
   </div>
 
