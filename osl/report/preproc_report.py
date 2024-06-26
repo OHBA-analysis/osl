@@ -20,6 +20,7 @@ import re
 import numpy as np
 import pandas as pd
 import matplotlib.pyplot as plt
+from glob import glob
 from jinja2 import Template
 from tabulate import tabulate
 from mne.channels.channels import channel_type
@@ -223,6 +224,22 @@ def gen_html_data(raw, outdir, ica=None, preproc_fif_filename=None, logdir=None)
         if len(ica.exclude) > 0:
             data['plt_ica'] = plot_bad_ica(raw, ica, savebase)
 
+    # add maxfilter info if possible
+    # we have to guess the exact filename
+    g=[]
+    for ext in ['tsss', 'trans', 'transdef', 'autobad', 'autobad_sss']:
+        g.append(glob(data['filename'].replace(f"{ext}.fif",'') +  '*.log'))
+    g = list(np.concatenate(g))
+    
+    for ig in g:
+        with open(ig, 'r') as log_file:
+            if 'autobad' in ig:
+                data['maxlog_autobad'] = log_file.read()
+            elif 'sss' in ig:
+                data['maxlog_sss'] = log_file.read()
+            elif 'trans' in ig:
+                data['maxlog_trans'] = log_file.read()
+    
     # add log files if possible
     if logdir is None:
         logdir = outdir._str.replace('/report/', '/logs/')
