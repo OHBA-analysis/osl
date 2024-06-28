@@ -735,7 +735,14 @@ def run_mne_ica_raw(dataset, userargs):
     filt_raw = dataset["raw"].copy().filter(l_freq=l_freq, h_freq=h_freq)
 
     # NOTE: **userargs doesn't work because 'picks' is in there
-    ica = mne.preprocessing.ICA(n_components=userargs["n_components"])
+    noise_cov = userargs.pop("noise_cov", None)
+    random_state = userargs.pop("random_state", None)
+    method = userargs.pop("method", "fastica")
+    fit_params = userargs.pop("fit_params", None)
+    max_iter = userargs.pop("max_iter", 'auto')
+    allow_ref_meg = userargs.pop("allow_ref_meg", False)
+    ica = mne.preprocessing.ICA(n_components=userargs["n_components"], noise_cov=noise_cov, random_state=random_state,
+                               method=method, fit_params=fit_params, max_iter=max_iter, allow_ref_meg=allow_ref_meg)
     ica.fit(filt_raw, picks=userargs["picks"])
     dataset["ica"] = ica
     return dataset
