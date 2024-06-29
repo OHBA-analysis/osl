@@ -18,7 +18,9 @@ import pathlib
 import re
 
 import numpy as np
+import pandas as pd
 import matplotlib.pyplot as plt
+from glob import glob
 from jinja2 import Template
 from tabulate import tabulate
 from mne.channels.channels import channel_type
@@ -96,7 +98,7 @@ def get_header_id(raw):
     return raw.filenames[0].split('/')[-1].strip('.fif')
 
 
-def gen_html_data(raw, outdir, ica=None, preproc_fif_filename=None):
+def gen_html_data(raw, outdir, ica=None, preproc_fif_filename=None, logdir=None):
     """Generate HTML web-report for an MNE data object.
 
     Parameters
@@ -109,6 +111,9 @@ def gen_html_data(raw, outdir, ica=None, preproc_fif_filename=None):
         ICA object.
     preproc_fif_filename : str
         Filename of file output by preprocessing
+    logdir : str
+        Directory the log files were saved into. If None, log files are assumed
+        to be in reportdir.replace('report', 'logs')
     """
 
     data = {}
@@ -213,8 +218,39 @@ def gen_html_data(raw, outdir, ica=None, preproc_fif_filename=None):
 
     # Add ICA if it's been passed
     if ica is not None:
+        data['ica_ncomps_rej'] = len(ica.exclude)
+        data['ica_ncomps_rej_ecg'] = [len(ica.labels_['ecg']) if 'ecg' in ica.labels_ else 'N/A'][0]
+        data['ica_ncomps_rej_eog'] = [len(ica.labels_['eog']) if 'eog' in ica.labels_ else 'N/A'][0]
         if len(ica.exclude) > 0:
             data['plt_ica'] = plot_bad_ica(raw, ica, savebase)
+
+    # add maxfilter info if possible
+    # we have to guess the exact filename
+    g=[]
+    for ext in ['tsss', 'trans', 'transdef', 'autobad', 'autobad_sss']:
+        g.append(glob(data['filename'].replace(f"{ext}.fif",'') +  '*.log'))
+    g = list(np.concatenate(g))
+    
+    for ig in g:
+        with open(ig, 'r') as log_file:
+            if 'autobad' in ig:
+                data['maxlog_autobad'] = log_file.read()
+            elif 'sss' in ig:
+                data['maxlog_sss'] = log_file.read()
+            elif 'trans' in ig:
+                data['maxlog_trans'] = log_file.read()
+    
+    # add log files if possible
+    if logdir is None:
+        logdir = outdir._str.replace('/report/', '/logs/')
+        
+    if os.path.exists(logdir + '.log'):
+        with open(logdir + '.log', 'r') as log_file:
+            data['log'] = log_file.read()
+        
+    if os.path.exists(logdir + '.error.log'):
+        with open(logdir + '.error.log', 'r') as log_file:
+            data['errlog'] = log_file.read()
 
     # Save data that will be used to create html page
     with open(outdir / 'data.pkl', 'wb') as outfile:
@@ -325,9 +361,8 @@ def gen_html_summary(reportdir):
 
     data["plt_config"] = subject_data[0]["plt_config"]
     data["txt_extra_funcs"] = subject_data[0]["txt_extra_funcs"]
-    data["plt_summary_bad_segs"] = plot_summary_bad_segs(subject_data, reportdir)
-    data["plt_summary_bad_chans"] = plot_summary_bad_chans(subject_data, reportdir)
-
+    data['tbl'] = gen_summary_data(subject_data)
+    
     # Create panel
     panel_template = load_template('raw_summary_panel')
     panel = panel_template.render(data=data)
@@ -348,6 +383,27 @@ def gen_html_summary(reportdir):
         f.write(page)
 
     return True
+
+
+def gen_summary_data(subject_data):
+    df = pd.DataFrame()
+    column_headers = ['Session ID', 'Measurement month', 'Duration (s)', 'Bad segments (mag)', 
+                      'Bad segments (grad)', 'Bad segments (eeg)', 'Bad channels (#)', 
+                      'Bad channels (id)', 'Bad ICA (total)', 'Bad ICA (ECG)', 'Bad ICA (EOG)']
+    fields = ['fif_id', 'meas_date', 'acq_duration', 'bad_seg_pc_mag', 'bad_seg_pc_grad', 
+              'bad_seg_pc_eeg', 'bad_chan_num', 'bad_chans', 'ica_ncomps_rej', 
+              'ica_ncomps_rej_ecg', 'ica_ncomps_rej_eog']
+    for field, hdr in zip(fields, column_headers):
+        if field == 'meas_date': # anonymise date (only year/month)
+            df[hdr] = ["-".join(subject_data[i][field].split(' ')[0].split('-')[:-1]) if field in subject_data[i].keys() else None for i in range(len(subject_data))]
+        else:
+            df[hdr] = [subject_data[i][field] if field in subject_data[i].keys() else None for i in range(len(subject_data))]
+    
+    # remove columns that only contains None
+    df = df.dropna(axis=1, how='all')
+    tbl = df.to_html(classes="display", table_id="preproc_tbl")
+    
+    return tbl
 
 
 def load_template(tname):

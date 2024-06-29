@@ -12,6 +12,8 @@ from shutil import copy
 
 import pickle
 import numpy as np
+import pandas as pd
+from glob import glob
 import matplotlib.pyplot as plt
 from tabulate import tabulate
 import inspect
@@ -20,7 +22,7 @@ from . import preproc_report
 from ..source_recon import parcellation
 
 
-def gen_html_data(config, src_dir, subject, reportdir, logger=None, extra_funcs=None):
+def gen_html_data(config, src_dir, subject, reportdir, logger=None, extra_funcs=None, logdir=None):
     """Generate data for HTML report.
 
     Parameters
@@ -37,6 +39,9 @@ def gen_html_data(config, src_dir, subject, reportdir, logger=None, extra_funcs=
         Logger.
     extra_funcs : list
         List of extra functions to run
+    logdir : str
+        Directory the log files were saved into. If None, log files are assumed
+        to be in reportdir.replace('report', 'logs')
     """
     src_dir = Path(src_dir)
     reportdir = Path(reportdir)
@@ -118,6 +123,21 @@ def gen_html_data(config, src_dir, subject, reportdir, logger=None, extra_funcs=
         data["plt_parc_corr"] = f"{subject}/parc_corr.png"
         copy("{}/{}".format(src_dir, subject_data["parc_corr_plot"]), "{}/{}/parc_corr.png".format(reportdir, subject))
 
+    # Logs
+    if logdir is None:
+        logdir = src_dir._str + '/logs'
+    
+    # guess the log file name
+    g = glob(logdir + f'/{subject}*.log')    
+    if len(g)>0:
+        for ig in g:
+            with open(ig, 'r') as log_file:
+                if 'error' in ig:
+                    data['errlog'] = log_file.read()
+                else:
+                    data['log'] = log_file.read()
+
+            
     # Save data in the report directory
     pickle.dump(data, open(f"{reportdir}/{subject}/data.pkl", "wb"))
 
@@ -245,7 +265,8 @@ def gen_html_summary(reportdir):
     data = {}
     data["total"] = total
     data["config"] = subject_data[0]["config"]
-    data["extra_funcs"] = subject_data[0]["extra_funcs"]
+    if "extra_funcs" in subject_data[0]:
+        data["extra_funcs"] = subject_data[0]["extra_funcs"] 
     data["coregister"] = subject_data[0]["coregister"]
     data["beamform"] = subject_data[0]["beamform"]
     data["beamform_and_parcellate"] = subject_data[0]["beamform_and_parcellate"]
@@ -254,25 +275,11 @@ def gen_html_summary(reportdir):
     if data["coregister"]:
         subjects = np.array([d["filename"] for d in subject_data])
 
-        fid_err_table = {"subjects": [], "nas_err": [], "lpa_err": [], "rpa_err": []}
-        for d in subject_data:
-            if "fid_err" in d:
-                if d["fid_err"] is not None:
-                    fid_err_table["subjects"].append(d["fif_id"])
-                    fid_err_table["nas_err"].append(np.round(d["fid_err"][0], decimals=2))
-                    fid_err_table["lpa_err"].append(np.round(d["fid_err"][1], decimals=2))
-                    fid_err_table["rpa_err"].append(np.round(d["fid_err"][2], decimals=2))
-        if len(fid_err_table["subjects"]) > 0:
-            data["coreg_table"] = tabulate(
-                np.c_[
-                    fid_err_table["subjects"],
-                    fid_err_table["nas_err"],
-                    fid_err_table["lpa_err"],
-                    fid_err_table["rpa_err"],
-                ],
-                tablefmt="html",
-                headers=["Subject", "Nasion", "LPA", "RPA"],
-            )
+        fid_err_table = pd.DataFrame()
+        fid_err_table["Session ID"] = [subject_data[i]["fif_id"] for i in range(len(subject_data))]
+        for i_err, hdr in enumerate(["Nasion", "LPA", "RPA"]):
+                fid_err_table[hdr] = [np.round(subject_data[i]['fid_err'][i_err], decimals=2) if 'fid_err' in subject_data[i].keys() else None for i in range(len(subject_data))]
+        data['coreg_table'] = fid_err_table.to_html(classes="display", table_id="coreg_tbl")
 
     # Create plots
     os.makedirs(f"{reportdir}/summary", exist_ok=True)
@@ -291,6 +298,13 @@ def gen_html_summary(reportdir):
         metrics = np.array([d["metrics"] for d in subject_data if "metrics" in d])
         data["plt_sflip"] = plot_sign_flipping_results(metrics, reportdir)
 
+        flip_table = pd.DataFrame()
+        flip_table["Session ID"] = [subject_data[i]["fif_id"] for i in range(len(subject_data))]
+        for iter in range(metrics.shape[-1]):
+                flip_table[f"Init {iter + 1}"] = [np.round(metrics[i, iter], decimals=3) for i in range(len(subject_data))]
+        data['signflip_table'] = flip_table.to_html(classes="display", table_id="signflip_tbl")
+
+        
     # Create panel
     panel_template = preproc_report.load_template('src_summary_panel')
     panel = panel_template.render(data=data)
