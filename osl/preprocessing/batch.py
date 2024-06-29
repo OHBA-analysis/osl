@@ -491,7 +491,7 @@ def read_dataset(fif, preload=False, ftype=None):
     if event_id.exists():
         print("Reading", event_id)
         with open(event_id, "r") as file:
-            event_id = yaml.safe_load(file)
+            event_id = yaml.load(file, Loader=yaml.Loader)
     else:
         event_id = None
 
