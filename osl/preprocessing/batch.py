@@ -833,6 +833,8 @@ def run_proc_chain(
         logger.error(traceback.print_tb(ex_traceback))
 
         with open(logfile.replace(".log", ".error.log"), "w") as f:
+            f.write("OSL PREPROCESSING CHAIN failed at: {0}".format(now))
+            f.write("\n")
             f.write('Processing filed during stage : "{0}"'.format(method))
             f.write(str(ex_type))
             f.write("\n")

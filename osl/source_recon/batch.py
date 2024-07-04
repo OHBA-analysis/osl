@@ -203,6 +203,8 @@ def run_src_chain(
         logger.error(traceback.print_tb(ex_traceback))
 
         with open(logfile.replace(".log", ".error.log"), "w") as f:
+            f.write("OSL SOURCE RECON failed at: {0}".format(now))
+            f.write("\n")
             f.write('Processing failed during stage : "{0}"'.format(method))
             f.write(str(ex_type))
             f.write("\n")
