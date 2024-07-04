@@ -284,6 +284,7 @@ def gen_html_summary(reportdir, logsdir=None):
         flip_table["Session ID"] = [subject_data[i]["fif_id"] for i in range(len(subject_data))]
         for iter in range(metrics.shape[-1]):
                 flip_table[f"Init {iter + 1}"] = [np.round(metrics[i, iter], decimals=3) for i in range(len(subject_data))]
+        flip_table.index += 1 # Start indexing from 1
         data['signflip_table'] = flip_table.to_html(classes="display", table_id="signflip_tbl")
 
     # log files
