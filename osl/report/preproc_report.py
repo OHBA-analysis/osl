@@ -47,7 +47,7 @@ from ..preprocessing import (
 # Report generation
 
 
-def gen_report_from_fif(infiles, outdir, ftype=None):
+def gen_report_from_fif(infiles, outdir, ftype=None, logsdir=None):
     """Generate web-report for a set of MNE data objects.
 
     Parameters
@@ -58,7 +58,9 @@ def gen_report_from_fif(infiles, outdir, ftype=None):
         Directory to save HTML report and figures to.
     ftype : str
         Type of fif file, e.g., ``'raw'`` or ``'preproc_raw'``.
-        
+    logsdir : str
+        Directory the log files were saved into. If None, log files are assumed
+        to be in outdir.replace('report', 'logs')
     """
 
     # Validate input files and directory to save html file and plots to
@@ -71,7 +73,7 @@ def gen_report_from_fif(infiles, outdir, ftype=None):
         dataset = read_dataset(infile, ftype=ftype)
         run_id = get_header_id(dataset['raw'])
         htmldatadir = validate_outdir(outdir / run_id)
-        gen_html_data(dataset['raw'], htmldatadir, ica=dataset['ica'])
+        gen_html_data(dataset['raw'], htmldatadir, ica=dataset['ica'], logsdir=logsdir)
 
     # Create report
     gen_html_page(outdir)
@@ -98,7 +100,7 @@ def get_header_id(raw):
     return raw.filenames[0].split('/')[-1].strip('.fif')
 
 
-def gen_html_data(raw, outdir, ica=None, preproc_fif_filename=None, logdir=None):
+def gen_html_data(raw, outdir, ica=None, preproc_fif_filename=None, logsdir=None):
     """Generate HTML web-report for an MNE data object.
 
     Parameters
@@ -111,7 +113,7 @@ def gen_html_data(raw, outdir, ica=None, preproc_fif_filename=None, logdir=None)
         ICA object.
     preproc_fif_filename : str
         Filename of file output by preprocessing
-    logdir : str
+    logsdir : str
         Directory the log files were saved into. If None, log files are assumed
         to be in reportdir.replace('report', 'logs')
     """
@@ -202,7 +204,6 @@ def gen_html_data(raw, outdir, ica=None, preproc_fif_filename=None, logdir=None)
     
     # Generate plots for the report
     data["plt_config"] = plot_flowchart(raw, savebase)
-    data["txt_extra_funcs"] = save_extra_funcs(raw, savebase.replace('.png', '.txt'))
     data["plt_rawdata"] = plot_rawdata(raw, savebase)
     data['plt_temporalsumsq'] = plot_channel_time_series(raw, savebase, exclude_bads=False)
     data['plt_temporalsumsq_exclude_bads'] = plot_channel_time_series(raw, savebase, exclude_bads=True)
@@ -216,6 +217,17 @@ def gen_html_data(raw, outdir, ica=None, preproc_fif_filename=None, logdir=None)
     #filenames = plot_artefact_scan(raw, savebase)
     #data.update(filenames)
 
+    # add extra funcs if they exist
+    extra_funcs = re.findall(
+        "%% extra_funcs start %%(.*?)%% extra_funcs end %%",
+        raw.info["description"],
+        flags=re.DOTALL,
+    )
+    if len(extra_funcs) > 0:
+        data["extra_funcs"] = ""
+        for func in extra_funcs:
+            data["extra_funcs"] = data["extra_funcs"] + func
+    
     # Add ICA if it's been passed
     if ica is not None:
         data['ica_ncomps_rej'] = len(ica.exclude)
@@ -241,15 +253,17 @@ def gen_html_data(raw, outdir, ica=None, preproc_fif_filename=None, logdir=None)
                 data['maxlog_trans'] = log_file.read()
     
     # add log files if possible
-    if logdir is None:
-        logdir = outdir._str.replace('/report/', '/logs/')
+    if logsdir is None:
+        logsdir = outdir._str.replace('/report/', '/logs/')
+    elif type(logsdir)==pathlib.PosixPath:
+        logsdir = os.path.join(logsdir._str, outdir._str.split('/')[-1])
         
-    if os.path.exists(logdir + '.log'):
-        with open(logdir + '.log', 'r') as log_file:
+    if os.path.exists(logsdir + '.log'):
+        with open(logsdir + '.log', 'r') as log_file:
             data['log'] = log_file.read()
         
-    if os.path.exists(logdir + '.error.log'):
-        with open(logdir + '.error.log', 'r') as log_file:
+    if os.path.exists(logsdir + '.error.log'):
+        with open(logsdir + '.error.log', 'r') as log_file:
             data['errlog'] = log_file.read()
 
     # Save data that will be used to create html page
@@ -257,7 +271,7 @@ def gen_html_data(raw, outdir, ica=None, preproc_fif_filename=None, logdir=None)
         pickle.dump(data, outfile)
 
 
-def gen_html_page(outdir):
+def gen_html_page(outdir, logsdir=None):
     """Generate an HTML page from a report directory.
 
     Parameters
@@ -321,13 +335,16 @@ def gen_html_page(outdir):
     return True
 
 
-def gen_html_summary(reportdir):
+def gen_html_summary(reportdir, logsdir=None):
     """Generate an HTML summary from a report directory.
 
     Parameters
     ----------
     reportdir : str
         Directory to generate HTML summary report with.
+    logsdir : str
+        Directory the log files were saved into. If None, log files are assumed
+        to be in reportdir.replace('report', 'logs')
     """
     reportdir = Path(reportdir)
 
@@ -360,9 +377,27 @@ def gen_html_summary(reportdir):
     os.makedirs(f"{reportdir}/summary", exist_ok=True)
 
     data["plt_config"] = subject_data[0]["plt_config"]
-    data["txt_extra_funcs"] = subject_data[0]["txt_extra_funcs"]
+    if "extra_funcs" in subject_data[0]:
+        data["extra_funcs"] = subject_data[0]["extra_funcs"]
     data['tbl'] = gen_summary_data(subject_data)
     
+    # log files
+    if logsdir is None:
+        logsdir = reportdir._str.replace('report', 'logs')
+    elif type(logsdir)==pathlib.PosixPath:
+        logsdir = logsdir._str
+        
+    if os.path.exists(os.path.join(logsdir, 'osl_batch.log')):
+        with open(os.path.join(logsdir, 'osl_batch.log'), 'r') as log_file:
+            data['batchlog'] = log_file.read()
+    
+    g = glob(os.path.join(logsdir, '*.error.log'))    
+    if len(g)>0:
+        data['errlog'] = {}
+        for ig in sorted(g):
+            with open(ig, 'r') as log_file:
+                data['errlog'][ig.split('/')[-1].split('.error.log')[0]] = log_file.read()
+            
     # Create panel
     panel_template = load_template('raw_summary_panel')
     panel = panel_template.render(data=data)
@@ -401,6 +436,7 @@ def gen_summary_data(subject_data):
     
     # remove columns that only contains None
     df = df.dropna(axis=1, how='all')
+    df.index += 1 # start index at 1
     tbl = df.to_html(classes="display", table_id="preproc_tbl")
     
     return tbl
@@ -481,39 +517,7 @@ def plot_flowchart(raw, savebase=None):
         fpath = filebase.format('flowchart')
     else:
         fpath = None
-    return fpath
-
-
-def save_extra_funcs(raw, savebase=None):
-    """ Saves extra functions from the raw.info['description'] to a text file.
-    
-    Parameters
-    ----------
-    raw : :py:class:`mne.io.Raw <mne.io.Raw>`
-        MNE Raw object.
-    savebase : str
-        Base string for saving figures.
-        
-    Returns
-    -------
-    fpath : str
-        Path to saved text file.
-    
-    """
-    extra_funcs = re.findall(
-        "%% extra_funcs start %%(.*?)%% extra_funcs end %%",
-        raw.info["description"],
-        flags=re.DOTALL,
-    )
-    
-    if savebase is not None:
-        fpath = savebase.format(f"extra_funcs")
-        with(open(fpath, 'w')) as file:
-            [print(func, file=file) for func in extra_funcs]
-        return fpath
-    else:
-        return None
-    
+    return fpath    
         
 
 def plot_rawdata(raw, savebase):

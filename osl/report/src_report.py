@@ -22,7 +22,7 @@ from . import preproc_report
 from ..source_recon import parcellation
 
 
-def gen_html_data(config, src_dir, subject, reportdir, logger=None, extra_funcs=None, logdir=None):
+def gen_html_data(config, src_dir, subject, reportdir, logger=None, extra_funcs=None, logsdir=None):
     """Generate data for HTML report.
 
     Parameters
@@ -39,7 +39,7 @@ def gen_html_data(config, src_dir, subject, reportdir, logger=None, extra_funcs=
         Logger.
     extra_funcs : list
         List of extra functions to run
-    logdir : str
+    logsdir : str
         Directory the log files were saved into. If None, log files are assumed
         to be in reportdir.replace('report', 'logs')
     """
@@ -72,8 +72,10 @@ def gen_html_data(config, src_dir, subject, reportdir, logger=None, extra_funcs=
         data = {}
         data["config"] = config
 
-    data['extra_funcs'] = save_extra_funcs(extra_funcs, reportdir / subject)
-    
+    # add extra funcs if they exist
+    if extra_funcs is not None:
+        data['extra_funcs'] = [f"{inspect.getsource(func)}\n\n" for func in extra_funcs]
+
     data["fif_id"] = subject
     data["filename"] = subject
 
@@ -124,11 +126,11 @@ def gen_html_data(config, src_dir, subject, reportdir, logger=None, extra_funcs=
         copy("{}/{}".format(src_dir, subject_data["parc_corr_plot"]), "{}/{}/parc_corr.png".format(reportdir, subject))
 
     # Logs
-    if logdir is None:
-        logdir = src_dir._str + '/logs'
+    if logsdir is None:
+        logsdir = os.path.join(src_dir._str, 'logs')
     
     # guess the log file name
-    g = glob(logdir + f'/{subject}*.log')    
+    g = glob(os.path.join(logsdir, f'{subject}*.log'))    
     if len(g)>0:
         for ig in g:
             with open(ig, 'r') as log_file:
@@ -140,30 +142,6 @@ def gen_html_data(config, src_dir, subject, reportdir, logger=None, extra_funcs=
             
     # Save data in the report directory
     pickle.dump(data, open(f"{reportdir}/{subject}/data.pkl", "wb"))
-
-
-def save_extra_funcs(extra_funcs, reportdir):
-    """ Saves extra functions to a text file.
-    
-    Parameters
-    ----------
-    extra_funcs : list
-        List of extra functions to save.
-    reportdir : str
-        Subject report directory.
-        
-    Returns
-    -------
-    fpath : str
-        Path to saved text file.
-    """
-    if reportdir is not None and extra_funcs is not None:
-        fpath = reportdir / 'extra_funcs.txt'
-        with(open(fpath, 'w')) as file:
-            [print(f"{inspect.getsource(func)}\n\n", file=file) for func in extra_funcs]
-        return fpath
-    else:
-        return None
 
 
 def gen_html_page(reportdir):
@@ -229,13 +207,16 @@ def gen_html_page(reportdir):
     return True
 
 
-def gen_html_summary(reportdir):
+def gen_html_summary(reportdir, logsdir=None):
     """Generate an HTML summary from a report directory.
 
     Parameters
     ----------
     reportdir : str
         Directory to generate HTML summary report with.
+        logsdir: str
+    Directory the log files were saved into. If None, log files are assumed
+        to be in reportdir.replace('report', 'logs')
         
     Returns
     -------
@@ -278,7 +259,8 @@ def gen_html_summary(reportdir):
         fid_err_table = pd.DataFrame()
         fid_err_table["Session ID"] = [subject_data[i]["fif_id"] for i in range(len(subject_data))]
         for i_err, hdr in enumerate(["Nasion", "LPA", "RPA"]):
-                fid_err_table[hdr] = [np.round(subject_data[i]['fid_err'][i_err], decimals=2) if 'fid_err' in subject_data[i].keys() else None for i in range(len(subject_data))]
+            fid_err_table[hdr] = [np.round(subject_data[i]['fid_err'][i_err], decimals=2) if 'fid_err' in subject_data[i].keys() else None for i in range(len(subject_data))]
+        fid_err_table.index += 1 # Start indexing from 1
         data['coreg_table'] = fid_err_table.to_html(classes="display", table_id="coreg_tbl")
 
     # Create plots
@@ -304,7 +286,21 @@ def gen_html_summary(reportdir):
                 flip_table[f"Init {iter + 1}"] = [np.round(metrics[i, iter], decimals=3) for i in range(len(subject_data))]
         data['signflip_table'] = flip_table.to_html(classes="display", table_id="signflip_tbl")
 
+    # log files
+    if logsdir is None:
+        logsdir = reportdir._str.replace('report', 'logs')
         
+    if os.path.exists(os.path.join(logsdir, 'osl_batch.log')):
+        with open(os.path.join(logsdir, 'osl_batch.log'), 'r') as log_file:
+            data['batchlog'] = log_file.read()
+    
+    g = glob(os.path.join(logsdir, '*.error.log'))    
+    if len(g)>0:
+        data['errlog'] = {}
+        for ig in sorted(g):
+            with open(ig, 'r') as log_file:
+                data['errlog'][ig.split('/')[-1].split('.error.log')[0]] = log_file.read()
+            
     # Create panel
     panel_template = preproc_report.load_template('src_summary_panel')
     panel = panel_template.render(data=data)
