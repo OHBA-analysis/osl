@@ -101,10 +101,12 @@ def coreg(
         This assumes that we trust the size (e.g. in mm) of the polhemus-derived fids, but not the size of sMRI-derived fids. E.g. this might be the case if we do not trust
         the size (e.g. in mm) of the sMRI, or if we are using a template sMRI that would has not come from this subject.
         
-    3)  If a scaling is learnt in step 2, we apply it to sMRI, and to anything derived from sMRI
+    3)  If a scaling is learnt in step 2, we apply it to sMRI, and to anything derived from sMRI.
     
-    4)  Transform sMRI-derived headshape pnts into polhemus space 5)  We have the polhemus-derived headshape points in polhemus space and the sMRI-derived headshape (scalp
-        surface) in native sMRI space.  Use these to estimate the affine xform from native sMRI space using the ICP algorithm initilaised using the xform estimate in step 2.
+    4)  Transform sMRI-derived headshape points into polhemus space.
+    
+    5)  We have the polhemus-derived headshape points in polhemus space and the sMRI-derived headshape (scalp surface) in native sMRI space.  Use these to estimate the affine 
+        xform from native sMRI space using the ICP algorithm initilaised using the xform estimate in step 2.
 
     Parameters
     ----------
