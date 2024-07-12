@@ -7,8 +7,8 @@ dependencies:
 - vtk=9.1.0=*osmesa*
 - pyvista=0.38.5
 - spyder=5.5.1
-- pyqt=5.15.10
-- pyqtwebengine=5.15.10
+- pyqt=5.15.9
+- pyqtwebengine=5.15.9
 - pip:
   - jupyter==1.0.0
   - ipympl==0.9.3
