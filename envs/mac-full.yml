@@ -6,7 +6,6 @@ dependencies:
 - pip=23.3.1
 - vtk=9.1.0=*osmesa*
 - pyvista=0.38.5
-- spyder=5.5.1
 - pyqt=5.15.9
 - pyqtwebengine=5.15.9
 - pip:
