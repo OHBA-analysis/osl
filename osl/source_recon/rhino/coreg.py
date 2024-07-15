@@ -5,6 +5,7 @@
 # Authors: Mark Woolrich <mark.woolrich@ohba.ox.ac.uk>
 #          Chetan Gohil <chetan.gohil@psych.ox.ac.uk>
 
+import warnings
 import os.path as op
 from pathlib import Path
 from shutil import copyfile
@@ -670,181 +671,184 @@ def coreg_display(
     # --------
     # Do plots
 
-    if plot_type == "surf":
-        # Initialize figure
-        renderer = _get_renderer(None, bgcolor=(0.5, 0.5, 0.5), size=(500, 500))
+    with warnings.catch_warnings():
+        warnings.simplefilter("ignore")
 
-        if display_headshape_pnts:
-            # Polhemus-derived headshape points
-            if polhemus_headshape_meg is not None and len(polhemus_headshape_meg.T) > 0:
-                polhemus_headshape_megt = polhemus_headshape_meg.T
-                color, scale, alpha = "red", 0.007, 1
-                renderer.sphere(center=polhemus_headshape_megt, color=color, scale=scale * 1000, opacity=alpha, backface_culling=True)
-            else:
-                log_or_print("There are no headshape points to display")
+        if plot_type == "surf":
+            # Initialize figure
+            renderer = _get_renderer(None, bgcolor=(0.5, 0.5, 0.5), size=(500, 500))
 
-        if display_fiducials:
+            if display_headshape_pnts:
+                # Polhemus-derived headshape points
+                if polhemus_headshape_meg is not None and len(polhemus_headshape_meg.T) > 0:
+                    polhemus_headshape_megt = polhemus_headshape_meg.T
+                    color, scale, alpha = "red", 0.007, 1
+                    renderer.sphere(center=polhemus_headshape_megt, color=color, scale=scale * 1000, opacity=alpha, backface_culling=True)
+                else:
+                    log_or_print("There are no headshape points to display")
 
-            # MRI-derived nasion, rpa, lpa
-            if smri_nasion_meg is not None and len(smri_nasion_meg.T) > 0:
-                color, scale, alpha = "yellow", 0.09, 1
-                for data in [smri_nasion_meg.T, smri_rpa_meg.T, smri_lpa_meg.T]:
-                    transform = np.eye(4)
-                    transform[:3, :3] = mri_trans["trans"][:3, :3] * scale * 1000
-                    # rotate around Z axis 45 deg first
-                    transform = transform @ rotation(0, 0, np.pi / 4)
+            if display_fiducials:
+
+                # MRI-derived nasion, rpa, lpa
+                if smri_nasion_meg is not None and len(smri_nasion_meg.T) > 0:
+                    color, scale, alpha = "yellow", 0.09, 1
+                    for data in [smri_nasion_meg.T, smri_rpa_meg.T, smri_lpa_meg.T]:
+                        transform = np.eye(4)
+                        transform[:3, :3] = mri_trans["trans"][:3, :3] * scale * 1000
+                        # rotate around Z axis 45 deg first
+                        transform = transform @ rotation(0, 0, np.pi / 4)
+                        renderer.quiver3d(
+                            x=data[:, 0],
+                            y=data[:, 1],
+                            z=data[:, 2],
+                            u=1.0,
+                            v=0.0,
+                            w=0.0,
+                            color=color,
+                            mode="oct",
+                            scale=scale,
+                            opacity=alpha,
+                            backface_culling=True,
+                            solid_transform=transform,
+                        )
+                else:
+                    log_or_print("There are no MRI derived fiducials to display")
+
+                # Polhemus-derived nasion, rpa, lpa
+                if polhemus_nasion_meg is not None and len(polhemus_nasion_meg.T) > 0:
+                    color, scale, alpha = "pink", 0.012, 1
+                    for data in [polhemus_nasion_meg.T, polhemus_rpa_meg.T, polhemus_lpa_meg.T]:
+                        renderer.sphere(center=data, color=color, scale=scale * 1000, opacity=alpha, backface_culling=True)
+                else:
+                    log_or_print("There are no polhemus derived fiducials to display")
+
+            if display_sensors:
+                # Sensors
+                if len(meg_rrs) > 0:
+                    color, alpha = (0.0, 0.25, 0.5), 0.2
+                    surf = dict(rr=meg_rrs, tris=meg_tris)
+                    renderer.surface(surface=surf, color=color, opacity=alpha, backface_culling=True)
+
+            if display_sensor_oris:
+
+                if len(meg_rrs) > 0:
+                    color, scale = (0.0, 0.25, 0.5), 15
                     renderer.quiver3d(
-                        x=data[:, 0],
-                        y=data[:, 1],
-                        z=data[:, 2],
-                        u=1.0,
-                        v=0.0,
-                        w=0.0,
+                        x=meg_sensor_locs[:, 0],
+                        y=meg_sensor_locs[:, 1],
+                        z=meg_sensor_locs[:, 2],
+                        u=meg_sensor_oris[:, 0],
+                        v=meg_sensor_oris[:, 1],
+                        w=meg_sensor_oris[:, 2],
                         color=color,
-                        mode="oct",
+                        mode="arrow",
                         scale=scale,
-                        opacity=alpha,
-                        backface_culling=True,
-                        solid_transform=transform,
+                        backface_culling=False,
                     )
-            else:
-                log_or_print("There are no MRI derived fiducials to display")
 
-            # Polhemus-derived nasion, rpa, lpa
-            if polhemus_nasion_meg is not None and len(polhemus_nasion_meg.T) > 0:
-                color, scale, alpha = "pink", 0.012, 1
-                for data in [polhemus_nasion_meg.T, polhemus_rpa_meg.T, polhemus_lpa_meg.T]:
-                    renderer.sphere(center=data, color=color, scale=scale * 1000, opacity=alpha, backface_culling=True)
-            else:
-                log_or_print("There are no polhemus derived fiducials to display")
+            if display_outskin or display_outskin_with_nose:
 
-        if display_sensors:
-            # Sensors
-            if len(meg_rrs) > 0:
-                color, alpha = (0.0, 0.25, 0.5), 0.2
-                surf = dict(rr=meg_rrs, tris=meg_tris)
-                renderer.surface(surface=surf, color=color, opacity=alpha, backface_culling=True)
-
-        if display_sensor_oris:
-
-            if len(meg_rrs) > 0:
-                color, scale = (0.0, 0.25, 0.5), 15
-                renderer.quiver3d(
-                    x=meg_sensor_locs[:, 0],
-                    y=meg_sensor_locs[:, 1],
-                    z=meg_sensor_locs[:, 2],
-                    u=meg_sensor_oris[:, 0],
-                    v=meg_sensor_oris[:, 1],
-                    w=meg_sensor_oris[:, 2],
-                    color=color,
-                    mode="arrow",
-                    scale=scale,
-                    backface_culling=False,
+                # sMRI-derived scalp surface
+                # if surf file does not exist, then we must create it
+                rhino_utils.create_freesurfer_mesh_from_bet_surface(
+                    infile=outskin_mesh_4surf_file,
+                    surf_outfile=outskin_surf_file,
+                    nii_mesh_file=outskin_mesh_file,
+                    xform_mri_voxel2mri=mrivoxel_scaledmri_t["trans"],
                 )
 
-        if display_outskin or display_outskin_with_nose:
+                coords_native, faces = nib.freesurfer.read_geometry(outskin_surf_file)
 
-            # sMRI-derived scalp surface
-            # if surf file does not exist, then we must create it
-            rhino_utils.create_freesurfer_mesh_from_bet_surface(
-                infile=outskin_mesh_4surf_file,
-                surf_outfile=outskin_surf_file,
-                nii_mesh_file=outskin_mesh_file,
-                xform_mri_voxel2mri=mrivoxel_scaledmri_t["trans"],
-            )
+                # Move to MEG (device) space
+                coords_meg = rhino_utils.xform_points(mri_trans["trans"], coords_native.T).T
 
-            coords_native, faces = nib.freesurfer.read_geometry(outskin_surf_file)
+                surf_smri = dict(rr=coords_meg, tris=faces)
+
+                renderer.surface(surface=surf_smri, color=(0, 0.7, 0.7), opacity=0.4, backface_culling=False)
+
+            renderer.set_camera(azimuth=90, elevation=90, distance=600, focalpoint=(0.0, 0.0, 0.0))
+
+            # Save or show
+            rhino_utils.save_or_show_renderer(renderer, filename)
+
+        # --------------------------
+        elif plot_type == "scatter":
+
+            # -------------------
+            # Setup scalp surface
+
+            # Load in scalp surface
+            # And turn the nvoxx x nvoxy x nvoxz volume into a 3 x npoints point cloud
+            smri_headshape_nativeindex = rhino_utils.niimask2indexpointcloud(outskin_mesh_file)
+
+            # Move from native voxel indices to native space coordinates (in mm)
+            smri_headshape_native = rhino_utils.xform_points(mrivoxel_scaledmri_t["trans"], smri_headshape_nativeindex)
 
             # Move to MEG (device) space
-            coords_meg = rhino_utils.xform_points(mri_trans["trans"], coords_native.T).T
+            smri_headshape_meg = rhino_utils.xform_points(mri_trans["trans"], smri_headshape_native)
 
-            surf_smri = dict(rr=coords_meg, tris=faces)
+            plt.figure()
+            ax = plt.axes(projection="3d")
 
-            renderer.surface(surface=surf_smri, color=(0, 0.7, 0.7), opacity=0.4, backface_culling=False)
+            if display_sensors:
+                color, scale, alpha, marker = (0.0, 0.25, 0.5), 1, 0.1, "."
+                if len(meg_rrs) > 0:
+                    meg_rrst = meg_rrs.T  # do plot in mm
+                    ax.scatter(meg_rrst[0, :], meg_rrst[1, :], meg_rrst[2, :], color=color, marker=marker, s=scale, alpha=alpha)
 
-        renderer.set_camera(azimuth=90, elevation=90, distance=600, focalpoint=(0.0, 0.0, 0.0))
+            if display_sensor_oris:
+                if len(meg_rrs) > 0:
+                    ax.quiver(
+                        meg_sensor_locs[:, 0],
+                        meg_sensor_locs[:, 1],
+                        meg_sensor_locs[:, 2],
+                        meg_sensor_oris[:, 0],
+                        meg_sensor_oris[:, 1],
+                        meg_sensor_oris[:, 2],
+                        arrow_length_ratio=0.3,
+                        length=1.5,
+                    )
 
-        # Save or show
-        rhino_utils.save_or_show_renderer(renderer, filename)
+            if display_outskin or display_outskin_with_nose:
+                color, scale, alpha, marker = (0, 0.7, 0.7), 4, 0.3, "o"
+                if len(smri_headshape_meg) > 0:
+                    smri_headshape_megt = smri_headshape_meg
+                    ax.scatter(smri_headshape_megt[0, 0:-1:10], smri_headshape_megt[1, 0:-1:10], smri_headshape_megt[2, 0:-1:10], color=color, marker=marker, s=scale, alpha=alpha)
 
-    # --------------------------
-    elif plot_type == "scatter":
+            if display_headshape_pnts:
+                color, scale, alpha, marker = "red", 8, 0.7, "o"
+                if polhemus_headshape_meg is not None and len(polhemus_headshape_meg) > 0:
+                    polhemus_headshape_megt = polhemus_headshape_meg
+                    ax.scatter(polhemus_headshape_megt[0, :], polhemus_headshape_megt[1, :], polhemus_headshape_megt[2, :], color=color, marker=marker, s=scale, alpha=alpha)
+                else:
+                    log_or_print("There are no headshape points to plot")
 
-        # -------------------
-        # Setup scalp surface
+            if display_fiducials:
 
-        # Load in scalp surface
-        # And turn the nvoxx x nvoxy x nvoxz volume into a 3 x npoints point cloud
-        smri_headshape_nativeindex = rhino_utils.niimask2indexpointcloud(outskin_mesh_file)
+                if smri_nasion_meg is not None and len(smri_nasion_meg) > 0:
+                    color, scale, alpha, marker = (1, 1, 0), 200, 1, "d"
+                    for data in (smri_nasion_meg, smri_rpa_meg, smri_lpa_meg):
+                        datat = data
+                        ax.scatter(datat[0, :], datat[1, :], datat[2, :], color=color, marker=marker, s=scale, alpha=alpha)
+                else:
+                    log_or_print("There are no structural MRI derived fiducials to plot")
 
-        # Move from native voxel indices to native space coordinates (in mm)
-        smri_headshape_native = rhino_utils.xform_points(mrivoxel_scaledmri_t["trans"], smri_headshape_nativeindex)
+                if polhemus_nasion_meg is not None and len(polhemus_nasion_meg) > 0:
+                    color, scale, alpha, marker = (1, 0.5, 0.7), 400, 1, "."
+                    for data in (polhemus_nasion_meg, polhemus_rpa_meg, polhemus_lpa_meg):
+                        datat = data
+                        ax.scatter(datat[0, :], datat[1, :], datat[2, :], color=color, marker=marker, s=scale, alpha=alpha)
+                else:
+                    log_or_print("There are no polhemus derived fiducials to plot")
 
-        # Move to MEG (device) space
-        smri_headshape_meg = rhino_utils.xform_points(mri_trans["trans"], smri_headshape_native)
-
-        plt.figure()
-        ax = plt.axes(projection="3d")
-
-        if display_sensors:
-            color, scale, alpha, marker = (0.0, 0.25, 0.5), 1, 0.1, "."
-            if len(meg_rrs) > 0:
-                meg_rrst = meg_rrs.T  # do plot in mm
-                ax.scatter(meg_rrst[0, :], meg_rrst[1, :], meg_rrst[2, :], color=color, marker=marker, s=scale, alpha=alpha)
-
-        if display_sensor_oris:
-            if len(meg_rrs) > 0:
-                ax.quiver(
-                    meg_sensor_locs[:, 0],
-                    meg_sensor_locs[:, 1],
-                    meg_sensor_locs[:, 2],
-                    meg_sensor_oris[:, 0],
-                    meg_sensor_oris[:, 1],
-                    meg_sensor_oris[:, 2],
-                    arrow_length_ratio=0.3,
-                    length=1.5,
-                )
-
-        if display_outskin or display_outskin_with_nose:
-            color, scale, alpha, marker = (0, 0.7, 0.7), 4, 0.3, "o"
-            if len(smri_headshape_meg) > 0:
-                smri_headshape_megt = smri_headshape_meg
-                ax.scatter(smri_headshape_megt[0, 0:-1:10], smri_headshape_megt[1, 0:-1:10], smri_headshape_megt[2, 0:-1:10], color=color, marker=marker, s=scale, alpha=alpha)
-
-        if display_headshape_pnts:
-            color, scale, alpha, marker = "red", 8, 0.7, "o"
-            if polhemus_headshape_meg is not None and len(polhemus_headshape_meg) > 0:
-                polhemus_headshape_megt = polhemus_headshape_meg
-                ax.scatter(polhemus_headshape_megt[0, :], polhemus_headshape_megt[1, :], polhemus_headshape_megt[2, :], color=color, marker=marker, s=scale, alpha=alpha)
+            if filename is None:
+                plt.show()
             else:
-                log_or_print("There are no headshape points to plot")
-
-        if display_fiducials:
-
-            if smri_nasion_meg is not None and len(smri_nasion_meg) > 0:
-                color, scale, alpha, marker = (1, 1, 0), 200, 1, "d"
-                for data in (smri_nasion_meg, smri_rpa_meg, smri_lpa_meg):
-                    datat = data
-                    ax.scatter(datat[0, :], datat[1, :], datat[2, :], color=color, marker=marker, s=scale, alpha=alpha)
-            else:
-                log_or_print("There are no structural MRI derived fiducials to plot")
-
-            if polhemus_nasion_meg is not None and len(polhemus_nasion_meg) > 0:
-                color, scale, alpha, marker = (1, 0.5, 0.7), 400, 1, "."
-                for data in (polhemus_nasion_meg, polhemus_rpa_meg, polhemus_lpa_meg):
-                    datat = data
-                    ax.scatter(datat[0, :], datat[1, :], datat[2, :], color=color, marker=marker, s=scale, alpha=alpha)
-            else:
-                log_or_print("There are no polhemus derived fiducials to plot")
-
-        if filename is None:
-            plt.show()
+                log_or_print(f"saving {filename}")
+                plt.savefig(filename)
+                plt.close()
         else:
-            log_or_print(f"saving {filename}")
-            plt.savefig(filename)
-            plt.close()
-    else:
-        raise ValueError("invalid plot_type.")
+            raise ValueError("invalid plot_type.")
 
 
 def bem_display(
