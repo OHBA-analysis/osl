@@ -74,7 +74,10 @@ def gen_html_data(config, src_dir, subject, reportdir, logger=None, extra_funcs=
 
     # add extra funcs if they exist
     if extra_funcs is not None:
-        data['extra_funcs'] = [f"{inspect.getsource(func)}\n\n" for func in extra_funcs]
+        if 'extra_funcs' not in data.keys():
+            data['extra_funcs'] = ""
+        for func in extra_funcs:
+            data['extra_funcs'] += f"{inspect.getsource(func)}\n\n"
 
     data["fif_id"] = subject
     data["filename"] = subject
