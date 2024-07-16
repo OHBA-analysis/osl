@@ -19,7 +19,7 @@ from osl.report.preproc_report import gen_html_page
 from ..utils import logger as osl_logger
 
 
-def ica_label(preproc_dir, ica_dir, reject=False, report_dir=None):
+def ica_label(preproc_dir, ica_dir, reject=None, report_dir=None):
     """Data bookkeeping and wrapping plot_ica.
     
     Parameters
@@ -30,8 +30,8 @@ def ica_label(preproc_dir, ica_dir, reject=False, report_dir=None):
         Path to ICA data.
     reject : bool or str
         If 'all', reject all components (previously labeled and newly
-        labeled). If 'new', reject only newly labeled components. If 
-        False (default), only save the ICA data; don't reject any 
+        labeled). If 'manual', reject only manually labeled components. If 
+        None (default), only save the ICA data; don't reject any 
         components from the M/EEG data.
     """
     # global drive, savedir
@@ -43,7 +43,7 @@ def ica_label(preproc_dir, ica_dir, reject=False, report_dir=None):
     ica = mne.preprocessing.read_ica(ica_dir)
     
     # keep these for later
-    if reject=='new':
+    if reject=='manual':
         exclude_old = deepcopy(ica.exclude)
             
     # interactive components plot
@@ -51,11 +51,11 @@ def ica_label(preproc_dir, ica_dir, reject=False, report_dir=None):
     plot_ica(ica, raw, block=True, stop=30)
     plt.pause(0.1)
 
-    if reject == 'all' or reject == 'new':
+    if reject == 'all' or reject == 'manual':
         print("REMOVING COMPONENTS FROM THE DATA")
         if reject == 'all':
             ica.apply(raw)
-        elif reject == 'new':
+        elif reject == 'manual':
             # we need to make sure we don't remove components that 
             # were already removed before
             new_ica = deepcopy(ica)
@@ -68,36 +68,36 @@ def ica_label(preproc_dir, ica_dir, reject=False, report_dir=None):
     print("SAVING ICA DATA")
     ica.save(ica_dir, overwrite=True)
     
-    if reject is not False:
+    if reject is not None:
         print("ATTEMPTING TO UPDATE REPORT")
-        # try:
-        if report_dir is None:
-            report_dir = os.path.join("/".join(preproc_dir.split("/")[:-2]), "report")
-        
-        report_dir_base = deepcopy(report_dir)
-        if os.path.exists(os.path.join(report_dir, preproc_dir.split("/")[-2])):
-            report_dir = os.path.join(report_dir, preproc_dir.split("/")[-2])
-        elif os.path.exists(os.path.join(report_dir, preproc_dir.split("/")[-2]).replace("_raw", "") + "_preproc_raw"):
-            report_dir = os.path.join(report_dir, preproc_dir.split("/")[-2]).replace("_raw", "") + "_preproc_raw"
-        print(report_dir)
-        
-        savebase = os.path.join(report_dir, "{0}.png")
-        if os.path.exists(os.path.join(report_dir, "ica.png")):
-            # only need to update the ica plot - not the data.pkl
-            _ = plot_bad_ica(raw, ica, savebase)
-        elif os.path.exists(os.path.join(report_dir, "data.pkl")):
-            _ = plot_bad_ica(raw, ica, savebase)
+        try:
+            if report_dir is None:
+                report_dir = os.path.join("/".join(preproc_dir.split("/")[:-2]), "report")
             
-            # we need to update data.pkl and subject_report.html
-            import pickle
-            data = pickle.load(open(os.path.join(report_dir, "data.pkl"), 'rb'))
-            data['plt_ica'] = os.path.join(report_dir.split("/")[-1], "ica.png")
-            pickle.dump(data, open(os.path.join(report_dir, "data.pkl"), 'wb'))
-            gen_html_page(report_dir_base)
+            report_dir_base = deepcopy(report_dir)
+            if os.path.exists(os.path.join(report_dir, preproc_dir.split("/")[-2])):
+                report_dir = os.path.join(report_dir, preproc_dir.split("/")[-2])
+            elif os.path.exists(os.path.join(report_dir, preproc_dir.split("/")[-2]).replace("_raw", "") + "_preproc_raw"):
+                report_dir = os.path.join(report_dir, preproc_dir.split("/")[-2]).replace("_raw", "") + "_preproc_raw"
+            print(report_dir)
             
-        print("REPORT UPDATED")
-        # except:
-            # print("FAILED TO UPDATE REPORT")
+            savebase = os.path.join(report_dir, "{0}.png")
+            if os.path.exists(os.path.join(report_dir, "ica.png")):
+                # only need to update the ica plot - not the data.pkl
+                _ = plot_bad_ica(raw, ica, savebase)
+            elif os.path.exists(os.path.join(report_dir, "data.pkl")):
+                _ = plot_bad_ica(raw, ica, savebase)
+                
+                # we need to update data.pkl and subject_report.html
+                import pickle
+                data = pickle.load(open(os.path.join(report_dir, "data.pkl"), 'rb'))
+                data['plt_ica'] = os.path.join(report_dir.split("/")[-1], "ica.png")
+                pickle.dump(data, open(os.path.join(report_dir, "data.pkl"), 'wb'))
+                gen_html_page(report_dir_base)
+                
+            print("REPORT UPDATED")
+        except:
+            print("FAILED TO UPDATE REPORT")
     print(f'LABELING DATASET {preproc_dir.split("/")[-1]} COMPLETE')
 
 
@@ -128,8 +128,8 @@ def main(argv=None):
         argv = sys.argv[1:]
     
     reject = argv[0]
-    if reject == 'False':
-        reject = False
+    if reject == 'None':
+        reject = None
         
     preproc_dir = argv[1]
     if len(argv)>2 or (len(argv)==3 and "report" in argv[2]):
