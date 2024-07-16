@@ -249,9 +249,11 @@ def _add_scanner(cmd, args):
         args['ctc'] = '/net/aton/meg_pool/neuromag/databases/ctc/ct_sparse.fif'
         cmd = _add_ctc(cmd, args)
     elif args['scanner'] == 'Neo':
-        args['cal'] = '/net/aton/meg_pool/data/TriuxNeo/system/sss/sss_cal.dat'
+        #args['cal'] = '/net/aton/meg_pool/data/TriuxNeo/system/sss/sss_cal.dat'
+        args['cal'] = '/vols/MEG/TriuxNeo/system/sss/sss_cal.dat'
         cmd = _add_cal(cmd, args)
-        args['ctc'] = '/net/aton/meg_pool/data/TriuxNeo/system/ctc/ct_sparse.fif'
+        #args['ctc'] = '/net/aton/meg_pool/data/TriuxNeo/system/ctc/ct_sparse.fif'
+        args['ctc'] = '/vols/MEG/TriuxNeo/system/ctc/ct_sparse.fif'
         cmd = _add_ctc(cmd, args)
 
     return cmd
