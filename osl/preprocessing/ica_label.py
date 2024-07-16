@@ -113,15 +113,25 @@ def main(argv=None):
         
     Example
     -------
-    From the command line (in the OSL environment), run:
+    From the command line (in the OSL environment), use as follows:
+
+    osl_ica_label reject_argument /path/to/preproc_raw.fif [/path/to/ica.fif] [/path/to/reports_dir]
+
+    The `reject_argument` specifies whether to reject 'all' selected components from the data, only
+    the 'manual' rejected, or None (and only save the ICA object, without rejecting components). 
+    If the last two optional arguments are not specified, the function will assume their paths from
+    the usual OSL structure.
+    For example:
     
-    osl_ica_label new /path/to/sub-001_preproc_raw.fif /path/to/sub-001_ica.fif
+    osl_ica_label manual /path/to/sub-001_preproc_raw.fif
     
     Then use the GUI to label components (click on the time course to mark, use 
     number keys to label marked components as specific artefacts, and use
     the arrow keys to navigate. Close the plot.
-    All/new/none components will be removed from the M/EEG data and saved. The 
-    ICA data will be saved with the new labels.
+    all/manual/None components will be removed from the M/EEG data and saved. The 
+    ICA data will be saved with the new labels. If the report directory is specified
+    or in the assumed OSL directory structure, the subject report is updated.
+
     """
 
     if argv is None:
