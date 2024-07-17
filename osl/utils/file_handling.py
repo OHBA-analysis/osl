@@ -189,6 +189,8 @@ def get_rawdir(files):
 
 
 def add_subdir(file, outdir, run_id=None):
+    """Add sub-directory."""
+
     if not type(outdir) == str:
         outdir = str(outdir)
     if '{' in outdir and '}' in outdir:
