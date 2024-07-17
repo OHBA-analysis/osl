@@ -9,7 +9,7 @@ import pandas as pd
 
 from osl import source_recon, utils
 
-def save_polhemus_from_pos(src_dir, subject, preproc_file, smri_file, epoch_file):
+def save_polhemus_from_pos(outdir, subject, preproc_file, smri_file, epoch_file):
     """Saves fiducials/headshape from a pos file."""
 
     # Get path to pos file
@@ -17,7 +17,7 @@ def save_polhemus_from_pos(src_dir, subject, preproc_file, smri_file, epoch_file
     utils.logger.log_or_print(f"Saving polhemus info from {pos_file}")
 
     # Get coreg filenames
-    filenames = source_recon.rhino.get_coreg_filenames(src_dir, subject)
+    filenames = source_recon.rhino.get_coreg_filenames(outdir, subject)
 
     # Load in txt file, these values are in cm in polhemus space:
     num_headshape_pnts = int(pd.read_csv(pos_file, header=None).to_numpy()[0])
@@ -53,11 +53,11 @@ def save_polhemus_from_pos(src_dir, subject, preproc_file, smri_file, epoch_file
     np.savetxt(filenames["polhemus_lpa_file"], polhemus_lpa)
     np.savetxt(filenames["polhemus_headshape_file"], polhemus_headshape)
 
-def fix_headshape_points(src_dir, subject, preproc_file, smri_file, epoch_file):
+def fix_headshape_points(outdir, subject, preproc_file, smri_file, epoch_file):
     """Remove headshape points on the nose and neck."""
 
     # Load saved headshape and nasion files
-    filenames = source_recon.rhino.get_coreg_filenames(src_dir, subject)
+    filenames = source_recon.rhino.get_coreg_filenames(outdir, subject)
     hs = np.loadtxt(filenames["polhemus_headshape_file"])
     nas = np.loadtxt(filenames["polhemus_nasion_file"])
     lpa = np.loadtxt(filenames["polhemus_lpa_file"])
@@ -100,27 +100,30 @@ config = """
 """
 
 # Subject IDs
-subjects = ["sub-not001", "sub-not002"]
+subjects = [
+    "sub-not001_task-resteyesopen",
+    "sub-not002_task-resteyesopen",
+]
 
 # Fif files containing the sensor-level preprocessed data for each subject
 preproc_files = [
-    "data/preproc/sub-not001_task-resteyesopen_meg/sub-not001_task-resteyesopen_meg_preproc_raw.fif",
-    "data/preproc/sub-not002_task-resteyesopen_meg/sub-not002_task-resteyesopen_meg_preproc_raw.fif",
+    "data/sub-not001_task-resteyesopen/sub-not001_task-resteyesopen_preproc_raw.fif",
+    "data/sub-not002_task-resteyesopen/sub-not002_task-resteyesopen_preproc_raw.fif",
 ]
 
 # The corresponding structurals for each subject
 smri_files = [
-    "data/smri/sub-not001_T1w.nii.gz",
-    "data/smri/sub-not002_T1w.nii.gz",
+    "smri/sub-not001_T1w.nii.gz",
+    "smri/sub-not002_T1w.nii.gz",
 ]
 
 # Directory to save output to
-coreg_dir = "data/coreg"
+outdir = "data"
 
 # Source reconstruction
 source_recon.run_src_batch(
     config,
-    src_dir=coreg_dir,
+    outdir=outdir,
     subjects=subjects,
     preproc_files=preproc_files,
     smri_files=smri_files,
