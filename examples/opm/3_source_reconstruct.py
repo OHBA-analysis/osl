@@ -9,16 +9,7 @@ import os
 from osl import source_recon
 
 # Directories
-coreg_dir = "data/coreg"
-src_dir = "data/src"
-
-# First copy the coregistration directory
-if os.path.exists(src_dir):
-    print(f"Please first delete: {src_dir}")
-    exit()
-cmd = f"cp -r {coreg_dir} {src_dir}"
-print(cmd)
-os.system(cmd)
+outdir = "data"
 
 # Settings
 config = """
@@ -38,13 +29,13 @@ subjects = ["13703"]
 
 # Fif files containing the sensor-level preprocessed data for each subject
 preproc_files = [
-    "data/preproc/13703-braille_test-meg/13703-braille_test-meg_preproc_raw.fif",
+    "data/13703/13703-braille_test-meg_preproc_raw.fif",
 ]
 
 # Do source reconstruction
 source_recon.run_src_batch(
     config,
-    src_dir=src_dir,
+    outdir=outdir,
     subjects=subjects,
     preproc_files=preproc_files,
 )

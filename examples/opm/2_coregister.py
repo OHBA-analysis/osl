@@ -8,13 +8,13 @@ import os
 
 from osl import source_recon, utils
 
-def coregister(src_dir, subject, preproc_file, smri_file, epoch_file):
+def coregister(outdir, subject, preproc_file, smri_file, epoch_file):
     """Coregister OPM data."""
 
     # Create dummy coregistration files
     source_recon.rhino.coreg(
         fif_file=preproc_file,
-        subjects_dir=src_dir,
+        subjects_dir=outdir,
         subject=subject,
         use_headshape=False,
         use_nose=False,
@@ -22,7 +22,7 @@ def coregister(src_dir, subject, preproc_file, smri_file, epoch_file):
     )
 
     # Copy head to MRI transformation (needed for the forward model)
-    filenames = source_recon.rhino.get_coreg_filenames(src_dir, subject)
+    filenames = source_recon.rhino.get_coreg_filenames(outdir, subject)
     in_file = f"data/raw/{subject}-head_scaledmri-trans.fif"    
     out_file = filenames["head_scaledmri_t_file"]
     cmd = f"cp {in_file} {out_file}"
@@ -44,19 +44,19 @@ subjects = ["13703"]
 
 # Fif files containing the sensor-level preprocessed data for each subject
 preproc_files = [
-    "data/preproc/13703-braille_test-meg/13703-braille_test-meg_preproc_raw.fif",
+    "data/13703/13703-braille_test-meg_preproc_raw.fif",
 ]
 
 # The corresponding structurals for each subject
-smri_files = ["data/raw/13703.nii"]
+smri_files = ["raw/13703.nii"]
 
 # Directory to save output to
-outdir = "data/coreg"
+outdir = "data"
 
 # Perform coregistration
 source_recon.run_src_batch(
     config,
-    src_dir=outdir,
+    outdir=outdir,
     subjects=subjects,
     preproc_files=preproc_files,
     smri_files=smri_files,

@@ -4,21 +4,7 @@
 
 # Authors: Chetan Gohil <chetan.gohil@psych.ox.ac.uk>
 
-import os
-
 from osl import source_recon
-
-# Directories
-coreg_dir = "data/coreg"
-src_dir = "data/src"
-
-# First copy the coregistration directory
-if os.path.exists(src_dir):
-    print(f"Please first delete: {src_dir}")
-    exit()
-cmd = f"cp -r {coreg_dir} {src_dir}"
-print(cmd)
-os.system(cmd)
 
 # Settings
 config = """
@@ -38,12 +24,15 @@ config = """
 subjects = ["LN_VTA2"]
 
 # Fif files containing the sensor-level preprocessed data for each subject
-preproc_files = ["data/preproc/mg04938_BrainampDBS_20170504_01_preproc_raw.fif"]
+preproc_files = ["data/LN_VTA2/mg04938_BrainampDBS_20170504_01_preproc_raw.fif"]
+
+# Directories
+outdir = "data"
 
 # Source reconstruction
 source_recon.run_src_batch(
     config,
-    src_dir=src_dir,
+    outdir=outdir,
     subjects=subjects,
     preproc_files=preproc_files,
 )
