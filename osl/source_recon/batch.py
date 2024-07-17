@@ -90,7 +90,7 @@ def find_func(method, extra_funcs):
 
 def run_src_chain(
     config,
-    src_dir,
+    outdir,
     subject,
     preproc_file=None,
     smri_file=None,
@@ -108,7 +108,7 @@ def run_src_chain(
     ----------
     config : str or dict
         Source reconstruction config.
-    src_dir : str
+    outdir : str
         Source reconstruction directory.
     subject : str
         Subject name.
@@ -139,9 +139,9 @@ def run_src_chain(
     rhino.fsl_utils.check_fsl()
 
     # Directories
-    src_dir = validate_outdir(src_dir)
-    logsdir = validate_outdir(logsdir or src_dir / "logs")
-    reportdir = validate_outdir(reportdir or src_dir / "report")
+    outdir = validate_outdir(outdir)
+    logsdir = validate_outdir(logsdir or outdir / "logs")
+    reportdir = validate_outdir(reportdir or outdir / "src_report")
 
     # Get run ID
     if preproc_file is None:
@@ -161,7 +161,7 @@ def run_src_chain(
     logger = logging.getLogger(__name__)
     now = strftime("%Y-%m-%d %H:%M:%S", localtime())
     logger.info("{0} : Starting OSL Processing".format(now))
-    logger.info("input : {0}".format(src_dir / subject))
+    logger.info("input : {0}".format(outdir / subject))
 
     # Load config
     if not isinstance(config, dict):
@@ -189,7 +189,7 @@ def run_src_chain(
                         + "Please pass via extra_funcs "
                         + f"or use available functions: {avail_names}."
                     )
-            func(src_dir, subject, preproc_file, smri_file, epoch_file, **userargs)
+            func(outdir, subject, preproc_file, smri_file, epoch_file, **userargs)
 
     except Exception as e:
         logger.critical("*********************************")
@@ -216,7 +216,7 @@ def run_src_chain(
 
     if gen_report:
         # Generate data and individual HTML for the report
-        src_report.gen_html_data(config, src_dir, subject, reportdir, extra_funcs=extra_funcs)
+        src_report.gen_html_data(config, outdir, subject, reportdir, extra_funcs=extra_funcs)
         src_report.gen_html_page(reportdir)
 
     return True
@@ -224,7 +224,7 @@ def run_src_chain(
 
 def run_src_batch(
     config,
-    src_dir,
+    outdir,
     subjects,
     preproc_files=None,
     smri_files=None,
@@ -243,7 +243,7 @@ def run_src_batch(
     ----------
     config : str or dict
         Source reconstruction config.
-    src_dir : str
+    outdir : str
         Source reconstruction directory.
     subjects : list of str
         Subject names.
@@ -277,9 +277,9 @@ def run_src_batch(
     rhino.fsl_utils.check_fsl()
 
     # Directories
-    src_dir = validate_outdir(src_dir)
-    logsdir = validate_outdir(logsdir or src_dir / "logs")
-    reportdir = validate_outdir(reportdir or src_dir / "report")
+    outdir = validate_outdir(outdir)
+    logsdir = validate_outdir(logsdir or outdir / "logs")
+    reportdir = validate_outdir(reportdir or outdir / "src_report")
 
     # Initialise Loggers
     mne.set_log_level(mneverbose)
@@ -329,7 +329,7 @@ def run_src_batch(
     # Loop through input files to generate arguments for run_coreg_chain
     args = []
     for subject, preproc_file, smri_file, epoch_file, in zip(subjects, preproc_files, smri_files, epoch_files):
-        args.append((config, src_dir, subject, preproc_file, smri_file, epoch_file))
+        args.append((config, outdir, subject, preproc_file, smri_file, epoch_file))
 
     # Actually run the processes
     if dask_client:

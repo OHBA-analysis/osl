@@ -63,7 +63,7 @@ def get_rhino_files(subjects_dir, subject):
     # Base RHINO directory
     rhino_dir = op.join(subjects_dir, subject, "rhino")
     if " " in rhino_dir:
-        raise ValueError("subjects_dir/src_dir cannot contain spaces.")
+        raise ValueError("subjects_dir cannot contain spaces.")
 
     # Surfaces files
     surfaces_dir = op.join(rhino_dir, "surfaces")
