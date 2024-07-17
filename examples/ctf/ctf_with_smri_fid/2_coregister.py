@@ -38,5 +38,4 @@ source_recon.run_src_batch(
     subjects=subjects,
     preproc_files=preproc_files,
     smri_files=smri_files,
-    extra_funcs=[save_mni_fids],
 )
