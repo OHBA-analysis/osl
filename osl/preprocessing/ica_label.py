@@ -11,11 +11,12 @@ import sys
 import os
 import mne
 import numpy as np
+import pickle
 from copy import deepcopy
 from matplotlib import pyplot as plt
 from osl.preprocessing.plot_ica import plot_ica
 from osl.report import plot_bad_ica
-from osl.report.preproc_report import gen_html_page
+from osl.report.preproc_report import gen_html_page, gen_html_summary
 from ..utils import logger as osl_logger
 
 
@@ -82,20 +83,27 @@ def ica_label(preproc_dir, ica_dir, reject=None, report_dir=None):
             print(report_dir)
             
             savebase = os.path.join(report_dir, "{0}.png")
-            if os.path.exists(os.path.join(report_dir, "ica.png")):
-                # only need to update the ica plot - not the data.pkl
+            if os.path.exists(os.path.join(report_dir, "ica.png")) or os.path.exists(os.path.join(report_dir, "data.pkl")):
                 _ = plot_bad_ica(raw, ica, savebase)
-            elif os.path.exists(os.path.join(report_dir, "data.pkl")):
-                _ = plot_bad_ica(raw, ica, savebase)
-                
-                # we need to update data.pkl and subject_report.html
-                import pickle
+
+                # try updating the report data
                 data = pickle.load(open(os.path.join(report_dir, "data.pkl"), 'rb'))
-                data['plt_ica'] = os.path.join(report_dir.split("/")[-1], "ica.png")
+                if 'plt_ica' not in data.keys():
+                    data['plt_ica'] = os.path.join(report_dir.split("/")[-1], "ica.png")
+
+                # update number of bad components
+                data['ica_ncomps_rej'] = len(ica.exclude)
+                data['ica_ncomps_rej_ecg'] = [len(ica.labels_['ecg']) if 'ecg' in ica.labels_ else 'N/A'][0]
+                data['ica_ncomps_rej_eog'] = [len(ica.labels_['eog']) if 'eog' in ica.labels_ else 'N/A'][0]
+
+                # save data
                 pickle.dump(data, open(os.path.join(report_dir, "data.pkl"), 'wb'))
+
+                # gen html pages
                 gen_html_page(report_dir_base)
+                gen_html_summary(report_dir_base)
                 
-            print("REPORT UPDATED")
+                print("REPORT UPDATED")
         except:
             print("FAILED TO UPDATE REPORT")
     print(f'LABELING DATASET {preproc_dir.split("/")[-1]} COMPLETE')
