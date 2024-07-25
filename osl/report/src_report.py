@@ -292,7 +292,7 @@ def gen_html_summary(reportdir, logsdir=None):
 
     # log files
     if logsdir is None:
-        logsdir = reportdir._str.replace('report', 'logs')
+        logsdir = reportdir._str.replace('src_report', 'logs')
         
     if os.path.exists(os.path.join(logsdir, 'osl_batch.log')):
         with open(os.path.join(logsdir, 'osl_batch.log'), 'r') as log_file:

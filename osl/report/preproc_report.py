@@ -254,7 +254,7 @@ def gen_html_data(raw, outdir, ica=None, preproc_fif_filename=None, logsdir=None
     
     # add log files if possible
     if logsdir is None:
-        logsdir = outdir._str.replace('/report/', '/logs/')
+        logsdir = outdir._str.replace('preproc_report', 'logs')
     elif type(logsdir)==pathlib.PosixPath:
         logsdir = os.path.join(logsdir._str, outdir._str.split('/')[-1])
         
@@ -383,7 +383,7 @@ def gen_html_summary(reportdir, logsdir=None):
     
     # log files
     if logsdir is None:
-        logsdir = reportdir._str.replace('report', 'logs')
+        logsdir = reportdir._str.replace('preproc_report', 'logs')
     elif type(logsdir)==pathlib.PosixPath:
         logsdir = logsdir._str
         
