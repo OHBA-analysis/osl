@@ -42,7 +42,7 @@ def ica_label(data_dir, subject, reject=None):
     preproc_file = os.path.join(data_dir, subject, subject + '_preproc_raw.fif')
     ica_file = os.path.join(data_dir, subject, subject + '_ica.fif')
     report_dir_base =  os.path.join(data_dir, 'preproc_report')
-    report_dir = os.path.join(report_dir_base, subject)
+    report_dir = os.path.join(report_dir_base, subject + '_preproc_raw')
     
     print('LOADING DATA')
     raw = mne.io.read_raw(preproc_file, preload=True)
@@ -78,6 +78,7 @@ def ica_label(data_dir, subject, reject=None):
         print("ATTEMPTING TO UPDATE REPORT")
         try:           
             savebase = os.path.join(report_dir, "{0}.png")
+            print(report_dir)
             if os.path.exists(os.path.join(report_dir, "ica.png")) or os.path.exists(os.path.join(report_dir, "data.pkl")):
                 _ = plot_bad_ica(raw, ica, savebase)
 
