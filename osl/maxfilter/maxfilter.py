@@ -609,7 +609,8 @@ def run_cbu_3stage_maxfilter(infif, outbase, args):
                    'linefreq': 50, 'hpisubt': 'amp'}
     # User args
     for key in ['inorder', 'outorder', 'maxpath', 'scanner', 'ctc', 'cal',
-                'dryrun', 'overwrite', 'hpig', 'hpie', 'headpos', 'outdir']:
+                'dryrun', 'overwrite', 'hpig', 'hpie', 'headpos', 'outdir',
+               'movecompinter']: # movecompinter is allowed be overwritten by user input
         if key in args:
             stage2_args[key] = args[key]
 
