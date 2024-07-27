@@ -186,7 +186,7 @@ def run_src_chain(
                         + "Please pass via extra_funcs "
                         + f"or use available functions: {avail_names}."
                     )
-            func(outdir, subject, preproc_file, smri_file, epoch_file, **userargs)
+            func(outdir, subject, preproc_file, smri_file, epoch_file, reportdir=reportdir, **userargs)
 
     except Exception as e:
         logger.critical("*********************************")
@@ -212,9 +212,8 @@ def run_src_chain(
         return False
 
     if gen_report:
-        # Generate data and individual HTML for the report
+        # Generate data and individual HTML data for the report
         src_report.gen_html_data(config, outdir, subject, reportdir, extra_funcs=extra_funcs)
-        src_report.gen_html_page(reportdir)
 
     return True
 

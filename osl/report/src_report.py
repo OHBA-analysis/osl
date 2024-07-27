@@ -22,14 +22,14 @@ from . import preproc_report
 from ..source_recon import parcellation
 
 
-def gen_html_data(config, src_dir, subject, reportdir, logger=None, extra_funcs=None, logsdir=None):
+def gen_html_data(config, outdir, subject, reportdir, logger=None, extra_funcs=None, logsdir=None):
     """Generate data for HTML report.
 
     Parameters
     ----------
     config : dict
         Source reconstruction config.
-    src_dir : str
+    outdir : str
         Source reconstruction directory.
     subject : str
         Subject name.
@@ -43,19 +43,12 @@ def gen_html_data(config, src_dir, subject, reportdir, logger=None, extra_funcs=
         Directory the log files were saved into. If None, log files are assumed
         to be in reportdir.replace('report', 'logs')
     """
-    src_dir = Path(src_dir)
+    outdir = Path(outdir)
     reportdir = Path(reportdir)
 
     # Make directory for plots contained in the report
     os.makedirs(reportdir, exist_ok=True)
     os.makedirs(reportdir / subject, exist_ok=True)
-
-    # Open data saved by the source_recon.wrappers
-    data_file = f"{reportdir}/{subject}/data.pkl"
-    if Path(data_file).exists():
-        subject_data = pickle.load(open(data_file, "rb"))
-    else:
-        return
 
     # Check if this function has been called before
     if Path(f"{reportdir}/{subject}/data.pkl").exists():
@@ -65,12 +58,8 @@ def gen_html_data(config, src_dir, subject, reportdir, logger=None, extra_funcs=
         if "config" in data:
             # Update the config based on this run
             data["config"] = update_config(data["config"], config)
-
-    # Otherwise, this is the first time this has been called
-    else:
-        # Data for the report
-        data = {}
-        data["config"] = config
+        else:
+            data["config"] = config
 
     # add extra funcs if they exist
     if extra_funcs is not None:
@@ -83,54 +72,54 @@ def gen_html_data(config, src_dir, subject, reportdir, logger=None, extra_funcs=
     data["filename"] = subject
 
     # What have we done for this subject?
-    data["compute_surfaces"] = subject_data.pop("compute_surfaces", False)
-    data["coregister"] = subject_data.pop("coregister", False)
-    data["beamform"] = subject_data.pop("beamform", False)
-    data["beamform_and_parcellate"] = subject_data.pop("beamform_and_parcellate", False)
-    data["fix_sign_ambiguity"] = subject_data.pop("fix_sign_ambiguity", False)
+    data["compute_surfaces"] = data.pop("compute_surfaces", False)
+    data["coregister"] = data.pop("coregister", False)
+    data["beamform"] = data.pop("beamform", False)
+    data["beamform_and_parcellate"] = data.pop("beamform_and_parcellate", False)
+    data["fix_sign_ambiguity"] = data.pop("fix_sign_ambiguity", False)
 
     # Save info
     if data["beamform_and_parcellate"]:
-        data["n_samples"] = subject_data["n_samples"]
+        data["n_samples"] = data["n_samples"]
     if data["coregister"]:
-        data["fid_err"] = subject_data["fid_err"]
+        data["fid_err"] = data["fid_err"]
     if data["beamform_and_parcellate"]:
-        data["parcellation_file"] = subject_data["parcellation_file"]
-        data["parcellation_filename"] = Path(subject_data["parcellation_file"]).name
+        data["parcellation_file"] = data["parcellation_file"]
+        data["parcellation_filename"] = Path(data["parcellation_file"]).name
     if data["fix_sign_ambiguity"]:
-        data["template"] = subject_data["template"]
-        data["metrics"] = subject_data["metrics"]
+        data["template"] = data["template"]
+        data["metrics"] = data["metrics"]
 
     # Copy plots
-    if "surface_plots" in subject_data:
-        for plot in subject_data["surface_plots"]:
+    if "surface_plots" in data:
+        for plot in data["surface_plots"]:
             surface = "surfaces_" + Path(plot).stem
             data[f"plt_{surface}"] = f"{subject}/{surface}.png"
-            copy("{}/{}".format(src_dir, plot), "{}/{}/{}.png".format(reportdir, subject, surface))
+            copy("{}/{}".format(outdir, plot), "{}/{}/{}.png".format(reportdir, subject, surface))
 
-    if "coreg_plot" in subject_data:
+    if "coreg_plot" in data:
         data["plt_coreg"] = f"{subject}/coreg.html"
-        copy("{}/{}".format(src_dir, subject_data["coreg_plot"]), "{}/{}/coreg.html".format(reportdir, subject))
+        copy("{}/{}".format(outdir, data["coreg_plot"]), "{}/{}/coreg.html".format(reportdir, subject))
 
-    if "filters_cov_plot" in subject_data:
+    if "filters_cov_plot" in data:
         data["plt_filters_cov"] = f"{subject}/filters_cov.png"
-        copy("{}/{}".format(src_dir, subject_data["filters_cov_plot"]), "{}/{}/filters_cov.png".format(reportdir, subject))
+        copy("{}/{}".format(outdir, data["filters_cov_plot"]), "{}/{}/filters_cov.png".format(reportdir, subject))
 
-    if "filters_svd_plot" in subject_data:
+    if "filters_svd_plot" in data:
         data["plt_filters_svd"] = f"{subject}/filters_svd.png"
-        copy("{}/{}".format(src_dir, subject_data["filters_svd_plot"]), "{}/{}/filters_svd.png".format(reportdir, subject))
+        copy("{}/{}".format(outdir, data["filters_svd_plot"]), "{}/{}/filters_svd.png".format(reportdir, subject))
 
-    if "parc_psd_plot" in subject_data:
+    if "parc_psd_plot" in data:
         data["plt_parc_psd"] = f"{subject}/parc_psd.png"
-        copy("{}/{}".format(src_dir, subject_data["parc_psd_plot"]), "{}/{}/parc_psd.png".format(reportdir, subject))
+        copy("{}/{}".format(outdir, data["parc_psd_plot"]), "{}/{}/parc_psd.png".format(reportdir, subject))
 
-    if "parc_corr_plot" in subject_data:
+    if "parc_corr_plot" in data:
         data["plt_parc_corr"] = f"{subject}/parc_corr.png"
-        copy("{}/{}".format(src_dir, subject_data["parc_corr_plot"]), "{}/{}/parc_corr.png".format(reportdir, subject))
+        copy("{}/{}".format(outdir, data["parc_corr_plot"]), "{}/{}/parc_corr.png".format(reportdir, subject))
 
     # Logs
     if logsdir is None:
-        logsdir = os.path.join(src_dir, 'logs')
+        logsdir = os.path.join(outdir, 'logs')
     
     # guess the log file name
     g = glob(os.path.join(logsdir, f'{subject}*.log'))    
@@ -142,7 +131,6 @@ def gen_html_data(config, src_dir, subject, reportdir, logger=None, extra_funcs=
                 else:
                     data['log'] = log_file.read()
 
-            
     # Save data in the report directory
     pickle.dump(data, open(f"{reportdir}/{subject}/data.pkl", "wb"))
 
@@ -465,9 +453,11 @@ def add_to_data(data_file, info):
     info : dict
         Info to add.
     """
-    if Path(data_file).exists():
+    data_file = Path(data_file)
+    if data_file.exists():
         data = pickle.load(open(data_file, "rb"))
     else:
+        data_file.parent.mkdir(parents=True)
         data = {}
     data.update(info)
     pickle.dump(data, open(data_file, "wb"))

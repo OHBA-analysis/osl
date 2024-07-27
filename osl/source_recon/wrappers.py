@@ -39,7 +39,9 @@ def extract_polhemus_from_info(
     preproc_file,
     smri_file,
     epoch_file,
-    **userargs,
+    include_eeg_as_headshape=False,
+    include_hpi_as_headshape=True,
+    **kwargs,
 ):
     """Wrapper function to extract fiducials/headshape points.
 
@@ -56,9 +58,10 @@ def extract_polhemus_from_info(
         reconstruction. Not used.
     epoch_file : str
         Path to epoched preprocessed fif file. Not used.
-    userargs : keyword arguments
-        Keyword arguments to pass to
-        osl.source_recon.rhino.extract_polhemus_from_info.
+    include_eeg_as_headshape : bool, optional
+        Should we include EEG locations as headshape points?
+    include_hpi_as_headshape : bool, optional
+        Should we include HPI locations as headshape points?
     """
     filenames = rhino.get_coreg_filenames(outdir, subject)
     rhino.extract_polhemus_from_info(
@@ -67,7 +70,8 @@ def extract_polhemus_from_info(
         nasion_outfile=filenames["polhemus_nasion_file"],
         rpa_outfile=filenames["polhemus_rpa_file"],
         lpa_outfile=filenames["polhemus_lpa_file"],
-        **userargs,
+        include_eeg_as_headshape=include_eeg_as_headshape,
+        include_hpi_as_headshape=include_hpi_as_headshape,
     )
 
 
@@ -84,6 +88,7 @@ def remove_stray_headshape_points(
     smri_file,
     epoch_file,
     nose=True,
+    **kwargs,
 ):
     """Remove stray headshape points.
 
@@ -117,6 +122,7 @@ def save_mni_fiducials(
     smri_file,
     epoch_file,
     filepath,
+    **kwargs,
 ):
     """Wrapper to save MNI fiducials.
 
@@ -171,6 +177,7 @@ def extract_polhemus_from_pos(
     smri_file,
     epoch_file,
     filepath,
+    **kwargs,
 ):
     """Wrapper to save polhemus data from a .pos file.
 
@@ -204,6 +211,7 @@ def extract_polhemus_from_elc(
     epoch_file,
     filepath,
     remove_headshape_near_nose=False,
+    **kwargs,
 ):
     """Wrapper to save polhemus data from an .elc file.
 
@@ -244,6 +252,7 @@ def compute_surfaces(
     do_mri2mniaxes_xform=True,
     use_qform=False,
     reportdir=None,
+    **kwargs,
 ):
     """Wrapper for computing surfaces.
 
@@ -323,6 +332,7 @@ def coregister(
     allow_smri_scaling=False,
     n_init=1,
     reportdir=None,
+    **kwargs,
 ):
     """Wrapper for coregistration.
 
@@ -413,6 +423,7 @@ def forward_model(
     model="Single Layer",
     eeg=False,
     reportdir=None,
+    **kwargs,
 ):
     """Wrapper for computing the forward model.
 
@@ -481,6 +492,7 @@ def beamform(
     pick_ori="max-power-pre-weight-norm",
     reg=0,
     reportdir=None,
+    **kwargs,
 ):
     """Wrapper function for beamforming.
 
@@ -591,6 +603,7 @@ def parcellate(
     reference_brain="mni",
     extra_chans="stim",
     reportdir=None,
+    **kwargs,
 ):
     """Wrapper function for parcellation.
 
@@ -774,6 +787,7 @@ def beamform_and_parcellate(
     reference_brain="mni",
     extra_chans="stim",
     reportdir=None,
+    **kwargs,
 ):
     """Wrapper function for beamforming and parcellation.
 
@@ -985,6 +999,7 @@ def find_template_subject(
     n_embeddings=1,
     standardize=True,
     epoched=False,
+    **kwargs,
 ):
     """Function to find a good subject to align other subjects to in the sign flipping.
 
@@ -1058,6 +1073,7 @@ def fix_sign_ambiguity(
     max_flips,
     epoched=False,
     reportdir=None,
+    **kwargs,
 ):
     """Wrapper function for fixing the dipole sign ambiguity.
 
@@ -1153,6 +1169,7 @@ def extract_rhino_files(
     smri_file,
     epoch_file,
     old_outdir,
+    **kwargs,
 ):
     """Wrapper function for extracting RHINO files from a previous run.
 
