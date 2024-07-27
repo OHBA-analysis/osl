@@ -51,7 +51,7 @@ def gen_html_data(config, src_dir, subject, reportdir, logger=None, extra_funcs=
     os.makedirs(reportdir / subject, exist_ok=True)
 
     # Open data saved by the source_recon.wrappers
-    data_file = f"{src_dir}/{subject}/report_data.pkl"
+    data_file = f"{reportdir}/{subject}/data.pkl"
     if Path(data_file).exists():
         subject_data = pickle.load(open(data_file, "rb"))
     else:
@@ -130,7 +130,7 @@ def gen_html_data(config, src_dir, subject, reportdir, logger=None, extra_funcs=
 
     # Logs
     if logsdir is None:
-        logsdir = os.path.join(src_dir._str, 'logs')
+        logsdir = os.path.join(src_dir, 'logs')
     
     # guess the log file name
     g = glob(os.path.join(logsdir, f'{subject}*.log'))    

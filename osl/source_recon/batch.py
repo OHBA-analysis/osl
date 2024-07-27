@@ -143,11 +143,8 @@ def run_src_chain(
     logsdir = validate_outdir(logsdir or outdir / "logs")
     reportdir = validate_outdir(reportdir or outdir / "src_report")
 
-    # Get run ID
-    if preproc_file is None:
-        run_id = subject
-    else:
-        run_id = find_run_id(preproc_file)
+    # Use the subject ID for the run ID
+    run_id = subject
 
     # Generate log filename
     name_base = "{run_id}_{ftype}.{fext}"

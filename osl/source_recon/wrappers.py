@@ -243,6 +243,7 @@ def compute_surfaces(
     recompute_surfaces=False,
     do_mri2mniaxes_xform=True,
     use_qform=False,
+    reportdir=None,
 ):
     """Wrapper for computing surfaces.
 
@@ -271,6 +272,8 @@ def compute_surfaces(
     use_qform : bool, optional
         Should we replace the sform with the qform? Useful if the sform code
         is incompatible with OSL, but the qform is compatible.
+    reportdir : str, optional
+        Path to report directory.
     """
     if smri_file == "standard":
         std_struct = "MNI152_T1_2mm.nii.gz"
@@ -294,17 +297,18 @@ def compute_surfaces(
     )
     surface_plots = [s.replace(f"{outdir}/", "") for s in surface_plots]
 
-    # Save info for the report
-    src_report.add_to_data(
-        f"{outdir}/{subject}/report_data.pkl",
-        {
-            "compute_surfaces": True,
-            "include_nose": include_nose,
-            "do_mri2mniaxes_xform": do_mri2mniaxes_xform,
-            "use_qform": use_qform,
-            "surface_plots": surface_plots,
-        },
-    )
+    if reportdir is not None:
+        # Save info for the report
+        src_report.add_to_data(
+            f"{reportdir}/{subject}/data.pkl",
+            {
+                "compute_surfaces": True,
+                "include_nose": include_nose,
+                "do_mri2mniaxes_xform": do_mri2mniaxes_xform,
+                "use_qform": use_qform,
+                "surface_plots": surface_plots,
+            },
+        )
 
 
 def coregister(
@@ -318,6 +322,7 @@ def coregister(
     already_coregistered=False,
     allow_smri_scaling=False,
     n_init=1,
+    reportdir=None,
 ):
     """Wrapper for coregistration.
 
@@ -350,6 +355,8 @@ def coregister(
         using a template sMRI that has not come from this subject.
     n_init : int, optional
         Number of initialisations for coregistration.
+    reportdir : str, optional
+        Path to report directory.
     """
     # Run coregistration
     rhino.coreg(
@@ -379,20 +386,21 @@ def coregister(
     )
     coreg_filename = f"{coreg_dir}/coreg.html".replace(f"{outdir}/", "")
 
-    # Save info for the report
-    src_report.add_to_data(
-        f"{outdir}/{subject}/report_data.pkl",
-        {
-            "coregister": True,
-            "use_headshape": use_headshape,
-            "use_nose": use_nose,
-            "already_coregistered": already_coregistered,
-            "allow_smri_scaling": allow_smri_scaling,
-            "n_init_coreg": n_init,
-            "fid_err": fid_err,
-            "coreg_plot": coreg_filename,
-        },
-    )
+    if reportdir is not None:
+        # Save info for the report
+        src_report.add_to_data(
+            f"{reportdir}/{subject}/data.pkl",
+            {
+                "coregister": True,
+                "use_headshape": use_headshape,
+                "use_nose": use_nose,
+                "already_coregistered": already_coregistered,
+                "allow_smri_scaling": allow_smri_scaling,
+                "n_init_coreg": n_init,
+                "fid_err": fid_err,
+                "coreg_plot": coreg_filename,
+            },
+        )
 
 
 def forward_model(
@@ -404,6 +412,7 @@ def forward_model(
     gridstep=8,
     model="Single Layer",
     eeg=False,
+    reportdir=None,
 ):
     """Wrapper for computing the forward model.
 
@@ -430,6 +439,8 @@ def forward_model(
         'Triple Layer' uses three layers (scalp, inner skull, brain/cortex)
     eeg : bool, optional
         Are we using EEG channels in the source reconstruction?
+    reportdir : str, optional
+        Path to report directory.
     """
     # Compute forward model
     rhino.forward_model(
@@ -440,16 +451,17 @@ def forward_model(
         eeg=eeg,
     )
 
-    # Save info for the report
-    src_report.add_to_data(
-        f"{outdir}/{subject}/report_data.pkl",
-        {
-            "forward_model": True,
-            "model": model,
-            "gridstep": gridstep,
-            "eeg": eeg,
-        },
-    )
+    if reportdir is not None:
+        # Save info for the report
+        src_report.add_to_data(
+            f"{reportdir}/{subject}/data.pkl",
+            {
+                "forward_model": True,
+                "model": model,
+                "gridstep": gridstep,
+                "eeg": eeg,
+            },
+        )
 
 
 # -------------------------------------
@@ -468,6 +480,7 @@ def beamform(
     weight_norm="nai",
     pick_ori="max-power-pre-weight-norm",
     reg=0,
+    reportdir=None,
 ):
     """Wrapper function for beamforming.
 
@@ -498,6 +511,8 @@ def beamform(
         Orientation of the dipoles.
     reg : float, optional
         The regularization for the whitened data covariance.
+    reportdir : str, optional
+        Path to report directory
     """
     logger.info("beamforming")
 
@@ -547,19 +562,20 @@ def beamform(
     filters_cov_plot = filters_cov_plot.replace(f"{outdir}/", "")
     filters_svd_plot = filters_svd_plot.replace(f"{outdir}/", "")
 
-    # Save info for the report
-    src_report.add_to_data(
-        f"{outdir}/{subject}/report_data.pkl",
-        {
-            "beamform": True,
-            "chantypes": chantypes,
-            "rank": rank,
-            "reg": reg,
-            "freq_range": freq_range,
-            "filters_cov_plot": filters_cov_plot,
-            "filters_svd_plot": filters_svd_plot,
-        },
-    )
+    if reportdir is not None:
+        # Save info for the report
+        src_report.add_to_data(
+            f"{reportdir}/{subject}/data.pkl",
+            {
+                "beamform": True,
+                "chantypes": chantypes,
+                "rank": rank,
+                "reg": reg,
+                "freq_range": freq_range,
+                "filters_cov_plot": filters_cov_plot,
+                "filters_svd_plot": filters_svd_plot,
+            },
+        )
 
 
 def parcellate(
@@ -574,6 +590,7 @@ def parcellate(
     spatial_resolution=None,
     reference_brain="mni",
     extra_chans="stim",
+    reportdir=None,
 ):
     """Wrapper function for parcellation.
 
@@ -613,11 +630,19 @@ def parcellate(
         Extra channels to include in the parc-raw.fif file.
         Defaults to 'stim'. Stim channels are always added to parc-raw.fif
         in addition to extra_chans.
+    reportdir : str, optional
+        Path to report directory.
     """
     logger.info("parcellate")
 
+    if reportdir is None:
+        raise ValueError(
+            "This function can only be used then a report was generated "
+            "when beamforming. Please use beamform_and_parcellate."
+        )
+
     # Get settings passed to the beamform wrapper
-    report_data = pickle.load(open(f"{outdir}/{subject}/report_data.pkl", "rb"))
+    report_data = pickle.load(open(f"{reportdir}/{subject}/data.pkl", "rb"))
     freq_range = report_data.pop("freq_range")
     chantypes = report_data.pop("chantypes")
     if isinstance(chantypes, str):
@@ -714,7 +739,7 @@ def parcellate(
     else:
         n_epochs = None
     src_report.add_to_data(
-        f"{outdir}/{subject}/report_data.pkl",
+        f"{reportdir}/{subject}/data.pkl",
         {
             "parcellate": True,
             "parcellation_file": parcellation_file,
@@ -748,6 +773,7 @@ def beamform_and_parcellate(
     spatial_resolution=None,
     reference_brain="mni",
     extra_chans="stim",
+    reportdir=None,
 ):
     """Wrapper function for beamforming and parcellation.
 
@@ -802,6 +828,8 @@ def beamform_and_parcellate(
         Extra channels to include in the parc-raw.fif file.
         Defaults to 'stim'. Stim channels are always added to parc-raw.fif
         in addition to extra_chans.
+    reportdir : str, optional
+        Path to report directory.
     """
     logger.info("beamform_and_parcellate")
 
@@ -914,36 +942,37 @@ def beamform_and_parcellate(
     parc_corr_plot = f"{subject}/parc/corr.png"
     parcellation.plot_correlation(parcel_data, filename=f"{outdir}/{parc_corr_plot}")
 
-    # Save info for the report
-    n_parcels = parcel_data.shape[0]
-    n_samples = parcel_data.shape[1]
-    if parcel_data.ndim == 3:
-        n_epochs = parcel_data.shape[2]
-    else:
-        n_epochs = None
-    src_report.add_to_data(
-        f"{outdir}/{subject}/report_data.pkl",
-        {
-            "beamform_and_parcellate": True,
-            "beamform": True,
-            "parcellate": True,
-            "chantypes": chantypes,
-            "rank": rank,
-            "reg": reg,
-            "freq_range": freq_range,
-            "filters_cov_plot": filters_cov_plot,
-            "filters_svd_plot": filters_svd_plot,
-            "parcellation_file": parcellation_file,
-            "method": method,
-            "orthogonalisation": orthogonalisation,
-            "parc_fif_file": str(parc_fif_file),
-            "n_samples": n_samples,
-            "n_parcels": n_parcels,
-            "n_epochs": n_epochs,
-            "parc_psd_plot": parc_psd_plot,
-            "parc_corr_plot": parc_corr_plot,
-        },
-    )
+    if reportdir is not None:
+        # Save info for the report
+        n_parcels = parcel_data.shape[0]
+        n_samples = parcel_data.shape[1]
+        if parcel_data.ndim == 3:
+            n_epochs = parcel_data.shape[2]
+        else:
+            n_epochs = None
+        src_report.add_to_data(
+            f"{reportdir}/{subject}/data.pkl",
+            {
+                "beamform_and_parcellate": True,
+                "beamform": True,
+                "parcellate": True,
+                "chantypes": chantypes,
+                "rank": rank,
+                "reg": reg,
+                "freq_range": freq_range,
+                "filters_cov_plot": filters_cov_plot,
+                "filters_svd_plot": filters_svd_plot,
+                "parcellation_file": parcellation_file,
+                "method": method,
+                "orthogonalisation": orthogonalisation,
+                "parc_fif_file": str(parc_fif_file),
+                "n_samples": n_samples,
+                "n_parcels": n_parcels,
+                "n_epochs": n_epochs,
+                "parc_psd_plot": parc_psd_plot,
+                "parc_corr_plot": parc_corr_plot,
+            },
+        )
 
 
 # ----------------------
@@ -1028,6 +1057,7 @@ def fix_sign_ambiguity(
     n_iter,
     max_flips,
     epoched=False,
+    reportdir=None,
 ):
     """Wrapper function for fixing the dipole sign ambiguity.
 
@@ -1059,6 +1089,8 @@ def fix_sign_ambiguity(
     epoched : bool, optional
         Are we performing sign flipping on parc-raw.fif (epoched=False) or
         parc-epo.fif files (epoched=True)?
+    reportdir : str, optional
+        Path to report directory.
     """
     logger.info("fix_sign_ambiguity")
     logger.info(f"using template: {template}")
@@ -1093,20 +1125,21 @@ def fix_sign_ambiguity(
     # Apply flips to the parcellated data
     sign_flipping.apply_flips(outdir, subject, flips, epoched=epoched)
 
-    # Save info for the report
-    src_report.add_to_data(
-        f"{outdir}/{subject}/report_data.pkl",
-        {
-            "fix_sign_ambiguity": True,
-            "template": template,
-            "n_embeddings": n_embeddings,
-            "standardize": standardize,
-            "n_init": n_init,
-            "n_iter": n_iter,
-            "max_flips": max_flips,
-            "metrics": metrics,
-        },
-    )
+    if reportdir is not None:
+        # Save info for the report
+        src_report.add_to_data(
+            f"{reportdir}/{subject}/data.pkl",
+            {
+                "fix_sign_ambiguity": True,
+                "template": template,
+                "n_embeddings": n_embeddings,
+                "standardize": standardize,
+                "n_init": n_init,
+                "n_iter": n_iter,
+                "max_flips": max_flips,
+                "metrics": metrics,
+            },
+        )
 
 
 # --------------
