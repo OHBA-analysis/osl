@@ -84,7 +84,7 @@ def process_file_inputs(inputs):
     if check_paths:
         #infiles = [sanitise_filepath(f) for f in infiles]
         for idx, fif in enumerate(infiles):
-            if fif.endswith('.ds'):
+            if fif.endswith('.ds') or fif.endswith('.mff'):
                 good_files[idx] = int(os.path.isdir(fif))
             else:
                 good_files[idx] = int(os.path.isfile(fif))

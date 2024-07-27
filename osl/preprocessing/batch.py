@@ -296,10 +296,8 @@ def check_config_versions(config):
     ------
     AssertionError
         Raised if package version mismatch found in 'version_assert'
-
-    WARNING
+    Warning
         Raised if package version mismatch found in 'version_warn'
-
     """
     config = load_config(config)
 
@@ -485,7 +483,6 @@ def read_dataset(fif, preload=False, ftype=None):
     
     # add extension to fif file name
     ftype = ftype + ".fif"
-     
     
     events = Path(fif.replace(ftype, "events.npy"))
     if events.exists():
