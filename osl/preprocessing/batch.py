@@ -105,14 +105,17 @@ def import_data(infile, preload=True):
     elif os.path.splitext(infile)[1] == ".fif":
         logger.info("Detected fif file format, using: mne.io.read_raw_fif")
         raw = mne.io.read_raw_fif(infile, preload=preload)
+
     # EDF file
     elif os.path.splitext(infile)[1].lower() == ".edf":
         logger.info("Detected edf file format, using: mne.io.read_raw_edf")
         raw = mne.io.read_raw_edf(infile, preload=preload)
+
     # CTF data in ds directory
     elif os.path.splitext(infile)[1] == ".ds":
         logger.info("Detected CTF file format, using: mne.io.read_raw_ctf")
         raw = mne.io.read_raw_ctf(infile, preload=preload)
+
     elif os.path.splitext(infile)[1] == ".meg4":
         logger.info("Detected CTF file format, using: mne.io.read_raw_ctf")
         raw = mne.io.read_raw_ctf(os.path.dirname(infile), preload=preload)
@@ -134,6 +137,10 @@ def import_data(infile, preload=True):
     elif os.path.splitext(infile)[1] == ".bdf":
         logger.info("Detected BDF file format, using: mne.io.read_raw_bdf")
         raw = mne.io.read_raw_bdf(infile, preload=preload)
+
+    elif os.path.splitext(infile)[1] == ".mff":
+        logger.info("Detected EGI file format, using mne.io.read_raw_egi")
+        raw = mne.io.read_raw_egi(infile, preload=preload)
         
     # Other formats not accepted
     else:
