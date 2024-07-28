@@ -23,7 +23,7 @@ dependencies:
   - tabulate==0.9.0
   - pyyaml==6.0
   - neurokit2==0.2.3
-  - jinja2==3.1.2
+  - jinja2==3.0.3
   - glmtools==0.2.1
   - numba==0.56.4
   - nilearn==0.10.0
