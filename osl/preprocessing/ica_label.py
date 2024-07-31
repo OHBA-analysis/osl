@@ -93,8 +93,8 @@ def ica_label(preproc_dir, ica_dir, reject=None, report_dir=None):
 
                 # update number of bad components
                 data['ica_ncomps_rej'] = len(ica.exclude)
-                data['ica_ncomps_rej_ecg'] = [len(ica.labels_['ecg']) if 'ecg' in ica.labels_ else 'N/A'][0]
-                data['ica_ncomps_rej_eog'] = [len(ica.labels_['eog']) if 'eog' in ica.labels_ else 'N/A'][0]
+                data['ica_ncomps_rej_ecg'] = [len(ica.labels_['ecg']) if 'ecg' in ica.labels_.keys() else 'N/A'][0]
+                data['ica_ncomps_rej_eog'] = [len(ica.labels_['eog']) if 'eog' in ica.labels_.keys() else 'N/A'][0]
 
                 # save data
                 pickle.dump(data, open(os.path.join(report_dir, "data.pkl"), 'wb'))
