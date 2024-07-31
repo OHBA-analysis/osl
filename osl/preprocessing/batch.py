@@ -890,6 +890,11 @@ def run_proc_batch(
     files : str or list or mne.Raw
         Can be a list of Raw objects or a list of filenames (or ``.ds`` dir names if CTF data)
         or a path to a textfile list of filenames (or ``.ds`` dir names if CTF data).
+    outnames: None or list of str
+        output names of the preprocessed files. If None (default), they will be automatically 
+        determined.
+    ftype: None or str
+        Extension of the preprocessed fif files. Default option is `_preproc_raw`.
     outdir : str
         Output directory. If processing multiple files, they can
         be put in unique sub directories by including ``{x:0}`` at 
@@ -995,6 +1000,7 @@ def run_proc_batch(
     pool_func = partial(
         run_proc_chain,
         outdir=outdir,
+        ftype=ftype,
         logsdir=logsdir,
         reportdir=reportdir,
         ret_dataset=False,
