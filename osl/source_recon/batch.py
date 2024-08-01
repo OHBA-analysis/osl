@@ -186,7 +186,24 @@ def run_src_chain(
                         + "Please pass via extra_funcs "
                         + f"or use available functions: {avail_names}."
                     )
-            func(outdir, subject, preproc_file, smri_file, epoch_file, reportdir=reportdir, **userargs)
+            def wrapped_func(**kwargs):
+                args, _, _, defaults = inspect.getargspec(func)
+                args = args[:-len(defaults)]
+                kwargs_to_pass = {}
+                for a in args:
+                    if a not in kwargs:
+                        raise ValueError(f"{a} needs to be passed to {func.__name__}")
+                    kwargs_to_pass[a] = kwargs[a]
+                return func(**kwargs_to_pass)
+            wrapped_func(
+                outdir=outdir,
+                subject=subject,
+                preproc_file=preproc_file,
+                smri_file=smri_file,
+                epoch_file=epoch_file,
+                reportdir=reportdir,
+                **userargs,
+            )
 
     except Exception as e:
         logger.critical("*********************************")
