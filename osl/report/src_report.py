@@ -287,6 +287,7 @@ def gen_html_summary(reportdir, logsdir=None):
         flip_table["Session ID"] = [subject_data[i]["fif_id"] for i in range(len(subject_data))]
         flip_table["Correlation before flipping "] = np.round(metrics[:,0], decimals=3)
         flip_table["Correlation after flipping "] = np.round(metrics[:,1:].max(axis=1), decimals=3)
+        flip_table["Correlation change (after-before) "] = np.round(flip_table["Correlation after flipping "]-flip_table["Correlation before flipping "], decimals=3)
         flip_table.index += 1 # Start indexing from 1
         data['signflip_table'] = flip_table.to_html(classes="display", table_id="signflip_tbl")
 
