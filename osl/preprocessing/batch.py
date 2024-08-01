@@ -886,6 +886,8 @@ def run_proc_batch(
         or a path to a textfile list of filenames (or ``.ds`` dir names if CTF data).
     subjects : list of str
         Subject directory names. These are sub-directories in outdir.
+    ftype: None or str
+        Extension of the preprocessed fif files. Default option is `_preproc_raw`.
     outdir : str
         Output directory.
     logsdir : str
@@ -985,6 +987,7 @@ def run_proc_batch(
     pool_func = partial(
         run_proc_chain,
         outdir=outdir,
+        ftype=ftype,
         logsdir=logsdir,
         reportdir=reportdir,
         ret_dataset=False,

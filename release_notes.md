@@ -55,6 +55,7 @@ You need to update the version number the the following files to version number 
 
 - `setup.py`
 - `osl/__init__.py`
+- `doc/source/conf.py`
 
 Don't forget to commit these changes before continuing.
 
