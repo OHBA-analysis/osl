@@ -34,6 +34,40 @@ class GLMEpochsResult(GLMBaseResult):
         self.times = times
         super().__init__(model, design, info, data=data)
 
+    def save_pkl(self, outname, overwrite=True, save_data=False):
+        """Save GLM-Epochs result to a pickle file.
+
+        Parameters
+        ----------
+        outname : str
+             Filename or full file path to write pickle to
+        overwrite : bool
+             Overwrite previous file if one exists? (Default value = True)
+        save_data : bool
+             Save epochs data in pickle? This is omitted by default to save disk
+             space (Default value = False)
+        """
+        if Path(outname).exists() and not overwrite:
+            msg = "{} already exists. Please delete or do use overwrite=True."
+            raise ValueError(msg.format(outname))
+
+        self.config.detrend_func = None  # Have to drop this to pickle
+
+        # This is hacky - but pickles are all or nothing and I don't know how
+        # else to do it. HDF5 would be better longer term
+        if save_data == False:
+            # Temporarily remove data before saving
+            dd = self.data
+            self.data = None
+
+        with open(outname, 'bw') as outp:
+            pickle.dump(self, outp)
+
+        # Put data back
+        if save_data == False:
+            self.data = dd
+            
+
     def get_evoked_contrast(self, contrast=0, metric='copes'):
         """Get the evoked response for a given contrast.
         
@@ -80,7 +114,7 @@ class GroupGLMEpochs(GroupGLMBaseResult):
     """A class for group level GLM-Spectra fitted across mmultiple first-level
     GLM-Spectra computed from MNE-Python Raw objects"""
 
-    def __init__(self, model, design, info, fl_contrast_names=None, data=None, tmin=0, times=None):
+    def __init__(self, model, design, info, config, fl_contrast_names=None, data=None, tmin=0, times=None):
         """
         Parameters
         ----------
@@ -90,6 +124,8 @@ class GroupGLMEpochs(GroupGLMBaseResult):
             The  GLM design object.
         info : mne.Info
             The MNE-Python Info object for the data
+        config : :py:class:`glmtools.config.GLMConfig <glmtools.config.GLMConfig>`
+            The  GLM configuration object.
         fl_contrast_names : {None, list}
             List of first-level contrast names (Default value = None)
         data : glmtools.data.TrialGLMData
@@ -101,7 +137,7 @@ class GroupGLMEpochs(GroupGLMBaseResult):
         """
         self.tmin = tmin
         self.times = times
-        super().__init__(model, design, info, fl_contrast_names=fl_contrast_names, data=data)
+        super().__init__(model, design, info, config, fl_contrast_names=fl_contrast_names, data=data)
 
     def get_evoked_contrast(self, gcontrast=0, fcontrast=0, metric='copes'):
         """Get the evoked response for a given contrast.
@@ -250,7 +286,7 @@ def group_glm_epochs(inspectra, design_config=None, datainfo=None, metric='copes
     design = design_config.design_from_datainfo(group_data.info)
     model = glm.fit.OLSModel(design, group_data)
 
-    return GroupGLMEpochs(model, design, glmep.info, data=group_data, fl_contrast_names=fl_contrast_names, tmin=glmep.tmin, times=glmep.times)
+    return GroupGLMEpochs(model, design, glmep.info, design_config, data=group_data, fl_contrast_names=fl_contrast_names, tmin=glmep.tmin, times=glmep.times)
 
 #%% ------------------------------------------------------
 
