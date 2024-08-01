@@ -288,12 +288,50 @@ def run_src_batch(
     config_str = pprint.PrettyPrinter().pformat(config)
     logger.info('Running config\n {0}'.format(config_str))
 
-    # Validation
+    # Number of files (subjects) to process
     n_subjects = len(subjects)
-    if preproc_files is not None:
-        n_preproc_files = len(preproc_files)
-        if n_subjects != n_preproc_files:
-            raise ValueError(f"Got {n_subjects} subjects and {n_preproc_files} preproc_files.")
+
+    # Validation
+    if preproc_files is not None and epoch_files is not None:
+        raise ValueError("Please pass either preproc_file or epoch_files, not both.")
+
+    if preproc_files and epoch_files:
+        raise ValueError(
+            "Cannot pass both preproc_files=True and epoch_files=True. "
+            "Please only pass one of these."
+        )
+
+    if isinstance(preproc_files, list):
+        n_files = len(preproc_files)
+        if n_subjects != n_files:
+            raise ValueError(f"Got {n_subjects} subjects and {n_files} preproc_files.")
+
+    elif isinstance(epoch_files, list):
+        n_files = len(epoch_files)
+        if n_subjects != n_files:
+            raise ValueError(f"Got {n_subjects} subjects and {n_files} epoch_files.")
+
+    else:
+        # Check what files are in the output directory
+        preproc_files_list = []
+        epoch_files_list = []
+        for subject in subjects:
+            preproc_file = f"{outdir}/{subject}/{subject}_preproc_raw.fif"
+            epoch_file = f"{outdir}/{subject}/{subject}-epo.fif"
+            if os.path.exists(preproc_file) and os.path.exists(epoch_file):
+                if preproc_files is None and epoch_files is None:
+                    raise ValueError(
+                        "Both preproc and epoch fif files found. "
+                        "Please pass preproc_files=True or epoch_files=True."
+                    )
+            elif os.path.exists(preproc_file):
+                preproc_files_list.append(preproc_file)
+            elif os.path.exists(epoch_file):
+                epoch_files_list.append(epoch_file)
+        if len(preproc_files_list) > 0:
+            preproc_files = preproc_files_list
+        elif len(epoch_files_list) > 0:
+            epoch_files = epochs_file_list
 
     doing_coreg = (
         any(["compute_surfaces" in method for method in config["source_recon"]]) or
