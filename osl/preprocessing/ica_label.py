@@ -39,10 +39,10 @@ def ica_label(data_dir, subject, reject=None):
     plt.ion()
     
     # define data paths based on OSL data structure
-    preproc_file = os.path.join(data_dir, subject, subject + '_preproc_raw.fif')
+    preproc_file = os.path.join(data_dir, subject, subject + '_preproc-raw.fif')
     ica_file = os.path.join(data_dir, subject, subject + '_ica.fif')
     report_dir_base =  os.path.join(data_dir, 'preproc_report')
-    report_dir = os.path.join(report_dir_base, subject + '_preproc_raw')
+    report_dir = os.path.join(report_dir_base, subject + '_preproc-raw')
     
     print('LOADING DATA')
     raw = mne.io.read_raw(preproc_file, preload=True)

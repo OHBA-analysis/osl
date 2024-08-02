@@ -385,7 +385,7 @@ def append_preproc_info(dataset, config, extra_funcs=None):
     return dataset
 
 
-def write_dataset(dataset, outbase, run_id, ftype='preproc_raw', overwrite=False):
+def write_dataset(dataset, outbase, run_id, ftype='preproc-raw', overwrite=False):
     """Write preprocessed data to a file.
 
     Will write all keys in the dataset dict to disk with corresponding extensions.
@@ -399,7 +399,7 @@ def write_dataset(dataset, outbase, run_id, ftype='preproc_raw', overwrite=False
     run_id : str
         ID for the output file.
     ftype: str
-        Extension for the fif file (default ``preproc_raw``)
+        Extension for the fif file (default ``preproc-raw``)
     overwrite : bool
         Should we overwrite if the file already exists?
 
@@ -409,8 +409,8 @@ def write_dataset(dataset, outbase, run_id, ftype='preproc_raw', overwrite=False
         The saved fif file name
     """
 
-    # Strip "_preproc_raw" or "_raw" from the run id
-    for string in ["_preproc_raw", "_raw"]:
+    # Strip "_preproc-raw" or "_raw" from the run id
+    for string in ["_preproc-raw", "_raw"]:
         if string in run_id:
             run_id = run_id.replace(string, "")
 
@@ -455,7 +455,7 @@ def read_dataset(fif, preload=False, ftype=None):
     ftype : str
         Extension for the fif file (will be replaced for e.g. ``'_events.npy'`` or 
         ``'_ica.fif'``). If ``None``, we assume the fif file is preprocessed with 
-        OSL and has the extension ``'_preproc_raw'``. If this fails, we guess 
+        OSL and has the extension ``'_preproc-raw'``. If this fails, we guess 
         the extension as whatever comes after the last ``'_'``.
 
     Returns
@@ -471,9 +471,9 @@ def read_dataset(fif, preload=False, ftype=None):
     # Guess extension
     if ftype is None:
         logger.info("Guessing the preproc extension")
-        if "preproc_raw" in fif:
-            logger.info('Assuming fif file type is "preproc_raw"')
-            ftype = "preproc_raw"
+        if "preproc-raw" in fif:
+            logger.info('Assuming fif file type is "preproc-raw"')
+            ftype = "preproc-raw"
         else:
             if len(fif.split("_"))<2:
                 logger.error("Unable to guess the fif file extension")
@@ -633,7 +633,7 @@ def run_proc_chain(
     config,
     infile,
     subject=None,
-    ftype='preproc_raw',
+    ftype='preproc-raw',
     outdir=None,
     logsdir=None,
     reportdir=None,
@@ -655,7 +655,7 @@ def run_proc_chain(
     subject : str
         Subject ID. This will be the sub-directory in outdir.
     ftype: str
-        Extension for the fif file (default ``preproc_raw``)
+        Extension for the fif file (default ``preproc-raw``)
     outdir : str
         Output directory.
     logsdir : str
@@ -887,7 +887,7 @@ def run_proc_batch(
     subjects : list of str
         Subject directory names. These are sub-directories in outdir.
     ftype: None or str
-        Extension of the preprocessed fif files. Default option is `_preproc_raw`.
+        Extension of the preprocessed fif files. Default option is `_preproc-raw`.
     outdir : str
         Output directory.
     logsdir : str

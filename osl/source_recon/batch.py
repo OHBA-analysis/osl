@@ -335,7 +335,7 @@ def run_src_batch(
         preproc_files_list = []
         epoch_files_list = []
         for subject in subjects:
-            preproc_file = f"{outdir}/{subject}/{subject}_preproc_raw.fif"
+            preproc_file = f"{outdir}/{subject}/{subject}_preproc-raw.fif"
             epoch_file = f"{outdir}/{subject}/{subject}-epo.fif"
             if os.path.exists(preproc_file) and os.path.exists(epoch_file):
                 if preproc_files is None and epoch_files is None:

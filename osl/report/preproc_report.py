@@ -57,7 +57,7 @@ def gen_report_from_fif(infiles, outdir, ftype=None, logsdir=None, run_id=None):
     outdir : str
         Directory to save HTML report and figures to.
     ftype : str
-        Type of fif file, e.g., ``'raw'`` or ``'preproc_raw'``.
+        Type of fif file, e.g., ``'raw'`` or ``'preproc-raw'``.
     logsdir : str
         Directory the log files were saved into. If None, log files are assumed
         to be in outdir.replace('report', 'logs')
