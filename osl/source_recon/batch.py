@@ -188,12 +188,13 @@ def run_src_chain(
                     )
             def wrapped_func(**kwargs):
                 args, _, _, defaults = inspect.getargspec(func)
-                args = args[:-len(defaults)]
+                args_with_defaults = args[-len(defaults):]
                 kwargs_to_pass = {}
                 for a in args:
-                    if a not in kwargs:
+                    if a in kwargs:
+                        kwargs_to_pass[a] = kwargs[a]
+                    elif a not in args_with_defaults:
                         raise ValueError(f"{a} needs to be passed to {func.__name__}")
-                    kwargs_to_pass[a] = kwargs[a]
                 return func(**kwargs_to_pass)
             wrapped_func(
                 outdir=outdir,
