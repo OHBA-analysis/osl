@@ -1,14 +1,7 @@
 """Wrappers for source reconstruction.
 
-This module contains the functions callable using a 'source_recon' section
-of a config.
-
-All functions in this module accept the following arguments for consistency:
-
-    func(outdir, subject, preproc_file, smri_file, epoch_file, *userargs)
-
-Custom functions (i.e. functions passed via the extra_funcs argument) must
-also conform to this.
+This module contains the functions callable using a 'source_recon'
+section of a config.
 """
 
 # Authors: Chetan Gohil <chetan.gohil@psych.ox.ac.uk>
@@ -37,11 +30,8 @@ def extract_polhemus_from_info(
     outdir,
     subject,
     preproc_file,
-    smri_file,
-    epoch_file,
     include_eeg_as_headshape=False,
     include_hpi_as_headshape=True,
-    **kwargs,
 ):
     """Wrapper function to extract fiducials/headshape points.
 
@@ -53,11 +43,6 @@ def extract_polhemus_from_info(
         Subject name/id.
     preproc_file : str
         Path to the preprocessed fif file.
-    smri_file : str
-        Path to the T1 weighted structural MRI file to use in source
-        reconstruction. Not used.
-    epoch_file : str
-        Path to epoched preprocessed fif file. Not used.
     include_eeg_as_headshape : bool, optional
         Should we include EEG locations as headshape points?
     include_hpi_as_headshape : bool, optional
@@ -81,15 +66,7 @@ def extract_fiducials_from_fif(*args, **kwargs):
     extract_polhemus_from_info(*args, **kwargs)
 
 
-def remove_stray_headshape_points(
-    outdir,
-    subject,
-    preproc_file,
-    smri_file,
-    epoch_file,
-    nose=True,
-    **kwargs,
-):
+def remove_stray_headshape_points(outdir, subject, nose=True):
     """Remove stray headshape points.
 
     This function removes headshape points on the nose, neck and far from the head.
@@ -100,13 +77,6 @@ def remove_stray_headshape_points(
         Path to where to output the source reconstruction files.
     subject : str
         Subject name/id.
-    preproc_file : str
-        Path to the preprocessed fif file. Not used.
-    smri_file : str
-        Path to the T1 weighted structural MRI file to use in source
-        reconstruction. Not used.
-    epoch_file : str
-        Path to epoched preprocessed fif file. Not used.
     noise : bool, optional
         Should we remove headshape points near the nose?
         Useful to remove these if we have defaced structurals or aren't
@@ -115,15 +85,7 @@ def remove_stray_headshape_points(
     rhino.remove_stray_headshape_points(outdir, subject, nose=nose)
 
 
-def save_mni_fiducials(
-    outdir,
-    subject,
-    preproc_file,
-    smri_file,
-    epoch_file,
-    filepath,
-    **kwargs,
-):
+def save_mni_fiducials(outdir, subject, filepath):
     """Wrapper to save MNI fiducials.
 
     Parameters
@@ -132,13 +94,6 @@ def save_mni_fiducials(
         Path to where to output the source reconstruction files.
     subject : str
         Subject name/id.
-    preproc_file : str
-        Path to the preprocessed fif file. Not used.
-    smri_file : str
-        Path to the T1 weighted structural MRI file to use in source
-        reconstruction. Not used.
-    epoch_file : str
-        Path to epoched preprocessed fif file. Not used.
     filepath : str
         Full path to the text file containing the fiducials.
 
@@ -170,15 +125,7 @@ def save_mni_fiducials(
     )
 
 
-def extract_polhemus_from_pos(
-    outdir,
-    subject,
-    preproc_file,
-    smri_file,
-    epoch_file,
-    filepath,
-    **kwargs,
-):
+def extract_polhemus_from_pos(outdir, subject, filepath):
     """Wrapper to save polhemus data from a .pos file.
 
     Parameters
@@ -187,13 +134,6 @@ def extract_polhemus_from_pos(
         Path to where to output the source reconstruction files.
     subject : str
         Subject name/id.
-    preproc_file : str
-        Path to the preprocessed fif file. Not used.
-    smri_file : str
-        Path to the T1 weighted structural MRI file to use in source
-        reconstruction. Not used.
-    epoch_file : str
-        Path to epoched preprocessed fif file. Not used.
     filepath : str
         Full path to the pos file for this subject.
         Any reference to '{subject}' (or '{0}') is replaced by the subject ID.
@@ -206,12 +146,8 @@ def extract_polhemus_from_pos(
 def extract_polhemus_from_elc(
     outdir,
     subject,
-    preproc_file,
-    smri_file,
-    epoch_file,
     filepath,
     remove_headshape_near_nose=False,
-    **kwargs,
 ):
     """Wrapper to save polhemus data from an .elc file.
 
@@ -221,13 +157,6 @@ def extract_polhemus_from_elc(
         Path to where to output the source reconstruction files.
     subject : str
         Subject name/id.
-    preproc_file : str
-        Path to the preprocessed fif file. Not used.
-    smri_file : str
-        Path to the T1 weighted structural MRI file to use in source
-        reconstruction. Not used.
-    epoch_file : str
-        Path to epoched preprocessed fif file. Not used.
     filepath : str
         Full path to the elc file for this subject.
         Any reference to '{subject}' (or '{0}') is replaced by the subject ID.
@@ -244,15 +173,12 @@ def extract_polhemus_from_elc(
 def compute_surfaces(
     outdir,
     subject,
-    preproc_file,
     smri_file,
-    epoch_file,
     include_nose=True,
     recompute_surfaces=False,
     do_mri2mniaxes_xform=True,
     use_qform=False,
     reportdir=None,
-    **kwargs,
 ):
     """Wrapper for computing surfaces.
 
@@ -262,13 +188,9 @@ def compute_surfaces(
         Path to where to output the source reconstruction files.
     subject : str
         Subject name/id.
-    preproc_file : str
-        Path to the preprocessed fif file.
     smri_file : str
         Path to the T1 weighted structural MRI file to use in source
         reconstruction.
-    epoch_file : str
-        Path to epoched preprocessed fif file.
     include_nose : bool, optional
         Should we include the nose when we're extracting the surfaces?
     recompute_surfaces : bool, optional
@@ -325,14 +247,12 @@ def coregister(
     subject,
     preproc_file,
     smri_file,
-    epoch_file,
     use_nose=True,
     use_headshape=True,
     already_coregistered=False,
     allow_smri_scaling=False,
     n_init=1,
     reportdir=None,
-    **kwargs,
 ):
     """Wrapper for coregistration.
 
@@ -347,8 +267,6 @@ def coregister(
     smri_file : str
         Path to the T1 weighted structural MRI file to use in source
         reconstruction.
-    epoch_file : str
-        Path to epoched preprocessed fif file.
     use_nose : bool, optional
         Should we use the nose in the coregistration?
     use_headshape : bool, optional
@@ -416,14 +334,10 @@ def coregister(
 def forward_model(
     outdir,
     subject,
-    preproc_file,
-    smri_file,
-    epoch_file,
     gridstep=8,
     model="Single Layer",
     eeg=False,
     reportdir=None,
-    **kwargs,
 ):
     """Wrapper for computing the forward model.
 
@@ -433,13 +347,6 @@ def forward_model(
         Path to where to output the source reconstruction files.
     subject : str
         Subject name/id.
-    preproc_file : str
-        Path to the preprocessed fif file.
-    smri_file : str
-        Path to the T1 weighted structural MRI file to use in source
-        reconstruction.
-    epoch_file : str
-        Path to epoched preprocessed fif file.
     gridstep : int, optional
         A grid will be constructed with the spacing given by ``gridstep``
         in mm, generating a volume source space.
@@ -483,7 +390,6 @@ def beamform(
     outdir,
     subject,
     preproc_file,
-    smri_file,
     epoch_file,
     chantypes,
     rank,
@@ -492,7 +398,6 @@ def beamform(
     pick_ori="max-power-pre-weight-norm",
     reg=0,
     reportdir=None,
-    **kwargs,
 ):
     """Wrapper function for beamforming.
 
@@ -504,9 +409,6 @@ def beamform(
         Subject name/id.
     preproc_file : str
         Path to the preprocessed fif file.
-    smri_file : str
-        Path to the T1 weighted structural MRI file to use in source
-        reconstruction.
     epoch_file : str
         Path to epoched preprocessed fif file.
     chantypes : str or list of str
@@ -594,7 +496,6 @@ def parcellate(
     outdir,
     subject,
     preproc_file,
-    smri_file,
     epoch_file,
     parcellation_file,
     method,
@@ -603,7 +504,6 @@ def parcellate(
     reference_brain="mni",
     extra_chans="stim",
     reportdir=None,
-    **kwargs,
 ):
     """Wrapper function for parcellation.
 
@@ -615,9 +515,6 @@ def parcellate(
         Subject name/id.
     preproc_file : str
         Path to the preprocessed fif file.
-    smri_file : str
-        Path to the T1 weighted structural MRI file to use in source
-        reconstruction.
     epoch_file : str
         Path to epoched preprocessed fif file.
     parcellation_file : str
@@ -772,7 +669,6 @@ def beamform_and_parcellate(
     outdir,
     subject,
     preproc_file,
-    smri_file,
     epoch_file,
     chantypes,
     rank,
@@ -787,7 +683,6 @@ def beamform_and_parcellate(
     reference_brain="mni",
     extra_chans="stim",
     reportdir=None,
-    **kwargs,
 ):
     """Wrapper function for beamforming and parcellation.
 
@@ -799,9 +694,6 @@ def beamform_and_parcellate(
         Subject name/id.
     preproc_file : str
         Path to the preprocessed fif file.
-    smri_file : str
-        Path to the T1 weighted structural MRI file to use in source
-        reconstruction.
     epoch_file : str
         Path to epoched preprocessed fif file.
     chantypes : str or list of str
@@ -999,7 +891,6 @@ def find_template_subject(
     n_embeddings=1,
     standardize=True,
     epoched=False,
-    **kwargs,
 ):
     """Function to find a good subject to align other subjects to in the sign flipping.
 
@@ -1063,8 +954,6 @@ def fix_sign_ambiguity(
     outdir,
     subject,
     preproc_file,
-    smri_file,
-    epoch_file,
     template,
     n_embeddings,
     standardize,
@@ -1073,7 +962,6 @@ def fix_sign_ambiguity(
     max_flips,
     epoched=False,
     reportdir=None,
-    **kwargs,
 ):
     """Wrapper function for fixing the dipole sign ambiguity.
 
@@ -1085,11 +973,6 @@ def fix_sign_ambiguity(
         Subject name/id.
     preproc_file : str
         Path to the preprocessed fif file.
-    smri_file : str
-        Path to the T1 weighted structural MRI file to use in source
-        reconstruction.
-    epoch_file : str
-        Path to epoched preprocessed fif file.
     template : str
         Template subject.
     n_embeddings : int
@@ -1162,15 +1045,7 @@ def fix_sign_ambiguity(
 # Other wrappers
 
 
-def extract_rhino_files(
-    outdir,
-    subject,
-    preproc_file,
-    smri_file,
-    epoch_file,
-    old_outdir,
-    **kwargs,
-):
+def extract_rhino_files(outdir, subject, old_outdir):
     """Wrapper function for extracting RHINO files from a previous run.
 
     Parameters
@@ -1179,13 +1054,6 @@ def extract_rhino_files(
         Path to the NEW source reconstruction directory.
     subject : str
         Subject name/id.
-    preproc_file : str
-        Path to the preprocessed fif file. Not used.
-    smri_file : str
-        Path to the T1 weighted structural MRI file to use in source
-        reconstruction. Not used.
-    epoch_file : str
-        Path to epoched preprocessed fif file. Not used.
     old_outdir : str
         OLD source reconstruction directory to copy RHINO files to.
     """
