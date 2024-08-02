@@ -77,7 +77,9 @@ setup(name=name,
                             # Parcellation files
                             'source_recon/parcellation/files/*gz',
                             # Report templates
-                            'report/templates/*']},
+                            'report/templates/*',
+                            # READMEs
+                            '*/README.md']},
 
       command_options={
           'build_sphinx': {
