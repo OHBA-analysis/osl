@@ -202,6 +202,7 @@ def run_src_chain(
                 smri_file=smri_file,
                 epoch_file=epoch_file,
                 reportdir=reportdir,
+                logsdir=logsdir,
                 **userargs,
             )
 
