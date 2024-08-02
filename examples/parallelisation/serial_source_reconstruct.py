@@ -24,7 +24,7 @@ outdir = "/ohba/pi/mwoolrich/cgohil/camcan/src"
 
 # Files
 smri_file = anatdir + "/{0}/anat/{0}_T1w.nii"
-preproc_file = outdir + "{0}_ses-rest_task-rest_meg/{0}_ses-rest_task-rest_meg_preproc_raw.fif"
+preproc_file = outdir + "{0}_ses-rest_task-rest_meg/{0}_ses-rest_task-rest_meg_preproc-raw.fif"
 
 # Settings
 config = """
@@ -47,7 +47,7 @@ config = """
         orthogonalisation: symmetric
 """
 
-def remove_headshape_points(outdir, subject, preproc_file, smri_file, epoch_file):
+def remove_headshape_points(outdir, subject):
     """Removes headshape points near the nose."""
 
     # Get coreg filenames

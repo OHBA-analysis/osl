@@ -8,7 +8,7 @@ import os
 
 from osl import source_recon, utils
 
-def coregister(outdir, subject, preproc_file, smri_file, epoch_file):
+def coregister(outdir, subject, preproc_file):
     """Coregister OPM data."""
 
     # Create dummy coregistration files
@@ -44,7 +44,7 @@ subjects = ["13703"]
 
 # Fif files containing the sensor-level preprocessed data for each subject
 preproc_files = [
-    "data/13703/13703-braille_test-meg_preproc_raw.fif",
+    "data/13703/13703-braille_test-meg_preproc-raw.fif",
 ]
 
 # The corresponding structurals for each subject

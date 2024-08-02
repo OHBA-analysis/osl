@@ -9,7 +9,7 @@ import pandas as pd
 
 from osl import source_recon, utils
 
-def save_polhemus_from_pos(outdir, subject, preproc_file, smri_file, epoch_file):
+def save_polhemus_from_pos(outdir, subject):
     """Saves fiducials/headshape from a pos file."""
 
     # Get path to pos file
@@ -107,8 +107,8 @@ subjects = [
 
 # Fif files containing the sensor-level preprocessed data for each subject
 preproc_files = [
-    "data/sub-not001_task-resteyesopen/sub-not001_task-resteyesopen_preproc_raw.fif",
-    "data/sub-not002_task-resteyesopen/sub-not002_task-resteyesopen_preproc_raw.fif",
+    "data/sub-not001_task-resteyesopen/sub-not001_task-resteyesopen_preproc-raw.fif",
+    "data/sub-not002_task-resteyesopen/sub-not002_task-resteyesopen_preproc-raw.fif",
 ]
 
 # The corresponding structurals for each subject

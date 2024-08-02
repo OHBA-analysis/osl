@@ -24,7 +24,7 @@ config = """
 subjects = ["LN_VTA2"]
 
 # Fif files containing the sensor-level preprocessed data for each subject
-preproc_files = ["data/LN_VTA2/mg04938_BrainampDBS_20170504_01_preproc_raw.fif"]
+preproc_files = ["data/LN_VTA2/mg04938_BrainampDBS_20170504_01_preproc-raw.fif"]
 
 # Directories
 outdir = "data"

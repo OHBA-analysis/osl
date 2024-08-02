@@ -16,7 +16,7 @@ from osl import source_recon, utils
 outdir = "data"
 
 # Files
-preproc_file = outdir + "/{subject}_tsss_preproc_raw.fif"  # {subject} will be replaced by the subject name
+preproc_file = outdir + "/{subject}_tsss_preproc-raw.fif"  # {subject} will be replaced by the subject name
 
 # Subjects to do
 subjects = ["sub-001", "sub-002"]

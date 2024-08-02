@@ -29,7 +29,7 @@ subjects = ["13703"]
 
 # Fif files containing the sensor-level preprocessed data for each subject
 preproc_files = [
-    "data/13703/13703-braille_test-meg_preproc_raw.fif",
+    "data/13703/13703-braille_test-meg_preproc-raw.fif",
 ]
 
 # Do source reconstruction

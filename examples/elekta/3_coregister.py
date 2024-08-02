@@ -21,7 +21,7 @@ outdir = "data"
 anatdir = "smri"
 
 # Files ({subject} will be replaced by the name for the subject)
-preproc_file = outdir + "{subject}/{subject}_tsss_preproc_raw.fif"
+preproc_file = outdir + "{subject}/{subject}_tsss_preproc-raw.fif"
 smri_file = anatdir + "/{subject}/anat/{subject}_T1w.nii"
 
 # Subjects to coregister

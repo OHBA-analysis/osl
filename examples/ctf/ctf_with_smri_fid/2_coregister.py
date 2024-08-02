@@ -25,7 +25,7 @@ config = """
 subjects = ["LN_VTA2"]
 
 # Lists for input files
-preproc_files = ["data/LN_VTA2/mg04938_BrainampDBS_20170504_01_preproc_raw.fif"]
+preproc_files = ["data/LN_VTA2/mg04938_BrainampDBS_20170504_01_preproc-raw.fif"]
 smri_files = ["smri/LN_VTA2.nii"]
 
 # Output directory

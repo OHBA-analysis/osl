@@ -26,8 +26,8 @@ subjects = [
 
 # Fif files containing the sensor-level preprocessed data for each subject
 preproc_files = [
-    "data/sub-not001_task-resteyesopen/sub-not001_task-resteyesopen_preproc_raw.fif",
-    "data/sub-not002_task-resteyesopen/sub-not002_task-resteyesopen_preproc_raw.fif",
+    "data/sub-not001_task-resteyesopen/sub-not001_task-resteyesopen_preproc-raw.fif",
+    "data/sub-not002_task-resteyesopen/sub-not002_task-resteyesopen_preproc-raw.fif",
 ]
 
 # Directory to save output to
