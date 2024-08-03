@@ -25,18 +25,17 @@ config = """
 subjects = ["LN_VTA2"]
 
 # Lists for input files
-preproc_files = ["data/preproc/mg04938_BrainampDBS_20170504_01_preproc_raw.fif"]
-smri_files = ["data/smri/LN_VTA2.nii"]
+preproc_files = ["data/LN_VTA2/mg04938_BrainampDBS_20170504_01_preproc-raw.fif"]
+smri_files = ["smri/LN_VTA2.nii"]
 
 # Output directory
-coreg_dir = "data/coreg"
+outdir = "data"
 
 # Do coregistration
 source_recon.run_src_batch(
     config,
-    src_dir=coreg_dir,
+    outdir=outdir,
     subjects=subjects,
     preproc_files=preproc_files,
     smri_files=smri_files,
-    extra_funcs=[save_mni_fids],
 )

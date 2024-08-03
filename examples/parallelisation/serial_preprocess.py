@@ -10,8 +10,8 @@ from glob import glob
 
 from osl import preprocessing
 
-raw_dir = "/ohba/pi/mwoolrich/datasets/CamCan_2021/cc700/meg/pipeline/release005/BIDSsep/rest"
-preproc_dir = "/ohba/pi/mwoolrich/cgohil/camcan/preproc"
+rawdir = "/ohba/pi/mwoolrich/datasets/CamCan_2021/cc700/meg/pipeline/release005/BIDSsep/rest"
+outdir = "/ohba/pi/mwoolrich/cgohil/camcan/preproc"
 
 config = """
     preproc:
@@ -26,15 +26,15 @@ config = """
 
 # Get input files
 inputs = []
-for subject in glob(raw_dir + "/sub-*"):
+for subject in sorted(glob(f"{rawdir}/sub-*")):
     subject = pathlib.Path(subject).stem
-    inputs.append(raw_dir + f"/{subject}/ses-rest/meg/{subject}_ses-rest_task-rest_meg.fif")
+    inputs.append(f"{rawdir}/{subject}/ses-rest/meg/{subject}_ses-rest_task-rest_meg.fif")
 inputs = inputs[:2]
 
 # Main preprocessing
 preprocessing.run_proc_batch(
     config,
     inputs,
-    outdir=preproc_dir,
+    outdir=outdir,
     overwrite=True,
 )

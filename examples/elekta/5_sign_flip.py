@@ -11,7 +11,7 @@ from osl import utils
 from osl.source_recon import find_template_subject, run_src_batch
 
 # Directories
-src_dir = "data/src"
+outdir = "data"
 
 if __name__ == "__main__":
     utils.logger.set_up(level="INFO")
@@ -19,7 +19,7 @@ if __name__ == "__main__":
     # Subjects to sign flip
     # We create a list by looking for subjects that have a parc/parc-raw.fif file
     subjects = []
-    for path in sorted(glob(src_dir + "/*/parc/parc-raw.fif")):
+    for path in sorted(glob(f"{outdir}/*/parc/parc-raw.fif")):
         subject = path.split("/")[-3]
         subjects.append(subject)
 
@@ -49,7 +49,7 @@ if __name__ == "__main__":
     # Do the sign flipping
     run_src_batch(
         config,
-        src_dir=src_dir,
+        outdir=outdir,
         subjects=subjects,
         dask_client=True,
     )

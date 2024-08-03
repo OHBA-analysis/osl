@@ -310,14 +310,14 @@ def delete_headshape_points(recon_dir=None, subject=None, polhemus_headshape_fil
 
     plt.show()
 
-def remove_stray_headshape_points(src_dir, subject, nose=True):
+def remove_stray_headshape_points(outdir, subject, nose=True):
     """Remove stray headshape points.
 
     Removes headshape points near the nose, on the neck or far away from the head.
 
     Parameters
     ----------
-    src_dir : str
+    outdir : str
         Path to subjects directory.
     subject : str
         Subject directory name.
@@ -326,7 +326,7 @@ def remove_stray_headshape_points(src_dir, subject, nose=True):
         Useful to remove these if we have defaced structurals or aren't
         extracting the nose from the structural.
     """
-    filenames = get_coreg_filenames(src_dir, subject)
+    filenames = get_coreg_filenames(outdir, subject)
 
     # Load saved headshape and nasion files
     hs = np.loadtxt(filenames["polhemus_headshape_file"])
@@ -352,12 +352,12 @@ def remove_stray_headshape_points(src_dir, subject, nose=True):
     np.savetxt(filenames["polhemus_headshape_file"], hs)
 
 
-def extract_polhemus_from_pos(src_dir, subject, filepath):
+def extract_polhemus_from_pos(outdir, subject, filepath):
     """Saves fiducials/headshape from a pos file.
 
     Parameters
     ----------
-    src_dir : str
+    outdir : str
         Subjects directory.
     subject : str
         Subject subdirectory/ID.
@@ -369,7 +369,7 @@ def extract_polhemus_from_pos(src_dir, subject, filepath):
     """
 
     # Get coreg filenames
-    filenames = get_coreg_filenames(src_dir, subject)
+    filenames = get_coreg_filenames(outdir, subject)
 
     # Load file
     if "{0}" in filepath:
@@ -405,12 +405,12 @@ def extract_polhemus_from_pos(src_dir, subject, filepath):
     np.savetxt(filenames["polhemus_headshape_file"], polhemus_headshape)
 
 
-def extract_polhemus_from_elc(src_dir, subject, filepath, remove_headshape_near_nose=False):
+def extract_polhemus_from_elc(outdir, subject, filepath, remove_headshape_near_nose=False):
     """Saves fiducials/headshape from an elc file.
 
     Parameters
     ----------
-    src_dir : str
+    outdir : str
         Subjects directory.
     subject : str
         Subject subdirectory/ID.
@@ -424,7 +424,7 @@ def extract_polhemus_from_elc(src_dir, subject, filepath, remove_headshape_near_
     """
 
     # Get coreg filenames
-    filenames = get_coreg_filenames(src_dir, subject)
+    filenames = get_coreg_filenames(outdir, subject)
 
     # Load elc file
     if "{0}" in filepath:

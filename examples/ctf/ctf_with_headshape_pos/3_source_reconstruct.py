@@ -4,21 +4,7 @@
 
 # Authors: Chetan Gohil <chetan.gohil@psych.ox.ac.uk>
 
-import os
-
 from osl import source_recon
-
-# Directories
-coreg_dir = "data/coreg"
-src_dir = "data/src"
-
-# First copy the coregistration directory
-if os.path.exists(src_dir):
-    print(f"Please first delete: {src_dir}")
-    exit()
-cmd = f"cp -r {coreg_dir} {src_dir}"
-print(cmd)
-os.system(cmd)
 
 # Settings
 config = """
@@ -33,18 +19,24 @@ config = """
 """
 
 # Subject IDs
-subjects = ["sub-not001", "sub-not002"]
+subjects = [
+    "sub-not001_task-resteyesopen",
+    "sub-not002_task-resteyesopen",
+]
 
 # Fif files containing the sensor-level preprocessed data for each subject
 preproc_files = [
-    "data/preproc/sub-not001_task-resteyesopen_meg/sub-not001_task-resteyesopen_meg_preproc_raw.fif",
-    "data/preproc/sub-not002_task-resteyesopen_meg/sub-not002_task-resteyesopen_meg_preproc_raw.fif",
+    "data/sub-not001_task-resteyesopen/sub-not001_task-resteyesopen_preproc-raw.fif",
+    "data/sub-not002_task-resteyesopen/sub-not002_task-resteyesopen_preproc-raw.fif",
 ]
+
+# Directory to save output to
+outdir = "data"
 
 # Source reconstruction
 source_recon.run_src_batch(
     config,
-    src_dir=src_dir,
+    outdir=outdir,
     subjects=subjects,
     preproc_files=preproc_files,
 )

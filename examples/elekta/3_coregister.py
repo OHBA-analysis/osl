@@ -17,13 +17,12 @@ from dask.distributed import Client
 from osl import source_recon, utils
 
 # Directories
-preproc_dir = "data/preproc"
-anat_dir = "data/smri"
-coreg_dir = "data/coreg"
+outdir = "data"
+anatdir = "smri"
 
 # Files ({subject} will be replaced by the name for the subject)
-preproc_file = preproc_dir + "/{subject}_tsss_preproc_raw.fif"
-smri_file = anat_dir + "/{subject}/anat/{subject}_T1w.nii"
+preproc_file = outdir + "{subject}/{subject}_tsss_preproc-raw.fif"
+smri_file = anatdir + "/{subject}/anat/{subject}_T1w.nii"
 
 # Subjects to coregister
 subjects = ["sub-001", "sub-002"]
@@ -60,7 +59,7 @@ if __name__ == "__main__":
     # Run coregistration
     source_recon.run_src_batch(
         config,
-        src_dir=coreg_dir,
+        outdir=outdir,
         subjects=subjects,
         preproc_files=preproc_files,
         smri_files=smri_files,

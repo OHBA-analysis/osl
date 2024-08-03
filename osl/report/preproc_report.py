@@ -47,7 +47,7 @@ from ..preprocessing import (
 # Report generation
 
 
-def gen_report_from_fif(infiles, outdir, ftype=None, logsdir=None):
+def gen_report_from_fif(infiles, outdir, ftype=None, logsdir=None, run_id=None):
     """Generate web-report for a set of MNE data objects.
 
     Parameters
@@ -57,10 +57,12 @@ def gen_report_from_fif(infiles, outdir, ftype=None, logsdir=None):
     outdir : str
         Directory to save HTML report and figures to.
     ftype : str
-        Type of fif file, e.g., ``'raw'`` or ``'preproc_raw'``.
+        Type of fif file, e.g., ``'raw'`` or ``'preproc-raw'``.
     logsdir : str
         Directory the log files were saved into. If None, log files are assumed
         to be in outdir.replace('report', 'logs')
+    run_id : str
+        Run ID.
     """
 
     # Validate input files and directory to save html file and plots to
@@ -73,7 +75,13 @@ def gen_report_from_fif(infiles, outdir, ftype=None, logsdir=None):
         dataset = read_dataset(infile, ftype=ftype)
         run_id = get_header_id(dataset['raw'])
         htmldatadir = validate_outdir(outdir / run_id)
-        gen_html_data(dataset['raw'], htmldatadir, ica=dataset['ica'], logsdir=logsdir)
+        gen_html_data(
+            dataset['raw'],
+            htmldatadir,
+            ica=dataset['ica'],
+            logsdir=logsdir,
+            run_id=run_id,
+        )
 
     # Create report
     gen_html_page(outdir)
@@ -100,7 +108,9 @@ def get_header_id(raw):
     return raw.filenames[0].split('/')[-1].strip('.fif')
 
 
-def gen_html_data(raw, outdir, ica=None, preproc_fif_filename=None, logsdir=None):
+def gen_html_data(
+    raw, outdir, ica=None, preproc_fif_filename=None, logsdir=None, run_id=None
+):
     """Generate HTML web-report for an MNE data object.
 
     Parameters
@@ -116,12 +126,14 @@ def gen_html_data(raw, outdir, ica=None, preproc_fif_filename=None, logsdir=None
     logsdir : str
         Directory the log files were saved into. If None, log files are assumed
         to be in reportdir.replace('report', 'logs')
+    run_id : str
+        Run ID.
     """
 
     data = {}
     data['filename'] = raw.filenames[0]
     data['preproc_fif_filename'] = preproc_fif_filename
-    data['fif_id'] = get_header_id(raw)
+    data['fif_id'] = run_id or get_header_id(raw)
 
     # Scan info
     data['projname'] = raw.info['proj_name']
@@ -254,7 +266,7 @@ def gen_html_data(raw, outdir, ica=None, preproc_fif_filename=None, logsdir=None
     
     # add log files if possible
     if logsdir is None:
-        logsdir = outdir._str.replace('/report/', '/logs/')
+        logsdir = outdir._str.replace('preproc_report', 'logs')
     elif type(logsdir)==pathlib.PosixPath:
         logsdir = os.path.join(logsdir._str, outdir._str.split('/')[-1])
         
@@ -383,7 +395,7 @@ def gen_html_summary(reportdir, logsdir=None):
     
     # log files
     if logsdir is None:
-        logsdir = reportdir._str.replace('report', 'logs')
+        logsdir = reportdir._str.replace('preproc_report', 'logs')
     elif type(logsdir)==pathlib.PosixPath:
         logsdir = logsdir._str
         

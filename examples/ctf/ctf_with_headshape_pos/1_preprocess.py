@@ -24,13 +24,20 @@ inputs = [
     "data/raw/Nottingham/sub-not002/meg/sub-not002_task-resteyesopen_meg.ds",
 ]
 
+# Subject IDs
+subjects = [
+    "sub-not001_task-resteyesopen",
+    "sub-not002_task-resteyesopen",
+]
+
 # Directory to save output to
-outdir = "data/preproc"
+outdir = "data"
 
 # Do preprocessing
 preprocessing.run_proc_batch(
     config,
     inputs,
+    subjects=subjects,
     outdir=outdir,
     overwrite=True,
 )

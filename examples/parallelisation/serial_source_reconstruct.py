@@ -19,13 +19,12 @@ import logging
 logger = logging.getLogger("osl")
 
 # Directories
-anat_dir = "/ohba/pi/mwoolrich/datasets/CamCan_2021/cc700/mri/pipeline/release004/BIDS_20190411/anat"
-preproc_dir = "/ohba/pi/mwoolrich/cgohil/camcan/preproc"
-src_dir = "/ohba/pi/mwoolrich/cgohil/camcan/src"
+anatdir = "/ohba/pi/mwoolrich/datasets/CamCan_2021/cc700/mri/pipeline/release004/BIDS_20190411/anat"
+outdir = "/ohba/pi/mwoolrich/cgohil/camcan/src"
 
 # Files
-smri_file = anat_dir + "/{0}/anat/{0}_T1w.nii"
-preproc_file = preproc_dir + "{0}_ses-rest_task-rest_meg/{0}_ses-rest_task-rest_meg_preproc_raw.fif"
+smri_file = anatdir + "/{0}/anat/{0}_T1w.nii"
+preproc_file = outdir + "{0}_ses-rest_task-rest_meg/{0}_ses-rest_task-rest_meg_preproc-raw.fif"
 
 # Settings
 config = """
@@ -48,11 +47,11 @@ config = """
         orthogonalisation: symmetric
 """
 
-def remove_headshape_points(src_dir, subject, preproc_file, smri_file, epoch_file):
+def remove_headshape_points(outdir, subject):
     """Removes headshape points near the nose."""
 
     # Get coreg filenames
-    filenames = source_recon.rhino.get_coreg_filenames(src_dir, subject)
+    filenames = source_recon.rhino.get_coreg_filenames(outdir, subject)
 
     # Load saved headshape and nasion files
     hs = np.loadtxt(filenames["polhemus_headshape_file"])
@@ -74,7 +73,7 @@ def remove_headshape_points(src_dir, subject, preproc_file, smri_file, epoch_fil
 
 # Get subjects
 subjects = []
-for subject in glob(preproc_dir + "/sub-*"):
+for subject in sorted(glob(f"{outdir}/sub-*")):
     subjects.append(pathlib.Path(subject).stem.split("_")[0])
 
 # Setup files
@@ -87,7 +86,7 @@ for subject in subjects:
 # Beamforming and parcellation
 source_recon.run_src_batch(
     config,
-    src_dir=src_dir,
+    outdir=outdir,
     subjects=subjects,
     preproc_files=preproc_files,
     smri_files=smri_files,

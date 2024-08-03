@@ -16,15 +16,19 @@ config = """
 """
 
 # List of fif files to preprocess
-inputs = ["data/raw/13703-braille_test-meg.fif"]
+inputs = ["raw/13703-braille_test-meg.fif"]
+
+# Subject IDs
+subjects = ["13703"]
 
 # Directory to save output to
-outdir = "data/preproc"
+outdir = "data"
 
 # Do preprocessing
 dataset = preprocessing.run_proc_batch(
     config,
     inputs,
+    subjects=subjects,
     outdir=outdir,
     overwrite=True,
 )

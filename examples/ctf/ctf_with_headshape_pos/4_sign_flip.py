@@ -13,12 +13,15 @@ correlations or power.
 from osl import source_recon
 
 # Source directory and subjects to sign flip
-src_dir = "data/src"
-subjects = ["sub-not001", "sub-not002"]
+outdir = "data"
+subjects = [
+    "sub-not001_task-resteyesopen",
+    "sub-not002_task-resteyesopen",
+]
 
 # Find a good template subject to align other subjects to
 template = source_recon.find_template_subject(
-    src_dir, subjects, n_embeddings=15, standardize=True
+    outdir, subjects, n_embeddings=15, standardize=True
 )
 
 # Settings
@@ -34,4 +37,4 @@ config = f"""
 """
 
 # Do the sign flipping
-source_recon.run_src_batch(config, src_dir, subjects)
+source_recon.run_src_batch(config, outdir, subjects)

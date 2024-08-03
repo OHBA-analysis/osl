@@ -20,15 +20,15 @@ from osl.report.preproc_report import gen_html_page, gen_html_summary
 from ..utils import logger as osl_logger
 
 
-def ica_label(preproc_dir, ica_dir, reject=None, report_dir=None):
+def ica_label(data_dir, subject, reject=None):
     """Data bookkeeping and wrapping plot_ica.
     
     Parameters
     ----------
-    preproc_dir : str
-        Path to preprocessed (M/EEG) data.
-    ica_dir : str
-        Path to ICA data.
+    data_dir : str
+        Path to processed (M/EEG) data.
+    subject : str
+        Subject/session specific data directory name
     reject : bool or str
         If 'all', reject all components (previously labeled and newly
         labeled). If 'manual', reject only manually labeled components. If 
@@ -37,11 +37,16 @@ def ica_label(preproc_dir, ica_dir, reject=None, report_dir=None):
     """
     # global drive, savedir
     plt.ion()
-
-
+    
+    # define data paths based on OSL data structure
+    preproc_file = os.path.join(data_dir, subject, subject + '_preproc-raw.fif')
+    ica_file = os.path.join(data_dir, subject, subject + '_ica.fif')
+    report_dir_base =  os.path.join(data_dir, 'preproc_report')
+    report_dir = os.path.join(report_dir_base, subject + '_preproc-raw')
+    
     print('LOADING DATA')
-    raw = mne.io.read_raw(preproc_dir, preload=True)
-    ica = mne.preprocessing.read_ica(ica_dir)
+    raw = mne.io.read_raw(preproc_file, preload=True)
+    ica = mne.preprocessing.read_ica(ica_file)
     
     # keep these for later
     if reject=='manual':
@@ -64,25 +69,16 @@ def ica_label(preproc_dir, ica_dir, reject=None, report_dir=None):
             new_ica.apply(raw)
             
         print("SAVING PREPROCESSED DATA")
-        raw.save(preproc_dir, overwrite=True)
+        raw.save(preproc_file, overwrite=True)
     
     print("SAVING ICA DATA")
-    ica.save(ica_dir, overwrite=True)
+    ica.save(ica_file, overwrite=True)
     
     if reject is not None:
         print("ATTEMPTING TO UPDATE REPORT")
-        try:
-            if report_dir is None:
-                report_dir = os.path.join("/".join(preproc_dir.split("/")[:-2]), "report")
-            
-            report_dir_base = deepcopy(report_dir)
-            if os.path.exists(os.path.join(report_dir, preproc_dir.split("/")[-2])):
-                report_dir = os.path.join(report_dir, preproc_dir.split("/")[-2])
-            elif os.path.exists(os.path.join(report_dir, preproc_dir.split("/")[-2]).replace("_raw", "") + "_preproc_raw"):
-                report_dir = os.path.join(report_dir, preproc_dir.split("/")[-2]).replace("_raw", "") + "_preproc_raw"
-            print(report_dir)
-            
+        try:           
             savebase = os.path.join(report_dir, "{0}.png")
+            print(report_dir)
             if os.path.exists(os.path.join(report_dir, "ica.png")) or os.path.exists(os.path.join(report_dir, "data.pkl")):
                 _ = plot_bad_ica(raw, ica, savebase)
 
@@ -106,7 +102,7 @@ def ica_label(preproc_dir, ica_dir, reject=None, report_dir=None):
                 print("REPORT UPDATED")
         except:
             print("FAILED TO UPDATE REPORT")
-    print(f'LABELING DATASET {preproc_dir.split("/")[-1]} COMPLETE')
+    print(f'LABELING DATASET {subject} COMPLETE')
 
 
 def main(argv=None):
@@ -123,7 +119,7 @@ def main(argv=None):
     -------
     From the command line (in the OSL environment), use as follows:
 
-    osl_ica_label reject_argument /path/to/preproc_raw.fif [/path/to/ica.fif] [/path/to/reports_dir]
+    osl_ica_label reject_argument /path/to/processed_data subject_name
 
     The `reject_argument` specifies whether to reject 'all' selected components from the data, only
     the 'manual' rejected, or None (and only save the ICA object, without rejecting components). 
@@ -131,7 +127,7 @@ def main(argv=None):
     the usual OSL structure.
     For example:
     
-    osl_ica_label manual /path/to/sub-001_preproc_raw.fif
+    osl_ica_label manual /path/to/proc_dir sub-001_run01
     
     Then use the GUI to label components (click on the time course to mark, use 
     number keys to label marked components as specific artefacts, and use
@@ -149,21 +145,7 @@ def main(argv=None):
     if reject == 'None':
         reject = None
         
-    preproc_dir = argv[1]
-    if len(argv)>2 or (len(argv)==3 and "report" in argv[2]):
-        ica_dir = argv[2]
-    else:
-        ica_dir = preproc_dir.replace('preproc_raw.fif', 'ica.fif')
-
-    if (len(argv)==3 and "report" in argv[2]):
-        report_dir = argv[2]
-    elif (len(argv)==4 and "report" in argv[3]):
-        report_dir = argv[3]
-    else:
-        # try to find it in the directory structure
-        report_dir = None
-        
-    ica_label(preproc_dir, ica_dir, reject, report_dir)
+    ica_label(data_dir=argv[1], subject=argv[2], reject=argv[0])
 
 
 if __name__ == '__main__':

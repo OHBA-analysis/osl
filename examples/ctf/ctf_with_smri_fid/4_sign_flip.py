@@ -26,7 +26,7 @@ def load(filename):
 
 
 # Files to sign flip
-files = sorted(glob("data/src/*/parc/parc-raw.fif"))
+files = sorted(glob("data/*/parc/parc-raw.fif"))
 
 # Get covariance matrices
 covs = load_covariances(

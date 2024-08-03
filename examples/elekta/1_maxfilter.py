@@ -9,12 +9,12 @@ from osl.maxfilter import run_maxfilter_batch
 
 # Setup paths to raw (pre-maxfiltered) fif files
 input_files = [
-    "data/raw/file1.fif",
-    "data/raw/file2.fif",
+    "raw/file1.fif",
+    "raw/file2.fif",
 ]
 
 # Directory to save the maxfiltered data to
-output_directory = "data/maxfilter"
+output_directory = "maxfilter"
 
 # Run MaxFiltering
 #

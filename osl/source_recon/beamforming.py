@@ -70,7 +70,7 @@ def get_beamforming_filenames(subjects_dir, subject):
     """
     basedir = op.join(subjects_dir, subject, "beamform")
     if " " in basedir:
-        raise ValueError("subjects_dir/src_dir cannot contain spaces.")
+        raise ValueError("subjects_dir cannot contain spaces.")
     os.makedirs(basedir, exist_ok=True)
     
     filenames = {

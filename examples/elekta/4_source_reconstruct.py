@@ -13,12 +13,10 @@ from dask.distributed import Client
 from osl import source_recon, utils
 
 # Directories
-preproc_dir = "data/preproc"
-coreg_dir = "data/coreg"
-src_dir = "data/src"
+outdir = "data"
 
 # Files
-preproc_file = preproc_dir + "/{subject}_tsss_preproc_raw.fif"  # {subject} will be replaced by the subject name
+preproc_file = outdir + "/{subject}_tsss_preproc-raw.fif"  # {subject} will be replaced by the subject name
 
 # Subjects to do
 subjects = ["sub-001", "sub-002"]
@@ -40,12 +38,6 @@ config = """
 if __name__ == "__main__":
     utils.logger.set_up(level="INFO")
 
-    # Copy directory containing the coregistration
-    if not os.path.exists(src_dir):
-        cmd = f"cp -r {coreg_dir} {src_dir}"
-        print(cmd)
-        os.system(cmd)
-
     # Get paths to files
     preproc_files = []
     for subject in subjects:
@@ -60,7 +52,7 @@ if __name__ == "__main__":
     # Source reconstruction
     source_recon.run_src_batch(
         config,
-        src_dir=src_dir,
+        outdir=outdir,
         subjects=subjects,
         preproc_files=preproc_files,
         dask_client=True,

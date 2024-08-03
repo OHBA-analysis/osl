@@ -291,12 +291,12 @@ def apply_flips_to_covariance(cov, flips, n_embeddings=1):
     return cov * flips
 
 
-def apply_flips(src_dir, subject, flips, epoched=False):
+def apply_flips(outdir, subject, flips, epoched=False):
     """Saves the sign flipped data.
 
     Parameters
     ----------
-    src_dir : str
+    outdir : str
         Path to source reconstruction directory.
     subject : str
         Subject name/id.
@@ -306,7 +306,7 @@ def apply_flips(src_dir, subject, flips, epoched=False):
         Are we performing sign flipping on parc-raw.fif (epoched=False) or parc-epo.fif files (epoched=True)?
     """
     if epoched:
-        parc_file = op.join(src_dir, str(subject), "parc", "parc-epo.fif")
+        parc_file = op.join(outdir, str(subject), "parc", "parc-epo.fif")
         epochs = mne.read_epochs(parc_file, verbose=False)
         sflip_epochs = epochs.copy()
         sflip_epochs.load_data()
@@ -318,13 +318,13 @@ def apply_flips(src_dir, subject, flips, epoched=False):
         sflip_epochs.apply_function(flip, picks=_get_parc_chans(epochs), channel_wise=False)
 
         # Save
-        outfile = op.join(src_dir, str(subject), "sflip_parc-epo.fif")
+        outfile = op.join(outdir, str(subject), str(subject) + "_sflip_parc-epo.fif")
         log_or_print(f"saving: {outfile}")
         sflip_epochs.save(outfile, overwrite=True)
 
     else:
         # Load parcellated data
-        parc_file = op.join(src_dir, str(subject), "parc", "parc-raw.fif")
+        parc_file = op.join(outdir, str(subject), "parc", "parc-raw.fif")
         raw = mne.io.read_raw_fif(parc_file, verbose=False)
         sflip_raw = raw.copy()
         sflip_raw.load_data()
@@ -336,7 +336,7 @@ def apply_flips(src_dir, subject, flips, epoched=False):
         sflip_raw.apply_function(flip, picks=_get_parc_chans(raw), channel_wise=False)
 
         # Save
-        outfile = op.join(src_dir, str(subject), "sflip_parc-raw.fif")
+        outfile = op.join(outdir, str(subject), str(subject) + "_sflip_parc-raw.fif")
         log_or_print(f"saving: {outfile}")
         sflip_raw.save(outfile, overwrite=True)
 
