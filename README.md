@@ -30,6 +30,27 @@ conda activate osl
 pip install -e .
 ```
 
+### Oxford-specific computers
+
+If you are installing on an OHBA workstation computer (HBAWS) use:
+```
+git clone https://github.com/OHBA-analysis/osl.git
+cd osl
+conda env create -f envs/hbaws.yml
+conda activate osl
+pip install -e .
+pip install spyder==5.1.5
+```
+
+Or on the BMRC cluster:
+```
+git clone https://github.com/OHBA-analysis/osl.git
+cd osl
+conda env create -f envs/bmrc.yml
+conda activate osl
+pip install -e .
+```
+
 ## Removing OSL
 
 Simply removing the conda environment and delete the repository:
