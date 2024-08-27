@@ -26,7 +26,7 @@ copyright = '2023, OHBA Analysis Group'
 author = 'OHBA Analysis Group'
 
 # The full version, including alpha/beta/rc tags
-release = '0.10.0'
+release = '1.0.0'
 
 
 # -- General configuration ---------------------------------------------------
