@@ -10,8 +10,8 @@ from dask.distributed import Client
 from osl import preprocessing, utils
 
 # Files and directories
-raw_file = "data/maxfilter/{subject}_tsss.fif"  # {subject} will be replace by the name for the subject
-preproc_dir = "data/preproc"  # output directory containing the preprocess files
+raw_file = "maxfilter/{subject}_tsss.fif"  # {subject} will be replace by the name for the subject
+outdir = "data"
 
 subjects = ["sub-001", "sub-002"]
 
@@ -50,7 +50,8 @@ if __name__ == "__main__":
     preprocessing.run_proc_batch(
         config,
         inputs,
-        outdir=preproc_dir,
+        subjects=subjects,
+        outdir=outdir,
         overwrite=True,
         dask_client=True,
     )

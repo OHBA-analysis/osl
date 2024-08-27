@@ -29,7 +29,7 @@ import numpy as np
 import yaml
 
 from . import mne_wrappers, osl_wrappers
-from ..utils import find_run_id, validate_outdir, process_file_inputs, add_subdir
+from ..utils import find_run_id, validate_outdir, process_file_inputs
 from ..utils import logger as osl_logger
 from ..utils.parallel import dask_parallel_bag
 from ..utils.version_utils import check_version
@@ -105,14 +105,17 @@ def import_data(infile, preload=True):
     elif os.path.splitext(infile)[1] == ".fif":
         logger.info("Detected fif file format, using: mne.io.read_raw_fif")
         raw = mne.io.read_raw_fif(infile, preload=preload)
+
     # EDF file
     elif os.path.splitext(infile)[1].lower() == ".edf":
         logger.info("Detected edf file format, using: mne.io.read_raw_edf")
         raw = mne.io.read_raw_edf(infile, preload=preload)
+
     # CTF data in ds directory
     elif os.path.splitext(infile)[1] == ".ds":
         logger.info("Detected CTF file format, using: mne.io.read_raw_ctf")
         raw = mne.io.read_raw_ctf(infile, preload=preload)
+
     elif os.path.splitext(infile)[1] == ".meg4":
         logger.info("Detected CTF file format, using: mne.io.read_raw_ctf")
         raw = mne.io.read_raw_ctf(os.path.dirname(infile), preload=preload)
@@ -134,6 +137,10 @@ def import_data(infile, preload=True):
     elif os.path.splitext(infile)[1] == ".bdf":
         logger.info("Detected BDF file format, using: mne.io.read_raw_bdf")
         raw = mne.io.read_raw_bdf(infile, preload=preload)
+
+    elif os.path.splitext(infile)[1] == ".mff":
+        logger.info("Detected EGI file format, using mne.io.read_raw_egi")
+        raw = mne.io.read_raw_egi(infile, preload=preload)
         
     # Other formats not accepted
     else:
@@ -289,10 +296,8 @@ def check_config_versions(config):
     ------
     AssertionError
         Raised if package version mismatch found in 'version_assert'
-
-    WARNING
+    Warning
         Raised if package version mismatch found in 'version_warn'
-
     """
     config = load_config(config)
 
@@ -380,7 +385,7 @@ def append_preproc_info(dataset, config, extra_funcs=None):
     return dataset
 
 
-def write_dataset(dataset, outbase, run_id, ftype='preproc_raw', overwrite=False):
+def write_dataset(dataset, outbase, run_id, ftype='preproc-raw', overwrite=False):
     """Write preprocessed data to a file.
 
     Will write all keys in the dataset dict to disk with corresponding extensions.
@@ -394,7 +399,7 @@ def write_dataset(dataset, outbase, run_id, ftype='preproc_raw', overwrite=False
     run_id : str
         ID for the output file.
     ftype: str
-        Extension for the fif file (default ``preproc_raw``)
+        Extension for the fif file (default ``preproc-raw``)
     overwrite : bool
         Should we overwrite if the file already exists?
 
@@ -404,8 +409,8 @@ def write_dataset(dataset, outbase, run_id, ftype='preproc_raw', overwrite=False
         The saved fif file name
     """
 
-    # Strip "_preproc_raw" or "_raw" from the run id
-    for string in ["_preproc_raw", "_raw"]:
+    # Strip "_preproc-raw" or "_raw" from the run id
+    for string in ["_preproc-raw", "_raw"]:
         if string in run_id:
             run_id = run_id.replace(string, "")
 
@@ -450,7 +455,7 @@ def read_dataset(fif, preload=False, ftype=None):
     ftype : str
         Extension for the fif file (will be replaced for e.g. ``'_events.npy'`` or 
         ``'_ica.fif'``). If ``None``, we assume the fif file is preprocessed with 
-        OSL and has the extension ``'_preproc_raw'``. If this fails, we guess 
+        OSL and has the extension ``'_preproc-raw'``. If this fails, we guess 
         the extension as whatever comes after the last ``'_'``.
 
     Returns
@@ -466,9 +471,9 @@ def read_dataset(fif, preload=False, ftype=None):
     # Guess extension
     if ftype is None:
         logger.info("Guessing the preproc extension")
-        if "preproc_raw" in fif:
-            logger.info('Assuming fif file type is "preproc_raw"')
-            ftype = "preproc_raw"
+        if "preproc-raw" in fif:
+            logger.info('Assuming fif file type is "preproc-raw"')
+            ftype = "preproc-raw"
         else:
             if len(fif.split("_"))<2:
                 logger.error("Unable to guess the fif file extension")
@@ -478,7 +483,6 @@ def read_dataset(fif, preload=False, ftype=None):
     
     # add extension to fif file name
     ftype = ftype + ".fif"
-     
     
     events = Path(fif.replace(ftype, "events.npy"))
     if events.exists():
@@ -628,8 +632,8 @@ def plot_preproc_flowchart(
 def run_proc_chain(
     config,
     infile,
-    outname=None,
-    ftype='preproc_raw',
+    subject=None,
+    ftype='preproc-raw',
     outdir=None,
     logsdir=None,
     reportdir=None,
@@ -648,19 +652,12 @@ def run_proc_chain(
         Preprocessing config.
     infile : str
         Path to input file.
-    outname : str
-        Output filename.
+    subject : str
+        Subject ID. This will be the sub-directory in outdir.
     ftype: str
-        Extension for the fif file (default ``preproc_raw``)
+        Extension for the fif file (default ``preproc-raw``)
     outdir : str
-        Output directory. If processing multiple files, they can
-        be put in unique sub directories by including ``{x:0}`` at 
-        the end of the outdir, where ``x`` is the pattern which
-        precedes the unique identifier and ``0`` is the length of 
-        the unique identifier. For example: if the outdir is
-        ``../../{sub-:3}`` and each is like 
-        ``/sub-001_task-rest.fif``, the outdir for the file will be
-        ``../../sub-001/``.
+        Output directory.
     logsdir : str
         Directory to save log files to.
     reportdir : str
@@ -687,11 +684,8 @@ def run_proc_chain(
         An empty dict is returned if preprocessing fails. If ``ret_dataset=False``, we return a flag indicating whether preprocessing was successful.
     """
 
-    # Generate a run ID
-    if outname is None:
-        run_id = find_run_id(infile)
-    else:
-        run_id = os.path.splitext(outname)[0]
+    # Get run (subject) ID
+    run_id = subject or find_run_id(infile)
     name_base = "{run_id}_{ftype}.{fext}"
 
     if not ret_dataset:
@@ -706,10 +700,9 @@ def run_proc_chain(
         gen_report = True if gen_report is None else gen_report
         
         # Create output directories if they don't exist
-        outdir = add_subdir(infile, outdir, run_id)
-        outdir = validate_outdir(outdir)
+        outdir = validate_outdir(f"{outdir}/{run_id}")
         logsdir = validate_outdir(logsdir or outdir / "logs")
-        reportdir = validate_outdir(reportdir or outdir / "report")
+        reportdir = validate_outdir(reportdir or outdir / "preproc_report")
 
     else:
         # We're not saving the output to disk
@@ -719,7 +712,7 @@ def run_proc_chain(
         gen_report = gen_report or reportdir is not None or False
         if gen_report:
             # Make sure we have a directory to write the report to
-            reportdir = validate_outdir(reportdir or os.getcwd() + "/report")
+            reportdir = validate_outdir(reportdir or os.getcwd() + "/preproc_report")
 
         # Allow the user to create a log if they pass logsdir
         if logsdir is not None:
@@ -809,6 +802,7 @@ def run_proc_chain(
                 ica=dataset["ica"],
                 preproc_fif_filename=fif_outname,
                 logsdir=logsdir,
+                run_id=run_id,
             )
             gen_html_page(reportdir)
 
@@ -865,7 +859,7 @@ def run_proc_chain(
 def run_proc_batch(
     config,
     files,
-    outnames=None,
+    subjects=None,
     ftype=None,
     outdir=None,
     logsdir=None,
@@ -890,19 +884,12 @@ def run_proc_batch(
     files : str or list or mne.Raw
         Can be a list of Raw objects or a list of filenames (or ``.ds`` dir names if CTF data)
         or a path to a textfile list of filenames (or ``.ds`` dir names if CTF data).
-    outnames: None or list of str
-        output names of the preprocessed files. If None (default), they will be automatically 
-        determined.
+    subjects : list of str
+        Subject directory names. These are sub-directories in outdir.
     ftype: None or str
-        Extension of the preprocessed fif files. Default option is `_preproc_raw`.
+        Extension of the preprocessed fif files. Default option is `_preproc-raw`.
     outdir : str
-        Output directory. If processing multiple files, they can
-        be put in unique sub directories by including ``{x:0}`` at 
-        the end of the outdir, where ``x`` is the pattern which
-        precedes the unique identifier and ``0`` is the length of 
-        the unique identifier. For example: if the outdir is
-        ``../../{sub-:3}`` and each is like ``/sub-001_task-rest.fif``, 
-        the outdir for the file will be ``../../sub-001/``.
+        Output directory.
     logsdir : str
         Directory to save log files to.
     reportdir : str
@@ -945,7 +932,7 @@ def run_proc_batch(
     # Validate the parent outdir - later do so for each subdirectory
     tmpoutdir = validate_outdir(outdir.split('{')[0])
     logsdir = validate_outdir(logsdir or tmpoutdir / "logs")
-    reportdir = validate_outdir(reportdir or tmpoutdir / "report")
+    reportdir = validate_outdir(reportdir or tmpoutdir / "preproc_report")
 
     # Initialise Loggers
     mne.set_log_level(mneverbose)
@@ -961,14 +948,14 @@ def run_proc_batch(
     infiles, good_files_outnames, good_files = process_file_inputs(files)
 
     # Specify filenames for the output data
-    if outnames is None:
-        outnames = good_files_outnames
+    if subjects is None:
+        subjects = good_files_outnames
     else:
-        if len(outnames) != len(good_files_outnames):
+        if len(subjects) != len(good_files_outnames):
             logger.critical(
-                f"Number of outnames ({len(outnames)}) does not match "
+                f"Number of subjects ({len(subjects)}) does not match "
                 f"number of good files {len(good_files_outnames)}. "
-                "Fix outnames or use outnames=None."
+                "Please fix the subjects list or pass subjects=None."
             )
 
     if strictrun and click.confirm('Is this correct set of inputs?') is False:
@@ -1011,8 +998,8 @@ def run_proc_batch(
 
     # Loop through input files to generate arguments for run_proc_chain
     args = []
-    for infile, outname in zip(infiles, outnames):
-        args.append((config, infile, outname))
+    for infile, subject in zip(infiles, subjects):
+        args.append((config, infile, subject))
 
     # Actually run the processes
     if dask_client:

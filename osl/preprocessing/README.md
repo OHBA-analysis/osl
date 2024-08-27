@@ -35,7 +35,7 @@ outdir = '/where/do/i/want/my/output_dir'
 # Process a single file
 raw_file = '/path/to/file.fif'
 
-osl.preprocessing.run_proc_chain(config, raw_file, outdir)  # creates /path/to/file_preproc_raw.fif
+osl.preprocessing.run_proc_chain(config, raw_file, outdir)  # creates /path/to/file_preproc-raw.fif
 
 # Process a list of files
 list_of_raw_files = ['/path/to/file1.fif','/path/to/file2.fif','/path/to/file3.fif']
@@ -74,7 +74,7 @@ The following code runs the chain on a file:
 ```
 fname = '/path/to/my/dataset.fif'
 
-osl.preprocessing.run_proc_chain(config, fname)  # creates dataset_preproc_raw.fif and dataset_epo.fif
+osl.preprocessing.run_proc_chain(config, fname)  # creates dataset_preproc-raw.fif and dataset_epo.fif
 
 # Average the epochs object and visualise a response
 epochs = mne.io.read_raw_fif('/path/to/my/dataset_epo.fif')
