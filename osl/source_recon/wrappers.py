@@ -29,9 +29,10 @@ logger = logging.getLogger(__name__)
 def extract_polhemus_from_info(
     outdir,
     subject,
-    preproc_file,
     include_eeg_as_headshape=False,
     include_hpi_as_headshape=True,
+    preproc_file=None,
+    epoch_file=None,
 ):
     """Wrapper function to extract fiducials/headshape points.
 
@@ -41,13 +42,17 @@ def extract_polhemus_from_info(
         Path to where to output the source reconstruction files.
     subject : str
         Subject name/id.
-    preproc_file : str
-        Path to the preprocessed fif file.
     include_eeg_as_headshape : bool, optional
         Should we include EEG locations as headshape points?
     include_hpi_as_headshape : bool, optional
         Should we include HPI locations as headshape points?
+    preproc_file : str, optional
+        Path to the preprocessed fif file.
+    epoch_file : str, optional
+        Path to the preprocessed fif file.
     """
+    if preproc_file is None:
+        preproc_file = epoch_file
     filenames = rhino.get_coreg_filenames(outdir, subject)
     rhino.extract_polhemus_from_info(
         fif_file=preproc_file,
