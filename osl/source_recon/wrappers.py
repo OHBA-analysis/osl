@@ -250,8 +250,9 @@ def compute_surfaces(
 def coregister(
     outdir,
     subject,
-    preproc_file,
     smri_file,
+    preproc_file=None,
+    epoch_file=None,
     use_nose=True,
     use_headshape=True,
     already_coregistered=False,
@@ -267,11 +268,13 @@ def coregister(
         Path to where to output the source reconstruction files.
     subject : str
         Subject name/id.
-    preproc_file : str
-        Path to the preprocessed fif file.
     smri_file : str
         Path to the T1 weighted structural MRI file to use in source
         reconstruction.
+    preproc_file : str, optional
+        Path to the preprocessed fif file.
+    epoch_file : str, optional
+        Path to the preprocessed epochs fif file.
     use_nose : bool, optional
         Should we use the nose in the coregistration?
     use_headshape : bool, optional
@@ -291,6 +294,9 @@ def coregister(
     reportdir : str, optional
         Path to report directory.
     """
+    if preproc_file is None:
+        preproc_file = epoch_file
+
     # Run coregistration
     rhino.coreg(
         fif_file=preproc_file,

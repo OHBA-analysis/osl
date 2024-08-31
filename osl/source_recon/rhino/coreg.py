@@ -151,12 +151,12 @@ def coreg(
     # -------------------------------------------------------------------------------------------------------------------
     # Copy fif_file to new file for modification, and (optionally) changes dev_head_t to equal dev_ctf_t in fif file info
 
-    if fif_file[-7:] == "raw.fif":
+    if "raw.fif" in fif_file:
         raw = read_raw(fif_file)
-    elif fif_file[-10:] == "epochs.fif":
+    elif "epo.fif" in fif_file:
         raw = read_epochs(fif_file)
     else:
-        raise ValueError("Invalid fif file, needs to be a *raw.fif or a *epochs.fif file")
+        raise ValueError("Invalid fif file, needs to be a *-raw.fif or a *-epo.fif file")
     info = raw.info
 
     if use_dev_ctf_t:
