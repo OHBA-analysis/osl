@@ -515,7 +515,7 @@ def transform_recon_timeseries(
         recon_index, dist = rhino_utils.closest_node(coords_out[:, cc], recon_coords_out)
 
         if dist < spatial_resolution:
-            recon_timeseries_out[cc, :] = recon_timeseries[recon_index, ...]
+            recon_timeseries_out[cc] = recon_timeseries[recon_index]
             recon_indices[cc] = recon_index
 
     return recon_timeseries_out, reference_brain_resampled, coords_out, recon_indices
