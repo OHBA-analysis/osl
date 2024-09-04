@@ -860,7 +860,7 @@ def run_proc_batch(
     config,
     files,
     subjects=None,
-    ftype=None,
+    ftype='preproc-raw',
     outdir=None,
     logsdir=None,
     reportdir=None,
