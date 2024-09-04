@@ -59,6 +59,7 @@ setup(name=name,
           'console_scripts': [
               'osl_maxfilter = osl.maxfilter.maxfilter:main',
               'osl_ica_label = osl.preprocessing.ica_label:main',
+              'osl_ica_apply = osl.preprocessing.ica_label:apply',
               'osl_preproc = osl.preprocessing.batch:main',
               'osl_func = osl.utils.run_func:main',
           ]},
