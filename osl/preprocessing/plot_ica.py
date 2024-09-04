@@ -3,8 +3,11 @@
 """
 
 # Authors: Mats van Es <mats.vanes@psych.ox.ac.uk>
+import logging
 import matplotlib.pyplot as plt
 
+# Configure logging
+logger = logging.getLogger(__name__)
 
 def plot_ica(
     ica,
@@ -1105,9 +1108,6 @@ class osl_MNEBrowseFigure(MNEBrowseFigure):
                     self.mne.ica.labels_[tmp_label].append(last_bad_component)
                 else:
                     self.mne.ica.labels_[tmp_label] = [last_bad_component]
-                print(
-                    f'Component {last_bad_component} labeled as "{tmp_label}"'
-                )
             self._draw_traces()  # This makes sure the traces are given the corresponding color right away
         else:  # check for close key / fullscreen toggle
             super()._keypress(event)
@@ -1117,7 +1117,7 @@ class osl_MNEBrowseFigure(MNEBrowseFigure):
         # OSL VERSION - SIMILAR TO OLD MNE VERSION TODO: Check if we need to adopt this
         """Handle close events (via keypress or window [x])."""
         from matplotlib.pyplot import close
-        from mne.utils import logger, set_config
+        from mne.utils import set_config
         import numpy as np
 
         # write out bad epochs (after converting epoch numbers to indices)
@@ -1128,7 +1128,6 @@ class osl_MNEBrowseFigure(MNEBrowseFigure):
         # proj checkboxes are for viz only and shouldn't modify the instance)
         if self.mne.instance_type in ("raw", "epochs"):
             self.mne.inst.info["bads"] = self.mne.info["bads"]
-            logger.info(f"Channels marked as bad: {self.mne.info['bads'] or 'none'}")
 
         # OSL ADDITION
         # ICA excludes
@@ -1156,7 +1155,7 @@ class osl_MNEBrowseFigure(MNEBrowseFigure):
                     for ix in allix:
                         self.mne.ica.labels_[list(self.mne.ica.labels_.keys())[ix]] = \
                             np.setdiff1d(self.mne.ica.labels_[list(self.mne.ica.labels_.keys())[ix]], ch)
-
+            
             # label bad components without a manual label as "unknown"
             for ch in self.mne.ica.exclude:
                 tmp = list(self.mne.ica.labels_.values())
@@ -1170,7 +1169,7 @@ class osl_MNEBrowseFigure(MNEBrowseFigure):
                     self.mne.ica.labels_["unknown"].append(ch)
                     if type(self.mne.ica.labels_["unknown"]) is np.ndarray:
                         self.mne.ica.labels_["unknown"] = self.mne.ica.labels_["unknown"].tolist()
-
+                                    
             # Add to labels_ a generic eog/ecg field
             if len(list(self.mne.ica.labels_.keys())) > 0:
                 if "ecg" not in self.mne.ica.labels_:
@@ -1192,7 +1191,13 @@ class osl_MNEBrowseFigure(MNEBrowseFigure):
                 self.mne.ica.labels_["eog"] = [v for v in self.mne.ica.labels_["eog"] if v!= []]
                 self.mne.ica.labels_["ecg"] = np.unique(self.mne.ica.labels_["ecg"]).tolist()
                 self.mne.ica.labels_["eog"] = np.unique(self.mne.ica.labels_["eog"]).tolist()
-                
+        
+        # write logs
+        logger.info(f"Components marked as bad: {sorted(self.mne.ica.exclude) or 'none'}")
+        for lb in self.mne.ica.labels_.keys():
+            if 'manual' in lb or lb=='unknown':
+                logger.info(f"Components manually labeled as '{lb.split('/')[0]}': {sorted(self.mne.ica.labels_[lb])}")    
+        
         # write window size to config
         size = ",".join(self.get_size_inches().astype(str))
         set_config("MNE_BROWSE_RAW_SIZE", size, set_env=False)

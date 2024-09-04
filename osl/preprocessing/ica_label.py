@@ -12,12 +12,17 @@ import os
 import mne
 import numpy as np
 import pickle
+import logging
+import traceback
 from copy import deepcopy
+from time import localtime, strftime
 from matplotlib import pyplot as plt
 from osl.preprocessing.plot_ica import plot_ica
 from osl.report import plot_bad_ica
 from osl.report.preproc_report import gen_html_page, gen_html_summary
 from ..utils import logger as osl_logger
+
+logger = logging.getLogger(__name__)
 
 
 def ica_label(data_dir, subject, reject=None):
@@ -43,46 +48,61 @@ def ica_label(data_dir, subject, reject=None):
     ica_file = os.path.join(data_dir, subject, subject + '_ica.fif')
     report_dir_base =  os.path.join(data_dir, 'preproc_report')
     report_dir = os.path.join(report_dir_base, subject + '_preproc-raw')
+    logs_dir = os.path.join(data_dir, 'logs')
+    logfile = os.path.join(logs_dir, subject + '_preproc-raw.log')
     
-    print('LOADING DATA')
-    raw = mne.io.read_raw(preproc_file, preload=True)
-    ica = mne.preprocessing.read_ica(ica_file)
-    
-    # keep these for later
-    if reject=='manual':
-        exclude_old = deepcopy(ica.exclude)
-            
-    # interactive components plot
-    print('INTERACTIVE ICA LABELING')
-    plot_ica(ica, raw, block=True, stop=30)
-    plt.pause(0.1)
+    # setup loggers
+    mne.utils._logging.set_log_file(logfile, overwrite=False)
+    osl_logger.set_up(prefix=subject, log_file=logfile, level="INFO")
+    mne.set_log_level("INFO")
+    logger = logging.getLogger(__name__)
+    now = strftime("%Y-%m-%d %H:%M:%S", localtime())
+    logger.info("{0} : Starting OSL Processing".format(now))
+    try:                               
+        logger.info('Importing {0}'.format(preproc_file))
+        raw = mne.io.read_raw(preproc_file, preload=True)
+        logger.info('Importing {0}'.format(ica_file))
+        ica = mne.preprocessing.read_ica(ica_file)
+        
+        # keep these for later
+        if reject=='manual':
+            exclude_old = deepcopy(ica.exclude)
+                
+        # interactive components plot
+        logger.info('INTERACTIVE ICA LABELING')
+        plot_ica(ica, raw, block=True, stop=30)
+        plt.pause(0.1)
 
-    if reject == 'all' or reject == 'manual':
-        print("REMOVING COMPONENTS FROM THE DATA")
-        if reject == 'all':
-            ica.apply(raw)
-        elif reject == 'manual':
-            # we need to make sure we don't remove components that 
-            # were already removed before
-            new_ica = deepcopy(ica)
-            new_ica.exclude = np.setdiff1d(ica.exclude, exclude_old)
-            new_ica.apply(raw)
+        if reject == 'all' or reject == 'manual':
+            logger.info("Removing {0} labelled components from the data".format(reject))
+            if reject == 'all':
+                ica.apply(raw)
+            elif reject == 'manual':
+                # we need to make sure we don't remove components that 
+                # were already removed before
+                new_ica = deepcopy(ica)
+                new_ica.exclude = np.setdiff1d(ica.exclude, exclude_old)
+                new_ica.apply(raw)
+                
+            logger.info("Saving preprocessed data")
+            raw.save(preproc_file, overwrite=True)
+        else:
+            logger.info("Not removing any components from the data")
+        
+        logger.info("Saving ICA data")
+        ica.save(ica_file, overwrite=True)
+        
+        if reject is not None:
+            logger.info("Attempting to update report")
             
-        print("SAVING PREPROCESSED DATA")
-        raw.save(preproc_file, overwrite=True)
-    
-    print("SAVING ICA DATA")
-    ica.save(ica_file, overwrite=True)
-    
-    if reject is not None:
-        print("ATTEMPTING TO UPDATE REPORT")
-        try:           
             savebase = os.path.join(report_dir, "{0}.png")
-            print(report_dir)
+            logger.info("Assuming report directory: {0}".format(report_dir))
             if os.path.exists(os.path.join(report_dir, "ica.png")) or os.path.exists(os.path.join(report_dir, "data.pkl")):
+                logger.info("Generating ICA plot")
                 _ = plot_bad_ica(raw, ica, savebase)
 
                 # try updating the report data
+                logger.info("Updating data.pkl")
                 data = pickle.load(open(os.path.join(report_dir, "data.pkl"), 'rb'))
                 if 'plt_ica' not in data.keys():
                     data['plt_ica'] = os.path.join(report_dir.split("/")[-1], "ica.png")
@@ -96,13 +116,33 @@ def ica_label(data_dir, subject, reject=None):
                 pickle.dump(data, open(os.path.join(report_dir, "data.pkl"), 'wb'))
 
                 # gen html pages
+                logger.info("Generating subject_report.html")
                 gen_html_page(report_dir_base)
+                logger.info("Generating summary_report.html")
                 gen_html_summary(report_dir_base)
+                logger.info("Successfully updated report")
                 
-                print("REPORT UPDATED")
-        except:
-            print("FAILED TO UPDATE REPORT")
-    print(f'LABELING DATASET {subject} COMPLETE')
+    except Exception as e:
+        logger.critical("**********************")
+        logger.critical("* PROCESSING FAILED! *")
+        logger.critical("**********************")
+        ex_type, ex_value, ex_traceback = sys.exc_info()
+        logger.error("osl_ica_label")
+        logger.error(ex_type)
+        logger.error(ex_value)
+        logger.error(traceback.print_tb(ex_traceback))
+        with open(logfile.replace(".log", ".error.log"), "w") as f:
+            f.write("OSL PREPROCESSING CHAIN failed at: {0}".format(now))
+            f.write("\n")
+            f.write('Processing filed during stage : "{0}"'.format('osl_ica_label'))
+            f.write(str(ex_type))
+            f.write("\n")
+            f.write(str(ex_value))
+            f.write("\n")
+            traceback.print_tb(ex_traceback, file=f)
+                
+    now = strftime("%Y-%m-%d %H:%M:%S", localtime())
+    logger.info("{0} : Processing Complete".format(now))
 
 
 def main(argv=None):
