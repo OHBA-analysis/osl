@@ -96,6 +96,11 @@ def ica_label(data_dir, subject, reject=None, interactive=True):
             logger.info("Not removing any components from the data")
         
         logger.info("Saving ICA data")
+
+        # make sure the format is correct, otherwise errors will occur
+        for key in ica.labels_.keys():
+            ica.labels_[key] = list(ica.labels_[key])
+
         ica.save(ica_file, overwrite=True)
         
         if reject is not None:
