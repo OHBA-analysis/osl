@@ -21,6 +21,7 @@ from . import rhino, wrappers
 from ..report import src_report
 from ..utils import logger as osl_logger
 from ..utils import validate_outdir, find_run_id, parallel
+from ..utils.misc import set_random_seed
 
 import logging
 logger = logging.getLogger(__name__)
@@ -101,6 +102,7 @@ def run_src_chain(
     verbose="INFO",
     mneverbose="WARNING",
     extra_funcs=None,
+    random_seed='auto',
 ):
     """Source reconstruction.
 
@@ -130,6 +132,9 @@ def run_src_chain(
         Level of MNE verbose.
     extra_funcs : list of functions
         Custom functions.
+    random_seed : 'auto' (default), int or None
+        Random seed to set. If 'auto', a random seed will be generated. Random seeds are set for both Python and NumPy.
+        If None, no random seed is set.
 
     Returns
     -------
@@ -160,6 +165,14 @@ def run_src_chain(
     logger.info("{0} : Starting OSL Processing".format(now))
     logger.info("input : {0}".format(outdir / subject))
 
+    # Set random seed
+    if random_seed == 'auto':
+        set_random_seed()
+    elif random_seed is None:
+        pass
+    else:
+        set_random_seed(random_seed)
+    
     # Load config
     if not isinstance(config, dict):
         config = load_config(config)
@@ -251,6 +264,7 @@ def run_src_batch(
     mneverbose="WARNING",
     extra_funcs=None,
     dask_client=False,
+    random_seed='auto',
 ):
     """Batch source reconstruction.
 
@@ -283,6 +297,9 @@ def run_src_batch(
         Custom functions.
     dask_client : bool
         Are we using a dask client?
+    random_seed : 'auto' (default), int or None
+        Random seed to set. If 'auto', a random seed will be generated. Random seeds are set for both Python and NumPy.
+        If None, no random seed is set.
 
     Returns
     -------
@@ -302,6 +319,14 @@ def run_src_batch(
     osl_logger.set_up(log_file=logfile, level=verbose, startup=False)
     logger.info('Starting OSL Batch Source Reconstruction')
 
+    # Set random seed
+    if random_seed == 'auto':
+        random_seed = set_random_seed()
+    elif random_seed is None:
+        pass
+    else:
+        set_random_seed(random_seed)
+    
     # Load config
     config = load_config(config)
     config_str = pprint.PrettyPrinter().pformat(config)
@@ -377,6 +402,7 @@ def run_src_batch(
         verbose=verbose,
         mneverbose=mneverbose,
         extra_funcs=extra_funcs,
+        random_seed=random_seed,
     )
 
     # Loop through input files to generate arguments for run_coreg_chain

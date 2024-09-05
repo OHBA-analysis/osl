@@ -33,6 +33,7 @@ from ..utils import find_run_id, validate_outdir, process_file_inputs
 from ..utils import logger as osl_logger
 from ..utils.parallel import dask_parallel_bag
 from ..utils.version_utils import check_version
+from ..utils.misc import set_random_seed
 
 logger = logging.getLogger(__name__)
 
@@ -641,6 +642,7 @@ def run_proc_chain(
     gen_report=None,
     overwrite=False,
     extra_funcs=None,
+    random_seed='auto',
     verbose="INFO",
     mneverbose="WARNING",
 ):
@@ -670,6 +672,9 @@ def run_proc_chain(
         Should we overwrite the output file if it already exists?
     extra_funcs : list
         User-defined functions.
+    random_seed : 'auto' (default), int or None
+        Random seed to set. If 'auto', a random seed will be generated. Random seeds are set for both Python and NumPy.
+        If None, no random seed is set.
     verbose : str
         Level of info to print.
         Can be: ``'CRITICAL'``, ``'ERROR'``, ``'WARNING'``, ``'INFO'``, ``'DEBUG'`` or ``'NOTSET'``.
@@ -740,6 +745,14 @@ def run_proc_chain(
     logger.info("{0} : Starting OSL Processing".format(now))
     logger.info("input : {0}".format(infile))
 
+    # Set random seed
+    if random_seed == 'auto':
+        set_random_seed()
+    elif random_seed is None:
+        pass
+    else:
+        set_random_seed(random_seed)
+    
     # Write preprocessed data to output directory
     if outdir is not None:
         # Check for existing outputs - should be a .fif at least
@@ -867,6 +880,7 @@ def run_proc_batch(
     gen_report=True,
     overwrite=False,
     extra_funcs=None,
+    random_seed='auto',
     verbose="INFO",
     mneverbose="WARNING",
     strictrun=False,
@@ -898,6 +912,9 @@ def run_proc_batch(
         Should we generate a report?
     overwrite : bool
         Should we overwrite the output file if it exists?
+    random_seed : 'auto' (default), int or None
+        Random seed to set. If 'auto', a random seed will be generated. Random seeds are set for both Python and NumPy.
+        If None, no random seed is set.
     extra_funcs : list
         User-defined functions.
     verbose : str
@@ -924,7 +941,7 @@ def run_proc_batch(
     >>> from dask.distributed import Client
     >>> client = Client(threads_per_worker=1, n_workers=4)
     """
-
+   
     if outdir is None:
         # Use the current working directory
         outdir = os.getcwd()
@@ -944,6 +961,14 @@ def run_proc_batch(
 
     logger.info('Starting OSL Batch Processing')
 
+    # Set random seed
+    if random_seed == 'auto':
+        random_seed = set_random_seed()
+    elif random_seed is None:
+        pass
+    else:
+        set_random_seed(random_seed)
+    
     # Check through inputs and parameters
     infiles, good_files_outnames, good_files = process_file_inputs(files)
 
@@ -994,6 +1019,7 @@ def run_proc_batch(
         gen_report=gen_report,
         overwrite=overwrite,
         extra_funcs=extra_funcs,
+        random_seed=random_seed,
     )
 
     # Loop through input files to generate arguments for run_proc_chain
