@@ -332,7 +332,7 @@ def gen_html_page(outdir, logsdir=None):
     # Hyperlink to each panel on the page
     filenames = ""
     for i in range(total):
-        filename = pathlib.Path(data[i]["filename"]).name
+        filename = pathlib.Path(data[i]["preproc_fif_filename"]).name.replace('_preproc-raw.fif', '')
         filenames += "{0}. {1}<br>".format(i + 1, filename)
 
     # Render the full page
