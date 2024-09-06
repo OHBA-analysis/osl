@@ -195,32 +195,31 @@ def main(argv=None):
 
     """
 
-    # if argv is None:
-    #     argv = sys.argv[1:]
+    if argv is None:
+        argv = sys.argv[1:]
     
-    # reject = argv[0]
-    # if reject == 'None':
-    #     reject = None
+    reject = argv[0]
+    if reject == 'None':
+        reject = None
     
-    # if len(argv)<3:
-    #     data_dir = os.getcwd()
-    #     if len(argv)==2:
-    #         subject = argv[1]
-    #     else:
-    #         g = sorted(glob(os.path.join(f"{data_dir}", '*', '*_ica.fif')))
-    #         subject = [f.split('/')[-2] for f in g]
-    #         # batch log
-    #         logs_dir = os.path.join(data_dir, 'logs')
-    #         logfile = os.path.join(logs_dir, 'osl_batch.log')
-    #         osl_logger.set_up(log_file=logfile, level="INFO", startup=False)
-    #         logger.info('Starting OSL-ICA Batch Processing')
-    #         logger.info('Running osl_ica_label on {0} subjects with reject={1}'.format(len(subject), str(reject)))
-    # else:
-    #     data_dir = argv[1]
-    #     subject = argv[2]
+    if len(argv)<3:
+        data_dir = os.getcwd()
+        if len(argv)==2:
+            subject = argv[1]
+        else:
+            g = sorted(glob(os.path.join(f"{data_dir}", '*', '*_ica.fif')))
+            subject = [f.split('/')[-2] for f in g]
+            # batch log
+            logs_dir = os.path.join(data_dir, 'logs')
+            logfile = os.path.join(logs_dir, 'osl_batch.log')
+            osl_logger.set_up(log_file=logfile, level="INFO", startup=False)
+            logger.info('Starting OSL-ICA Batch Processing')
+            logger.info('Running osl_ica_label on {0} subjects with reject={1}'.format(len(subject), str(reject)))
+    else:
+        data_dir = argv[1]
+        subject = argv[2]
     
-    # ica_label(data_dir=data_dir, subject=subject, reject=reject)
-    ica_label(data_dir='/ohba/pi/mwoolrich/osl-dev/meguk-debugging/output_mve/', subject='sub-oxf001_task-resteyesclosed', reject=None)
+    ica_label(data_dir=data_dir, subject=subject, reject=reject)
 
 
 def apply(argv=None):
