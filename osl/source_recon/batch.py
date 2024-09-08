@@ -201,7 +201,7 @@ def run_src_chain(
                     )
             def wrapped_func(**kwargs):
                 args, _, _, defaults = inspect.getargspec(func)
-                args_with_defaults = args[-len(defaults):]
+                args_with_defaults = args[-len(defaults):] if defaults is not None else []
                 kwargs_to_pass = {}
                 for a in args:
                     if a in kwargs:
