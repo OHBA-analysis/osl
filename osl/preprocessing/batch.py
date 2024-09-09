@@ -912,11 +912,11 @@ def run_proc_batch(
         Should we generate a report?
     overwrite : bool
         Should we overwrite the output file if it exists?
+    extra_funcs : list
+        User-defined functions.
     random_seed : 'auto' (default), int or None
         Random seed to set. If 'auto', a random seed will be generated. Random seeds are set for both Python and NumPy.
         If None, no random seed is set.
-    extra_funcs : list
-        User-defined functions.
     verbose : str
         Level of info to print.
         Can be: ``'CRITICAL'``, ``'ERROR'``, ``'WARNING'``, ``'INFO'``, ``'DEBUG'`` or ``'NOTSET'``.
