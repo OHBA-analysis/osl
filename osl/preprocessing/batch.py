@@ -442,6 +442,9 @@ def write_dataset(dataset, outbase, run_id, ftype='preproc-raw', overwrite=False
         outname = outbase.format(run_id=run_id, ftype="tfr", fext="fif")
         dataset["tfr"].save(outname, overwrite=overwrite)
 
+    if "glm" in dataset and dataset['glm'] is not None:
+        outname = outbase.format(run_id=run_id, ftype="glm", fext="pkl")
+        dataset["glm"].save_pkl(outname, overwrite=overwrite)
     return fif_outname
 
 def read_dataset(fif, preload=False, ftype=None):
