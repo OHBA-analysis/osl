@@ -52,7 +52,8 @@ class GLMEpochsResult(GLMBaseResult):
             msg = "{} already exists. Please delete or do use overwrite=True."
             raise ValueError(msg.format(outname))
 
-        self.config.detrend_func = None  # Have to drop this to pickle
+        if hasattr(self, 'config'):
+            self.config.detrend_func = None  # Have to drop this to pickle
 
         # This is hacky - but pickles are all or nothing and I don't know how
         # else to do it. HDF5 would be better longer term
