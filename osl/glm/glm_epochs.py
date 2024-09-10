@@ -2,6 +2,7 @@
 import os
 import pickle
 from copy import deepcopy
+from pathlib import Path
 
 import glmtools as glm
 import mne
