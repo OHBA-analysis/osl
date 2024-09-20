@@ -247,6 +247,11 @@ def load_config(config):
             # We have a string
             config = yaml.load(config, Loader=yaml.FullLoader)
 
+    # do some checks on the config
+    for key in config:
+        if config[key] == 'None':
+            config[key] = None
+    
     # Initialise missing values in config
     if "meta" not in config:
         config["meta"] = {"event_codes": None}
@@ -258,7 +263,7 @@ def load_config(config):
     if "preproc" not in config and "group" not in config:
         raise KeyError("Please specify preprocessing and/or group processing steps in config.")
 
-    if "preproc" in config:
+    if "preproc" in config and config["preproc"] is not None:
         for stage in config["preproc"]:
             # Check each stage is a dictionary with a single key
             if not isinstance(stage, dict):
@@ -286,7 +291,7 @@ def load_config(config):
     else:
         config['preproc'] = None
                 
-    if "group" in config:
+    if "group" in config and config["group"] is not None:
         for stage in config["group"]:
             # Check each stage is a dictionary with a single key
             if not isinstance(stage, dict):
