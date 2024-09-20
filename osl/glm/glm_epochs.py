@@ -108,8 +108,18 @@ class GLMEpochsResult(GLMBaseResult):
 
         if title is None:
             title = 'C {} : {}'.format(contrast, self.design.contrast_names[contrast])
-
-        evo.plot_joint(title=title)
+        
+        try:
+            evo.plot_joint(title=title)
+        except:
+            from .glm_spectrum import plot_joint_spectrum
+            import matplotlib.pyplot as plt
+            fig = plt.figure()
+            fig.subplots_adjust(top=0.8)
+            ax = plt.subplot(111)
+            plot_joint_spectrum(evo.times, evo.get_data().T, evo.info, title=title, ax=ax)
+            ax.child_axes[0].set_xlabel('Time (s)')
+            ax.child_axes[0].set_ylabel(metric)
 
 
 class GroupGLMEpochs(GroupGLMBaseResult):
@@ -188,7 +198,18 @@ class GroupGLMEpochs(GroupGLMBaseResult):
             joint_args['ts_args'] = {'scalings': dict(eeg=1, grad=1, mag=1),
                                      'units': dict(eeg='tstats', grad='tstats', mag='tstats')}
 
-        evo.plot_joint(title=title, **joint_args)
+        try:
+            evo.plot_joint(title=title, **joint_args)
+        except:
+            from .glm_spectrum import plot_joint_spectrum
+            import matplotlib.pyplot as plt
+            fig = plt.figure()
+            fig.subplots_adjust(top=0.8)
+            ax = plt.subplot(111)
+            plot_joint_spectrum(evo.times, evo.get_data().T, evo.info, title=title, **joint_args, ax=ax)
+            ax.child_axes[0].set_xlabel('Time (s)')
+            ax.child_axes[0].set_ylabel(metric)
+
 
     def get_channel_adjacency(self):
         """Return adjacency matrix of channels."""
