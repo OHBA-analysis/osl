@@ -11,6 +11,7 @@ import mne
 import numpy as np
 import sails
 import yaml
+import pickle
 from os.path import exists
 from scipy import stats
 from pathlib import Path
@@ -636,6 +637,10 @@ def run_osl_read_dataset(dataset, userargs):
         ``'_ica.fif'``). If ``None``, we assume the fif file is preprocessed with 
         OSL and has the extension ``'_preproc-raw'``. If this fails, we guess 
         the extension as whatever comes after the last ``'_'``.
+    extra_keys : str
+        Space separated list of extra keys to read in from the same directory as the fif file.
+        If no suffix is provided, it's assumed to be .pkl. e.g., 'glm' will read in '..._glm.pkl'
+        'events.npy' will read in '..._events.npy'.
 
     Returns
     -------
@@ -646,6 +651,7 @@ def run_osl_read_dataset(dataset, userargs):
     logger.info("OSL Stage - {0}".format( "read_dataset"))
     logger.info("userargs: {0}".format(str(userargs)))
     ftype = userargs.pop("ftype", None)
+    extra_keys = userargs.pop("extra_keys", []).split(" ")
     
     fif = dataset['raw'].filenames[0]
 
@@ -699,6 +705,22 @@ def run_osl_read_dataset(dataset, userargs):
     dataset['ica'] = ica
     dataset['epochs'] = epochs
 
+    if len(extra_keys)>0:
+        for key in extra_keys:
+            extra_file = Path(fif.replace(ftype, key))
+            key = key.split(".")[0]
+            if '.' not in extra_file.name:
+                extra_file = extra_file.with_suffix('.pkl')
+            if extra_file.exists():
+                print("Reading", extra_file)
+                if '.pkl' in extra_file.name:
+                    with open(extra_file, 'rb') as outp:
+                        dataset[key] = pickle.load(outp)
+                elif '.npy' in extra_file.name:
+                    dataset[key] = np.load(extra_file)
+                elif '.yml' in extra_file.name:
+                    with open(extra_file, 'r') as file:
+                        dataset[key] = yaml.load(file, Loader=yaml.Loader)
     return dataset
 
 def run_osl_bad_segments(dataset, userargs):
