@@ -651,7 +651,7 @@ def run_osl_read_dataset(dataset, userargs):
     logger.info("OSL Stage - {0}".format( "read_dataset"))
     logger.info("userargs: {0}".format(str(userargs)))
     ftype = userargs.pop("ftype", None)
-    extra_keys = userargs.pop("extra_keys", []).split(" ")
+    extra_keys = userargs.pop("extra_keys", [])
     
     fif = dataset['raw'].filenames[0]
 
@@ -706,6 +706,7 @@ def run_osl_read_dataset(dataset, userargs):
     dataset['epochs'] = epochs
 
     if len(extra_keys)>0:
+        extra_keys = extra_keys.split(" ")
         for key in extra_keys:
             extra_file = Path(fif.replace(ftype, key))
             key = key.split(".")[0]
