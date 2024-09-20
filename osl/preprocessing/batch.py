@@ -454,7 +454,7 @@ def write_dataset(dataset, outbase, run_id, ftype='preproc-raw', overwrite=False
             run_id = run_id.replace(string, "")
     
     if "raw" in skip:
-        outnames = {}
+        outnames = {"raw": None}
     else:
         outnames = {"raw": outbase.format(run_id=run_id, ftype=ftype, fext="fif")}
         if Path(outnames["raw"]).exists() and not overwrite:
