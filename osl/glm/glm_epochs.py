@@ -2,6 +2,7 @@
 import os
 import pickle
 from copy import deepcopy
+from pathlib import Path
 
 import glmtools as glm
 import mne
@@ -51,7 +52,8 @@ class GLMEpochsResult(GLMBaseResult):
             msg = "{} already exists. Please delete or do use overwrite=True."
             raise ValueError(msg.format(outname))
 
-        self.config.detrend_func = None  # Have to drop this to pickle
+        if hasattr(self, 'config'):
+            self.config.detrend_func = None  # Have to drop this to pickle
 
         # This is hacky - but pickles are all or nothing and I don't know how
         # else to do it. HDF5 would be better longer term
@@ -106,8 +108,18 @@ class GLMEpochsResult(GLMBaseResult):
 
         if title is None:
             title = 'C {} : {}'.format(contrast, self.design.contrast_names[contrast])
-
-        evo.plot_joint(title=title)
+        
+        try:
+            evo.plot_joint(title=title)
+        except:
+            from .glm_spectrum import plot_joint_spectrum
+            import matplotlib.pyplot as plt
+            fig = plt.figure()
+            fig.subplots_adjust(top=0.8)
+            ax = plt.subplot(111)
+            plot_joint_spectrum(evo.times, evo.get_data().T, evo.info, title=title, ax=ax)
+            ax.child_axes[0].set_xlabel('Time (s)')
+            ax.child_axes[0].set_ylabel(metric)
 
 
 class GroupGLMEpochs(GroupGLMBaseResult):
@@ -186,7 +198,18 @@ class GroupGLMEpochs(GroupGLMBaseResult):
             joint_args['ts_args'] = {'scalings': dict(eeg=1, grad=1, mag=1),
                                      'units': dict(eeg='tstats', grad='tstats', mag='tstats')}
 
-        evo.plot_joint(title=title, **joint_args)
+        try:
+            evo.plot_joint(title=title, **joint_args)
+        except:
+            from .glm_spectrum import plot_joint_spectrum
+            import matplotlib.pyplot as plt
+            fig = plt.figure()
+            fig.subplots_adjust(top=0.8)
+            ax = plt.subplot(111)
+            plot_joint_spectrum(evo.times, evo.get_data().T, evo.info, title=title, **joint_args, ax=ax)
+            ax.child_axes[0].set_xlabel('Time (s)')
+            ax.child_axes[0].set_ylabel(metric)
+
 
     def get_channel_adjacency(self):
         """Return adjacency matrix of channels."""
@@ -214,7 +237,40 @@ class GroupGLMEpochs(GroupGLMBaseResult):
         ret_con.data = ret_con.data[:, fl_con, :, :]
 
         return ret_con
+    
+    def save_pkl(self, outname, overwrite=True, save_data=False):
+        """Save GLM-Epochs result to a pickle file.
 
+        Parameters
+        ----------
+        outname : str
+             Filename or full file path to write pickle to
+        overwrite : bool
+             Overwrite previous file if one exists? (Default value = True)
+        save_data : bool
+             Save epochs data in pickle? This is omitted by default to save disk
+             space (Default value = False)
+        """
+        if Path(outname).exists() and not overwrite:
+            msg = "{} already exists. Please delete or do use overwrite=True."
+            raise ValueError(msg.format(outname))
+
+        if hasattr(self, 'config'):
+            self.config.detrend_func = None  # Have to drop this to pickle
+
+        # This is hacky - but pickles are all or nothing and I don't know how
+        # else to do it. HDF5 would be better longer term
+        if save_data == False:
+            # Temporarily remove data before saving
+            dd = self.data
+            self.data = None
+
+        with open(outname, 'bw') as outp:
+            pickle.dump(self, outp)
+
+        # Put data back
+        if save_data == False:
+            self.data = dd
 
 #%% ------------------------------------------------------
 
