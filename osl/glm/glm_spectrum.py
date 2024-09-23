@@ -679,7 +679,7 @@ def read_glm_spectrum(infile):
 
 def plot_joint_spectrum_clusters(xvect, psd, clusters, info, ax=None, freqs='auto', base=1,
                                  topo_scale='joint', lw=0.5, ylabel='Power', title='', ylim=None,
-                                 xtick_skip=1, topo_prop=1/5, topomap_args=None):
+                                 xtick_skip=1, topo_prop=1/5, topo_cmap=None, topomap_args=None):
     """Plot a GLM-Spectrum contrast from cluster objects, with spatial line colouring and topograpies.
 
     Parameters

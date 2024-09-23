@@ -3,12 +3,14 @@ import os
 import pickle
 from copy import deepcopy
 from pathlib import Path
+from scipy.sparse import csr_array
 
 import glmtools as glm
 import mne
 import numpy as np
 
 from .glm_base import GLMBaseResult, GroupGLMBaseResult, SensorClusterPerm
+from ..source_recon import parcellation
 
 
 class GLMEpochsResult(GLMBaseResult):
@@ -210,15 +212,6 @@ class GroupGLMEpochs(GroupGLMBaseResult):
             ax.child_axes[0].set_xlabel('Time (s)')
             ax.child_axes[0].set_ylabel(metric)
 
-
-    def get_channel_adjacency(self):
-        """Return adjacency matrix of channels."""
-        ch_type =  mne.io.meas_info._get_channel_types(self.info)[0]  # Assuming these are all the same!
-        adjacency, ch_names = mne.channels.channels._compute_ch_adjacency(self.info, ch_type)
-        ntests = np.prod(self.data.data.shape[2:])
-        ntimes = self.data.data.shape[3]
-        print('{} : {}'.format(ntimes, ntests))
-        return mne.stats.cluster_level._setup_adjacency(adjacency, ntests, ntimes)
 
     def get_fl_contrast(self, fl_con):
         """Get the data from a single first level contrast.
