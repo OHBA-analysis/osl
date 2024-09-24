@@ -14,7 +14,6 @@ from nilearn.plotting import plot_glass_brain, plot_markers
 
 import glmtools as glm
 import nibabel as nib
-from nilearn.plotting import plot_glass_brain, plot_markers
 
 from ..source_recon import parcellation
 
@@ -728,27 +727,42 @@ def plot_sensor_erp(xvect, erp, info, ax=None, sensor_proj=False,
 
     if sensor_proj:
         axins = ax.inset_axes([0.6, 0.6, 0.37, 0.37])
-        if np.any(['parcel' in ch for ch in info['ch_names']]):
-            parcellation_file = parcellation.guess_parcellation(erp.T)
-            colors = get_source_colors(parcellation_file)
-            cmap = ListedColormap(colors)
-            parc_centers = parcellation.parcel_centers(parcellation_file)
-            n_parcels = parc_centers.shape[0]
-            plot_markers(
-                np.arange(n_parcels),
-                parc_centers,
-                axes=axins,
-                node_size=6,
-                node_cmap=cmap,
-                annotate=False,
-                colorbar=False,
-            )
-        else:
-            plot_channel_layout(axins, info)
+        plot_sensor_proj(erp, info, ax=axins)
 
     if title is not None:
         ax.set_title(title)
         
+
+def plot_sensor_proj(info, ax=None, cmap=None):
+    if ax is None:
+        fig = plt.figure()
+        ax = plt.subplot(111)
+    if np.any(['parcel' in ch for ch in info['ch_names']]):
+        parcellation_file = parcellation.guess_parcellation(len(info.ch_names))
+        parc_centers = parcellation.parcel_centers(parcellation_file)
+        if cmap is None:
+            cmap = 'viridis'
+            x, y, z = parc_centers.T
+            X = y
+        else:
+            colors = get_source_colors(parcellation_file)
+            cmap = ListedColormap(colors)
+            X = np.arange(n_parcels)
+        
+        n_parcels = parc_centers.shape[0]
+        plot_markers(
+            X,
+            parc_centers,
+            axes=ax,
+            node_size=20,
+            node_cmap=cmap,
+            annotate=False,
+            colorbar=False,
+        )
+    else:
+        plot_channel_layout(ax, info)
+    return ax
+
 
 def plot_sensor_data(xvect, data, info, ax=None, lw=0.5,
                      xticks=None, xticklabels=None,
@@ -826,13 +840,19 @@ def decorate_spectrum(ax, ylabel='Amplitude'):
     ax.set_ylabel(ylabel)
     
     
-def get_source_colors(parcellation_file):
+def get_source_colors(parcellation_file, cmap='viridis'):
     parc_centers = stats.zscore(parcellation.parcel_centers(parcellation_file), axis=0)
     x, y, z = parc_centers.T
-    ref = [-5, -5, -3]
-    colors = mne.viz.evoked._rgb(x, y, z)
-    order = [np.argsort(np.sqrt(ref[i] - parc_centers[:, i]) ** 2) for i in range(3)]
-    colors = np.vstack([colors[order[0],0], colors[order[1],1], colors[order[2],2]]).T
+    if cmap=='viridis':
+        cmap = plt.get_cmap('viridis')
+        norm = plt.Normalize(vmin=parc_centers.min(), vmax=parc_centers.max())
+        colors = cmap(norm(parc_centers))[:,1,:]
+        # colors = colors[np.argsort(y), :]
+    else:
+        ref = [-5, -5, -3]
+        colors = mne.viz.evoked._rgb(x, y, z)
+        order = [np.argsort(np.sqrt(ref[i] - parc_centers[:, i]) ** 2) for i in range(3)]
+        colors = np.vstack([colors[order[0],0], colors[order[1],1], colors[order[2],2]]).T
     return colors
 
 
