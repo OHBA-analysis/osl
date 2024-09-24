@@ -302,7 +302,10 @@ class MaxStatPermuteGLMSpectrum(SensorMaxStatPerm):
         title = 'group-con: {}\nfirst-level-con: {}'
         title = title.format(self.gl_contrast_name, self.fl_contrast_name)
 
-        clu, obs = self.get_sig_clusters(thresh)
+        clu, obs_sel = self.get_sig_clusters(thresh) # obs here is the selected data. We want to plot the full data
+        obs = glm.fit.OLSModel(self.perms._design, self.perm_data)
+        obs = obs.get_tstats(**self.perms.tstat_args)[self.gl_con, :, :]
+        
         to_plot = []
         for c in clu:
             to_plot.append(False if len(c[2][0]) < min_extent or len(c[2][1]) < min_extent else True)
@@ -332,8 +335,10 @@ class ClusterPermuteGLMSpectrum(SensorClusterPerm):
         title = 'group-con: {}\nfirst-level-con: {}'
         title = title.format(self.gl_contrast_name, self.fl_contrast_name)
 
-        clu, obs = self.perms.get_sig_clusters(thresh, self.perm_data)
-
+        clu, obs_sel = self.perms.get_sig_clusters(thresh, self.perm_data) # obs here is the selected data. We want to plot the full data
+        obs = glm.fit.OLSModel(self.perms._design, self.perm_data)
+        obs = obs.get_tstats(**self.perms.tstat_args)[self.gl_con, :, :]
+        
         to_plot = []
         for c in clu:
             to_plot.append(False if len(c[2][0]) < min_extent or len(c[2][1]) < min_extent else True)
@@ -679,7 +684,7 @@ def read_glm_spectrum(infile):
 
 def plot_joint_spectrum_clusters(xvect, psd, clusters, info, ax=None, freqs='auto', base=1,
                                  topo_scale='joint', lw=0.5, ylabel='Power', title='', ylim=None,
-                                 xtick_skip=1, topo_prop=1/5, topomap_args=None):
+                                 xtick_skip=1, topo_prop=1/5, topo_cmap=None, topomap_args=None):
     """Plot a GLM-Spectrum contrast from cluster objects, with spatial line colouring and topograpies.
 
     Parameters

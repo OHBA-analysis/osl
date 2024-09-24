@@ -1133,7 +1133,7 @@ def run_proc_batch(
             
     else:
         group_inputs = [{"raw": infile} for infile in infiles]
-        proc_flags = [None for sub in infiles]
+        proc_flags = [os.path.exists(sub) for sub in infiles]
         
         osl_logger.set_up(log_file=logfile, level=verbose, startup=False)
         logger.info("No preprocessing steps specified. Skipping preprocessing.") 
