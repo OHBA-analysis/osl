@@ -302,7 +302,10 @@ class MaxStatPermuteGLMSpectrum(SensorMaxStatPerm):
         title = 'group-con: {}\nfirst-level-con: {}'
         title = title.format(self.gl_contrast_name, self.fl_contrast_name)
 
-        clu, obs = self.get_sig_clusters(thresh)
+        clu, obs_sel = self.get_sig_clusters(thresh) # obs here is the selected data. We want to plot the full data
+        obs = glm.fit.OLSModel(self.perms._design, self.perm_data)
+        obs = obs.get_tstats(**self.perms.tstat_args)[self.gl_con, :, :]
+        
         to_plot = []
         for c in clu:
             to_plot.append(False if len(c[2][0]) < min_extent or len(c[2][1]) < min_extent else True)
@@ -332,8 +335,10 @@ class ClusterPermuteGLMSpectrum(SensorClusterPerm):
         title = 'group-con: {}\nfirst-level-con: {}'
         title = title.format(self.gl_contrast_name, self.fl_contrast_name)
 
-        clu, obs = self.perms.get_sig_clusters(thresh, self.perm_data)
-
+        clu, obs_sel = self.perms.get_sig_clusters(thresh, self.perm_data) # obs here is the selected data. We want to plot the full data
+        obs = glm.fit.OLSModel(self.perms._design, self.perm_data)
+        obs = obs.get_tstats(**self.perms.tstat_args)[self.gl_con, :, :]
+        
         to_plot = []
         for c in clu:
             to_plot.append(False if len(c[2][0]) < min_extent or len(c[2][1]) < min_extent else True)

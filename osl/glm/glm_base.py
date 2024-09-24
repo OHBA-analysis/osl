@@ -6,6 +6,7 @@ from pathlib import Path
 from scipy import stats
 from scipy.sparse import csr_array
 from itertools import compress
+from copy import deepcopy
 
 from matplotlib.colors import ListedColormap
 from matplotlib.patches import ConnectionPatch
@@ -178,7 +179,8 @@ class SensorMaxStatPerm(BaseSensorPerm):
 
     def __init__(self, glmsp, gl_con, fl_con=0, nperms=1000,
                     tstat_args=None,  metric='tstats', nprocesses=1,
-                    pooled_dims=(1,2)):
+                    pooled_dims=(1,2), tmin=None, tmax=None, fmin=None,
+                    fmax=None, picks=None):
         """Initialise the SensorMaxStatPerm class.
         
         Parameters
@@ -199,7 +201,15 @@ class SensorMaxStatPerm(BaseSensorPerm):
             The number of processes to use.
         pooled_dims : tuple of int
             The dimensions to pool over.
-        
+        tmin : float or None (default)
+            The minimum time to consider.
+        tmax : float or None (default)
+            The maximum time to consider.
+        fmin : float or None (default)
+            The minimum frequency to consider.
+        fmax : float or None (default)
+        picks : list of int or None (default)
+            The channel names to consider.
         """
         # There is a major pain here in that MNE stores raw data in [channels x time]
         # but builds adjacencies in [time x channels] - we don't need adjacencies for perms
@@ -207,21 +217,57 @@ class SensorMaxStatPerm(BaseSensorPerm):
         self.adjacency = glmsp.get_channel_adjacency()
         self.perm_data = glmsp.get_fl_contrast(fl_con)
         self.perm_data.data = np.swapaxes(self.perm_data.data, 1, 2)
-
+        
         # change the dim_labels to match the data (swap time and channels, and remove firstlevel contrast)
         self.perm_data.info['dim_labels'] = [self.perm_data.info['dim_labels'][i] for i in [0,3,2]]
-                        
+        
+        if hasattr(glmsp, 'times'):
+            self.times=glmsp.times
+            
+            # select times
+            if tmin is not None:
+                self.tmin = tmin
+            else:
+                self.tmin=self.times[0]
+            if tmax is not None:
+                self.tmax = tmax
+            else:
+                self.tmax=self.times[-1]
+                
+        if hasattr(glmsp, 'f'):
+            self.f=glmsp.f
+            
+            # select frequencies
+            if fmin is not None:
+                self.fmin = fmin
+            else:
+                self.fmin=self.f[0]
+            if fmax is not None:
+                self.fmax = fmax
+            else:
+                self.fmax=self.f[-1]
+                
+        # select channels
+        if picks is not None:
+            self.picks = mne.pick_channels(glmsp.info['ch_names'], picks).astype(int)
+        else:
+            self.picks = np.arange(len(glmsp.info['ch_names']))
+        
+        # make selection of the data if needed 
+        perm_data = deepcopy(self.perm_data)
+        if hasattr(self, 'times'):
+            perm_data.data = perm_data.data[:, np.logical_and(self.times>=self.tmin, self.times<=self.tmax), :]
+        if hasattr(self, 'f'):
+            perm_data.data = perm_data.data[:, np.logical_and(self.f>=self.fmin, self.f<=self.fmax), :]
+        perm_data.data = perm_data.data[:, :, self.picks]
+        
         self.gl_con = gl_con
         self.fl_con = fl_con
         self.gl_contrast_name = glmsp.contrast_names[gl_con]
         self.fl_contrast_name = glmsp.fl_contrast_names[fl_con]
         self.info = glmsp.info
-        if hasattr(glmsp, 'f'):
-            self.f = glmsp.f
-        if hasattr(glmsp, 'times'):
-            self.times = glmsp.times
 
-        self.perms = glm.permutations.MaxStatPermutation(glmsp.design, self.perm_data, gl_con, nperms,
+        self.perms = glm.permutations.MaxStatPermutation(glmsp.design, perm_data, gl_con, nperms,
                                                         nprocesses=nprocesses,
                                                         metric=metric,
                                                         pooled_dims=pooled_dims,
@@ -249,8 +295,13 @@ class SensorMaxStatPerm(BaseSensorPerm):
         obs = obs.get_tstats(**self.perms.tstat_args)[self.gl_con, :, :]
         thresh = self.perms.get_thresh(thresh)
 
-        obs_up = obs.flatten() > thresh
-        obs_down = obs.flatten() < -thresh
+        # select data the permutation test was run on
+        obs_sel = deepcopy(obs)
+        obs_sel[np.logical_or(self.times<self.tmin, self.times>self.tmax),:] = 0
+        obs_sel[:, np.setdiff1d(np.arange(len(self.info.ch_names)), self.picks)] = 0
+        
+        obs_up = obs_sel.flatten() > thresh
+        obs_down = obs_sel.flatten() < -thresh
 
         from mne.stats.cluster_level import _find_clusters as mne_find_clusters
         from mne.stats.cluster_level import _reshape_clusters as mne_reshape_clusters
@@ -301,7 +352,8 @@ class SensorClusterPerm(BaseSensorPerm):
 
     def __init__(self, glmsp, gl_con, fl_con=0, nperms=1000,
                     cluster_forming_threshold=3, tstat_args=None,
-                    metric='tstats', nprocesses=1):
+                    metric='tstats', tmin=None, tmax=None, 
+                    fmin=None, fmax=None, picks=None, nprocesses=1):
         """Initialise the SensorClusterPerm class.
         
         Parameters
@@ -320,6 +372,16 @@ class SensorClusterPerm(BaseSensorPerm):
             The arguments to pass to the tstat function.
         metric : str
             The metric to use for the permutation test.
+        tmin: float or None (default)
+            The minimum time to consider.
+        tmax: float or None (default)
+            The maximum time to consider.
+        fmin: float or None (default)
+            The minimum frequency to consider.
+        fmax: float or None (default)   
+            The maximum frequency to consider.
+        picks: list of int or None (default)
+            The channel names to consider.
         nprocesses : int    
             The number of processes to use.
         
@@ -333,17 +395,56 @@ class SensorClusterPerm(BaseSensorPerm):
         self.gl_contrast_name = glmsp.contrast_names[gl_con]
         self.fl_contrast_name = glmsp.fl_contrast_names[fl_con]
         self.info = glmsp.info
-        if hasattr(glmsp, 'f'):
-            self.f = glmsp.f
+        
         if hasattr(glmsp, 'times'):
-            self.times = glmsp.times
+            self.times=glmsp.times
+            
+            # select times
+            if tmin is not None:
+                self.tmin = tmin
+            else:
+                self.tmin=self.times[0]
+            if tmax is not None:
+                self.tmax = tmax
+            else:
+                self.tmax=self.times[-1]
+                
+        if hasattr(glmsp, 'f'):
+            self.f=glmsp.f
+            
+            # select frequencies
+            if fmin is not None:
+                self.fmin = fmin
+            else:
+                self.fmin=self.f[0]
+            if fmax is not None:
+                self.fmax = fmax
+            else:
+                self.fmax=self.f[-1]
+                
+        # select channels
+        if picks is not None:
+            self.picks = mne.pick_channels(glmsp.info['ch_names'], picks).astype(int)
+        else:
+            self.picks = np.arange(len(glmsp.info['ch_names']))
+        
+        # make selection of the data if needed 
+        perm_data = deepcopy(self.perm_data)
+        if hasattr(self, 'times'):
+            perm_data.data = perm_data.data[:, np.logical_and(self.times>=self.tmin, self.times<=self.tmax), :]
+        if hasattr(self, 'f'):
+            perm_data.data = perm_data.data[:, np.logical_and(self.f>=self.fmin, self.f<=self.fmax), :]
+        perm_data.data = perm_data.data[:, :, self.picks]
+        
 
-        self.perms = glm.permutations.MNEClusterPermutation(glmsp.design, self.perm_data, gl_con, nperms,
+        adjacency = [[x for x in y if x in self.picks] for y in np.array(glmsp.get_channel_adjacency())[self.picks]]
+
+        self.perms = glm.permutations.MNEClusterPermutation(glmsp.design, perm_data, gl_con, nperms,
                                                         nprocesses=nprocesses,
                                                         metric=metric,
                                                         cluster_forming_threshold=cluster_forming_threshold,
                                                         tstat_args=tstat_args,
-                                                        adjacency=glmsp.get_channel_adjacency())
+                                                        adjacency=adjacency)
 
     def get_sig_clusters(self, thresh):
         """Return the significant clusters at a given threshold.
@@ -362,8 +463,15 @@ class SensorClusterPerm(BaseSensorPerm):
             the cluster.
         obs_stat
             The observed statistic.
-        """
-        clusters, obs_stat =  self.perms.get_sig_clusters(thresh, self.perm_data)
+        """        
+        perm_data = deepcopy(self.perm_data)
+        if hasattr(self, 'times'):
+            perm_data.data = perm_data.data[:, np.logical_and(self.times>=self.tmin, self.times<=self.tmax), :]
+        if hasattr(self, 'f'):
+            perm_data.data = perm_data.data[:, np.logical_and(self.f>=self.fmin, self.f<=self.fmax), :]
+        perm_data.data = perm_data.data[:, :, self.picks]
+
+        clusters, obs_stat =  self.perms.get_sig_clusters(thresh, perm_data)
         return clusters, obs_stat
     
     
@@ -380,7 +488,10 @@ class SensorClusterPerm(BaseSensorPerm):
         title = 'group-con: {}\nfirst-level-con: {}'
         title = title.format(self.gl_contrast_name, self.fl_contrast_name)
 
-        clu, obs = self.get_sig_clusters(thresh)
+        clu, obs_sel = self.get_sig_clusters(thresh) # obs here is the selected data. We want to plot the full data
+        obs = glm.fit.OLSModel(self.perms._design, self.perm_data)
+        obs = obs.get_tstats(**self.perms.tstat_args)[self.gl_con, :, :]
+        
         to_plot = []
         for c in clu:
             to_plot.append(False if len(c[2][0]) < min_extent or len(c[2][1]) < min_extent else True)
