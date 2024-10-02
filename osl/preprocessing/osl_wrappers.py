@@ -167,8 +167,107 @@ def _find_outliers_in_segments(X, axis=-1, segment_len=100,
     return bads
 
 
+def _find_outliers_in_segments_per_channel(X, axis=-1, channel_axis = 0,segment_len=100,
+                                           metric_func=np.std, gesd_args=None,threshold = 'any'):
+    """
+    Identify outlier segments in a per-channel basis within an array.
+    Parameters:
+    - X: np.ndarray
+        Input data array with dimensions (channel, time).
+    - axis: int
+        The axis along which to segment the data (default is -1, the last axis).
+    - channel_axis: int
+        The axis along which channels are stored (default is 0, the first axis).
+    - segment_len: iant
+        Length of each segment along the specified axis.
+    - metric_func: callable
+        Function to compute the metric for each segment (default is np.std).
+    - gesd_args: dict
+        Additional arguments to pass to the GESD.
+    - threshold: str or float
+        Threshold for outlier detection. If 'any', a segment is marked as an outlier if 
+        any of its channels is an outlier.
+        If a float, a segment is marked as an outlier if the fraction of outlier 
+        channels exceeds the threshold.
+
+    Returns:
+    - bads: np.ndarray
+        Boolean array indicating outlier segments.
+    """
+    if gesd_args is None:
+        gesd_args = {}
+
+    if axis == -1:
+        axis = X.ndim - 1  # Convert negative axis to positive index
+    if channel_axis == -1:
+        channel_axis = X.ndim - 1
+
+    if axis == channel_axis:
+        raise ValueError('The time axis and channel axis cannot be the same.')
+    
+    num_channels = X.shape[channel_axis]
+    if threshold != 'any':
+        if not 0 < threshold <= 1:
+            raise ValueError('Threshold must be between 0 and 1 or "any".')
+        if num_channels*threshold < 1:
+            raise ValueError('Threshold must be at least 1 channel.')
+
+    starts = np.arange(0, X.shape[axis], segment_len)
+    num_segments = len(starts)
+
+    # Preallocate some variables
+    metric = np.zeros((num_channels, num_segments))
+    bad_inds = np.zeros((num_channels, X.shape[axis])) * np.nan
+
+    # Prepare to slice data array
+    slc = [slice(None)] * X.ndim
+
+    # Main loop over segments
+    for ii, start in enumerate(starts):
+        if ii == num_segments - 1:
+            stop = None
+        else:
+            stop = start + segment_len
+
+        # Update the slice object for the current segment
+        slc[axis] = slice(start, stop)
+
+        for ch in range(num_channels):
+            # Update the slice object for channels
+            slc[channel_axis] = ch
+            data_chunk = X[tuple(slc)]
+            # Compute metric for current chunk
+            metric[ch, ii] = metric_func(data_chunk)
+
+        # Store which chunk we've used
+        indices = np.arange(start, stop if stop is not None else X.shape[axis])
+        bad_inds[:, indices] = ii
+
+    # Initialize the boolean array to mark outliers
+    bads = np.zeros_like(X, dtype=bool)
+
+    # Apply the GESD per channel
+    for ch in range(num_channels):
+        metric_ch = metric[ch]
+        # Apply the GESD test to identify outlier segments
+        rm_ind, _ = gesd(metric_ch, **gesd_args)
+        # Convert to int indices
+        rm_ind = np.where(rm_ind)[0]
+
+        # Convert to bool in original space of defined axis
+        bads_ch = np.isin(bad_inds[ch], rm_ind)
+        bads[ch] = bads_ch
+    if threshold != 'any':
+        bads = np.sum(bads,axis=0) > threshold*num_channels
+    else:
+        bads = np.any(bads,axis=0)
+
+    return bads
+
+
 def detect_artefacts(X, axis=None, reject_mode='dim', metric_func=np.std,
-                     segment_len=100, gesd_args=None, ret_mode='bad_inds'):
+                     segment_len=100, gesd_args=None, ret_mode='bad_inds',
+                     channel_wise = False, channel_axis = 0, channel_treshold = 0.05):
     """Detect bad observations or segments in a dataset
 
     Parameters
@@ -193,6 +292,12 @@ def detect_artefacts(X, axis=None, reject_mode='dim', metric_func=np.std,
         indices for bad observations (default), the input data with outliers
         removed (zero_bads) or the input data with outliers replaced with nans
         (nan_bads)
+    channel_wise : bool
+        If True, the function will treat each channel seperately when detecting bad segments.
+    channel_axis : int
+        The axis to treat as the channel axis. Only used when ``channel_wise=True``.
+    channel_treshold : str or float
+        The treshold to use for channel-wise detection. Only used when ``channel_wise=True``.  
 
     Returns
     -------
@@ -217,10 +322,17 @@ def detect_artefacts(X, axis=None, reject_mode='dim', metric_func=np.std,
         bad_inds = _find_outliers_in_dims(X, axis=axis, metric_func=metric_func, gesd_args=gesd_args)
 
     elif reject_mode == 'segments':
-        bad_inds = _find_outliers_in_segments(X, axis=axis,
-                                              segment_len=segment_len,
-                                              metric_func=metric_func,
-                                              gesd_args=gesd_args)
+        if channel_wise:
+            bad_inds = _find_outliers_in_segments_per_channel(X, axis=axis, channel_axis = channel_axis,
+                                                segment_len=segment_len,
+                                                metric_func=metric_func,
+                                                gesd_args=gesd_args,
+                                                threshold = channel_treshold)
+        else: 
+            bad_inds = _find_outliers_in_segments(X, axis=axis,
+                                                segment_len=segment_len,
+                                                metric_func=metric_func,
+                                                gesd_args=gesd_args)
 
     if ret_mode == 'bad_inds':
         return bad_inds
@@ -310,6 +422,9 @@ def detect_badsegments(
     ref_meg='auto',
     mode=None,
     detect_zeros=True,
+    channel_wise=False,
+    channel_axis = 0,
+    channel_treshold = 0.05,
 ):
     """Set bad segments in an MNE :py:class:`Raw <mne.io.Raw>` object as defined by the Generalized ESD test in :py:func:`osl.preprocessing.osl_wrappers.gesd <osl.preprocessing.osl_wrappers.gesd>`.
 
@@ -335,6 +450,12 @@ def detect_badsegments(
         segments with zeros from MaxFiltering as bad.
     detect_zeros : bool
         Should we detect segments of zeros based on the maxfilter files?
+    channel_wise : bool
+        If True, the function will treat each channel seperately.
+    channel_axis : int
+        The axis to treat as the channel axis. Only used when ``channel_wise=True``.
+    channel_treshold : str or float
+        The treshold to use for channel-wise detection. Only used when ``channel_wise=True``.
 
     Returns
     -------
@@ -408,6 +529,9 @@ def detect_badsegments(
             segment_len=segment_len,
             ret_mode="bad_inds",
             gesd_args=gesd_args,
+            channel_wise = channel_wise,
+            channel_axis = channel_axis,
+            channel_treshold = channel_treshold,
         )
         bad_indices = [bdinds, bdinds_maxfilt]
 
