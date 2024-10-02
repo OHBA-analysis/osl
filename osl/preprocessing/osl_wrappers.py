@@ -267,7 +267,7 @@ def _find_outliers_in_segments_per_channel(X, axis=-1, channel_axis = 0,segment_
 
 def detect_artefacts(X, axis=None, reject_mode='dim', metric_func=np.std,
                      segment_len=100, gesd_args=None, ret_mode='bad_inds',
-                     channel_wise = False, channel_axis = 0, channel_treshold = 0.05):
+                     channel_wise = False, channel_axis = 0, channel_threshold = 0.05):
     """Detect bad observations or segments in a dataset
 
     Parameters
@@ -296,7 +296,7 @@ def detect_artefacts(X, axis=None, reject_mode='dim', metric_func=np.std,
         If True, the function will treat each channel seperately when detecting bad segments.
     channel_axis : int
         The axis to treat as the channel axis. Only used when ``channel_wise=True``.
-    channel_treshold : str or float
+    channel_threshold : str or float
         The treshold to use for channel-wise detection. Only used when ``channel_wise=True``.  
 
     Returns
@@ -327,7 +327,7 @@ def detect_artefacts(X, axis=None, reject_mode='dim', metric_func=np.std,
                                                 segment_len=segment_len,
                                                 metric_func=metric_func,
                                                 gesd_args=gesd_args,
-                                                threshold = channel_treshold)
+                                                threshold = channel_threshold)
         else: 
             bad_inds = _find_outliers_in_segments(X, axis=axis,
                                                 segment_len=segment_len,
@@ -424,7 +424,7 @@ def detect_badsegments(
     detect_zeros=True,
     channel_wise=False,
     channel_axis = 0,
-    channel_treshold = 0.05,
+    channel_threshold = 0.05,
 ):
     """Set bad segments in an MNE :py:class:`Raw <mne.io.Raw>` object as defined by the Generalized ESD test in :py:func:`osl.preprocessing.osl_wrappers.gesd <osl.preprocessing.osl_wrappers.gesd>`.
 
@@ -454,7 +454,7 @@ def detect_badsegments(
         If True, the function will treat each channel seperately.
     channel_axis : int
         The axis to treat as the channel axis. Only used when ``channel_wise=True``.
-    channel_treshold : str or float
+    channel_threshold : str or float
         The treshold to use for channel-wise detection. Only used when ``channel_wise=True``.
 
     Returns
@@ -531,7 +531,7 @@ def detect_badsegments(
             gesd_args=gesd_args,
             channel_wise = channel_wise,
             channel_axis = channel_axis,
-            channel_treshold = channel_treshold,
+            channel_threshold = channel_threshold,
         )
         bad_indices = [bdinds, bdinds_maxfilt]
 
