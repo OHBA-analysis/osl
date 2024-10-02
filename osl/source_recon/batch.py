@@ -21,6 +21,7 @@ from . import rhino, wrappers
 from ..report import src_report
 from ..utils import logger as osl_logger
 from ..utils import validate_outdir, find_run_id, parallel
+from ..utils.misc import set_random_seed
 
 import logging
 logger = logging.getLogger(__name__)
@@ -90,7 +91,7 @@ def find_func(method, extra_funcs):
 
 def run_src_chain(
     config,
-    src_dir,
+    outdir,
     subject,
     preproc_file=None,
     smri_file=None,
@@ -101,6 +102,7 @@ def run_src_chain(
     verbose="INFO",
     mneverbose="WARNING",
     extra_funcs=None,
+    random_seed='auto',
 ):
     """Source reconstruction.
 
@@ -108,7 +110,7 @@ def run_src_chain(
     ----------
     config : str or dict
         Source reconstruction config.
-    src_dir : str
+    outdir : str
         Source reconstruction directory.
     subject : str
         Subject name.
@@ -130,6 +132,9 @@ def run_src_chain(
         Level of MNE verbose.
     extra_funcs : list of functions
         Custom functions.
+    random_seed : 'auto' (default), int or None
+        Random seed to set. If 'auto', a random seed will be generated. Random seeds are set for both Python and NumPy.
+        If None, no random seed is set.
 
     Returns
     -------
@@ -139,15 +144,12 @@ def run_src_chain(
     rhino.fsl_utils.check_fsl()
 
     # Directories
-    src_dir = validate_outdir(src_dir)
-    logsdir = validate_outdir(logsdir or src_dir / "logs")
-    reportdir = validate_outdir(reportdir or src_dir / "report")
+    outdir = validate_outdir(outdir)
+    logsdir = validate_outdir(logsdir or outdir / "logs")
+    reportdir = validate_outdir(reportdir or outdir / "src_report")
 
-    # Get run ID
-    if preproc_file is None:
-        run_id = subject
-    else:
-        run_id = find_run_id(preproc_file)
+    # Use the subject ID for the run ID
+    run_id = subject
 
     # Generate log filename
     name_base = "{run_id}_{ftype}.{fext}"
@@ -161,8 +163,16 @@ def run_src_chain(
     logger = logging.getLogger(__name__)
     now = strftime("%Y-%m-%d %H:%M:%S", localtime())
     logger.info("{0} : Starting OSL Processing".format(now))
-    logger.info("input : {0}".format(src_dir / subject))
+    logger.info("input : {0}".format(outdir / subject))
 
+    # Set random seed
+    if random_seed == 'auto':
+        set_random_seed()
+    elif random_seed is None:
+        pass
+    else:
+        set_random_seed(random_seed)
+    
     # Load config
     if not isinstance(config, dict):
         config = load_config(config)
@@ -189,7 +199,26 @@ def run_src_chain(
                         + "Please pass via extra_funcs "
                         + f"or use available functions: {avail_names}."
                     )
-            func(src_dir, subject, preproc_file, smri_file, epoch_file, **userargs)
+            def wrapped_func(**kwargs):
+                args, _, _, defaults = inspect.getargspec(func)
+                args_with_defaults = args[-len(defaults):] if defaults is not None else []
+                kwargs_to_pass = {}
+                for a in args:
+                    if a in kwargs:
+                        kwargs_to_pass[a] = kwargs[a]
+                    elif a not in args_with_defaults:
+                        raise ValueError(f"{a} needs to be passed to {func.__name__}")
+                return func(**kwargs_to_pass)
+            wrapped_func(
+                outdir=outdir,
+                subject=subject,
+                preproc_file=preproc_file,
+                smri_file=smri_file,
+                epoch_file=epoch_file,
+                reportdir=reportdir,
+                logsdir=logsdir,
+                **userargs,
+            )
 
     except Exception as e:
         logger.critical("*********************************")
@@ -203,6 +232,8 @@ def run_src_chain(
         logger.error(traceback.print_tb(ex_traceback))
 
         with open(logfile.replace(".log", ".error.log"), "w") as f:
+            f.write("OSL SOURCE RECON failed at: {0}".format(now))
+            f.write("\n")
             f.write('Processing failed during stage : "{0}"'.format(method))
             f.write(str(ex_type))
             f.write("\n")
@@ -213,16 +244,15 @@ def run_src_chain(
         return False
 
     if gen_report:
-        # Generate data and individual HTML for the report
-        src_report.gen_html_data(config, src_dir, subject, reportdir, extra_funcs=extra_funcs)
-        src_report.gen_html_page(reportdir)
+        # Generate data and individual HTML data for the report
+        src_report.gen_html_data(config, outdir, subject, reportdir, extra_funcs=extra_funcs)
 
     return True
 
 
 def run_src_batch(
     config,
-    src_dir,
+    outdir,
     subjects,
     preproc_files=None,
     smri_files=None,
@@ -234,6 +264,7 @@ def run_src_batch(
     mneverbose="WARNING",
     extra_funcs=None,
     dask_client=False,
+    random_seed='auto',
 ):
     """Batch source reconstruction.
 
@@ -241,7 +272,7 @@ def run_src_batch(
     ----------
     config : str or dict
         Source reconstruction config.
-    src_dir : str
+    outdir : str
         Source reconstruction directory.
     subjects : list of str
         Subject names.
@@ -266,6 +297,9 @@ def run_src_batch(
         Custom functions.
     dask_client : bool
         Are we using a dask client?
+    random_seed : 'auto' (default), int or None
+        Random seed to set. If 'auto', a random seed will be generated. Random seeds are set for both Python and NumPy.
+        If None, no random seed is set.
 
     Returns
     -------
@@ -275,9 +309,9 @@ def run_src_batch(
     rhino.fsl_utils.check_fsl()
 
     # Directories
-    src_dir = validate_outdir(src_dir)
-    logsdir = validate_outdir(logsdir or src_dir / "logs")
-    reportdir = validate_outdir(reportdir or src_dir / "report")
+    outdir = validate_outdir(outdir)
+    logsdir = validate_outdir(logsdir or outdir / "logs")
+    reportdir = validate_outdir(reportdir or outdir / "src_report")
 
     # Initialise Loggers
     mne.set_log_level(mneverbose)
@@ -285,17 +319,63 @@ def run_src_batch(
     osl_logger.set_up(log_file=logfile, level=verbose, startup=False)
     logger.info('Starting OSL Batch Source Reconstruction')
 
+    # Set random seed
+    if random_seed == 'auto':
+        random_seed = set_random_seed()
+    elif random_seed is None:
+        pass
+    else:
+        set_random_seed(random_seed)
+    
     # Load config
     config = load_config(config)
     config_str = pprint.PrettyPrinter().pformat(config)
     logger.info('Running config\n {0}'.format(config_str))
 
-    # Validation
+    # Number of files (subjects) to process
     n_subjects = len(subjects)
-    if preproc_files is not None:
-        n_preproc_files = len(preproc_files)
-        if n_subjects != n_preproc_files:
-            raise ValueError(f"Got {n_subjects} subjects and {n_preproc_files} preproc_files.")
+
+    # Validation
+    if preproc_files is not None and epoch_files is not None:
+        raise ValueError("Please pass either preproc_file or epoch_files, not both.")
+
+    if preproc_files and epoch_files:
+        raise ValueError(
+            "Cannot pass both preproc_files=True and epoch_files=True. "
+            "Please only pass one of these."
+        )
+
+    if isinstance(preproc_files, list):
+        n_files = len(preproc_files)
+        if n_subjects != n_files:
+            raise ValueError(f"Got {n_subjects} subjects and {n_files} preproc_files.")
+
+    elif isinstance(epoch_files, list):
+        n_files = len(epoch_files)
+        if n_subjects != n_files:
+            raise ValueError(f"Got {n_subjects} subjects and {n_files} epoch_files.")
+
+    else:
+        # Check what files are in the output directory
+        preproc_files_list = []
+        epoch_files_list = []
+        for subject in subjects:
+            preproc_file = f"{outdir}/{subject}/{subject}_preproc-raw.fif"
+            epoch_file = f"{outdir}/{subject}/{subject}-epo.fif"
+            if os.path.exists(preproc_file) and os.path.exists(epoch_file):
+                if preproc_files is None and epoch_files is None:
+                    raise ValueError(
+                        "Both preproc and epoch fif files found. "
+                        "Please pass preproc_files=True or epoch_files=True."
+                    )
+            elif os.path.exists(preproc_file):
+                preproc_files_list.append(preproc_file)
+            elif os.path.exists(epoch_file):
+                epoch_files_list.append(epoch_file)
+        if len(preproc_files_list) > 0:
+            preproc_files = preproc_files_list
+        elif len(epoch_files_list) > 0:
+            epoch_files = epochs_file_list
 
     doing_coreg = (
         any(["compute_surfaces" in method for method in config["source_recon"]]) or
@@ -322,12 +402,13 @@ def run_src_batch(
         verbose=verbose,
         mneverbose=mneverbose,
         extra_funcs=extra_funcs,
+        random_seed=random_seed,
     )
 
     # Loop through input files to generate arguments for run_coreg_chain
     args = []
     for subject, preproc_file, smri_file, epoch_file, in zip(subjects, preproc_files, smri_files, epoch_files):
-        args.append((config, src_dir, subject, preproc_file, smri_file, epoch_file))
+        args.append((config, outdir, subject, preproc_file, smri_file, epoch_file))
 
     # Actually run the processes
     if dask_client:

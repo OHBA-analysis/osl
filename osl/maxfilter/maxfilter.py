@@ -34,6 +34,8 @@ parser.add_argument('--movecomp', action='store_true',
                     help='Apply movement compensation')
 parser.add_argument('--movecompinter', action='store_true',
                     help='Apply movement compensation on data with intermittent HPI')
+parser.add_argument('--nomovecompinter', action='store_true',
+                    help='Remove the default movement compensation in the cbu_3stage.')
 parser.add_argument('--autobad', action='store_true',
                     help='Apply automatic bad channel detection')
 parser.add_argument('--autobad_dur', type=int, default=None,
@@ -249,9 +251,11 @@ def _add_scanner(cmd, args):
         args['ctc'] = '/net/aton/meg_pool/neuromag/databases/ctc/ct_sparse.fif'
         cmd = _add_ctc(cmd, args)
     elif args['scanner'] == 'Neo':
-        args['cal'] = '/net/aton/meg_pool/data/TriuxNeo/system/sss/sss_cal.dat'
+        #args['cal'] = '/net/aton/meg_pool/data/TriuxNeo/system/sss/sss_cal.dat'
+        args['cal'] = '/vols/MEG/TriuxNeo/system/sss/sss_cal.dat'
         cmd = _add_cal(cmd, args)
-        args['ctc'] = '/net/aton/meg_pool/data/TriuxNeo/system/ctc/ct_sparse.fif'
+        #args['ctc'] = '/net/aton/meg_pool/data/TriuxNeo/system/ctc/ct_sparse.fif'
+        args['ctc'] = '/vols/MEG/TriuxNeo/system/ctc/ct_sparse.fif'
         cmd = _add_ctc(cmd, args)
 
     return cmd
@@ -607,10 +611,14 @@ def run_cbu_3stage_maxfilter(infif, outbase, args):
                    'linefreq': 50, 'hpisubt': 'amp'}
     # User args
     for key in ['inorder', 'outorder', 'maxpath', 'scanner', 'ctc', 'cal',
-                'dryrun', 'overwrite', 'hpig', 'hpie', 'headpos', 'outdir']:
+                'dryrun', 'overwrite', 'hpig', 'hpie', 'headpos', 'outdir']: 
         if key in args:
             stage2_args[key] = args[key]
-
+    
+    # movecompinter is allowed be overwritten by user input
+    if args['nomovecompinter']:
+        stage2_args['movecompinter'] = False
+        
     outfif, outlog = run_maxfilter(infif, outfif, stage2_args)
 
     # --------------------------------------

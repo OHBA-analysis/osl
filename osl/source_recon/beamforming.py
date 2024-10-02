@@ -70,7 +70,7 @@ def get_beamforming_filenames(subjects_dir, subject):
     """
     basedir = op.join(subjects_dir, subject, "beamform")
     if " " in basedir:
-        raise ValueError("subjects_dir/src_dir cannot contain spaces.")
+        raise ValueError("subjects_dir cannot contain spaces.")
     os.makedirs(basedir, exist_ok=True)
     
     filenames = {
@@ -515,7 +515,7 @@ def transform_recon_timeseries(
         recon_index, dist = rhino_utils.closest_node(coords_out[:, cc], recon_coords_out)
 
         if dist < spatial_resolution:
-            recon_timeseries_out[cc, :] = recon_timeseries[recon_index, ...]
+            recon_timeseries_out[cc] = recon_timeseries[recon_index]
             recon_indices[cc] = recon_index
 
     return recon_timeseries_out, reference_brain_resampled, coords_out, recon_indices
@@ -1307,15 +1307,19 @@ def voxel_timeseries(
         Voxel coordinates in MNI space.
     """
 
-    # Load sensor data
-    if "raw.fif" in preproc_file:
-        # Load preprocessed data
-        data = mne.io.read_raw_fif(preproc_file, preload=True)
-    elif "epo.fif" in preproc_file:
-        # Load epoched data
-        data = mne.read_epochs(preproc_file, preload=True)
+    if isinstance(preproc_file, str):
+        # Load sensor data
+        if "raw.fif" in preproc_file:
+            # Load preprocessed data
+            data = mne.io.read_raw_fif(preproc_file, preload=True)
+        elif "epo.fif" in preproc_file:
+            # Load epoched data
+            data = mne.read_epochs(preproc_file, preload=True)
+        else:
+            raise ValueError("fif file must end in 'raw.fif' or 'epo.fif'.")
     else:
-        raise ValueError("fif file must end in 'raw.fif' or 'epo.fif'.")
+        # Assume an mne Raw or Epochs object has been passed
+        data = preproc_file
 
     log_or_print(f"using chantypes: {chantypes}")
     if isinstance(chantypes, str):
@@ -1332,10 +1336,10 @@ def voxel_timeseries(
     bf_data = apply_lcmv(data, filters, reject_by_annotation)
 
     # Transform to MNI space
-    if "epo.fif" in preproc_file:
-        bf_data = np.transpose([bf.data for bf in bf_data], axes=[1, 2, 0])
-    else:
+    if isinstance(data, mne.io.Raw):
         bf_data = bf_data.data
+    else:
+        bf_data = np.transpose([bf.data for bf in bf_data], axes=[1, 2, 0])
     voxel_timeseries, _, voxel_coords, _ = transform_recon_timeseries(
         subjects_dir=subjects_dir,
         subject=subject,

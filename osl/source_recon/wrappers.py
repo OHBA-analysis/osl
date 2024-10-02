@@ -1,14 +1,7 @@
 """Wrappers for source reconstruction.
 
-This module contains the functions callable using a 'source_recon' section
-of a config.
-
-All functions in this module accept the following arguments for consistency:
-
-    func(src_dir, subject, preproc_file, smri_file, epoch_file, *userargs)
-
-Custom functions (i.e. functions passed via the extra_funcs argument) must
-also conform to this.
+This module contains the functions callable using a 'source_recon'
+section of a config.
 """
 
 # Authors: Chetan Gohil <chetan.gohil@psych.ox.ac.uk>
@@ -34,40 +27,41 @@ logger = logging.getLogger(__name__)
 
 
 def extract_polhemus_from_info(
-    src_dir,
+    outdir,
     subject,
-    preproc_file,
-    smri_file,
-    epoch_file,
-    **userargs,
+    include_eeg_as_headshape=False,
+    include_hpi_as_headshape=True,
+    preproc_file=None,
+    epoch_file=None,
 ):
     """Wrapper function to extract fiducials/headshape points.
 
     Parameters
     ----------
-    src_dir : str
+    outdir : str
         Path to where to output the source reconstruction files.
     subject : str
         Subject name/id.
-    preproc_file : str
+    include_eeg_as_headshape : bool, optional
+        Should we include EEG locations as headshape points?
+    include_hpi_as_headshape : bool, optional
+        Should we include HPI locations as headshape points?
+    preproc_file : str, optional
         Path to the preprocessed fif file.
-    smri_file : str
-        Path to the T1 weighted structural MRI file to use in source
-        reconstruction. Not used.
-    epoch_file : str
-        Path to epoched preprocessed fif file. Not used.
-    userargs : keyword arguments
-        Keyword arguments to pass to
-        osl.source_recon.rhino.extract_polhemus_from_info.
+    epoch_file : str, optional
+        Path to the preprocessed fif file.
     """
-    filenames = rhino.get_coreg_filenames(src_dir, subject)
+    if preproc_file is None:
+        preproc_file = epoch_file
+    filenames = rhino.get_coreg_filenames(outdir, subject)
     rhino.extract_polhemus_from_info(
         fif_file=preproc_file,
         headshape_outfile=filenames["polhemus_headshape_file"],
         nasion_outfile=filenames["polhemus_nasion_file"],
         rpa_outfile=filenames["polhemus_rpa_file"],
         lpa_outfile=filenames["polhemus_lpa_file"],
-        **userargs,
+        include_eeg_as_headshape=include_eeg_as_headshape,
+        include_hpi_as_headshape=include_hpi_as_headshape,
     )
 
 
@@ -77,62 +71,34 @@ def extract_fiducials_from_fif(*args, **kwargs):
     extract_polhemus_from_info(*args, **kwargs)
 
 
-def remove_stray_headshape_points(
-    src_dir,
-    subject,
-    preproc_file,
-    smri_file,
-    epoch_file,
-    nose=True,
-):
+def remove_stray_headshape_points(outdir, subject, nose=True):
     """Remove stray headshape points.
 
     This function removes headshape points on the nose, neck and far from the head.
 
     Parameters
     ----------
-    src_dir : str
+    outdir : str
         Path to where to output the source reconstruction files.
     subject : str
         Subject name/id.
-    preproc_file : str
-        Path to the preprocessed fif file. Not used.
-    smri_file : str
-        Path to the T1 weighted structural MRI file to use in source
-        reconstruction. Not used.
-    epoch_file : str
-        Path to epoched preprocessed fif file. Not used.
     noise : bool, optional
         Should we remove headshape points near the nose?
         Useful to remove these if we have defaced structurals or aren't
         extracting the nose from the structural.
     """
-    rhino.remove_stray_headshape_points(src_dir, subject, nose=nose)
+    rhino.remove_stray_headshape_points(outdir, subject, nose=nose)
 
 
-def save_mni_fiducials(
-    src_dir,
-    subject,
-    preproc_file,
-    smri_file,
-    epoch_file,
-    filepath,
-):
+def save_mni_fiducials(outdir, subject, filepath):
     """Wrapper to save MNI fiducials.
 
     Parameters
     ----------
-    src_dir : str
+    outdir : str
         Path to where to output the source reconstruction files.
     subject : str
         Subject name/id.
-    preproc_file : str
-        Path to the preprocessed fif file. Not used.
-    smri_file : str
-        Path to the T1 weighted structural MRI file to use in source
-        reconstruction. Not used.
-    epoch_file : str
-        Path to epoched preprocessed fif file. Not used.
     filepath : str
         Full path to the text file containing the fiducials.
 
@@ -151,7 +117,7 @@ def save_mni_fiducials(
 
         The order of the coordinates is the same as given in FSLeyes.
     """
-    filenames = rhino.get_coreg_filenames(src_dir, subject)
+    filenames = rhino.get_coreg_filenames(outdir, subject)
     if "{0}" in filepath:
         fiducials_file = filepath.format(subject)
     else:
@@ -164,44 +130,27 @@ def save_mni_fiducials(
     )
 
 
-def extract_polhemus_from_pos(
-    src_dir,
-    subject,
-    preproc_file,
-    smri_file,
-    epoch_file,
-    filepath,
-):
+def extract_polhemus_from_pos(outdir, subject, filepath):
     """Wrapper to save polhemus data from a .pos file.
 
     Parameters
     ----------
-    src_dir : str
+    outdir : str
         Path to where to output the source reconstruction files.
     subject : str
         Subject name/id.
-    preproc_file : str
-        Path to the preprocessed fif file. Not used.
-    smri_file : str
-        Path to the T1 weighted structural MRI file to use in source
-        reconstruction. Not used.
-    epoch_file : str
-        Path to epoched preprocessed fif file. Not used.
     filepath : str
         Full path to the pos file for this subject.
         Any reference to '{subject}' (or '{0}') is replaced by the subject ID.
         E.g. 'data/{subject}/meg/{subject}_headshape.pos' with subject='sub-001'
         becomes 'data/sub-001/meg/sub-001_headshape.pos'.
     """
-    rhino.extract_polhemus_from_pos(src_dir, subject, filepath)
+    rhino.extract_polhemus_from_pos(outdir, subject, filepath)
 
 
 def extract_polhemus_from_elc(
-    src_dir,
+    outdir,
     subject,
-    preproc_file,
-    smri_file,
-    epoch_file,
     filepath,
     remove_headshape_near_nose=False,
 ):
@@ -209,17 +158,10 @@ def extract_polhemus_from_elc(
 
     Parameters
     ----------
-    src_dir : str
+    outdir : str
         Path to where to output the source reconstruction files.
     subject : str
         Subject name/id.
-    preproc_file : str
-        Path to the preprocessed fif file. Not used.
-    smri_file : str
-        Path to the T1 weighted structural MRI file to use in source
-        reconstruction. Not used.
-    epoch_file : str
-        Path to epoched preprocessed fif file. Not used.
     filepath : str
         Full path to the elc file for this subject.
         Any reference to '{subject}' (or '{0}') is replaced by the subject ID.
@@ -229,36 +171,31 @@ def extract_polhemus_from_elc(
         Should we remove any headshape points near the nose?
     """
     rhino.extract_polhemus_from_elc(
-        src_dir, subject, filepath, remove_headshape_near_nose
+        outdir, subject, filepath, remove_headshape_near_nose
     )
 
 
 def compute_surfaces(
-    src_dir,
+    outdir,
     subject,
-    preproc_file,
     smri_file,
-    epoch_file,
     include_nose=True,
     recompute_surfaces=False,
     do_mri2mniaxes_xform=True,
     use_qform=False,
+    reportdir=None,
 ):
     """Wrapper for computing surfaces.
 
     Parameters
     ----------
-    src_dir : str
+    outdir : str
         Path to where to output the source reconstruction files.
     subject : str
         Subject name/id.
-    preproc_file : str
-        Path to the preprocessed fif file.
     smri_file : str
         Path to the T1 weighted structural MRI file to use in source
         reconstruction.
-    epoch_file : str
-        Path to epoched preprocessed fif file.
     include_nose : bool, optional
         Should we include the nose when we're extracting the surfaces?
     recompute_surfaces : bool, optional
@@ -271,6 +208,8 @@ def compute_surfaces(
     use_qform : bool, optional
         Should we replace the sform with the qform? Useful if the sform code
         is incompatible with OSL, but the qform is compatible.
+    reportdir : str, optional
+        Path to report directory.
     """
     if smri_file == "standard":
         std_struct = "MNI152_T1_2mm.nii.gz"
@@ -280,7 +219,7 @@ def compute_surfaces(
     # Compute surfaces
     already_computed = rhino.compute_surfaces(
         smri_file=smri_file,
-        subjects_dir=src_dir,
+        subjects_dir=outdir,
         subject=subject,
         include_nose=include_nose,
         recompute_surfaces=recompute_surfaces,
@@ -290,50 +229,52 @@ def compute_surfaces(
 
     # Plot surfaces
     surface_plots = rhino.plot_surfaces(
-        src_dir, subject, include_nose, already_computed
+        outdir, subject, include_nose, already_computed
     )
-    surface_plots = [s.replace(f"{src_dir}/", "") for s in surface_plots]
+    surface_plots = [s.replace(f"{outdir}/", "") for s in surface_plots]
 
-    # Save info for the report
-    src_report.add_to_data(
-        f"{src_dir}/{subject}/report_data.pkl",
-        {
-            "compute_surfaces": True,
-            "include_nose": include_nose,
-            "do_mri2mniaxes_xform": do_mri2mniaxes_xform,
-            "use_qform": use_qform,
-            "surface_plots": surface_plots,
-        },
-    )
+    if reportdir is not None:
+        # Save info for the report
+        src_report.add_to_data(
+            f"{reportdir}/{subject}/data.pkl",
+            {
+                "compute_surfaces": True,
+                "include_nose": include_nose,
+                "do_mri2mniaxes_xform": do_mri2mniaxes_xform,
+                "use_qform": use_qform,
+                "surface_plots": surface_plots,
+            },
+        )
 
 
 def coregister(
-    src_dir,
+    outdir,
     subject,
-    preproc_file,
     smri_file,
-    epoch_file,
+    preproc_file=None,
+    epoch_file=None,
     use_nose=True,
     use_headshape=True,
     already_coregistered=False,
     allow_smri_scaling=False,
     n_init=1,
+    reportdir=None,
 ):
     """Wrapper for coregistration.
 
     Parameters
     ----------
-    src_dir : str
+    outdir : str
         Path to where to output the source reconstruction files.
     subject : str
         Subject name/id.
-    preproc_file : str
-        Path to the preprocessed fif file.
     smri_file : str
         Path to the T1 weighted structural MRI file to use in source
         reconstruction.
-    epoch_file : str
-        Path to epoched preprocessed fif file.
+    preproc_file : str, optional
+        Path to the preprocessed fif file.
+    epoch_file : str, optional
+        Path to the preprocessed epochs fif file.
     use_nose : bool, optional
         Should we use the nose in the coregistration?
     use_headshape : bool, optional
@@ -350,11 +291,16 @@ def coregister(
         using a template sMRI that has not come from this subject.
     n_init : int, optional
         Number of initialisations for coregistration.
+    reportdir : str, optional
+        Path to report directory.
     """
+    if preproc_file is None:
+        preproc_file = epoch_file
+
     # Run coregistration
     rhino.coreg(
         fif_file=preproc_file,
-        subjects_dir=src_dir,
+        subjects_dir=outdir,
         subject=subject,
         use_headshape=use_headshape,
         use_nose=use_nose,
@@ -367,59 +313,51 @@ def coregister(
     if already_coregistered:
         fid_err = None
     else:
-        fid_err = rhino.coreg_metrics(subjects_dir=src_dir, subject=subject)
+        fid_err = rhino.coreg_metrics(subjects_dir=outdir, subject=subject)
 
     # Save plots
-    coreg_dir = rhino.get_coreg_filenames(src_dir, subject)["basedir"]
+    coreg_dir = rhino.get_coreg_filenames(outdir, subject)["basedir"]
     rhino.coreg_display(
-        subjects_dir=src_dir,
+        subjects_dir=outdir,
         subject=subject,
         display_outskin_with_nose=False,
         filename=f"{coreg_dir}/coreg.html",
     )
-    coreg_filename = f"{coreg_dir}/coreg.html".replace(f"{src_dir}/", "")
+    coreg_filename = f"{coreg_dir}/coreg.html".replace(f"{outdir}/", "")
 
-    # Save info for the report
-    src_report.add_to_data(
-        f"{src_dir}/{subject}/report_data.pkl",
-        {
-            "coregister": True,
-            "use_headshape": use_headshape,
-            "use_nose": use_nose,
-            "already_coregistered": already_coregistered,
-            "allow_smri_scaling": allow_smri_scaling,
-            "n_init_coreg": n_init,
-            "fid_err": fid_err,
-            "coreg_plot": coreg_filename,
-        },
-    )
+    if reportdir is not None:
+        # Save info for the report
+        src_report.add_to_data(
+            f"{reportdir}/{subject}/data.pkl",
+            {
+                "coregister": True,
+                "use_headshape": use_headshape,
+                "use_nose": use_nose,
+                "already_coregistered": already_coregistered,
+                "allow_smri_scaling": allow_smri_scaling,
+                "n_init_coreg": n_init,
+                "fid_err": fid_err,
+                "coreg_plot": coreg_filename,
+            },
+        )
 
 
 def forward_model(
-    src_dir,
+    outdir,
     subject,
-    preproc_file,
-    smri_file,
-    epoch_file,
     gridstep=8,
     model="Single Layer",
     eeg=False,
+    reportdir=None,
 ):
     """Wrapper for computing the forward model.
 
     Parameters
     ----------
-    src_dir : str
+    outdir : str
         Path to where to output the source reconstruction files.
     subject : str
         Subject name/id.
-    preproc_file : str
-        Path to the preprocessed fif file.
-    smri_file : str
-        Path to the T1 weighted structural MRI file to use in source
-        reconstruction.
-    epoch_file : str
-        Path to epoched preprocessed fif file.
     gridstep : int, optional
         A grid will be constructed with the spacing given by ``gridstep``
         in mm, generating a volume source space.
@@ -430,26 +368,29 @@ def forward_model(
         'Triple Layer' uses three layers (scalp, inner skull, brain/cortex)
     eeg : bool, optional
         Are we using EEG channels in the source reconstruction?
+    reportdir : str, optional
+        Path to report directory.
     """
     # Compute forward model
     rhino.forward_model(
-        subjects_dir=src_dir,
+        subjects_dir=outdir,
         subject=subject,
         model=model,
         gridstep=gridstep,
         eeg=eeg,
     )
 
-    # Save info for the report
-    src_report.add_to_data(
-        f"{src_dir}/{subject}/report_data.pkl",
-        {
-            "forward_model": True,
-            "model": model,
-            "gridstep": gridstep,
-            "eeg": eeg,
-        },
-    )
+    if reportdir is not None:
+        # Save info for the report
+        src_report.add_to_data(
+            f"{reportdir}/{subject}/data.pkl",
+            {
+                "forward_model": True,
+                "model": model,
+                "gridstep": gridstep,
+                "eeg": eeg,
+            },
+        )
 
 
 # -------------------------------------
@@ -457,10 +398,9 @@ def forward_model(
 
 
 def beamform(
-    src_dir,
+    outdir,
     subject,
     preproc_file,
-    smri_file,
     epoch_file,
     chantypes,
     rank,
@@ -468,20 +408,18 @@ def beamform(
     weight_norm="nai",
     pick_ori="max-power-pre-weight-norm",
     reg=0,
+    reportdir=None,
 ):
     """Wrapper function for beamforming.
 
     Parameters
     ----------
-    src_dir : str
+    outdir : str
         Path to where to output the source reconstruction files.
     subject : str
         Subject name/id.
     preproc_file : str
         Path to the preprocessed fif file.
-    smri_file : str
-        Path to the T1 weighted structural MRI file to use in source
-        reconstruction.
     epoch_file : str
         Path to epoched preprocessed fif file.
     chantypes : str or list of str
@@ -498,6 +436,8 @@ def beamform(
         Orientation of the dipoles.
     reg : float, optional
         The regularization for the whitened data covariance.
+    reportdir : str, optional
+        Path to report directory
     """
     logger.info("beamforming")
 
@@ -529,7 +469,7 @@ def beamform(
     logger.info(f"chantypes: {chantypes}")
     logger.info(f"rank: {rank}")
     filters = beamforming.make_lcmv(
-        subjects_dir=src_dir,
+        subjects_dir=outdir,
         subject=subject,
         data=data,
         chantypes=chantypes,
@@ -542,31 +482,31 @@ def beamform(
 
     # Make plots
     filters_cov_plot, filters_svd_plot = beamforming.make_plots(
-        src_dir, subject, filters, data
+        outdir, subject, filters, data
     )
-    filters_cov_plot = filters_cov_plot.replace(f"{src_dir}/", "")
-    filters_svd_plot = filters_svd_plot.replace(f"{src_dir}/", "")
+    filters_cov_plot = filters_cov_plot.replace(f"{outdir}/", "")
+    filters_svd_plot = filters_svd_plot.replace(f"{outdir}/", "")
 
-    # Save info for the report
-    src_report.add_to_data(
-        f"{src_dir}/{subject}/report_data.pkl",
-        {
-            "beamform": True,
-            "chantypes": chantypes,
-            "rank": rank,
-            "reg": reg,
-            "freq_range": freq_range,
-            "filters_cov_plot": filters_cov_plot,
-            "filters_svd_plot": filters_svd_plot,
-        },
-    )
+    if reportdir is not None:
+        # Save info for the report
+        src_report.add_to_data(
+            f"{reportdir}/{subject}/data.pkl",
+            {
+                "beamform": True,
+                "chantypes": chantypes,
+                "rank": rank,
+                "reg": reg,
+                "freq_range": freq_range,
+                "filters_cov_plot": filters_cov_plot,
+                "filters_svd_plot": filters_svd_plot,
+            },
+        )
 
 
 def parcellate(
-    src_dir,
+    outdir,
     subject,
     preproc_file,
-    smri_file,
     epoch_file,
     parcellation_file,
     method,
@@ -574,20 +514,18 @@ def parcellate(
     spatial_resolution=None,
     reference_brain="mni",
     extra_chans="stim",
+    reportdir=None,
 ):
     """Wrapper function for parcellation.
 
     Parameters
     ----------
-    src_dir : str
+    outdir : str
         Path to where to output the source reconstruction files.
     subject : str
         Subject name/id.
     preproc_file : str
         Path to the preprocessed fif file.
-    smri_file : str
-        Path to the T1 weighted structural MRI file to use in source
-        reconstruction.
     epoch_file : str
         Path to epoched preprocessed fif file.
     parcellation_file : str
@@ -613,11 +551,19 @@ def parcellate(
         Extra channels to include in the parc-raw.fif file.
         Defaults to 'stim'. Stim channels are always added to parc-raw.fif
         in addition to extra_chans.
+    reportdir : str, optional
+        Path to report directory.
     """
     logger.info("parcellate")
 
+    if reportdir is None:
+        raise ValueError(
+            "This function can only be used then a report was generated "
+            "when beamforming. Please use beamform_and_parcellate."
+        )
+
     # Get settings passed to the beamform wrapper
-    report_data = pickle.load(open(f"{src_dir}/{subject}/report_data.pkl", "rb"))
+    report_data = pickle.load(open(f"{reportdir}/{subject}/data.pkl", "rb"))
     freq_range = report_data.pop("freq_range")
     chantypes = report_data.pop("chantypes")
     if isinstance(chantypes, str):
@@ -644,7 +590,7 @@ def parcellate(
     chantype_data = data.copy().pick(chantypes)
 
     # Load beamforming filter and apply
-    filters = beamforming.load_lcmv(src_dir, subject)
+    filters = beamforming.load_lcmv(outdir, subject)
     bf_data = beamforming.apply_lcmv(chantype_data, filters)
 
     if epoch_file is not None:
@@ -652,7 +598,7 @@ def parcellate(
     else:
         bf_data = bf_data.data
     bf_data_mni, _, coords_mni, _ = beamforming.transform_recon_timeseries(
-        subjects_dir=src_dir,
+        subjects_dir=outdir,
         subject=subject,
         recon_timeseries=bf_data,
         spatial_resolution=spatial_resolution,
@@ -666,7 +612,7 @@ def parcellate(
         voxel_timeseries=bf_data_mni,
         voxel_coords=coords_mni,
         method=method,
-        working_dir=f"{src_dir}/{subject}/parc",
+        working_dir=f"{outdir}/{subject}/parc",
     )
 
     # Orthogonalisation
@@ -681,7 +627,7 @@ def parcellate(
 
     if epoch_file is None:
         # Save parcellated data as a MNE Raw object
-        parc_fif_file = f"{src_dir}/{subject}/parc/parc-raw.fif"
+        parc_fif_file = f"{outdir}/{subject}/parc/parc-raw.fif"
         logger.info(f"saving {parc_fif_file}")
         parc_raw = parcellation.convert2mne_raw(
             parcel_data, data, extra_chans=extra_chans
@@ -689,7 +635,7 @@ def parcellate(
         parc_raw.save(parc_fif_file, overwrite=True)
     else:
         # Save parcellated data as a MNE Epochs object
-        parc_fif_file = f"{src_dir}/{subject}/parc/parc-epo.fif"
+        parc_fif_file = f"{outdir}/{subject}/parc/parc-epo.fif"
         logger.info(f"saving {parc_fif_file}")
         parc_epo = parcellation.convert2mne_epochs(parcel_data, data)
         parc_epo.save(parc_fif_file, overwrite=True)
@@ -701,10 +647,10 @@ def parcellate(
         fs=data.info["sfreq"],
         freq_range=freq_range,
         parcellation_file=parcellation_file,
-        filename=f"{src_dir}/{parc_psd_plot}",
+        filename=f"{outdir}/{parc_psd_plot}",
     )
     parc_corr_plot = f"{subject}/parc/corr.png"
-    parcellation.plot_correlation(parcel_data, filename=f"{src_dir}/{parc_corr_plot}")
+    parcellation.plot_correlation(parcel_data, filename=f"{outdir}/{parc_corr_plot}")
 
     # Save info for the report
     n_parcels = parcel_data.shape[0]
@@ -714,7 +660,7 @@ def parcellate(
     else:
         n_epochs = None
     src_report.add_to_data(
-        f"{src_dir}/{subject}/report_data.pkl",
+        f"{reportdir}/{subject}/data.pkl",
         {
             "parcellate": True,
             "parcellation_file": parcellation_file,
@@ -731,10 +677,9 @@ def parcellate(
 
 
 def beamform_and_parcellate(
-    src_dir,
+    outdir,
     subject,
     preproc_file,
-    smri_file,
     epoch_file,
     chantypes,
     rank,
@@ -748,20 +693,18 @@ def beamform_and_parcellate(
     spatial_resolution=None,
     reference_brain="mni",
     extra_chans="stim",
+    reportdir=None,
 ):
     """Wrapper function for beamforming and parcellation.
 
     Parameters
     ----------
-    src_dir : str
+    outdir : str
         Path to where to output the source reconstruction files.
     subject : str
         Subject name/id.
     preproc_file : str
         Path to the preprocessed fif file.
-    smri_file : str
-        Path to the T1 weighted structural MRI file to use in source
-        reconstruction.
     epoch_file : str
         Path to epoched preprocessed fif file.
     chantypes : str or list of str
@@ -802,6 +745,8 @@ def beamform_and_parcellate(
         Extra channels to include in the parc-raw.fif file.
         Defaults to 'stim'. Stim channels are always added to parc-raw.fif
         in addition to extra_chans.
+    reportdir : str, optional
+        Path to report directory.
     """
     logger.info("beamform_and_parcellate")
 
@@ -833,7 +778,7 @@ def beamform_and_parcellate(
     logger.info(f"chantypes: {chantypes}")
     logger.info(f"rank: {rank}")
     filters = beamforming.make_lcmv(
-        subjects_dir=src_dir,
+        subjects_dir=outdir,
         subject=subject,
         data=data,
         chantypes=chantypes,
@@ -846,10 +791,10 @@ def beamform_and_parcellate(
 
     # Make plots
     filters_cov_plot, filters_svd_plot = beamforming.make_plots(
-        src_dir, subject, filters, chantype_data
+        outdir, subject, filters, chantype_data
     )
-    filters_cov_plot = filters_cov_plot.replace(f"{src_dir}/", "")
-    filters_svd_plot = filters_svd_plot.replace(f"{src_dir}/", "")
+    filters_cov_plot = filters_cov_plot.replace(f"{outdir}/", "")
+    filters_svd_plot = filters_svd_plot.replace(f"{outdir}/", "")
 
     # Apply beamforming
     bf_data = beamforming.apply_lcmv(chantype_data, filters)
@@ -859,7 +804,7 @@ def beamform_and_parcellate(
     else:
         bf_data = bf_data.data
     bf_data_mni, _, coords_mni, _ = beamforming.transform_recon_timeseries(
-        subjects_dir=src_dir,
+        subjects_dir=outdir,
         subject=subject,
         recon_timeseries=bf_data,
         spatial_resolution=spatial_resolution,
@@ -874,7 +819,7 @@ def beamform_and_parcellate(
         voxel_timeseries=bf_data_mni,
         voxel_coords=coords_mni,
         method=method,
-        working_dir=f"{src_dir}/{subject}/parc",
+        working_dir=f"{outdir}/{subject}/parc",
     )
 
     # Orthogonalisation
@@ -889,7 +834,7 @@ def beamform_and_parcellate(
 
     if epoch_file is None:
         # Save parcellated data as a MNE Raw object
-        parc_fif_file = f"{src_dir}/{subject}/parc/parc-raw.fif"
+        parc_fif_file = f"{outdir}/{subject}/parc/parc-raw.fif"
         logger.info(f"saving {parc_fif_file}")
         parc_raw = parcellation.convert2mne_raw(
             parcel_data, data, extra_chans=extra_chans
@@ -897,7 +842,7 @@ def beamform_and_parcellate(
         parc_raw.save(parc_fif_file, overwrite=True)
     else:
         # Save parcellated data as a MNE Epochs object
-        parc_fif_file = f"{src_dir}/{subject}/parc/parc-epo.fif"
+        parc_fif_file = f"{outdir}/{subject}/parc/parc-epo.fif"
         logger.info(f"saving {parc_fif_file}")
         parc_epo = parcellation.convert2mne_epochs(parcel_data, data)
         parc_epo.save(parc_fif_file, overwrite=True)
@@ -909,41 +854,42 @@ def beamform_and_parcellate(
         fs=data.info["sfreq"],
         freq_range=freq_range,
         parcellation_file=parcellation_file,
-        filename=f"{src_dir}/{parc_psd_plot}",
+        filename=f"{outdir}/{parc_psd_plot}",
     )
     parc_corr_plot = f"{subject}/parc/corr.png"
-    parcellation.plot_correlation(parcel_data, filename=f"{src_dir}/{parc_corr_plot}")
+    parcellation.plot_correlation(parcel_data, filename=f"{outdir}/{parc_corr_plot}")
 
-    # Save info for the report
-    n_parcels = parcel_data.shape[0]
-    n_samples = parcel_data.shape[1]
-    if parcel_data.ndim == 3:
-        n_epochs = parcel_data.shape[2]
-    else:
-        n_epochs = None
-    src_report.add_to_data(
-        f"{src_dir}/{subject}/report_data.pkl",
-        {
-            "beamform_and_parcellate": True,
-            "beamform": True,
-            "parcellate": True,
-            "chantypes": chantypes,
-            "rank": rank,
-            "reg": reg,
-            "freq_range": freq_range,
-            "filters_cov_plot": filters_cov_plot,
-            "filters_svd_plot": filters_svd_plot,
-            "parcellation_file": parcellation_file,
-            "method": method,
-            "orthogonalisation": orthogonalisation,
-            "parc_fif_file": str(parc_fif_file),
-            "n_samples": n_samples,
-            "n_parcels": n_parcels,
-            "n_epochs": n_epochs,
-            "parc_psd_plot": parc_psd_plot,
-            "parc_corr_plot": parc_corr_plot,
-        },
-    )
+    if reportdir is not None:
+        # Save info for the report
+        n_parcels = parcel_data.shape[0]
+        n_samples = parcel_data.shape[1]
+        if parcel_data.ndim == 3:
+            n_epochs = parcel_data.shape[2]
+        else:
+            n_epochs = None
+        src_report.add_to_data(
+            f"{reportdir}/{subject}/data.pkl",
+            {
+                "beamform_and_parcellate": True,
+                "beamform": True,
+                "parcellate": True,
+                "chantypes": chantypes,
+                "rank": rank,
+                "reg": reg,
+                "freq_range": freq_range,
+                "filters_cov_plot": filters_cov_plot,
+                "filters_svd_plot": filters_svd_plot,
+                "parcellation_file": parcellation_file,
+                "method": method,
+                "orthogonalisation": orthogonalisation,
+                "parc_fif_file": str(parc_fif_file),
+                "n_samples": n_samples,
+                "n_parcels": n_parcels,
+                "n_epochs": n_epochs,
+                "parc_psd_plot": parc_psd_plot,
+                "parc_corr_plot": parc_corr_plot,
+            },
+        )
 
 
 # ----------------------
@@ -951,7 +897,7 @@ def beamform_and_parcellate(
 
 
 def find_template_subject(
-    src_dir,
+    outdir,
     subjects,
     n_embeddings=1,
     standardize=True,
@@ -960,12 +906,12 @@ def find_template_subject(
     """Function to find a good subject to align other subjects to in the sign flipping.
 
     Note, this function expects parcellated data to exist in the following
-    location: src_dir/*/parc/parc-*.fif, the * here represents subject
+    location: outdir/*/parc/parc-*.fif, the * here represents subject
     directories or 'raw' vs 'epo'.
 
     Parameters
     ----------
-    src_dir : str
+    outdir : str
         Path to where to output the source reconstruction files.
     subjects : str
         Subjects to include.
@@ -988,9 +934,9 @@ def find_template_subject(
     parc_files = []
     for subject in subjects:
         if epoched:
-            parc_file = f"{src_dir}/{subject}/parc/parc-epo.fif"
+            parc_file = f"{outdir}/{subject}/parc/parc-epo.fif"
         else:
-            parc_file = f"{src_dir}/{subject}/parc/parc-raw.fif"
+            parc_file = f"{outdir}/{subject}/parc/parc-raw.fif"
         if Path(parc_file).exists():
             parc_files.append(parc_file)
         else:
@@ -1016,11 +962,9 @@ def find_template_subject(
 
 
 def fix_sign_ambiguity(
-    src_dir,
+    outdir,
     subject,
     preproc_file,
-    smri_file,
-    epoch_file,
     template,
     n_embeddings,
     standardize,
@@ -1028,22 +972,18 @@ def fix_sign_ambiguity(
     n_iter,
     max_flips,
     epoched=False,
+    reportdir=None,
 ):
     """Wrapper function for fixing the dipole sign ambiguity.
 
     Parameters
     ----------
-    src_dir : str
+    outdir : str
         Path to where to output the source reconstruction files.
     subject : str
         Subject name/id.
     preproc_file : str
         Path to the preprocessed fif file.
-    smri_file : str
-        Path to the T1 weighted structural MRI file to use in source
-        reconstruction.
-    epoch_file : str
-        Path to epoched preprocessed fif file.
     template : str
         Template subject.
     n_embeddings : int
@@ -1059,6 +999,8 @@ def fix_sign_ambiguity(
     epoched : bool, optional
         Are we performing sign flipping on parc-raw.fif (epoched=False) or
         parc-epo.fif files (epoched=True)?
+    reportdir : str, optional
+        Path to report directory.
     """
     logger.info("fix_sign_ambiguity")
     logger.info(f"using template: {template}")
@@ -1067,9 +1009,9 @@ def fix_sign_ambiguity(
     parc_files = []
     for sub in [subject, template]:
         if epoched:
-            parc_file = f"{src_dir}/{sub}/parc/parc-epo.fif"
+            parc_file = f"{outdir}/{sub}/parc/parc-epo.fif"
         else:
-            parc_file = f"{src_dir}/{sub}/parc/parc-raw.fif"
+            parc_file = f"{outdir}/{sub}/parc/parc-raw.fif"
         if not Path(parc_file).exists():
             raise ValueError(f"{parc_file} not found")
         parc_files.append(parc_file)
@@ -1091,54 +1033,41 @@ def fix_sign_ambiguity(
     )
 
     # Apply flips to the parcellated data
-    sign_flipping.apply_flips(src_dir, subject, flips, epoched=epoched)
+    sign_flipping.apply_flips(outdir, subject, flips, epoched=epoched)
 
-    # Save info for the report
-    src_report.add_to_data(
-        f"{src_dir}/{subject}/report_data.pkl",
-        {
-            "fix_sign_ambiguity": True,
-            "template": template,
-            "n_embeddings": n_embeddings,
-            "standardize": standardize,
-            "n_init": n_init,
-            "n_iter": n_iter,
-            "max_flips": max_flips,
-            "metrics": metrics,
-        },
-    )
+    if reportdir is not None:
+        # Save info for the report
+        src_report.add_to_data(
+            f"{reportdir}/{subject}/data.pkl",
+            {
+                "fix_sign_ambiguity": True,
+                "template": template,
+                "n_embeddings": n_embeddings,
+                "standardize": standardize,
+                "n_init": n_init,
+                "n_iter": n_iter,
+                "max_flips": max_flips,
+                "metrics": metrics,
+            },
+        )
 
 
 # --------------
 # Other wrappers
 
 
-def extract_rhino_files(
-    src_dir,
-    subject,
-    preproc_file,
-    smri_file,
-    epoch_file,
-    old_src_dir,
-):
+def extract_rhino_files(outdir, subject, old_outdir):
     """Wrapper function for extracting RHINO files from a previous run.
 
     Parameters
     ----------
-    src_dir : str
+    outdir : str
         Path to the NEW source reconstruction directory.
     subject : str
         Subject name/id.
-    preproc_file : str
-        Path to the preprocessed fif file. Not used.
-    smri_file : str
-        Path to the T1 weighted structural MRI file to use in source
-        reconstruction. Not used.
-    epoch_file : str
-        Path to epoched preprocessed fif file. Not used.
-    old_src_dir : str
+    old_outdir : str
         OLD source reconstruction directory to copy RHINO files to.
     """
     rhino.utils.extract_rhino_files(
-        old_src_dir, src_dir, subjects=subject, gen_report=False
+        old_outdir, outdir, subjects=subject, gen_report=False
     )

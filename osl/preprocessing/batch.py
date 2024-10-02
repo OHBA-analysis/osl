@@ -17,6 +17,7 @@ import pprint
 import traceback
 import re
 import logging
+import pickle
 from pathlib import Path
 from copy import deepcopy
 from functools import partial, wraps
@@ -29,10 +30,11 @@ import numpy as np
 import yaml
 
 from . import mne_wrappers, osl_wrappers
-from ..utils import find_run_id, validate_outdir, process_file_inputs, add_subdir
+from ..utils import find_run_id, validate_outdir, process_file_inputs
 from ..utils import logger as osl_logger
 from ..utils.parallel import dask_parallel_bag
 from ..utils.version_utils import check_version
+from ..utils.misc import set_random_seed
 
 logger = logging.getLogger(__name__)
 
@@ -105,14 +107,17 @@ def import_data(infile, preload=True):
     elif os.path.splitext(infile)[1] == ".fif":
         logger.info("Detected fif file format, using: mne.io.read_raw_fif")
         raw = mne.io.read_raw_fif(infile, preload=preload)
+
     # EDF file
     elif os.path.splitext(infile)[1].lower() == ".edf":
         logger.info("Detected edf file format, using: mne.io.read_raw_edf")
         raw = mne.io.read_raw_edf(infile, preload=preload)
+
     # CTF data in ds directory
     elif os.path.splitext(infile)[1] == ".ds":
         logger.info("Detected CTF file format, using: mne.io.read_raw_ctf")
         raw = mne.io.read_raw_ctf(infile, preload=preload)
+
     elif os.path.splitext(infile)[1] == ".meg4":
         logger.info("Detected CTF file format, using: mne.io.read_raw_ctf")
         raw = mne.io.read_raw_ctf(os.path.dirname(infile), preload=preload)
@@ -134,6 +139,10 @@ def import_data(infile, preload=True):
     elif os.path.splitext(infile)[1] == ".bdf":
         logger.info("Detected BDF file format, using: mne.io.read_raw_bdf")
         raw = mne.io.read_raw_bdf(infile, preload=preload)
+
+    elif os.path.splitext(infile)[1] == ".mff":
+        logger.info("Detected EGI file format, using mne.io.read_raw_egi")
+        raw = mne.io.read_raw_egi(infile, preload=preload)
         
     # Other formats not accepted
     else:
@@ -238,6 +247,11 @@ def load_config(config):
             # We have a string
             config = yaml.load(config, Loader=yaml.FullLoader)
 
+    # do some checks on the config
+    for key in config:
+        if config[key] == 'None':
+            config[key] = None
+    
     # Initialise missing values in config
     if "meta" not in config:
         config["meta"] = {"event_codes": None}
@@ -246,33 +260,58 @@ def load_config(config):
     elif "versions" not in config['meta']:
         config["meta"]["versions"] = None
 
-    if "preproc" not in config:
-        raise KeyError("Please specify preprocessing steps in config.")
+    if "preproc" not in config and "group" not in config:
+        raise KeyError("Please specify preprocessing and/or group processing steps in config.")
 
-    for stage in config["preproc"]:
-        # Check each stage is a dictionary with a single key
-        if not isinstance(stage, dict):
-            raise ValueError(
-                "Preprocessing stage '{0}' is a {1} not a dict".format(
-                    stage, type(stage)
+    if "preproc" in config and config["preproc"] is not None:
+        for stage in config["preproc"]:
+            # Check each stage is a dictionary with a single key
+            if not isinstance(stage, dict):
+                raise ValueError(
+                    "Preprocessing stage '{0}' is a {1} not a dict".format(
+                        stage, type(stage)
+                    )
                 )
-            )
 
-        if len(stage) != 1:
-            raise ValueError(
-                "Preprocessing stage '{0}' should only have a single key".format(stage)
-            )
+            if len(stage) != 1:
+                raise ValueError(
+                    "Preprocessing stage '{0}' should only have a single key".format(stage)
+                )
 
-        for key, val in stage.items():
-            # internally we want options to be an empty dict (for now at least)
-            if val in ["null", "None", None]:
-                stage[key] = {}
+            for key, val in stage.items():
+                # internally we want options to be an empty dict (for now at least)
+                if val in ["null", "None", None]:
+                    stage[key] = {}
 
-    for step in config["preproc"]:
-        if config["meta"]["event_codes"] is None and "find_events" in step.values():
-            raise KeyError(
-                "event_codes must be passed in config if we are finding events."
-            )
+        for step in config["preproc"]:
+            if config["meta"]["event_codes"] is None and "find_events" in step.values():
+                raise KeyError(
+                    "event_codes must be passed in config if we are finding events."
+                )
+    else:
+        config['preproc'] = None
+                
+    if "group" in config and config["group"] is not None:
+        for stage in config["group"]:
+            # Check each stage is a dictionary with a single key
+            if not isinstance(stage, dict):
+                raise ValueError(
+                    "Group processing stage '{0}' is a {1} not a dict".format(
+                        stage, type(stage)
+                    )
+                )
+
+            if len(stage) != 1:
+                raise ValueError(
+                    "Group processing stage '{0}' should only have a single key".format(stage)
+                )
+
+            for key, val in stage.items():
+                # internally we want options to be an empty dict (for now at least)
+                if val in ["null", "None", None]:
+                    stage[key] = {}
+    else:
+        config['group'] = None
 
     return config
 
@@ -289,10 +328,8 @@ def check_config_versions(config):
     ------
     AssertionError
         Raised if package version mismatch found in 'version_assert'
-
-    WARNING
+    Warning
         Raised if package version mismatch found in 'version_warn'
-
     """
     config = load_config(config)
 
@@ -380,7 +417,7 @@ def append_preproc_info(dataset, config, extra_funcs=None):
     return dataset
 
 
-def write_dataset(dataset, outbase, run_id, ftype='preproc_raw', overwrite=False):
+def write_dataset(dataset, outbase, run_id, ftype='preproc-raw', overwrite=False, skip=None):
     """Write preprocessed data to a file.
 
     Will write all keys in the dataset dict to disk with corresponding extensions.
@@ -394,49 +431,79 @@ def write_dataset(dataset, outbase, run_id, ftype='preproc_raw', overwrite=False
     run_id : str
         ID for the output file.
     ftype: str
-        Extension for the fif file (default ``preproc_raw``)
+        Extension for the fif file (default ``preproc-raw``)
     overwrite : bool
         Should we overwrite if the file already exists?
+    skip : list or None
+        List of keys to skip writing to disk. If None, we don't skip any keys.
 
     Output
     ------
     fif_outname : str
         The saved fif file name
     """
+    
+    if skip is None:
+        skip = []
+    else:
+        [logger.info("Skip saving of dataset['{}']".format(key)) for key in skip]
 
-    # Strip "_preproc_raw" or "_raw" from the run id
-    for string in ["_preproc_raw", "_raw"]:
+    # Strip "_preproc-raw" or "_raw" from the run id
+    for string in ["_preproc-raw", "_raw"]:
         if string in run_id:
             run_id = run_id.replace(string, "")
+    
+    if "raw" in skip:
+        outnames = {"raw": None}
+    else:
+        outnames = {"raw": outbase.format(run_id=run_id, ftype=ftype, fext="fif")}
+        if Path(outnames["raw"]).exists() and not overwrite:
+            raise ValueError(
+                "{} already exists. Please delete or do use overwrite=True.".format(fif_outname)
+            )
+        logger.info(f"Saving dataset['raw'] as {outnames['raw']}")
+        dataset["raw"].save(outnames['raw'], overwrite=overwrite)   
 
-    fif_outname = outbase.format(run_id=run_id, ftype=ftype, fext="fif")
-    if Path(fif_outname).exists() and not overwrite:
-        raise ValueError(
-            "{} already exists. Please delete or do use overwrite=True.".format(fif_outname)
-        )
-    dataset["raw"].save(fif_outname, overwrite=overwrite)
+    if "events" in dataset and "events" not in skip and dataset['events'] is not None:
+        outnames['events'] = outbase.format(run_id=run_id, ftype="events", fext="npy")
+        logger.info(f"Saving dataset['events'] as {outnames['events']}")
+        np.save(outnames['events'], dataset["events"])
 
-    if "events" in dataset and dataset['events'] is not None:
-        outname = outbase.format(run_id=run_id, ftype="events", fext="npy")
-        np.save(outname, dataset["events"])
+    if "event_id" in dataset and "event_id" not in skip and dataset['event_id'] is not None:
+        outnames['event_id'] = outbase.format(run_id=run_id, ftype="event-id", fext="yml")
+        logger.info(f"Saving dataset['event_id'] as {outnames['event_id']}")
+        yaml.dump(dataset["event_id"], open(outnames['event_id'], "w"))
 
-    if "event_id" in dataset and dataset['event_id'] is not None:
-        outname = outbase.format(run_id=run_id, ftype="event-id", fext="yml")
-        yaml.dump(dataset["event_id"], open(outname, "w"))
+    if "epochs" in dataset and "epochs" not in skip and dataset['epochs'] is not None:
+        outnames['epochs'] = outbase.format(run_id=run_id, ftype="epo", fext="fif")
+        logger.info(f"Saving dataset['epochs'] as {outnames['epochs']}")
+        dataset["epochs"].save(outnames['epochs'], overwrite=overwrite)
 
-    if "epochs" in dataset and dataset['epochs'] is not None:
-        outname = outbase.format(run_id=run_id, ftype="epo", fext="fif")
-        dataset["epochs"].save(outname, overwrite=overwrite)
+    if "ica" in dataset and "ica" not in skip and dataset['ica'] is not None:
+        outnames['ica'] = outbase.format(run_id=run_id, ftype="ica", fext="fif")
+        logger.info(f"Saving dataset['ica'] as {outnames['ica']}")
+        dataset["ica"].save(outnames['ica'], overwrite=overwrite)
 
-    if "ica" in dataset and dataset['ica'] is not None:
-        outname = outbase.format(run_id=run_id, ftype="ica", fext="fif")
-        dataset["ica"].save(outname, overwrite=overwrite)
+    if "tfr" in dataset and "tfr" not in skip and dataset['tfr'] is not None:
+        outnames['tfr'] = outbase.format(run_id=run_id, ftype="tfr", fext="fif")
+        logger.info(f"Saving dataset['tfr'] as {outnames['tfr']}")
+        dataset["tfr"].save(outnames['tfr'], overwrite=overwrite)
 
-    if "tfr" in dataset and dataset['tfr'] is not None:
-        outname = outbase.format(run_id=run_id, ftype="tfr", fext="fif")
-        dataset["tfr"].save(outname, overwrite=overwrite)
+    if "glm" in dataset and "glm" not in skip and dataset['glm'] is not None:
+        outnames['glm'] = outbase.format(run_id=run_id, ftype="glm", fext="pkl")
+        logger.info(f"Saving dataset['glm'] as {outnames['glm']}")
+        dataset["glm"].save_pkl(outnames['glm'], overwrite=overwrite)
+    
+    # save remaining keys as pickle files
+    for key in dataset:
+        if key not in outnames and key not in skip:
+            outnames[key] = outbase.format(run_id=run_id, ftype=key, fext="pkl")
+            logger.info(f"Saving dataset['{key}'] as {outnames[key]}")
+            if (not os.path.exists(outnames[key]) or overwrite) and key not in skip and dataset[key] is not None:
+                with open(outnames[key], "wb") as f:
+                    pickle.dump(dataset[key], f)
+    return outnames
 
-    return fif_outname
 
 def read_dataset(fif, preload=False, ftype=None):
     """Reads ``fif``/``npy``/``yml`` files associated with a dataset.
@@ -450,7 +517,7 @@ def read_dataset(fif, preload=False, ftype=None):
     ftype : str
         Extension for the fif file (will be replaced for e.g. ``'_events.npy'`` or 
         ``'_ica.fif'``). If ``None``, we assume the fif file is preprocessed with 
-        OSL and has the extension ``'_preproc_raw'``. If this fails, we guess 
+        OSL and has the extension ``'_preproc-raw'``. If this fails, we guess 
         the extension as whatever comes after the last ``'_'``.
 
     Returns
@@ -466,9 +533,9 @@ def read_dataset(fif, preload=False, ftype=None):
     # Guess extension
     if ftype is None:
         logger.info("Guessing the preproc extension")
-        if "preproc_raw" in fif:
-            logger.info('Assuming fif file type is "preproc_raw"')
-            ftype = "preproc_raw"
+        if "preproc-raw" in fif:
+            logger.info('Assuming fif file type is "preproc-raw"')
+            ftype = "preproc-raw"
         else:
             if len(fif.split("_"))<2:
                 logger.error("Unable to guess the fif file extension")
@@ -478,7 +545,6 @@ def read_dataset(fif, preload=False, ftype=None):
     
     # add extension to fif file name
     ftype = ftype + ".fif"
-     
     
     events = Path(fif.replace(ftype, "events.npy"))
     if events.exists():
@@ -491,7 +557,7 @@ def read_dataset(fif, preload=False, ftype=None):
     if event_id.exists():
         print("Reading", event_id)
         with open(event_id, "r") as file:
-            event_id = yaml.safe_load(file)
+            event_id = yaml.load(file, Loader=yaml.Loader)
     else:
         event_id = None
 
@@ -565,11 +631,16 @@ def plot_preproc_flowchart(
     ax.set_xticks([])
     ax.set_yticks([])
     if title == None:
-        ax.set_title("OSL Preprocessing Recipe", fontsize=24)
+        ax.set_title("OSL Processing Recipe", fontsize=24)
     else:
         ax.set_title(title, fontsize=24)
-
-    stage_height = 1 / (1 + len(config["preproc"]))
+    
+    tmp_h = 1
+    if config["preproc"] is not None:
+        tmp_h += 1 + len(config["preproc"])
+    if config["group"] is not None:
+        tmp_h += 1 + len(config["group"])
+    stage_height = 1 / tmp_h
 
     box = dict(boxstyle="round", facecolor=stagecol, alpha=1, pad=0.3)
     startbox = dict(boxstyle="round", facecolor=startcol, alpha=1)
@@ -579,12 +650,16 @@ def plot_preproc_flowchart(
         "weight": "normal",
         "size": 16,
     }
-
-    stages = [{"input": ""}, *config["preproc"], {"output": ""}]
+    stages = [{"input": ""}]
+    if config['preproc'] is not None:
+        stages += [{"preproc": ""}, *config["preproc"]]
+    if config['group'] is not None:
+        stages += [{"group": ""}, *config["group"]]
+    stages.append({"output": ""})
     stage_str = "$\\bf{{{0}}}$ {1}"
 
     ax.arrow(
-        0.5, 1, 0.0, -1, fc="k", ec="k", head_width=0.045,
+        0.5, 1, 0.0, -1+0.02, fc="k", ec="k", head_width=0.045,
         head_length=0.035, length_includes_head=True,
     )
 
@@ -592,7 +667,7 @@ def plot_preproc_flowchart(
         method, userargs = next(iter(stage.items()))
 
         method = method.replace("_", "\_")
-        if method in ["input", "output"]:
+        if method in ["input", "preproc", "group", "output"]:
             b = startbox
         else:
             b = box
@@ -628,15 +703,17 @@ def plot_preproc_flowchart(
 def run_proc_chain(
     config,
     infile,
-    outname=None,
-    ftype='preproc_raw',
+    subject=None,
+    ftype='preproc-raw',
     outdir=None,
     logsdir=None,
     reportdir=None,
     ret_dataset=True,
     gen_report=None,
     overwrite=False,
+    skip_save=None,
     extra_funcs=None,
+    random_seed='auto',
     verbose="INFO",
     mneverbose="WARNING",
 ):
@@ -648,19 +725,12 @@ def run_proc_chain(
         Preprocessing config.
     infile : str
         Path to input file.
-    outname : str
-        Output filename.
+    subject : str
+        Subject ID. This will be the sub-directory in outdir.
     ftype: str
-        Extension for the fif file (default ``preproc_raw``)
+        Extension for the fif file (default ``preproc-raw``)
     outdir : str
-        Output directory. If processing multiple files, they can
-        be put in unique sub directories by including ``{x:0}`` at 
-        the end of the outdir, where ``x`` is the pattern which
-        precedes the unique identifier and ``0`` is the length of 
-        the unique identifier. For example: if the outdir is
-        ``../../{sub-:3}`` and each is like 
-        ``/sub-001_task-rest.fif``, the outdir for the file will be
-        ``../../sub-001/``.
+        Output directory.
     logsdir : str
         Directory to save log files to.
     reportdir : str
@@ -671,8 +741,13 @@ def run_proc_chain(
         Should we generate a report?
     overwrite : bool
         Should we overwrite the output file if it already exists?
+    skip_save: list or None (default)
+        List of keys to skip writing to disk. If None, we don't skip any keys.
     extra_funcs : list
         User-defined functions.
+    random_seed : 'auto' (default), int or None
+        Random seed to set. If 'auto', a random seed will be generated. Random seeds are set for both Python and NumPy.
+        If None, no random seed is set.
     verbose : str
         Level of info to print.
         Can be: ``'CRITICAL'``, ``'ERROR'``, ``'WARNING'``, ``'INFO'``, ``'DEBUG'`` or ``'NOTSET'``.
@@ -687,11 +762,8 @@ def run_proc_chain(
         An empty dict is returned if preprocessing fails. If ``ret_dataset=False``, we return a flag indicating whether preprocessing was successful.
     """
 
-    # Generate a run ID
-    if outname is None:
-        run_id = find_run_id(infile)
-    else:
-        run_id = os.path.splitext(outname)[0]
+    # Get run (subject) ID
+    run_id = subject or find_run_id(infile)
     name_base = "{run_id}_{ftype}.{fext}"
 
     if not ret_dataset:
@@ -706,10 +778,9 @@ def run_proc_chain(
         gen_report = True if gen_report is None else gen_report
         
         # Create output directories if they don't exist
-        outdir = add_subdir(infile, outdir, run_id)
-        outdir = validate_outdir(outdir)
+        outdir = validate_outdir(f"{outdir}/{run_id}")
         logsdir = validate_outdir(logsdir or outdir / "logs")
-        reportdir = validate_outdir(reportdir or outdir / "report")
+        reportdir = validate_outdir(reportdir or outdir / "preproc_report")
 
     else:
         # We're not saving the output to disk
@@ -719,7 +790,7 @@ def run_proc_chain(
         gen_report = gen_report or reportdir is not None or False
         if gen_report:
             # Make sure we have a directory to write the report to
-            reportdir = validate_outdir(reportdir or os.getcwd() + "/report")
+            reportdir = validate_outdir(reportdir or os.getcwd() + "/preproc_report")
 
         # Allow the user to create a log if they pass logsdir
         if logsdir is not None:
@@ -747,6 +818,14 @@ def run_proc_chain(
     logger.info("{0} : Starting OSL Processing".format(now))
     logger.info("input : {0}".format(infile))
 
+    # Set random seed
+    if random_seed == 'auto':
+        set_random_seed()
+    elif random_seed is None:
+        pass
+    else:
+        set_random_seed(random_seed)
+    
     # Write preprocessed data to output directory
     if outdir is not None:
         # Check for existing outputs - should be a .fif at least
@@ -790,9 +869,9 @@ def run_proc_chain(
         # Add preprocessing info to dataset dict
         dataset = append_preproc_info(dataset, config, extra_funcs)
 
-        fif_outname = None
+        outnames = {"raw": None}
         if outdir is not None:
-            fif_outname = write_dataset(dataset, outbase, run_id, overwrite=overwrite)
+            outnames = write_dataset(dataset, outbase, run_id, overwrite=overwrite, skip=skip_save)
 
         # Generate report data
         if gen_report:
@@ -802,12 +881,14 @@ def run_proc_chain(
 
             from ..report import gen_html_data, gen_html_page  # avoids circular import
             logger.info("{0} : Generating Report".format(now))
-            report_data_dir = validate_outdir(reportdir / Path(fif_outname).stem)
+            report_data_dir = validate_outdir(reportdir / Path(outnames["raw"]).stem)
             gen_html_data(
                 dataset["raw"],
                 report_data_dir,
                 ica=dataset["ica"],
-                preproc_fif_filename=fif_outname,
+                preproc_fif_filename=outnames["raw"],
+                logsdir=logsdir,
+                run_id=run_id,
             )
             gen_html_page(reportdir)
 
@@ -832,7 +913,9 @@ def run_proc_chain(
         logger.error(traceback.print_tb(ex_traceback))
 
         with open(logfile.replace(".log", ".error.log"), "w") as f:
-            f.write('Processing filed during stage : "{0}"'.format(method))
+            f.write("OSL PREPROCESSING CHAIN FAILED AT: {0}".format(now))
+            f.write("\n")
+            f.write('Processing failed during stage : "{0}"'.format(method))
             f.write(str(ex_type))
             f.write("\n")
             f.write(str(ex_value))
@@ -845,31 +928,37 @@ def run_proc_chain(
             # variable type
             return {}
         else:
+            if 'group' in config:
+                return False, None
             return False
 
     now = strftime("%Y-%m-%d %H:%M:%S", localtime())
     logger.info("{0} : Processing Complete".format(now))
 
-    if fif_outname is not None:
-        logger.info("Output file is {}".format(fif_outname))
+    if outnames["raw"] is not None:
+        logger.info("Output file is {}".format(outnames["raw"]))
 
     if ret_dataset:
         return dataset
     else:
+        if 'group' in config:
+            return True, outnames
         return True
 
 
 def run_proc_batch(
     config,
     files,
-    outnames=None,
-    ftype=None,
+    subjects=None,
+    ftype='preproc-raw',
     outdir=None,
     logsdir=None,
     reportdir=None,
     gen_report=True,
     overwrite=False,
+    skip_save=None,
     extra_funcs=None,
+    random_seed='auto',
     verbose="INFO",
     mneverbose="WARNING",
     strictrun=False,
@@ -887,14 +976,12 @@ def run_proc_batch(
     files : str or list or mne.Raw
         Can be a list of Raw objects or a list of filenames (or ``.ds`` dir names if CTF data)
         or a path to a textfile list of filenames (or ``.ds`` dir names if CTF data).
+    subjects : list of str
+        Subject directory names. These are sub-directories in outdir.
+    ftype: None or str
+        Extension of the preprocessed fif files. Default option is `_preproc-raw`.
     outdir : str
-        Output directory. If processing multiple files, they can
-        be put in unique sub directories by including ``{x:0}`` at 
-        the end of the outdir, where ``x`` is the pattern which
-        precedes the unique identifier and ``0`` is the length of 
-        the unique identifier. For example: if the outdir is
-        ``../../{sub-:3}`` and each is like ``/sub-001_task-rest.fif``, 
-        the outdir for the file will be ``../../sub-001/``.
+        Output directory.
     logsdir : str
         Directory to save log files to.
     reportdir : str
@@ -903,8 +990,13 @@ def run_proc_batch(
         Should we generate a report?
     overwrite : bool
         Should we overwrite the output file if it exists?
+    skip_save: list or None (default)
+        List of keys to skip writing to disk. If None, we don't skip any keys.    
     extra_funcs : list
         User-defined functions.
+    random_seed : 'auto' (default), int or None
+        Random seed to set. If 'auto', a random seed will be generated. Random seeds are set for both Python and NumPy.
+        If None, no random seed is set.
     verbose : str
         Level of info to print.
         Can be: ``'CRITICAL'``, ``'ERROR'``, ``'WARNING'``, ``'INFO'``, ``'DEBUG'`` or ``'NOTSET'``.
@@ -929,7 +1021,7 @@ def run_proc_batch(
     >>> from dask.distributed import Client
     >>> client = Client(threads_per_worker=1, n_workers=4)
     """
-
+   
     if outdir is None:
         # Use the current working directory
         outdir = os.getcwd()
@@ -937,7 +1029,7 @@ def run_proc_batch(
     # Validate the parent outdir - later do so for each subdirectory
     tmpoutdir = validate_outdir(outdir.split('{')[0])
     logsdir = validate_outdir(logsdir or tmpoutdir / "logs")
-    reportdir = validate_outdir(reportdir or tmpoutdir / "report")
+    reportdir = validate_outdir(reportdir or tmpoutdir / "preproc_report")
 
     # Initialise Loggers
     mne.set_log_level(mneverbose)
@@ -949,18 +1041,26 @@ def run_proc_batch(
 
     logger.info('Starting OSL Batch Processing')
 
+    # Set random seed
+    if random_seed == 'auto':
+        random_seed = set_random_seed()
+    elif random_seed is None:
+        pass
+    else:
+        set_random_seed(random_seed)
+    
     # Check through inputs and parameters
     infiles, good_files_outnames, good_files = process_file_inputs(files)
 
     # Specify filenames for the output data
-    if outnames is None:
-        outnames = good_files_outnames
+    if subjects is None:
+        subjects = good_files_outnames
     else:
-        if len(outnames) != len(good_files_outnames):
+        if len(subjects) != len(good_files_outnames):
             logger.critical(
-                f"Number of outnames ({len(outnames)}) does not match "
+                f"Number of subjects ({len(subjects)}) does not match "
                 f"number of good files {len(good_files_outnames)}. "
-                "Fix outnames or use outnames=None."
+                "Please fix the subjects list or pass subjects=None."
             )
 
     if strictrun and click.confirm('Is this correct set of inputs?') is False:
@@ -988,41 +1088,84 @@ def run_proc_batch(
         if strictrun:
             logger.info('User confirms input config')
 
-    # Create partial function with fixed options
-    pool_func = partial(
-        run_proc_chain,
-        outdir=outdir,
-        logsdir=logsdir,
-        reportdir=reportdir,
-        ret_dataset=False,
-        gen_report=gen_report,
-        overwrite=overwrite,
-        extra_funcs=extra_funcs,
-    )
-
-    # Loop through input files to generate arguments for run_proc_chain
-    args = []
-    for infile, outname in zip(infiles, outnames):
-        args.append((config, infile, outname))
-
-    # Actually run the processes
-    if dask_client:
-        proc_flags = dask_parallel_bag(pool_func, args)
-    else:
-        proc_flags = [pool_func(*aa) for aa in args]
-
-    osl_logger.set_up(log_file=logfile, level=verbose, startup=False)
-    logger.info(
-        "Processed {0}/{1} files successfully".format(
-            np.sum(proc_flags), len(proc_flags)
+    if config['preproc'] is not None:
+        # Create partial function with fixed options
+        pool_func = partial(
+            run_proc_chain,
+            outdir=outdir,
+            ftype=ftype,
+            logsdir=logsdir,
+            reportdir=reportdir,
+            ret_dataset=False,
+            gen_report=gen_report,
+            overwrite=overwrite,
+            skip_save=skip_save,
+            extra_funcs=extra_funcs,
+            random_seed=random_seed,
         )
-    )
 
-    # Generate a report
-    if gen_report and len(infiles) > 0:
+        # Loop through input files to generate arguments for run_proc_chain
+        args = []
+        for infile, subject in zip(infiles, subjects):
+            args.append((config, infile, subject))
+
+        # Actually run the processes
+        if dask_client:
+            proc_flags = dask_parallel_bag(pool_func, args)
+        else:
+            proc_flags = [pool_func(*aa) for aa in args]
+        
+        if isinstance(proc_flags[0], tuple):
+            group_inputs = [flag[1] for flag in proc_flags]
+            proc_flags = [flag[0] for flag in proc_flags]
+        
+        osl_logger.set_up(log_file=logfile, level=verbose, startup=False)
+        logger.info(
+            "Processed {0}/{1} files successfully".format(
+                np.sum(proc_flags), len(proc_flags)
+            )
+        )
+        
+        # Generate a report
+        if gen_report and len(infiles) > 0:
+            from ..report import preproc_report # avoids circular import
+            preproc_report.gen_html_page(reportdir)
+            
+    else:
+        group_inputs = [{"raw": infile} for infile in infiles]
+        proc_flags = [os.path.exists(sub) for sub in infiles]
+        
+        osl_logger.set_up(log_file=logfile, level=verbose, startup=False)
+        logger.info("No preprocessing steps specified. Skipping preprocessing.") 
+
+
+    # start group processing
+    if config['group'] is not None:
+        logger.info("Starting Group Processing")
+        logger.info(
+            "Valid input files {0}/{1}".format(
+                np.sum(proc_flags), len(proc_flags)
+            )
+        )
+        dataset = {}
+        skip_save=[]
+        for key in group_inputs[0]:
+            dataset[key] = [group_inputs[i][key] for i in range(len(group_inputs))]
+            skip_save.append(key)
+        for stage in deepcopy(config["group"]):
+            method, userargs = next(iter(stage.items()))
+            target = userargs.get("target", "raw")  # Raw is default
+            # skip.append(stage if userargs.get("skip_save") is True else None) # skip saving this stage to disk
+            func = find_func(method, target=target, extra_funcs=extra_funcs)
+            # Actual function call
+            dataset = func(dataset, userargs)
+        outbase = os.path.join(outdir, "{ftype}.{fext}")
+        outnames = write_dataset(dataset, outbase, '', ftype='', overwrite=overwrite, skip=skip_save)
+
+    # rerun the summary report
+    if gen_report:
         from ..report import preproc_report # avoids circular import
-        preproc_report.gen_html_page(reportdir)
-        if preproc_report.gen_html_summary(reportdir):
+        if preproc_report.gen_html_summary(reportdir, logsdir):
             logger.info("******************************" + "*" * len(str(reportdir)))
             logger.info(f"* REMEMBER TO CHECK REPORT: {reportdir} *")
             logger.info("******************************" + "*" * len(str(reportdir)))

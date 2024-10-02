@@ -13,6 +13,12 @@
         {% if data.fix_sign_ambiguity %}
             <button class="button1" onclick="openTab(event, 'sign_flipping', this.id)" style="border-top-style: solid">Sign Flipping</button>
         {% endif %}
+        {% if data.batchlog is defined %}
+            <button class="button1" onclick="openTab(event, 'batchlog', this.id)" style="border-top-style: solid">Batch Log</button>
+        {% endif %}
+        {% if data.errlog is defined %}
+            <button class="button1" onclick="openTab(event, 'errlog', this.id)" style="border-top-style: solid">Error Logs</button>
+        {% endif %}
     </div>
   </div>
 
@@ -21,8 +27,10 @@
     <div class="tabpage" style='width: 100%' id='config'>
         <h3>Config</h3>
         <img src="{{ data.plt_config }}" alt="" style='max-width: 60%'/>
-        <h3>Extra functions</h3>
-        <iframe src="{{ data.extra_funcs }}" style="width: 80%; height: 200px;"></iframe>
+        {% if data.extra_funcs is defined %}
+            <h3>Extra functions</h3>
+            <textarea id="log" rows="20" style="width: 80%;" readonly>{{ data.extra_funcs }}</textarea>
+        {% endif %}
     </div>
 
     {% if data.coregister %}
@@ -30,7 +38,7 @@
             <h3>Coregistration</h3>
             {% if data.coreg_table is defined %}
                 Distance between polhemus and structural MRI fiducials in cm.</br></br>
-                {{ data.coreg_table }}
+                {{ data.coreg_table | safe }}
             {% else %}
                 No fiducials were used in coregistration.
             {% endif %}
@@ -50,7 +58,27 @@
             <h3>Sign Flipping</h3>
             <b>Template subject</b>: {{ data.template }}</br></br>
             <img src="{{ data.plt_sflip }}" alt="" style='max-width: 100%'/>
+            {% if data.signflip_table is defined %}
+                {{ data.signflip_table | safe }}
+            {% endif %}
         </div>
+    {% endif %}
+
+    {% if data.batchlog is defined %}
+    <div class="tabpage" style="width: 100%; display: none" id=batchlog>               
+        <h4>Batch Log</h4>
+        <textarea id="batchlog" rows="20" style="width: 80%;" readonly>{{ data.batchlog }}</textarea>
+    </div>
+    {% endif %}
+
+    {% if data.errlog is defined %}
+    <div class="tabpage" style="width: 100%; display: none" id=errlog>               
+        <h4>Error Logs</h4>
+            {% for key, value in data.errlog.items() %}
+                <h5>{{ key }}</h5>
+                <textarea id="{{ key }}" rows="20" style="width: 80%;" readonly>{{ value }}</textarea>
+            {% endfor %}
+    </div>
     {% endif %}
 
     </div>
@@ -79,6 +107,23 @@ function openTab(event, figTag, button) {
     if (figTag.includes('sign_flipping')) {
         currentButton = 3;
     }
+    if (figTag.includes('batchlog')) {
+        currentButton = 4;
+    }
+    if (figTag.includes('errlog')) {
+        currentButton = 5;
+    }
 }
 
+document.addEventListener('DOMContentLoaded', function() {
+    $('#coreg_tbl').DataTable();
+  });
+
+document.addEventListener('DOMContentLoaded', function() {
+    $('#signflip_tbl').DataTable();
+  });
 </script>
+
+<link rel="stylesheet" type="text/css" href="https://cdn.datatables.net/1.10.24/css/jquery.dataTables.css">
+<script type="text/javascript" charset="utf8" src="https://code.jquery.com/jquery-3.5.1.js"></script>
+<script type="text/javascript" charset="utf8" src="https://cdn.datatables.net/1.10.24/js/jquery.dataTables.js"></script>

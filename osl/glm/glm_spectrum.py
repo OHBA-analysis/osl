@@ -302,7 +302,10 @@ class MaxStatPermuteGLMSpectrum(SensorMaxStatPerm):
         title = 'group-con: {}\nfirst-level-con: {}'
         title = title.format(self.gl_contrast_name, self.fl_contrast_name)
 
-        clu, obs = self.get_sig_clusters(thresh)
+        clu, obs_sel = self.get_sig_clusters(thresh) # obs here is the selected data. We want to plot the full data
+        obs = glm.fit.OLSModel(self.perms._design, self.perm_data)
+        obs = obs.get_tstats(**self.perms.tstat_args)[self.gl_con, :, :]
+        
         to_plot = []
         for c in clu:
             to_plot.append(False if len(c[2][0]) < min_extent or len(c[2][1]) < min_extent else True)
@@ -332,8 +335,10 @@ class ClusterPermuteGLMSpectrum(SensorClusterPerm):
         title = 'group-con: {}\nfirst-level-con: {}'
         title = title.format(self.gl_contrast_name, self.fl_contrast_name)
 
-        clu, obs = self.perms.get_sig_clusters(thresh, self.perm_data)
-
+        clu, obs_sel = self.perms.get_sig_clusters(thresh, self.perm_data) # obs here is the selected data. We want to plot the full data
+        obs = glm.fit.OLSModel(self.perms._design, self.perm_data)
+        obs = obs.get_tstats(**self.perms.tstat_args)[self.gl_con, :, :]
+        
         to_plot = []
         for c in clu:
             to_plot.append(False if len(c[2][0]) < min_extent or len(c[2][1]) < min_extent else True)
@@ -679,7 +684,7 @@ def read_glm_spectrum(infile):
 
 def plot_joint_spectrum_clusters(xvect, psd, clusters, info, ax=None, freqs='auto', base=1,
                                  topo_scale='joint', lw=0.5, ylabel='Power', title='', ylim=None,
-                                 xtick_skip=1, topo_prop=1/5, topomap_args=None):
+                                 xtick_skip=1, topo_prop=1/5, topo_cmap=None, topomap_args=None):
     """Plot a GLM-Spectrum contrast from cluster objects, with spatial line colouring and topograpies.
 
     Parameters
@@ -1146,26 +1151,41 @@ def plot_sensor_spectrum(xvect, psd, info, ax=None, sensor_proj=False,
 
     if sensor_proj:
         axins = ax.inset_axes([0.6, 0.6, 0.37, 0.37])
-        if np.any(['parcel' in ch for ch in info['ch_names']]):
-            parcellation_file = parcellation.guess_parcellation(psd.T)
-            colors = get_source_colors(parcellation_file)
-            cmap = ListedColormap(colors)
-            parc_centers = parcellation.parcel_centers(parcellation_file)
-            n_parcels = parc_centers.shape[0]
-            plot_markers(
-                np.arange(n_parcels),
-                parc_centers,
-                axes=axins,
-                node_size=6,
-                node_cmap=cmap,
-                annotate=False,
-                colorbar=False,
-            )
-        else:
-            plot_channel_layout(axins, info)
+        plot_sensor_proj(info, ax=axins)
 
     if title is not None:
         ax.set_title(title)
+
+
+def plot_sensor_proj(info, ax=None, cmap=None):
+    if ax is None:
+        fig = plt.figure()
+        ax = plt.subplot(111)
+    if np.any(['parcel' in ch for ch in info['ch_names']]):
+        parcellation_file = parcellation.guess_parcellation(len(info.ch_names))
+        parc_centers = parcellation.parcel_centers(parcellation_file)
+        if cmap is None:
+            cmap = 'viridis'
+            x, y, z = parc_centers.T
+            X = y
+        else:
+            colors = get_source_colors(parcellation_file)
+            cmap = ListedColormap(colors)
+            X = np.arange(n_parcels)
+        
+        n_parcels = parc_centers.shape[0]
+        plot_markers(
+            X,
+            parc_centers,
+            axes=ax,
+            node_size=20,
+            node_cmap=cmap,
+            annotate=False,
+            colorbar=False,
+        )
+    else:
+        plot_channel_layout(ax, info)
+    return ax
 
 
 def plot_sensor_data(xvect, data, info, ax=None, lw=0.5,
@@ -1236,13 +1256,19 @@ def prep_scaled_freq(base, freq_vect):
     return fx, ftick, ftickscaled
 
 
-def get_source_colors(parcellation_file):
+def get_source_colors(parcellation_file, cmap='viridis'):
     parc_centers = stats.zscore(parcellation.parcel_centers(parcellation_file), axis=0)
     x, y, z = parc_centers.T
-    ref = [-5, -5, -3]
-    colors = mne.viz.evoked._rgb(x, y, z)
-    order = [np.argsort(np.sqrt(ref[i] - parc_centers[:, i]) ** 2) for i in range(3)]
-    colors = np.vstack([colors[order[0],0], colors[order[1],1], colors[order[2],2]]).T
+    if cmap=='viridis':
+        cmap = plt.get_cmap('viridis')
+        norm = plt.Normalize(vmin=parc_centers.min(), vmax=parc_centers.max())
+        colors = cmap(norm(parc_centers))[:,1,:]
+        # colors = colors[np.argsort(y), :]
+    else:
+        ref = [-5, -5, -3]
+        colors = mne.viz.evoked._rgb(x, y, z)
+        order = [np.argsort(np.sqrt(ref[i] - parc_centers[:, i]) ** 2) for i in range(3)]
+        colors = np.vstack([colors[order[0],0], colors[order[1],1], colors[order[2],2]]).T
     return colors
 
 

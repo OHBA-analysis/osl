@@ -18,7 +18,9 @@ import pathlib
 import re
 
 import numpy as np
+import pandas as pd
 import matplotlib.pyplot as plt
+from glob import glob
 from jinja2 import Template
 from tabulate import tabulate
 from mne.channels.channels import channel_type
@@ -45,7 +47,7 @@ from ..preprocessing import (
 # Report generation
 
 
-def gen_report_from_fif(infiles, outdir, ftype=None):
+def gen_report_from_fif(infiles, outdir, ftype=None, logsdir=None, run_id=None):
     """Generate web-report for a set of MNE data objects.
 
     Parameters
@@ -55,8 +57,12 @@ def gen_report_from_fif(infiles, outdir, ftype=None):
     outdir : str
         Directory to save HTML report and figures to.
     ftype : str
-        Type of fif file, e.g., ``'raw'`` or ``'preproc_raw'``.
-        
+        Type of fif file, e.g., ``'raw'`` or ``'preproc-raw'``.
+    logsdir : str
+        Directory the log files were saved into. If None, log files are assumed
+        to be in outdir.replace('report', 'logs')
+    run_id : str
+        Run ID.
     """
 
     # Validate input files and directory to save html file and plots to
@@ -69,7 +75,13 @@ def gen_report_from_fif(infiles, outdir, ftype=None):
         dataset = read_dataset(infile, ftype=ftype)
         run_id = get_header_id(dataset['raw'])
         htmldatadir = validate_outdir(outdir / run_id)
-        gen_html_data(dataset['raw'], htmldatadir, ica=dataset['ica'])
+        gen_html_data(
+            dataset['raw'],
+            htmldatadir,
+            ica=dataset['ica'],
+            logsdir=logsdir,
+            run_id=run_id,
+        )
 
     # Create report
     gen_html_page(outdir)
@@ -96,7 +108,9 @@ def get_header_id(raw):
     return raw.filenames[0].split('/')[-1].strip('.fif')
 
 
-def gen_html_data(raw, outdir, ica=None, preproc_fif_filename=None):
+def gen_html_data(
+    raw, outdir, ica=None, preproc_fif_filename=None, logsdir=None, run_id=None
+):
     """Generate HTML web-report for an MNE data object.
 
     Parameters
@@ -109,12 +123,17 @@ def gen_html_data(raw, outdir, ica=None, preproc_fif_filename=None):
         ICA object.
     preproc_fif_filename : str
         Filename of file output by preprocessing
+    logsdir : str
+        Directory the log files were saved into. If None, log files are assumed
+        to be in reportdir.replace('report', 'logs')
+    run_id : str
+        Run ID.
     """
 
     data = {}
     data['filename'] = raw.filenames[0]
     data['preproc_fif_filename'] = preproc_fif_filename
-    data['fif_id'] = get_header_id(raw)
+    data['fif_id'] = run_id or get_header_id(raw)
 
     # Scan info
     data['projname'] = raw.info['proj_name']
@@ -197,7 +216,6 @@ def gen_html_data(raw, outdir, ica=None, preproc_fif_filename=None):
     
     # Generate plots for the report
     data["plt_config"] = plot_flowchart(raw, savebase)
-    data["txt_extra_funcs"] = save_extra_funcs(raw, savebase.replace('.png', '.txt'))
     data["plt_rawdata"] = plot_rawdata(raw, savebase)
     data['plt_temporalsumsq'] = plot_channel_time_series(raw, savebase, exclude_bads=False)
     data['plt_temporalsumsq_exclude_bads'] = plot_channel_time_series(raw, savebase, exclude_bads=True)
@@ -211,17 +229,61 @@ def gen_html_data(raw, outdir, ica=None, preproc_fif_filename=None):
     #filenames = plot_artefact_scan(raw, savebase)
     #data.update(filenames)
 
+    # add extra funcs if they exist
+    extra_funcs = re.findall(
+        "%% extra_funcs start %%(.*?)%% extra_funcs end %%",
+        raw.info["description"],
+        flags=re.DOTALL,
+    )
+    if len(extra_funcs) > 0:
+        data["extra_funcs"] = ""
+        for func in extra_funcs:
+            data["extra_funcs"] = data["extra_funcs"] + func
+    
     # Add ICA if it's been passed
     if ica is not None:
+        data['ica_ncomps_rej'] = len(ica.exclude)
+        data['ica_ncomps_rej_ecg'] = [len(ica.labels_['ecg']) if 'ecg' in ica.labels_ else 'N/A'][0]
+        data['ica_ncomps_rej_eog'] = [len(ica.labels_['eog']) if 'eog' in ica.labels_ else 'N/A'][0]
         if len(ica.exclude) > 0:
             data['plt_ica'] = plot_bad_ica(raw, ica, savebase)
+
+    # add maxfilter info if possible
+    # we have to guess the exact filename
+    g=[]
+    for ext in ['tsss', 'trans', 'transdef', 'autobad', 'autobad_sss']:
+        g.append(glob(data['filename'].replace(f"{ext}.fif",'') +  '*.log'))
+    g = list(np.concatenate(g))
+    
+    for ig in g:
+        with open(ig, 'r') as log_file:
+            if 'autobad' in ig:
+                data['maxlog_autobad'] = log_file.read()
+            elif 'sss' in ig:
+                data['maxlog_sss'] = log_file.read()
+            elif 'trans' in ig:
+                data['maxlog_trans'] = log_file.read()
+    
+    # add log files if possible
+    if logsdir is None:
+        logsdir = outdir._str.replace('preproc_report', 'logs')
+    elif type(logsdir)==pathlib.PosixPath:
+        logsdir = os.path.join(logsdir._str, outdir._str.split('/')[-1])
+        
+    if os.path.exists(logsdir + '.log'):
+        with open(logsdir + '.log', 'r') as log_file:
+            data['log'] = log_file.read()
+        
+    if os.path.exists(logsdir + '.error.log'):
+        with open(logsdir + '.error.log', 'r') as log_file:
+            data['errlog'] = log_file.read()
 
     # Save data that will be used to create html page
     with open(outdir / 'data.pkl', 'wb') as outfile:
         pickle.dump(data, outfile)
 
 
-def gen_html_page(outdir):
+def gen_html_page(outdir, logsdir=None):
     """Generate an HTML page from a report directory.
 
     Parameters
@@ -270,7 +332,7 @@ def gen_html_page(outdir):
     # Hyperlink to each panel on the page
     filenames = ""
     for i in range(total):
-        filename = pathlib.Path(data[i]["filename"]).name
+        filename = pathlib.Path(data[i]["preproc_fif_filename"]).name.replace('_preproc-raw.fif', '')
         filenames += "{0}. {1}<br>".format(i + 1, filename)
 
     # Render the full page
@@ -285,13 +347,16 @@ def gen_html_page(outdir):
     return True
 
 
-def gen_html_summary(reportdir):
+def gen_html_summary(reportdir, logsdir=None):
     """Generate an HTML summary from a report directory.
 
     Parameters
     ----------
     reportdir : str
         Directory to generate HTML summary report with.
+    logsdir : str
+        Directory the log files were saved into. If None, log files are assumed
+        to be in reportdir.replace('report', 'logs')
     """
     reportdir = Path(reportdir)
 
@@ -324,10 +389,27 @@ def gen_html_summary(reportdir):
     os.makedirs(f"{reportdir}/summary", exist_ok=True)
 
     data["plt_config"] = subject_data[0]["plt_config"]
-    data["txt_extra_funcs"] = subject_data[0]["txt_extra_funcs"]
-    data["plt_summary_bad_segs"] = plot_summary_bad_segs(subject_data, reportdir)
-    data["plt_summary_bad_chans"] = plot_summary_bad_chans(subject_data, reportdir)
-
+    if "extra_funcs" in subject_data[0]:
+        data["extra_funcs"] = subject_data[0]["extra_funcs"]
+    data['tbl'] = gen_summary_data(subject_data)
+    
+    # log files
+    if logsdir is None:
+        logsdir = reportdir._str.replace('preproc_report', 'logs')
+    elif type(logsdir)==pathlib.PosixPath:
+        logsdir = logsdir._str
+        
+    if os.path.exists(os.path.join(logsdir, 'osl_batch.log')):
+        with open(os.path.join(logsdir, 'osl_batch.log'), 'r') as log_file:
+            data['batchlog'] = log_file.read()
+    
+    g = glob(os.path.join(logsdir, '*.error.log'))    
+    if len(g)>0:
+        data['errlog'] = {}
+        for ig in sorted(g):
+            with open(ig, 'r') as log_file:
+                data['errlog'][ig.split('/')[-1].split('.error.log')[0]] = log_file.read()
+            
     # Create panel
     panel_template = load_template('raw_summary_panel')
     panel = panel_template.render(data=data)
@@ -348,6 +430,28 @@ def gen_html_summary(reportdir):
         f.write(page)
 
     return True
+
+
+def gen_summary_data(subject_data):
+    df = pd.DataFrame()
+    column_headers = ['Session ID', 'Measurement month', 'Duration (s)', 'Bad segments (mag)', 
+                      'Bad segments (grad)', 'Bad segments (eeg)', 'Bad channels (#)', 
+                      'Bad channels (id)', 'Bad ICA (total)', 'Bad ICA (ECG)', 'Bad ICA (EOG)']
+    fields = ['fif_id', 'meas_date', 'acq_duration', 'bad_seg_pc_mag', 'bad_seg_pc_grad', 
+              'bad_seg_pc_eeg', 'bad_chan_num', 'bad_chans', 'ica_ncomps_rej', 
+              'ica_ncomps_rej_ecg', 'ica_ncomps_rej_eog']
+    for field, hdr in zip(fields, column_headers):
+        if field == 'meas_date': # anonymise date (only year/month)
+            df[hdr] = ["-".join(subject_data[i][field].split(' ')[0].split('-')[:-1]) if field in subject_data[i].keys() else None for i in range(len(subject_data))]
+        else:
+            df[hdr] = [subject_data[i][field] if field in subject_data[i].keys() else None for i in range(len(subject_data))]
+    
+    # remove columns that only contains None
+    df = df.dropna(axis=1, how='all')
+    df.index += 1 # start index at 1
+    tbl = df.to_html(classes="display", table_id="preproc_tbl")
+    
+    return tbl
 
 
 def load_template(tname):
@@ -425,39 +529,7 @@ def plot_flowchart(raw, savebase=None):
         fpath = filebase.format('flowchart')
     else:
         fpath = None
-    return fpath
-
-
-def save_extra_funcs(raw, savebase=None):
-    """ Saves extra functions from the raw.info['description'] to a text file.
-    
-    Parameters
-    ----------
-    raw : :py:class:`mne.io.Raw <mne.io.Raw>`
-        MNE Raw object.
-    savebase : str
-        Base string for saving figures.
-        
-    Returns
-    -------
-    fpath : str
-        Path to saved text file.
-    
-    """
-    extra_funcs = re.findall(
-        "%% extra_funcs start %%(.*?)%% extra_funcs end %%",
-        raw.info["description"],
-        flags=re.DOTALL,
-    )
-    
-    if savebase is not None:
-        fpath = savebase.format(f"extra_funcs")
-        with(open(fpath, 'w')) as file:
-            [print(func, file=file) for func in extra_funcs]
-        return fpath
-    else:
-        return None
-    
+    return fpath    
         
 
 def plot_rawdata(raw, savebase):

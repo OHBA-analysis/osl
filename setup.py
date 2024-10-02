@@ -19,7 +19,7 @@ dev_reqs = ['setuptools>=41.0.1', 'pytest', 'pytest-cov', 'coverage', 'flake8']
 name = 'osl'
 
 setup(name=name,
-      version='0.8.dev0',
+      version='1.1.dev0',
       description='OHBA Software Library',
       long_description=README,
       long_description_content_type="text/markdown",
@@ -58,6 +58,8 @@ setup(name=name,
       entry_points={
           'console_scripts': [
               'osl_maxfilter = osl.maxfilter.maxfilter:main',
+              'osl_ica_label = osl.preprocessing.ica_label:main',
+              'osl_ica_apply = osl.preprocessing.ica_label:apply',
               'osl_preproc = osl.preprocessing.batch:main',
               'osl_func = osl.utils.run_func:main',
           ]},
@@ -76,7 +78,9 @@ setup(name=name,
                             # Parcellation files
                             'source_recon/parcellation/files/*gz',
                             # Report templates
-                            'report/templates/*']},
+                            'report/templates/*',
+                            # READMEs
+                            '*/README.md']},
 
       command_options={
           'build_sphinx': {

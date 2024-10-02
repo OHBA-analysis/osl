@@ -100,6 +100,12 @@ class Study:
             for d in self.match_values[1:]:
                 self.fields[key].append(d[key])
 
+    
+    def refresh(self):
+        """Refresh the study directory."""
+        return self.__init__(self.studydir)
+    
+    
     def get(self, check_exist=True, **kwargs):
         """Get files from the study directory that match the fieldnames.
 

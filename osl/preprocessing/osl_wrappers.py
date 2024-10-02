@@ -10,8 +10,11 @@ import logging
 import mne
 import numpy as np
 import sails
+import yaml
+import pickle
 from os.path import exists
 from scipy import stats
+from pathlib import Path
 
 logger = logging.getLogger(__name__)
 
@@ -745,7 +748,106 @@ def drop_bad_epochs(
 
 
 # Wrapper functions
+def run_osl_read_dataset(dataset, userargs):
+    """Reads ``fif``/``npy``/``yml`` files associated with a dataset.
 
+    Parameters
+    ----------
+    fif : str
+        Path to raw fif file (can be preprocessed).
+    preload : bool
+        Should we load the raw fif data?
+    ftype : str
+        Extension for the fif file (will be replaced for e.g. ``'_events.npy'`` or 
+        ``'_ica.fif'``). If ``None``, we assume the fif file is preprocessed with 
+        OSL and has the extension ``'_preproc-raw'``. If this fails, we guess 
+        the extension as whatever comes after the last ``'_'``.
+    extra_keys : str
+        Space separated list of extra keys to read in from the same directory as the fif file.
+        If no suffix is provided, it's assumed to be .pkl. e.g., 'glm' will read in '..._glm.pkl'
+        'events.npy' will read in '..._events.npy'.
+
+    Returns
+    -------
+    dataset : dict
+        Contains keys: ``'raw'``, ``'events'``, ``'event_id'``, ``'epochs'``, ``'ica'``.
+    """
+    
+    logger.info("OSL Stage - {0}".format( "read_dataset"))
+    logger.info("userargs: {0}".format(str(userargs)))
+    ftype = userargs.pop("ftype", None)
+    extra_keys = userargs.pop("extra_keys", [])
+    
+    fif = dataset['raw'].filenames[0]
+
+    # Guess extension
+    if ftype is None:
+        logger.info("Guessing the preproc extension")
+        if "preproc-raw" in fif:
+            logger.info('Assuming fif file type is "preproc-raw"')
+            ftype = "preproc-raw"
+        else:
+            if len(fif.split("_"))<2:
+                logger.error("Unable to guess the fif file extension")
+            else:
+                logger.info('Assuming fif file type is the last "_" separated string')
+                ftype = fif.split("_")[-1].split('.')[-2]
+    
+    # add extension to fif file name
+    ftype = ftype + ".fif"
+    
+    events = Path(fif.replace(ftype, "events.npy"))
+    if events.exists():
+        print("Reading", events)
+        events = np.load(events)
+    else:
+        events = None
+
+    event_id = Path(fif.replace(ftype, "event-id.yml"))
+    if event_id.exists():
+        print("Reading", event_id)
+        with open(event_id, "r") as file:
+            event_id = yaml.load(file, Loader=yaml.Loader)
+    else:
+        event_id = None
+
+    epochs = Path(fif.replace(ftype, "epo.fif"))
+    if epochs.exists():
+        print("Reading", epochs)
+        epochs = mne.read_epochs(epochs)
+    else:
+        epochs = None
+
+    ica = Path(fif.replace(ftype, "ica.fif"))
+    if ica.exists():
+        print("Reading", ica)
+        ica = mne.preprocessing.read_ica(ica)
+    else:
+        ica = None
+
+    dataset['event_id'] = event_id
+    dataset['events'] = events
+    dataset['ica'] = ica
+    dataset['epochs'] = epochs
+
+    if len(extra_keys)>0:
+        extra_keys = extra_keys.split(" ")
+        for key in extra_keys:
+            extra_file = Path(fif.replace(ftype, key))
+            key = key.split(".")[0]
+            if '.' not in extra_file.name:
+                extra_file = extra_file.with_suffix('.pkl')
+            if extra_file.exists():
+                print("Reading", extra_file)
+                if '.pkl' in extra_file.name:
+                    with open(extra_file, 'rb') as outp:
+                        dataset[key] = pickle.load(outp)
+                elif '.npy' in extra_file.name:
+                    dataset[key] = np.load(extra_file)
+                elif '.yml' in extra_file.name:
+                    with open(extra_file, 'r') as file:
+                        dataset[key] = yaml.load(file, Loader=yaml.Loader)
+    return dataset
 
 def run_osl_bad_segments(dataset, userargs):
     """OSL-Batch wrapper for :py:meth:`detect_badsegments <osl.preprocessing.osl_wrappers.detect_badsegments>`.

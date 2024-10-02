@@ -17,13 +17,17 @@ config = """
 # Create a list of paths to files to preprocess
 inputs = ["data/raw/mg04938_BrainampDBS_20170504_01_raw.fif"]
 
+# Subject IDs
+subjects = ["LN_VTA2"]
+
 # Directory to save output to
-outdir = "data/preproc"
+outdir = "data"
 
 # Do preprocessing
 preprocessing.run_proc_batch(
     config,
     inputs,
+    subjects=subjects,
     outdir=outdir,
     overwrite=True,
 )
