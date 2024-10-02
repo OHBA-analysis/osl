@@ -258,7 +258,7 @@ def _find_outliers_in_segments_per_channel(X, axis=-1, channel_axis = 0,segment_
         bads_ch = np.isin(bad_inds, rm_ind)
         bads[ch] = bads_ch
     if threshold != 'any':
-        bads = np.sum(bads,axis=0) > threshold*num_channels
+        bads = np.sum(bads,axis=0) >= threshold*num_channels
     else:
         bads = np.any(bads,axis=0)
 
@@ -293,7 +293,8 @@ def detect_artefacts(X, axis=None, reject_mode='dim', metric_func=np.std,
         removed (zero_bads) or the input data with outliers replaced with nans
         (nan_bads)
     channel_wise : bool
-        If True, the function will treat each channel seperately when detecting bad segments.
+        If True, the function will treat each channel seperately when detecting bad segments,
+        only used when ``reject_mode='segments'``.
     channel_axis : int
         The axis to treat as the channel axis. Only used when ``channel_wise=True``.
     channel_threshold : str or float
