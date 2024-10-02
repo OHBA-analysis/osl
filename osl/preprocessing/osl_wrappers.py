@@ -217,7 +217,7 @@ def _find_outliers_in_segments_per_channel(X, axis=-1, channel_axis = 0,segment_
 
     # Preallocate some variables
     metric = np.zeros((num_channels, num_segments))
-    bad_inds = np.zeros((num_channels, X.shape[axis])) * np.nan
+    bad_inds = np.zeros(X.shape[axis]) * np.nan
 
     # Prepare to slice data array
     slc = [slice(None)] * X.ndim
@@ -241,7 +241,7 @@ def _find_outliers_in_segments_per_channel(X, axis=-1, channel_axis = 0,segment_
 
         # Store which chunk we've used
         indices = np.arange(start, stop if stop is not None else X.shape[axis])
-        bad_inds[:, indices] = ii
+        bad_inds[indices] = ii
 
     # Initialize the boolean array to mark outliers
     bads = np.zeros_like(X, dtype=bool)
@@ -255,7 +255,7 @@ def _find_outliers_in_segments_per_channel(X, axis=-1, channel_axis = 0,segment_
         rm_ind = np.where(rm_ind)[0]
 
         # Convert to bool in original space of defined axis
-        bads_ch = np.isin(bad_inds[ch], rm_ind)
+        bads_ch = np.isin(bad_inds, rm_ind)
         bads[ch] = bads_ch
     if threshold != 'any':
         bads = np.sum(bads,axis=0) > threshold*num_channels
