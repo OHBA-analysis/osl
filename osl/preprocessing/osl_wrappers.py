@@ -154,7 +154,7 @@ def _find_outliers_in_segments(X, axis=-1, segment_len=100,
         # Update slice on dim of interest
         slc[axis] = slice(starts[ii], stop)
         # Compute metric for current chunk
-        metric[ii] = metric_func(X[tuple(slc)])
+        metric[ii] = np.nan_to_num(metric_func(X[tuple(slc)]),0)
         # Store which chunk we've used
         bad_inds[slc[axis]] = ii
 
@@ -237,7 +237,7 @@ def _find_outliers_in_segments_per_channel(X, axis=-1, channel_axis = 0,segment_
             slc[channel_axis] = ch
             data_chunk = X[tuple(slc)]
             # Compute metric for current chunk
-            metric[ch, ii] = metric_func(data_chunk)
+            metric[ch, ii] = np.nan_to_num(metric_func(data_chunk), nan=0)
 
         # Store which chunk we've used
         indices = np.arange(start, stop if stop is not None else X.shape[axis])
