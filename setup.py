@@ -13,7 +13,7 @@ reqs = ['numpy', 'scipy', 'matplotlib', 'mne~=1.3.1', 'scikit-learn', 'fslpy',
         'sails', 'tabulate', 'pyyaml>=5.1', 'neurokit2', 'jinja2==3.0.3',
         'glmtools', 'numba', 'nilearn', 'dask', 'distributed', 'parse',
         'opencv-python', 'panel', 'h5io']
-doc_reqs = ['sphinx==4.0.2', 'numpydoc', 'sphinx_gallery', 'pydata-sphinx-theme']
+doc_reqs = ['sphinx==5.3.0', 'numpydoc', 'sphinx_gallery', 'pydata-sphinx-theme']
 dev_reqs = ['setuptools>=41.0.1', 'pytest', 'pytest-cov', 'coverage', 'flake8']
 
 name = 'osl'
