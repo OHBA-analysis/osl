@@ -125,55 +125,10 @@ def _find_outliers_in_dims(X, axis=-1, metric_func=np.std, gesd_args=None):
 
 
 def _find_outliers_in_segments(X, axis=-1, segment_len=100,
-                               metric_func=np.std, gesd_args=None):
-    """Create dummy-segments in a dimension of an array and find outliers in it"""
-
-    if gesd_args is None:
-        gesd_args = {}
-
-    if axis == -1:
-        axis = np.arange(X.ndim)[axis]
-
-    # Prepare to slice data array
-    slc = []
-    for ii in range(X.ndim):
-        if ii == axis:
-            slc.append(slice(0, segment_len))
-        else:
-            slc.append(slice(None))
-
-    # Preallocate some variables
-    starts = np.arange(0, X.shape[axis], segment_len)
-    metric = np.zeros((len(starts), ))
-    bad_inds = np.zeros(X.shape[axis])*np.nan
-
-    # Main loop
-    for ii in range(len(starts)):
-        if ii == len(starts)-1:
-            stop = None
-        else:
-            stop = starts[ii]+segment_len
-
-        # Update slice on dim of interest
-        slc[axis] = slice(starts[ii], stop)
-        # Compute metric for current chunk
-        metric[ii] = np.nan_to_num(metric_func(X[tuple(slc)]),0)
-        # Store which chunk we've used
-        bad_inds[slc[axis]] = ii
-
-    # Get bad segments
-    rm_ind, _ = gesd(metric, **gesd_args)
-    # Convert to int indices
-    rm_ind = np.where(rm_ind)[0]
-    # Convert to bool in original space of defined axis
-    bads = np.isin(bad_inds, rm_ind)
-    return bads
-
-
-def _find_outliers_in_segments_per_channel(X, axis=-1, channel_axis = 0,segment_len=100,
-                                           metric_func=np.std, gesd_args=None,threshold = 'any'):
+                               metric_func=np.std, gesd_args=None,
+                               channel_wise = False, channel_axis = 0, threshold = 0.05):
     """
-    Identify outlier segments in a per-channel basis within an array.
+    Identify outlier segments within an array.
     Parameters:
     - X: np.ndarray
         Input data array with dimensions (channel, time).
@@ -187,8 +142,13 @@ def _find_outliers_in_segments_per_channel(X, axis=-1, channel_axis = 0,segment_
         Function to compute the metric for each segment (default is np.std).
     - gesd_args: dict
         Additional arguments to pass to the GESD.
+    - channel_wise: bool
+        If True, the function will treat each channel seperately when detecting bad segments.
+    - channel_axis: int
+        The axis to treat as the channel axis. Only used when ``channel_wise=True``.
     - threshold: str or float
-        Threshold for outlier detection. If 'any', a segment is marked as an outlier if 
+        Threshold for outlier detection. Only used when ``channel_wise=True``.
+        If 'any', a segment is marked as an outlier if 
         any of its channels is an outlier.
         If a float, a segment is marked as an outlier if the fraction of outlier 
         channels exceeds the threshold.
@@ -197,73 +157,83 @@ def _find_outliers_in_segments_per_channel(X, axis=-1, channel_axis = 0,segment_
     - bads: np.ndarray
         Boolean array indicating outlier segments.
     """
+
     if gesd_args is None:
         gesd_args = {}
 
     if axis == -1:
-        axis = X.ndim - 1  # Convert negative axis to positive index
-    if channel_axis == -1:
-        channel_axis = X.ndim - 1
+        axis = np.arange(X.ndim)[axis]
 
-    if axis == channel_axis:
-        raise ValueError('The time axis and channel axis cannot be the same.')
-    
-    num_channels = X.shape[channel_axis]
-    if threshold != 'any':
-        if not 0 < threshold <= 1:
-            raise ValueError('Threshold must be between 0 and 1 or "any".')
-        if num_channels*threshold < 1:
-            raise ValueError('Threshold must be at least 1 channel.')
-
+    # Preallocate some variables and prepare to slice data array
     starts = np.arange(0, X.shape[axis], segment_len)
     num_segments = len(starts)
-
-    # Preallocate some variables
-    metric = np.zeros((num_channels, num_segments))
-    bad_inds = np.zeros(X.shape[axis]) * np.nan
-
-    # Prepare to slice data array
+    bad_inds = np.zeros(X.shape[axis])*np.nan
     slc = [slice(None)] * X.ndim
 
-    # Main loop over segments
-    for ii, start in enumerate(starts):
-        if ii == num_segments - 1:
-            stop = None
-        else:
-            stop = start + segment_len
+    if channel_wise:
+        if channel_axis == -1:
+            channel_axis = np.arange(X.ndim)[channel_axis]
+        if axis == channel_axis:
+            raise ValueError('The time axis and channel axis cannot be the same.')
+        num_channels = X.shape[channel_axis]
+        if threshold != 'any':
+            if not isinstance(threshold, (int, float)):
+                raise ValueError("Threshold must be an integer or float or 'any'.")
+            if not 0 < threshold <= 1:
+                raise ValueError('Threshold must be between 0 and 1 or "any".')
+            if num_channels*threshold < 1:
+                raise ValueError('Threshold*n_channels must be at least 1 channel.')
+            
+        metric = np.zeros((num_channels, num_segments))
+        for ii, start in enumerate(starts):
+            if ii == num_segments - 1:
+                stop = None
+            else:
+                stop = start + segment_len
+            # Update slice on dim of interest
+            slc[axis] = slice(start, stop)
+            for ch in range(num_channels):
+                # Update the slice object for channels
+                slc[channel_axis] = ch
+                # Compute metric for current chunk
+                metric[ch, ii] = np.nan_to_num(metric_func(X[tuple(slc)]), nan=0)
+            bad_inds[slc[axis]] = ii
 
-        # Update the slice object for the current segment
-        slc[axis] = slice(start, stop)
+        bads = np.zeros_like(X, dtype=bool)
 
         for ch in range(num_channels):
-            # Update the slice object for channels
-            slc[channel_axis] = ch
-            data_chunk = X[tuple(slc)]
-            # Compute metric for current chunk
-            metric[ch, ii] = np.nan_to_num(metric_func(data_chunk), nan=0)
+            metric_ch = metric[ch]
+            # Apply the GESD test to identify outlier segments for each channel
+            rm_ind, _ = gesd(metric_ch, **gesd_args)
+            # Convert to int indices
+            rm_ind = np.where(rm_ind)[0]
+            # Convert to bool in original space of defined axis
+            bads_ch = np.isin(bad_inds, rm_ind)
+            # Store the boolean array for each channel
+            bads[ch] = bads_ch
 
-        # Store which chunk we've used
-        indices = np.arange(start, stop if stop is not None else X.shape[axis])
-        bad_inds[indices] = ii
-
-    # Initialize the boolean array to mark outliers
-    bads = np.zeros_like(X, dtype=bool)
-
-    # Apply the GESD per channel
-    for ch in range(num_channels):
-        metric_ch = metric[ch]
-        # Apply the GESD test to identify outlier segments
-        rm_ind, _ = gesd(metric_ch, **gesd_args)
-        # Convert to int indices
-        rm_ind = np.where(rm_ind)[0]
-
-        # Convert to bool in original space of defined axis
-        bads_ch = np.isin(bad_inds, rm_ind)
-        bads[ch] = bads_ch
-    if threshold != 'any':
-        bads = np.sum(bads,axis=0) >= threshold*num_channels
+        # Combine the boolean arrays for each channel
+        if threshold != 'any':
+            bads = np.sum(bads,axis=0) >= threshold*num_channels
+        else:
+            bads = np.any(bads,axis=0)
     else:
-        bads = np.any(bads,axis=0)
+        metric = np.zeros((num_segments, ))
+        for ii, start in enumerate(starts):
+            if ii == num_segments - 1:
+                stop = None
+            else:
+                stop = start + segment_len
+            # Update slice on dim of interest
+            slc[axis] = slice(start, stop)
+            # Compute metric for current chunk
+            metric[ii] = np.nan_to_num(metric_func(X[tuple(slc)]), nan=0)
+            # Store which chunk we've used
+            bad_inds[slc[axis]] = ii
+
+        rm_ind, _ = gesd(metric, **gesd_args)
+        rm_ind = np.where(rm_ind)[0]
+        bads = np.isin(bad_inds, rm_ind)
 
     return bads
 
@@ -326,17 +296,12 @@ def detect_artefacts(X, axis=None, reject_mode='dim', metric_func=np.std,
         bad_inds = _find_outliers_in_dims(X, axis=axis, metric_func=metric_func, gesd_args=gesd_args)
 
     elif reject_mode == 'segments':
-        if channel_wise:
-            bad_inds = _find_outliers_in_segments_per_channel(X, axis=axis, channel_axis = channel_axis,
-                                                segment_len=segment_len,
-                                                metric_func=metric_func,
-                                                gesd_args=gesd_args,
-                                                threshold = channel_threshold)
-        else: 
-            bad_inds = _find_outliers_in_segments(X, axis=axis,
-                                                segment_len=segment_len,
-                                                metric_func=metric_func,
-                                                gesd_args=gesd_args)
+        bad_inds = _find_outliers_in_segments(X, axis=axis,
+                                            segment_len=segment_len,
+                                            metric_func=metric_func,
+                                            gesd_args=gesd_args,channel_wise=channel_wise,
+                                            channel_axis = channel_axis,
+                                            threshold = channel_threshold)
 
     if ret_mode == 'bad_inds':
         return bad_inds
