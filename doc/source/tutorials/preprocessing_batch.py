@@ -96,7 +96,11 @@ if __name__ == '__main__':
     
     # write extra information here, e.g., definitions of config, files, output_dir
     
-    osl.preprocessing.run_proc_batch(config, inputs=subs, subjects=subjects_ids, outdir=outdir, dask_client=True)
+    osl.preprocessing.run_proc_batch(config, 
+                                     inputs=subs, 
+                                     subjects=subjects_ids, 
+                                     outdir=outdir, 
+                                     dask_client=True)
 
 
 # %%

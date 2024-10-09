@@ -84,7 +84,7 @@ Have a look at the :doc:`tutorials_build/preprocessing_automatic` tutorial.
 What is MaxFilter and how do I use it?
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 MaxFilter is Elekta licensed software, and is typically only used for Elekta/Megin data, though in principle it can be applied to other data source (incl. OPM's). It is used to remove external noise (e.g., environmental noise) and do head movement compensation. 
-Maxfilter uses some extra reference sensors in the MEG together with Signal Space Seperation (SSS) to achieve this. MaxFilter has various settings, for which OSL has `wrappers <https://github.com/OHBA-analysis/osl/tree/main/osl/maxfilter>`_ for the 
+Maxfilter uses some extra reference sensors in the MEG together with Signal Space Seperation (SSS) to achieve this. MaxFilter has various settings, for which OSL has `wrappers <https://osl.readthedocs.io/en/latest/autoapi/osl/maxfilter/maxfilter/index.html>`_ for the 
 Elekta software with some explanations of settings. Furthermore, `MNE-Python also has a maxfilter that doesn't require a license <https://mne.tools/stable/generated/mne.preprocessing.maxwell_filter.html>`_. Besides these references, also have a look at the 
 `Maxfilter user manual <https://ohba-analysis.github.io/osl-docs/downloads/maxfilter_user_guide.pdf>`_ and at `these guidelines <https://lsr-wiki-01.mrc-cbu.cam.ac.uk/meg/maxpreproc>`_.
 
@@ -123,7 +123,7 @@ There are several ways to identify artefact-related components. Comonly, compone
 These can be identified either automatically, e.g., by correlation with the ECG / EOG (when recorded), or manually, by inspecting the component topographies and timecourses. 
 We recommend a combination of the two: have a automatic first pass, and manually adapting the labels where necessary. 
 
-We provide command line functions in ``osl`` to do the manual checks and reject the components from the data post-hoc. See `ica_label <https://osl.readthedocs.io/en/latest/build/html/_modules/osl/preprocessing/ica_label.html#apply>`_
+We provide command line functions in ``osl`` to do the manual checks and reject the components from the data post-hoc. See `ica_label <https://osl.readthedocs.io/en/latest/autoapi/osl/preprocessing/ica_label/index.html#osl.preprocessing.ica_label.main>`_
 
 .. code-block:: Python
 
@@ -149,13 +149,13 @@ This involves coregistering a number of different coordinate systems:
 * sMRI (Native) space - defined with respect to the structural MRI scan.
 * MNI space - defined with respect to the MNI standard space brain.
 
-See the :doc:`tutorials_build/preprocessing_automatic` tutorial to see how to coregister the data.
+See the :doc:`tutorials_build/sourece-recon_coreg` tutorial to see how to coregister the data.
 
 How do I use a custom function in the pipeline?
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 This is done slightly differently than in the ``preprocessing`` module. Again, we need to define a python function, but the ``soure_recon`` module doesn't work with the ``dataset`` dictionary, so we might need to load/save data to disk directly.
-As input arguments, we can use any input arguments that `run_src_chain <https://osl.readthedocs.io/en/latest/autoapi/osl/source_recon/index.html#osl.source_recon.batch.run_src_chain>`_ and `run_src_batch <https://osl.readthedocs.io/en/latest/autoapi/osl/source_recon/index.html#osl.source_recon.batch.run_src_batch>`_
+As input arguments, we can use any input arguments that `run_src_chain <https://osl.readthedocs.io/en/latest/autoapi/osl/source_recon/batch/index.html#osl.source_recon.batch.run_src_chain>`_ and `run_src_batch <https://osl.readthedocs.io/en/latest/autoapi/osl/source_recon/batch/index.html#osl.source_recon.batch.run_src_batch>`_
 take, such as ``subject``, ``outdir``, and ``smri_file``. We can also use ``userargs``, to specify any options you might want to supply in the config.
 The user can also print statements to an existing logfile using ``osl.utils.log_or_print``. 
 
@@ -197,7 +197,8 @@ For example:
 How do I use multiple cores for parallel preprocessing my data?
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-See :doc:`tutorials_build/preprocessing_automatic`
+This works the same as in the ``preprocessing`` module, and can be applied to ``osl.source_recon.run_src_batch``. See here how to set up your script appropriately: 
+`How can I preprocess my data using multiple cores (CPUs)? <#how-can-i-preprocess-my-data-using-multiple-cores-cpus>`_
 
 How do I refine the coregistration of a particular subject?
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -211,7 +212,7 @@ Utilities
 
 How do I use the Study class for finding my data?
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-The `Study <https://osl.readthedocs.io/en/latest/autoapi/osl/utils/index.html#osl.utils.study.Study>`_ class enables finding data paths with multiple wild cars, and selecting those that satisfy a specific wild card.
+The `Study <https://osl.readthedocs.io/en/latest/autoapi/osl/utils/study/index.html#osl.utils.study.Study>`_ class enables finding data paths with multiple wild cars, and selecting those that satisfy a specific wild card.
 
 For example 
 
@@ -245,5 +246,5 @@ How can I cite the package?
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 For up-to-date citation information, please have a look at the citation information on `GitHub   <https://github.com/OHBA-analysis/osl/blob/main/CITATION.cff>`_ (Look for the button "Cite this repository"). 
-Don't forget to also cite `MNE-Python <https://github.com/mne-tools/mne-python>`_, and, if you've used the `osl.source_recon` module, `FSL <https://fsl.fmrib.ox.ac.uk/fsl/docs/#/license>`_
+Don't forget to also cite `MNE-Python <https://github.com/mne-tools/mne-python>`_, and, if you've used the ``osl.source_recon`` module, `FSL <https://fsl.fmrib.ox.ac.uk/fsl/docs/#/license>`_
 

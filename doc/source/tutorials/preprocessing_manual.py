@@ -8,7 +8,7 @@ From our experience, preprocessing pipelines are rarely directly generalizable b
 This can for example be done by applying preprocessing steps one by one and visualising the data each time to see what effects every step has on your data. In this section we will do just that; starting from the raw data.
 
 **Note**: the data we'll use has already had a MaxFilter applied to it. MaxFilter is Elekta licensed software, and is also only needed for Elekta/Megin data. It is used to remove external noise (e.g., environmental noise) and do head movement compensation. 
-Maxfilter uses some extra reference sensors in the MEG together with Signal Space Seperation (SSS) to achieve this. MaxFilter has various settings, which we will not go into here, but OSL does have a `wrapper <https://github.com/OHBA-analysis/osl/tree/main/osl/maxfilter>`_ for the 
+Maxfilter uses some extra reference sensors in the MEG together with Signal Space Seperation (SSS) to achieve this. MaxFilter has various settings, which we will not go into here, but OSL does have a `wrapper <https://osl.readthedocs.io/en/latest/autoapi/osl/maxfilter/maxfilter/index.html>`_ for the 
 Elekta software with some explanations of settings. Furthermore, `MNE-Python also has a maxfilter that doesn't require a license <https://mne.tools/stable/generated/mne.preprocessing.maxwell_filter.html>`_. Besides these references, also have a look at the 
 `MaxFilter user manual <https://ohba-analysis.github.io/osl-docs/downloads/maxfilter_user_guide.pdf>`_ and at `these guidelines <https://lsr-wiki-01.mrc-cbu.cam.ac.uk/meg/maxpreproc>`_).
 
@@ -180,7 +180,7 @@ plt.suptitle('Note the peaks at 50 Hz and 100 Hz in the plots - this corresponds
 # One such artefact is line noise (originating from the A/C output at 50 Hz in Europe, or 60 Hz in the USA), as can be seen in the power spectrum above.
 # We can remove this with a filter (i.e. a notch filter). Another artefact that can easily be removed using filters is high frequency noise (low pass filter).
 # Note that the filter cut off depends on your sampling frequency, and the analyses you intend to do and the hypotheses you have.
-# It is good practice to filter your data before downsampling, because doing it the other way around can introduce `aliasing issues <https://mne.tools/stable/generated/mne.time_frequency.Spectrum.html>`_.
+# It is good practice to filter your data before downsampling, because doing it the other way around can introduce `aliasing issues <https://en.wikipedia.org/wiki/Anti-aliasing_filter>`_.
 # The reason our data is already downsampled is purely for practical reasons - usually we would do this at a later stage.
 # Let's band-pass filter the signal and remove line noise, looking at the effect on the power spectrum every time.
 #
@@ -335,11 +335,11 @@ ica.exclude += eog_indices
 print(ica.exclude)
 
 #%%
-# Let's use OSL's ICA databrowser to make corrections where needed. The browser will show the topographies on the left (seperate for each channel type), and the time course on the right. We can click on a time course if we want to label a component as bad (another click unlabels the component). After clicking, we can optionally use numbers 1-5 to specify what type of artefact we're labeling. This is currently not used for anything, but can aid later analyses of ICA (it is saved in ica.labels_).
+# Let's use OSL's ICA databrowser to make corrections where needed. The browser will show the topographies on the left (seperate for each channel type), and the time course on the right. We can click on a time course if we want to label a component as bad (another click unlabels the component). After clicking, we can optionally use numbers 1-5 to specify what type of artefact we're labeling. This is currently not used for anything, but can aid later analyses of ICA (it is saved in ``ica.labels_``).
 #
-# :note: Interacting with the figure in Jupyter Notebook might not work or might be very slow. This is recommended to do outside of Jupyter Notebook (e.g. using an IDE like Spyder or Pycharm). In the `preprocessing using the osl config API tutorial <https://osl.readthedocs.io/en/latest/tutorals_build/preprocessing_automatic.html>_` we'll show a way to do this using a command line function.
+# :note: Interacting with the figure in Jupyter Notebook might not work or might be very slow. This is recommended to do outside of Jupyter Notebook (e.g. using an IDE like Spyder or Pycharm). In the `preprocessing using the osl config API tutorial <https://osl.readthedocs.io/en/latest/tutorials_build/preprocessing_automatic.html#manually-checking-ica>_` we'll show a way to do this using a command line function. Also see `How do I select which components to remove in ICA <https://osl.readthedocs.io/en/latest/faq.html#how-do-i-select-which-components-to-remove-in-ica>`_
 #
-# When we're done, we can close the window. ica.exclude is then updated. Once we're happy with the labeled components, we can remove them from the data using ica.apply().
+# When we're done, we can close the window. ica.exclude is then updated. Once we're happy with the labeled components, we can remove them from the data using ``ica.apply()``.
 #
 # :note: The components are only removed from the data after calling ``ica.apply(raw)``. When we are happy with our preprocessing and are ready to save the clean data, we can do so with ``clean.save(filepath)`` (see `here <https://mne.tools/stable/generated/mne.io.Raw.html#mne.io.Raw.save>`_)
 

@@ -21,8 +21,8 @@ The following tutorials illustrate basic usage and analysis that can be done wit
 **Source reconstruction**:
 
 - :doc:`tutorials_build/source-recon_coreg`.
-- :doc:`tutorials_build/source-recon_subject`.
 - :doc:`tutorials_build/source-recon_deleting-headshape-points`.
+- :doc:`tutorials_build/source-recon_subject`.
 - :doc:`tutorials_build/source-recon_batch`.
 
 

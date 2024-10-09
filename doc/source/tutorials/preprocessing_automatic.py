@@ -58,7 +58,7 @@ config_text = """
 
 #%%
 # We can specify the variable ``config_text`` in our Python script, or save the text itself (everything between the """ ... """) as a .yaml file. Whenever an OSL function requires a config, it can be specified as either the path to the ``.yaml``-file, or the ``config_text`` variable. 
-# In the `preproc` field, we specify each method we want to apply to the data, in the order in which we want to apply them (i.e., the methods will be applied serially). All methods from MNE-Python can be specified here, as well as some OSL methods (see `osl_wrappers <https://github.com/OHBA-analysis/osl/blob/main/osl/preprocessing/osl_wrappers.py>`_)). For each method we specify a dictionary with the settings; if we just use all default options, specify an empty dictionary ``{}``. 
+# In the `preproc` field, we specify each method we want to apply to the data, in the order in which we want to apply them (i.e., the methods will be applied serially). All methods from MNE-Python can be specified here, as well as some OSL methods (see `osl_wrappers <https://osl.readthedocs.io/en/latest/autoapi/osl/preprocessing/osl_wrappers/index.html>`_). For each method we specify a dictionary with the settings; if we just use all default options, specify an empty dictionary ``{}``. 
 # 
 # Let's have a look below at the config that was built using the preprocessing steps in the previous tutorial.
 
@@ -241,7 +241,7 @@ run_proc_chain(config_text, sub1run1, subject= 'sub001-ses01', outdir=outdir, re
 # The preprocessing report
 # ^^^^^^^^^^^^^^^^^^^^^^^^
 # The preprocessing report generates a folder for each MEG file that contains all the figures that are generated for this file. This is all collected in the 'subject_report.html' HTML file. This allows you to browse through your files for different quality metrics. We are currently also working on a `group_report.html`, which will contain summary metrics that can guide you to look at individual datasets in the `subject_report` (for example, when one dataset has a lot of bad channels).
-# The idea of the report is to help you guide optimizing your preprocessing pipeline, and checking data quality. If a researcher asks you how the quality of the data is, the question is not trivial. With the report, we hope to give you a tool that quantifies some important metrics. It is not exhaustive, so if there's missing anything, please [open an issue on GitHub](https://github.com/OHBA-analysis/osl/issues). 
+# The idea of the report is to help you guide optimizing your preprocessing pipeline, and checking data quality. If a researcher asks you how the quality of the data is, the question is not trivial. With the report, we hope to give you a tool that quantifies some important metrics. It is not exhaustive, so if there's missing anything, please `open an issue on GitHub <https://github.com/OHBA-analysis/osl/issues>`_. 
 # 
 # 
 # Now open the report (you find it in your report directory). We will run through the report step by step.
@@ -259,7 +259,7 @@ run_proc_chain(config_text, sub1run1, subject= 'sub001-ses01', outdir=outdir, re
 # Optimizing your preprocessing config
 # ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 # The report is one tool that can help you to optimize your preprocessing, but one other tool you should keep in mind is visualizing the data itself (e.g., using the databrowser ``raw.plot()``).
-# In the _Time Series_ tab we see for example that there are still points in time with high variance, both in magnetometers and gradiometers. Let's see if we can clean up the data a bit more by adding extra bad segment detection, based on the temporal derivative (i.e., how strong the signal changes; using ``mode: 'diff'```). Let's also try to remove the segment in the EOG where we see a big amplitude increase.  
+# In the **Time Series** tab we see for example that there are still points in time with high variance, both in magnetometers and gradiometers. Let's see if we can clean up the data a bit more by adding extra bad segment detection, based on the temporal derivative (i.e., how strong the signal changes; using ``mode: 'diff'```). Let's also try to remove the segment in the EOG where we see a big amplitude increase.  
 # 
 # Note that here, we drop the custom function for ICA labelling that we used before. We will also set ``apply: false`` in ``ica_autoreject```, so we can manually check the components labeled as bad before we removed them from the data.
 

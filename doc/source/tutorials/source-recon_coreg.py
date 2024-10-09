@@ -267,7 +267,7 @@ source_recon.rhino.coreg(
 # 
 # If you have a bad co-registration:
 # 
-# * Go back and check that the compute_surfaces has worked well using fsleyes (see above).
+# * Go back and check that the compute_surfaces has worked well using ``fsleyes`` (see above).
 # * Check for misleading or erroneous headshape points (red spheres) and remove them. See the `Deleting Headshape Points <https://osl.readthedocs.io/en/latest/tutorials_build/source-recon_deleting-headshape-points.html>`_ tutorial for how to delete headshape points.
 # 
 # * Check that the settings for using the nose are compatible with the available MRI and headshape points

@@ -38,7 +38,7 @@ import matplotlib.pyplot as plt
 # A huge number of resources provide an introductory of power spectra and the Fourier transform. Here are a few for wider reading (after the workshop!)
 # 
 #  - `Fourier Transform Wikipedia Page <https://en.wikipedia.org/wiki/Fourier_transform>`_
-#  - `Spectral Density Wikipedia Page <https://en.wikipedia.org/wiki/Spectral_density>`_`
+#  - `Spectral Density Wikipedia Page <https://en.wikipedia.org/wiki/Spectral_density>`_
 #  - `But what is the Fourier Transform? A visual introduction. (YouTube) <https://www.youtube.com/watch?v=spUNpyF58BY>`_
 #  - `Welch's method for smooth spectral decomposition (YouTube) <https://www.youtube.com/watch?v=YK1F0-3VvQI>`_
 # 
