@@ -75,7 +75,7 @@ author = "OHBA Methods Group, University of Oxford"
 # built documents.
 #
 # The short X.Y version.
-version = ""  # Is set by calling `setup.py docs`
+version = "1.1.0"  # Is set by calling `setup.py docs`
 # The full version, including alpha/beta/rc tags.
 release = ""  # Is set by calling `setup.py docs`
 
