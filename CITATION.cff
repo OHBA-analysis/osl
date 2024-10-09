@@ -1,5 +1,5 @@
 cff-version: 0.2.0
-message: "If you use this software, please cite it as below."
+message: "If you use this software, please cite the software itself, as well as the paper listed in the preferred-citation field. OSL is based on MNE-Python and the Source Recon module on FSL. Please cite these packages appropriately."
 title: "OHBA Software Library in Python (OSL)"
 version: 0.2.0
 date-released: "2023-01-24"
@@ -23,6 +23,29 @@ authors:
   - family-names: Gohil
     given-names: Chetan
     orcid: https://orcid.org/0000-0002-0888-1207
+  - family-names: Woolrich
+    given-names: Mark W.
+    orcid: https://orcid.org/0000-0001-8460-8854
+preferred-citation:
+  title: "osl: A Python toolbox for M/EEG data analysis"
+  journal: "BioRxiv"
+  type: article
+  year: 
+  volume: 
+  issue: 
+  start: 
+  end: 
+  doi: 
+  authors:
+  - family-names: van Es
+    given-names: Mats W.J.
+    orcid: https://orcid.org/0000-0002-7133-509X
+  - family-names: Gohil
+    given-names: Chetan
+    orcid: https://orcid.org/0000-0002-0888-1207
+  - family-names: Quinn
+    given-names: Andrew J.
+    orcid: https://orcid.org/0000-0003-2267-9897
   - family-names: Woolrich
     given-names: Mark W.
     orcid: https://orcid.org/0000-0001-8460-8854

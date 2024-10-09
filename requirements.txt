@@ -20,7 +20,11 @@ dask~=2023.3.2
 distributed~=2023.3.2
 
 # Docs
-sphinx
+sphinx==5.3.0
+astroid==2.15.8
+pydata-sphinx-theme
+sphinx_gallery
+sphinx-autoapi
 numpydoc
 sphinx_gallery
 pydata-sphinx-theme

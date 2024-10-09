@@ -72,7 +72,7 @@ cd osl/tests
 pytest test_file_handling.py
 ```
 
-Build documentation:
+Build documentation (if `build_sphinx` is not recognised, first try `pip install sphinx==5.3.0`):
 ```
 python setup.py build_sphinx
 ```
