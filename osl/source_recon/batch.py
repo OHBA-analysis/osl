@@ -375,7 +375,7 @@ def run_src_batch(
         if len(preproc_files_list) > 0:
             preproc_files = preproc_files_list
         elif len(epoch_files_list) > 0:
-            epoch_files = epochs_file_list
+            epoch_files = epoch_files_list
 
     doing_coreg = (
         any(["compute_surfaces" in method for method in config["source_recon"]]) or
