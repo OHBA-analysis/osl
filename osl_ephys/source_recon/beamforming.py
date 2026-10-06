@@ -1608,6 +1608,8 @@ def _compute_beamformer(G, Cm, reg, n_orient,
             # collapsing all filters in the multi-dipole onto one shared filter.
             # Each dipole's silent direction was already removed by _reduce_leadfield_rank,
             # and _sym_mat_pow pseudo-inverts any exactly-zero eigenvalues left by that.
+            # Always a full matrix inverse: inverting only the diagonal would not block the
+            # other dipoles of the multi-dipole, which is the point of this beamformer.
             bf_denom_multi_inv = _sym_inv_sm(bf_denom_multi, False, inversion='matrix', sk=sk)
             W_multi.append(np.matmul(bf_denom_multi_inv, bf_numer_multi))
     
@@ -1622,7 +1624,7 @@ def _compute_beamformer(G, Cm, reg, n_orient,
             # 4. Invert the denominator
             # W is W_ug, i.e.: G.T @ Cm_inv / (G.T @ Cm_inv @ G)
             # sk holds the orientation prior of all sources; only the single dipoles are inverted here
-            bf_denom_single_inv = _sym_inv_sm(bf_denom_single, reduce_rank, inversion='matrix', sk=sk[single_dipoles])
+            bf_denom_single_inv = _sym_inv_sm(bf_denom_single, reduce_rank, inversion, sk=sk[single_dipoles])
             W_single = np.matmul(bf_denom_single_inv, bf_numer_single)
 
         # Build single W from W_multi and W_single
@@ -1653,7 +1655,7 @@ def _compute_beamformer(G, Cm, reg, n_orient,
         # 4. Invert the denominator
 
         # Here W is W_ug, i.e.: G.T @ Cm_inv / (G.T @ Cm_inv @ G)
-        bf_denom_inv = _sym_inv_sm(bf_denom, reduce_rank, inversion='matrix', sk=sk)
+        bf_denom_inv = _sym_inv_sm(bf_denom, reduce_rank, inversion, sk=sk)
 
         assert bf_denom_inv.shape == (n_sources, n_orient, n_orient)
         W = np.matmul(bf_denom_inv, bf_numer)
