@@ -59,9 +59,12 @@ from osl_ephys.source_recon.parcellation import assign_voxels_to_binary_parcella
 
 def _sym_inv_sm(x, reduce_rank, inversion, sk):
     """Symmetric inversion with single- or matrix-style inversion.
-    osl-ephys version of the same fn in MNE
-    Modified to cope with bilateral beamformer, which creates the situation 
-    where x.shape[1:] == (2, 2).
+    osl-ephys version of the same fn in MNE.
+
+    Modified to also cope with the multi-dipole (bilateral pair / patch) beamformer,
+    which passes a single 2-D square matrix of size n_dipoles*n_orient (e.g. (2, 2) for
+    a scalar pair) rather than a stack of per-dipole matrices. Such a matrix ends up in
+    the final branch below: a matrix (pseudo-)inverse, with reduce_rank as passed in.
     """
     if x.shape[1:] == (1, 1):
         with np.errstate(divide="ignore", invalid="ignore"):
@@ -1584,7 +1587,12 @@ def _compute_beamformer(G, Cm, reg, n_orient,
             del Gk_multi
 
             # 4. Invert the denominator
-            bf_denom_multi_inv = _sym_inv_sm(bf_denom_multi, reduce_rank, inversion='matrix', sk=sk)
+            # Never apply reduce_rank here: it would drop the smallest eigenvalue of this square
+            # matrix (size n_dipoles*n_orient), i.e. the direction carrying the most source power,
+            # collapsing all filters in the multi-dipole onto one shared filter.
+            # Each dipole's silent direction was already removed by _reduce_leadfield_rank,
+            # and _sym_mat_pow pseudo-inverts any exactly-zero eigenvalues left by that.
+            bf_denom_multi_inv = _sym_inv_sm(bf_denom_multi, False, inversion='matrix', sk=sk)
             W_multi.append(np.matmul(bf_denom_multi_inv, bf_numer_multi))
     
         if single_dipoles is not None:
