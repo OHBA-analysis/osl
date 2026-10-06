@@ -796,8 +796,16 @@ def _find_patches(src_pnts_inuse_mni,
         This only works with volumetric (RHINO) source spaces.
     group_patches : bool
         If True, group patches using the "group" field in the dipole patches description (
-        xml) file.
+        xml) file: patches sharing a group > 0 are merged into one multi-dipole, patches
+        with group 0 stay a multi-dipole on their own.
         If False, do not group patches.
+
+    Returns
+    -------
+    multi_dipoles : list of lists
+        Dipole indices (wrt src_pnts_inuse_mni) of each multi-dipole.
+    single_dipoles : (nsingle_dipoles,) numpy.ndarray
+        Indices of dipoles not in any patch.
     '''
 
     parcellation_data = nib.load(find_file(dipole_patches_file)).get_fdata()
@@ -819,56 +827,64 @@ def _find_patches(src_pnts_inuse_mni,
     if len(overlapping_volumes) > 0:
         raise ValueError("dipole_patches_file must be a parcellation where each voxel belongs to only one parcel.")
     
-    parcellation_assignment = assign_voxels_to_binary_parcellation(src_pnts_inuse_mni, dipole_patches_file)
+    parcellation_assignment = np.array(assign_voxels_to_binary_parcellation(src_pnts_inuse_mni, dipole_patches_file))
+    n_dipoles = src_pnts_inuse_mni.shape[0]
 
-    multi_dipoles = []
-    n_dipoles_in_patches = 0
-
+    # Dipoles in each patch, keyed by patch (volume) index. Patches that contain no
+    # dipoles are left out, but the keys keep every other patch at its own index.
+    patch_dipoles = {}
     for ppp in range(nparcels):
-        dipoles_in_this_patch = np.where(np.array(parcellation_assignment) == ppp)[0]
-        n_dipoles_in_patches += len(dipoles_in_this_patch)
+        dipoles_in_this_patch = np.where(parcellation_assignment == ppp)[0]
         if len(dipoles_in_this_patch) > 0:
-            multi_dipoles.append(dipoles_in_this_patch.tolist())
+            patch_dipoles[ppp] = dipoles_in_this_patch.tolist()
 
-    single_dipoles = np.setdiff1d(np.arange(src_pnts_inuse_mni.shape[0]), np.unique(np.concatenate(multi_dipoles))) 
+    multi_dipoles = list(patch_dipoles.values())
+    dipoles_in_patches = np.array([dd for dipoles in multi_dipoles for dd in dipoles], dtype=int)
+    single_dipoles = np.setdiff1d(np.arange(n_dipoles), dipoles_in_patches)
 
-    log_or_print(f"Number of patches: {len(multi_dipoles)}")
-    log_or_print(f"Total number of dipoles in patches: {n_dipoles_in_patches} out of {src_pnts_inuse_mni.shape[0]}")    
+    log_or_print(f"Number of patches with dipoles: {len(patch_dipoles)} out of {nparcels}")
+    log_or_print(f"Total number of dipoles in patches: {len(dipoles_in_patches)} out of {n_dipoles}")
     log_or_print(f"Number of single dipoles (not in patches): {len(single_dipoles)}")
-    log_or_print(f"Total number of dipoles (in patches + single_dipoles): {n_dipoles_in_patches + len(single_dipoles)} out of {src_pnts_inuse_mni.shape[0]}")
 
     if group_patches:
 
         log_or_print(f"Loading {dipole_patches_file} to find group field")
         parcellation_description = parcellation.load_parcellation_description(dipole_patches_file)
-        group_indices = []
-        for index in parcellation_description.keys():
-            if parcellation_description[index]["group"] > 0:
-                group_indices.append(parcellation_description[index]["group"])
-            else:
-                group_indices.append(0)
+        if parcellation_description is None:
+            raise ValueError(f"group_patches=True needs a .xml description file with a 'group' field next to {dipole_patches_file}")
+        descriptions = list(parcellation_description.values())
+        if len(descriptions) != nparcels:
+            raise ValueError(f"The description file lists {len(descriptions)} patches, but {dipole_patches_file} has {nparcels} volumes")
+        if any("group" not in description for description in descriptions):
+            raise ValueError("Every patch in the description file needs a 'group' field")
 
-        group_indices = np.array(group_indices)
-
-        unique_group_indices = np.unique(group_indices)
-        unique_group_indices = unique_group_indices[unique_group_indices != 0]
-
-        log_or_print(f"Found {len(unique_group_indices)} unique group indices")
+        # The description file lists patches in volume order. Patches sharing a group > 0 are
+        # merged into one multi-dipole; patches with group 0 (or no group) stay on their own.
+        group_of_patch = []
+        for description in descriptions:
+            group = description["group"]
+            group_of_patch.append(int(group) if np.isfinite(group) and group > 0 else 0)
 
         new_multi_dipoles = []
-        for gpi in unique_group_indices:
-            patches_with_this_gpi = np.where(group_indices == gpi)[0]
-
-            # Find the dipoles in the patches in this group
+        for gpi in sorted(set(group_of_patch) - {0}):
             dipoles_in_this_group = []
-            for pp in patches_with_this_gpi:
-                dipoles_in_this_group += multi_dipoles[pp]
-
-            new_multi_dipoles.append(dipoles_in_this_group)
+            for ppp in range(nparcels):
+                if group_of_patch[ppp] == gpi:
+                    dipoles_in_this_group += patch_dipoles.get(ppp, [])
+            if len(dipoles_in_this_group) > 0:
+                new_multi_dipoles.append(dipoles_in_this_group)
+        for ppp in range(nparcels):
+            if group_of_patch[ppp] == 0 and ppp in patch_dipoles:
+                new_multi_dipoles.append(patch_dipoles[ppp])
 
         multi_dipoles = new_multi_dipoles
 
         log_or_print(f"After grouping patches, number of multi-dipoles is now {len(multi_dipoles)}")
+
+    # Every dipole must be in exactly one multi-dipole or be a single dipole
+    assigned = np.concatenate([np.asarray(dipoles, dtype=int) for dipoles in multi_dipoles] + [single_dipoles.astype(int)])
+    if not np.array_equal(np.sort(assigned), np.arange(n_dipoles)):
+        raise RuntimeError("Patch assignment error: not every dipole is assigned exactly once")
 
     return multi_dipoles, single_dipoles
 
