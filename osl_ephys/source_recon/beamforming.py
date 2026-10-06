@@ -11,8 +11,6 @@ import os.path as op
 import numpy as np
 import matplotlib.pyplot as plt
 
-from scipy.spatial import KDTree
-
 import mne
 from mne import read_forward_solution, Covariance, compute_covariance, compute_raw_covariance
 from mne.rank import compute_rank
@@ -1001,10 +999,10 @@ def _find_bilateral_pairs(src_pnts_inuse_mni,
                           non_midline_points[right_points[pp[1]]]))                  
     pairs = new_pairs
 
-    # convert pairs to numpy array
-    pairs = np.array(pairs) 
-    single_dipoles = np.array(single_dipoles)
-    midline_points = np.array(midline_points)
+    # convert to integer numpy arrays (also when empty, so they can be used as indices)
+    pairs = np.array(pairs, dtype=int).reshape(-1, 2)
+    single_dipoles = np.array(single_dipoles, dtype=int)
+    midline_points = np.array(midline_points, dtype=int)
     
     log_or_print(f"Found {len(pairs)} pairs and {len(single_dipoles)} single-dipoles and {len(midline_points)} midline points")
     log_or_print(f"Total points used: {len(pairs)*2 + len(single_dipoles) + len(midline_points)} out of {src_pnts_inuse_mni.shape[0]}")
@@ -1044,7 +1042,7 @@ def _get_src_pnts_inuse_mni(outdir, subject, src_index):
         raise ValueError("Source space must be in head coordinates (coord_frame=4).")        
     src = fwd["src"][src_index]
     if src['type'] != 'vol':
-        ValueError('Forward model, src[''type''], needs to be vol')
+        raise ValueError("Forward model src['type'] needs to be 'vol'")
     src_pnts_inuse = src['rr'][src['inuse']==1, :] * 1000  # convert to mm (MNE works in metres, RHINO works in mm)
 
     # move to MNI coordinates to find pairs
@@ -1451,6 +1449,8 @@ def _compute_beamformer(G, Cm, reg, n_orient,
     # Lines changes are marked with MWW
 
     _check_option("weight_norm", weight_norm, ["unit-noise-gain-invariant", "unit-noise-gain", "nai", None])
+    if multi_dipoles is not None and weight_norm == "unit-noise-gain-invariant":
+        raise ValueError('weight_norm="unit-noise-gain-invariant" is not supported with bilateral pairs or dipole patches')
 
     # Whiten the data covariance
     Cm = whitener @ Cm @ whitener.T.conj()
