@@ -1621,7 +1621,8 @@ def _compute_beamformer(G, Cm, reg, n_orient,
 
             # 4. Invert the denominator
             # W is W_ug, i.e.: G.T @ Cm_inv / (G.T @ Cm_inv @ G)
-            bf_denom_single_inv = _sym_inv_sm(bf_denom_single, reduce_rank, inversion='matrix', sk=sk)
+            # sk holds the orientation prior of all sources; only the single dipoles are inverted here
+            bf_denom_single_inv = _sym_inv_sm(bf_denom_single, reduce_rank, inversion='matrix', sk=sk[single_dipoles])
             W_single = np.matmul(bf_denom_single_inv, bf_numer_single)
 
         # Build single W from W_multi and W_single
