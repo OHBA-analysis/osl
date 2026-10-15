@@ -58,10 +58,13 @@ D1. Relationship with osl-dynamics (the one that matters most)
     should be done from a pinned osl-dynamics commit and recorded (section 8),
     and fixes made in one place after the port need a PR in the other until
     the switch.
-  - Licences differ (osl-ephys MIT, osl-dynamics Apache-2.0 with NOTICE). Both
-    are OHBA packages, so either relicense osl-ephys v3 to Apache-2.0 to match,
-    or keep MIT and add the osl-dynamics copyright to a NOTICE file. Decide
-    before the first ported commit.
+  - Licences already match: osl-ephys has been Apache-2.0 since 2024-10-09
+    (the `license='MIT'` in main's `setup.py` was stale metadata; `v3` has it
+    right). Phase 1 aligns the rest with osl-dynamics: ship the full Apache
+    text rather than the short header, add a NOTICE file (copyright line, OHBA
+    attribution, the osl-files note), and set `license = "Apache-2.0"` with
+    `license-files = ["LICENSE", "NOTICE"]` in `pyproject.toml`. Ported code
+    then needs no extra attribution beyond the shared NOTICE.
   - The tests osl-ephys writes in phase 7 become the tests osl-dynamics has
     never had for this code, which is an argument for the switch happening
     soon after v3.
@@ -91,14 +94,23 @@ D4. Keep the YAML config API as the public face of osl-ephys, and make it
 D5. Reports: replace the per-subject jinja2 pages with the osl-dynamics style
     (each step writes `summary.json` + WebP plots to a QC directory, one table
     report across sessions). Keep the osl-ephys-specific preproc plots as QC
-    plots. Decide whether `coreg.html` survives (issue #437 says drop it; the
-    PNG multi-view is what osl-dynamics saves).
+    plots. `coreg.html` stays available as an option (the ported
+    `plot_coregistration` writes it when asked); the PNG multi-view is the
+    default, which is what issue #437 asks for.
 
 D6. Version: the next release is v3.0.0 with a v2 to v3 migration page. v2.4.x
     stays installable for the toolbox paper and existing workshop material.
 
 D7. Which of the open PRs and stale branches are merged into `v3`
     (section 5), and in what order.
+
+D8. No feature is removed from osl-ephys unless there is a reason that is
+    written down. The default disposition of every public function, class,
+    wrapper, CLI and config option is "keep": either unchanged, or with a
+    ported equivalent that does at least what the old one did. The feature
+    inventory (section 9) lists every public name on `v3` with its
+    disposition, and every "drop" carries its reason. A phase is not done
+    while an entry in its scope still says "undecided".
 
 ## 3. Phases
 
@@ -136,6 +148,10 @@ come after the scaffolding exists to test them.
   pypi.org for osl-ephys). Delete `osl-cicd-actions.yml`.
 - One-off black reformat in its own commit, listed in
   `.git-blame-ignore-revs`. Codespell config in `pyproject.toml`.
+- Licence files aligned with osl-dynamics: full Apache-2.0 text in `LICENSE`,
+  a `NOTICE` file, `license`/`license-files` in `pyproject.toml`, the
+  classifier. `CITATION.cff` version (currently `2.5.0.dev1+semp.2`) set only
+  at release time.
 - `.readthedocs.yaml` to Python 3.12 and `doc/requirements.txt`; `html_logo`
   from `osl-files/docs/logo` (todo: logos).
 - README: short description, badges, conda install first, "Releases" section
@@ -275,9 +291,14 @@ Parallelism underneath it:
   #418 (nilearn private function), #393 (fix_sign_ambiguities), #437
   (coreg.html), #439/#193 (open3d, opencv), #200 (MNE option exists), #383
   (group steps after individual steps become a documented pattern).
-- Delete what the new code replaces: `rhino/utils.py` (1626 lines),
-  `rhino/coreg.py`, `rhino/surfaces.py`, `rhino/polhemus.py`,
-  `rhino/forward_model.py`, `beamforming.py`, most of `parcellation.py`.
+- Retire what the new code replaces (`rhino/utils.py`, `rhino/coreg.py`,
+  `rhino/surfaces.py`, `rhino/polhemus.py`, `rhino/forward_model.py`,
+  `beamforming.py`, most of `parcellation.py`) only once every public name in
+  them has a disposition in the feature inventory (section 9). Functions the
+  osl-dynamics code has no equivalent for (e.g. `delete_headshape_points`,
+  `plot_polhemus_points`, `fsleyes` helpers, `get_leadfields`,
+  `voxel_timeseries`, `transform_recon_timeseries`, `recon_timeseries2niftii`)
+  are moved, not dropped.
 
 ### Phase 5: Reporting  (todo: update reporting)
 
@@ -495,3 +516,46 @@ The script that does this is ~/Desktop/osl-ephys-populate-board.sh
 options Todo=f75ad846, In progress=47fc9ee4, Done=98236657). Suggested
 Priority options once someone creates them: P0 (blocks a release), P1 (in the
 v3 scope), P2 (nice to have).
+
+## 9. Feature inventory (D8)
+
+Every public name on `v3` (commit 01e83fe), grouped by module, with its v3
+disposition. "Keep" = unchanged or moved; "Port" = replaced by the ported
+osl-dynamics equivalent, which must cover the same use; "Drop" = removed, with
+the reason. Update this table as phases land; a phase is not done while a
+line in its scope says "undecided".
+
+| Module | Public names | Disposition |
+| --- | --- | --- |
+| CLIs | `osl_maxfilter`, `osl_ica_label`, `osl_ica_apply`, `osl_preproc`, `osl_func`, `osl-ica-review`, `osl-ica-apply` | Keep all. `osl_preproc` gains `osl-ephys run` as the new name and stays as an alias for one release. Decide whether the two ICA review/apply pairs (ica_label vs manual_ica from #452) merge into one. |
+| `preprocessing.batch` | `run_proc_chain`, `run_proc_batch`, `load_config`, `find_func`, `check_config_versions`, `get_config_from_fif`, `append_preproc_info`, `import_data`, `read_dataset`, `write_dataset`, `plot_preproc_flowchart`, `print_custom_func_info` | Keep; `run_proc_batch` becomes a wrapper over `run_batch` (phase 3), `find_func`/`load_config` become the shared registry. Config provenance in the fif (`get_config_from_fif`, `append_preproc_info`) is kept. |
+| `preprocessing.mne_wrappers` | 23 `run_mne_*` steps | Keep all. |
+| `preprocessing.osl_wrappers` | `gesd`, `detect_artefacts`, `detect_maxfilt_zeros`, `bad_segments`, `bad_channels`, `drop_bad_epochs`, `detect_bad_channels_psd`, `run_osl_read_dataset`, `run_osl_bad_segments`, `run_osl_bad_channels`, `run_osl_drop_bad_epochs`, `run_osl_zscore_present_data`, `run_osl_glm_*` (4), `run_osl_manual_ica`, `run_osl_apply_ica` | Keep all wrappers. `gesd`/`bad_segments`/`bad_channels` are Port (osl-dynamics `detect_bad_segments`/`detect_bad_channels`, same GESD, with the #444 fixes carried over); `detect_maxfilt_zeros`, `drop_bad_epochs`, `detect_bad_channels_psd`, zscore and GLM steps have no osl-dynamics equivalent and are Keep. |
+| `preprocessing.ica_label`, `plot_ica`, `manual_ica.*` | `ica_label`, `apply`, `plot_ica`, `osl_MNEBrowseFigure`, `manual_ica`, `apply_ica`, review server | Keep (GUI and manual workflow; nothing in osl-dynamics). Add the mne-icalabel automatic route from osl-dynamics as a new wrapper. |
+| `preprocessing.semp.*` | AAS/OBS/SSP epoching, metrics, plots, tracer | Keep (merged from #452); scope of maintenance to be agreed with its author. |
+| `maxfilter` | `run_maxfilter`, `run_multistage_maxfilter`, `run_cbu_3stage_maxfilter`, `run_maxfilter_batch`, `quick_load_dig`, `fit_cbu_origin`, `main` | Port (osl-dynamics `run_maxfilter` covers standard, multistage, CBU 3-stage, chunking, split chains) behind the same CLI; `run_maxfilter_batch` keeps its file-list interface. |
+| `glm.*` | `glm_spectrum`, `glm_irasa`, `glm_epochs`, group variants, permutation classes, readers, all `plot_*` | Keep all (osl-dynamics has no sensor GLM). |
+| `report.preproc_report` | `gen_report_from_fif`, `gen_html_*`, `plot_flowchart`, `plot_rawdata`, `plot_channel_time_series`, `plot_sensors`, `plot_channel_dists`, `plot_spectra`, `plot_freqbands`, `plot_digitisation_2d`, `plot_headmovement`, `plot_eog_summary`, `plot_ecg_summary`, `plot_bad_ica`, `plot_summary_bad_segs`, `plot_summary_bad_chans`, `plot_artefact_scan`, `print_scan_summary`, `plot_events`, `plot_custom_figures` | Every `plot_*` is Keep (becomes a QC plot in the new report). `gen_html_*` and the per-subject pages are Drop: replaced by the table report, which shows the same plots per selected session. `gen_report_from_fif` is Keep as the entry point that regenerates QC plots from a saved fif. |
+| `report.src_report` | `gen_html_*`, `plot_config`, `plot_parcellation`, `plot_sign_flipping_results`, `add_to_data`, `update_config` | `plot_*` Keep as QC plots; `gen_html_*`/`add_to_data`/`update_config` Drop (replaced by `summary.json` per step and the table report). |
+| `source_recon.batch` | `run_src_chain`, `run_src_batch`, `load_config`, `find_func` | Keep as wrappers over the phase 3 runner/registry. |
+| `source_recon.wrappers` | `extract_polhemus_from_info`, `extract_fiducials_from_fif`, `extract_polhemus_from_pos`, `extract_polhemus_from_elc`, `remove_stray_headshape_points`, `save_mni_fiducials`, `rescale_sensor_positions`, `compute_surfaces`, `make_watershed_bem`, `coregister`, `forward_model`, `beamform`, `minimum_norm`, `parcellate`, `beamform_and_parcellate`, `minimum_norm_and_parcellate`, `find_template_subject`, `fix_sign_ambiguity`, `extract_rhino_files` | Keep every config step name. Bodies become calls into the ported rhino/beamforming/parcellation; `minimum_norm*`, `make_watershed_bem`, `rescale_sensor_positions`, `extract_rhino_files` keep their osl-ephys implementations. |
+| `source_recon.rhino.coreg` | `coreg`, `coreg_metrics`, `coreg_display`, `bem_display`, `apply_head2mni_xform`, `get_coreg_filenames` | Port (`coregister_head_and_mri`, `coreg_error`/`coreg_rms`, `plot_coregistration`, `CoregFilenames`). `bem_display` and `apply_head2mni_xform`: undecided (check osl-dynamics covers them). |
+| `source_recon.rhino.surfaces` | `compute_surfaces`, `surfaces_display`, `plot_surfaces`, `check_if_already_computed`, `get_surfaces_filenames` | Port (`extract_surfaces`, `plot_surfaces`, `SurfaceFilenames`, `check_up_to_date`). `surfaces_display` (fsleyes): Keep. |
+| `source_recon.rhino.forward_model` | `forward_model`, `make_fwd_solution`, `setup_volume_source_space` | Port. |
+| `source_recon.rhino.polhemus` | `get_polhemus_from_info`, `extract_polhemus_from_info`, `save_mni_fiducials`, `plot_polhemus_points`, `delete_headshape_points`, `remove_stray_headshape_points`, `extract_polhemus_from_pos`, `extract_polhemus_from_elc`, `rescale_sensor_positions` | Port the extract/remove functions; Keep `plot_polhemus_points`, `delete_headshape_points` (interactive), `save_mni_fiducials`, `rescale_sensor_positions` (no osl-dynamics equivalent). |
+| `source_recon.rhino.fsl_utils` | `setup_fsl`, `check_fsl`, `fsleyes`, `fsleyes_overlay` | Keep. |
+| `source_recon.rhino.utils` | 35 names: geometry (`icp`, `rhino_icp`, `rigid_transform_3D`, `best_fit_transform`, `xform_points`, `nearest_neighbor`), nifti helpers (`niimask2*pointcloud`, `get_vol_info_from_nii`, `get_sform`, `get_orient`, `check_nii_for_nan`, `timeseries2nii`, `recon_timeseries2niftii`), mesh helpers (`get_vtk_mesh_native`, `transform_vtk_mesh`, `create_freesurfer_mesh*`, `transform_bet_surfaces`), FLIRT/MNE transforms, `extract_rhino_files`, headshape helpers (`save_polhemus_fif`, `downsample_headshape`, `rotate_pointcloud`, `grid_average_downsample`, `replace_headshape`), `save_or_show_renderer`, `system_call`, `get_gridstep`, `majority`/`binary_majority3d`, `closest_node` | Port the ones the ported rhino has privately; Keep as public helpers the ones users call directly: `extract_rhino_files`, `recon_timeseries2niftii`, `timeseries2nii`, `get_vol_info_from_nii`, `downsample_headshape`/`replace_headshape`/`save_polhemus_fif` (osl-dynamics `decimate_headshape_points` covers the first), `fsleyes` display helpers. Each of the 35 gets its own line before phase 4 closes. |
+| `source_recon.beamforming` | `make_lcmv`, `apply_lcmv`, `apply_lcmv_raw`, `load_lcmv`, `get_recon_timeseries`, `transform_recon_timeseries`, `get_lcmv_weights`, `get_leadfields`, `plot_dipole_locations`, `voxel_timeseries`, `make_plots`, `get_beamforming_filenames` | Port `make_lcmv`/`apply_lcmv*`/`load_lcmv` (`lcmv_beamformer`, `apply_lcmv_beamformer`, `filters-lcmv.h5`); Keep `get_recon_timeseries`, `transform_recon_timeseries`, `get_lcmv_weights`, `get_leadfields` (branch `leadfields`), `plot_dipole_locations`, `voxel_timeseries` on top of the ported filters. |
+| `source_recon.minimum_norm` | `create_inverse_operator`, `apply_inverse_operator_surf`, `apply_inverse_operator_vol`, `calc_noise_cov`, `morph_surface`, `get_mne_filenames` | Keep (with #445). |
+| `source_recon.freesurfer_utils` | `setup_freesurfer`, `check_freesurfer`, `recon_all`, `make_watershed_bem`, `make_fsaverage_src`, filename helpers | Keep. |
+| `source_recon.parcellation` | `load_parcellation`, `load_parcellation_description`, `guess_parcellation`, `vol_parcellate_timeseries`, `surf_parcellate_timeseries`, `resample_parcellation`, `local_orthogonalise`, `symmetric_orthogonalise`, `parcel_centers`, `plot_parcellation`, `plot_psd`, `plot_correlation`, `convert2niftii`, `convert2mne_raw`, `convert2mne_epochs`, `spatial_dist_adjacency`, `parcel_vector_to_voxel_grid`, `convert2source_estimate`, `plot_source_topo`, `assign_voxels_to_binary_parcellation` | Port `vol_parcellate_timeseries`, `symmetric_orthogonalise`, `convert2mne_raw`, `convert2niftii`, `parcel_vector_to_voxel_grid`, `plot_parcellation`, `plot_psd`; Keep `surf_parcellate_timeseries`, `convert2source_estimate`, `convert2mne_epochs`, `local_orthogonalise`, `resample_parcellation`, `spatial_dist_adjacency`, `plot_correlation`, `plot_source_topo`, `guess_parcellation`, `load_parcellation_description`, `assign_voxels_to_binary_parcellation`. |
+| `source_recon.sign_flipping` | `find_flips`, `find_template_subject`, `load_covariances`, `covariance_matrix_correlation`, `randomly_flip`, `apply_flips_to_covariance`, `apply_flips`, `time_embed`, `std_data` | Port (osl-dynamics `sign_flipping` + `new-sign-flip` branch comparison); `find_template_subject` and the config step names Keep. |
+| `source_recon.nii`, `source_recon.utils` | `convert_4dparc_to_3d`, `convert_3dparc_to_4d`, `spatially_downsample`, `append_4d_parcellation`, `find_file` | Keep (`find_file` becomes the osl-files lookup with the alias table). |
+| `utils.file_handling`, `utils.study` | `process_file_inputs`, `find_run_id`, `validate_outdir`, `get_rawdir`, `add_subdir`, `sanitise_filepath`, `osl_print`, `Study` | Keep; they build the session manifest. |
+| `utils.logger` | `set_up`, `set_level`, `get_level`, `log_or_print` | Port (`MEEGSessionLogger`, `set_logging_level`); `log_or_print` kept as a thin shim since wrappers call it everywhere. |
+| `utils.parallel` | `dask_parallel_bag` | Drop: replaced by the multiprocessing runner (D3). |
+| `utils.simulate`, `utils.simulation_config` | `simulate_data`, `simulate_raw_from_template`, `simulate_rest_mvar` | Keep; template and MVAR parameters come from osl-files. The duplicate `simulation_config/simulate.py` module is Drop (same functions as `utils.simulate`). |
+| `utils.spmio` | `SPMMEEG`, `Data`, `Channel`, `Montage`, `Trial`, `Event`, helpers | Keep. |
+| `utils.opm` | `convert_notts`, `correct_mri` | Keep. |
+| `utils.misc`, `utils.package`, `utils.version_utils`, `utils.run_func` | `ensure_dir`, `proc_userargs`, `mean_psd_in_band`, `set_random_seed`, `soft_import`, `run_package_tests`, `check_version`, `osl_func` main | Keep; `run_package_tests` becomes the `osl-ephys-check` CLI (#425). |
+| Package data | `source_recon/files/*`, `utils/simulation_config/*`, `neuromag306_info.yml`, `trees/*.tree` | Move to osl-files (phase 2) with old-name aliases; `trees` and the yml stay in the package. |
