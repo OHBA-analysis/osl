@@ -1517,7 +1517,6 @@ def rotate_pointcloud(points, angle_degrees, axis='x'):
     
     return np.dot(points, rotation_matrix.T)
 
-import numpy as np
 
 def grid_average_downsample(point_cloud, voxel_size):
     """
@@ -1626,3 +1625,4 @@ def replace_headshape(raw, ds_headshape):
     raw_copy.set_montage(montage)
 
     return raw_copy
+
