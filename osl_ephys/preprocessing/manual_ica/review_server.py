@@ -99,6 +99,14 @@ class ReviewHandler(http.server.SimpleHTTPRequestHandler):
             self._send_text(400, 'invalid Content-Length')
             return
         if length > MAX_POST_BYTES:
+            # Read what the client is still sending so it can receive the
+            # response, within reason; past that just close the connection
+            remaining = min(length, 8 * MAX_POST_BYTES)
+            while remaining > 0:
+                chunk = self.rfile.read(min(remaining, 65536))
+                if not chunk:
+                    break
+                remaining -= len(chunk)
             self.close_connection = True
             self._send_text(413, 'request body is too large')
             return

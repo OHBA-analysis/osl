@@ -61,7 +61,7 @@ def dask_parallel_bag(func, iter_args,
     if all(isinstance(aa, (list, tuple)) for aa in iter_args) is False:
         iter_args = [[aa] for aa in iter_args]
 
-    # Add fixed positonal args if specified
+    # Add fixed positional args if specified
     if func_args is not None:
         iter_args = [list(aa) + func_args for aa in iter_args]
 

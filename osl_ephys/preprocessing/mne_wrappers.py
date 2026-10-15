@@ -113,7 +113,7 @@ def run_mne_pick(dataset, userargs):
 
     This function calls :py:meth:`pick <mne.io.Raw.pick>` on an MNE object in 
     ``dataset``. Additional arguments on the MNE function can be
-    specified as a dictonary.
+    specified as a dictionary.
 
     Parameters
     ----------
@@ -156,7 +156,7 @@ def run_mne_pick_channels(dataset, userargs):
 
     This function calls :py:meth:`pick_channels <mne.io.Raw.pick_channels>` on
     an MNE object in ``dataset``. Additional arguments on the MNE function can be
-    specified as a dictonary.
+    specified as a dictionary.
 
     Parameters
     ----------
@@ -181,7 +181,7 @@ def run_mne_pick_types(dataset, userargs):
     """OSL-Batch wrapper for :py:meth:`raw.pick_types <mne.io.Raw.pick_types>`.
 
     This function calls :py:meth:`pick_types <mne.io.Raw.pick_types>` on an MNE object in
-    ``dataset``. Additional arguments on the MNE function can be specified as a dictonary.
+    ``dataset``. Additional arguments on the MNE function can be specified as a dictionary.
 
     Parameters
     ----------
@@ -207,7 +207,7 @@ def run_mne_resample(dataset, userargs):
 
     This function calls :py:meth:`resample <mne.io.Raw.resample>` on
     an MNE object in ``dataset``. Additional arguments on the MNE function can be
-    specified as a dictonary.
+    specified as a dictionary.
 
     Parameters
     ----------
@@ -238,7 +238,7 @@ def run_mne_set_channel_types(dataset, userargs):
 
     This function calls :py:meth:`set_channel_types <mne.io.Raw.set_channel_types>` on
     an MNE object in ``dataset``. Additional arguments on the MNE function can be
-    specified as a dictonary.
+    specified as a dictionary.
 
     Parameters
     ----------
@@ -265,7 +265,7 @@ def run_mne_interpolate_bads(dataset, userargs):
 
     This function calls :py:meth:`interpolate_bads <mne.io.Raw.interpolate_bads>` on
     an MNE object in ``dataset``. Importantly, it sets ``reset_bads`` to False by default.
-    Additional arguments on the MNE function can be specified as a dictonary.
+    Additional arguments on the MNE function can be specified as a dictionary.
 
     Parameters
     ----------
@@ -301,7 +301,7 @@ def run_mne_drop_bad(dataset, userargs):
 
     This function calls :py:meth:`drop_bad <mne.Epochs.drop_bad>` on
     an MNE :py:class:`Epochs <mne.Epochs>` object in ``dataset``. Additional arguments on the MNE function can be
-    specified as a dictonary.
+    specified as a dictionary.
     
     Parameters
     ----------
@@ -338,7 +338,7 @@ def run_mne_apply_baseline(dataset, userargs):
 
     This function calls :py:meth:`mne.Epochs.apply_baseline <mne.Epochs.apply_baseline>` on
     an MNE :py:class:`Epochs <mne.Epochs>` object in ``dataset``. Additional arguments on the MNE function can be
-    specified as a dictonary.
+    specified as a dictionary.
     
     Parameters
     ----------
@@ -374,7 +374,7 @@ def run_mne_find_events(dataset, userargs):
 
     This function calls :py:func:`find_events <mne.find_events>` on
     an MNE :py:class:`Raw <mne.io.Raw>` object in ``dataset``. Additional arguments on the MNE function can be
-    specified as a dictonary.
+    specified as a dictionary.
 
     Parameters
     ----------
@@ -399,7 +399,7 @@ def run_mne_epochs(dataset, userargs):
     """OSL-Batch wrapper for :py:class:`mne.Epochs <mne.Epochs>`.
 
     This function calls :py:class:`mne.Epochs <mne.Epochs>` on the ``raw``, ``events``, and ``event-id``
-    keys in ``dataset``. Additional arguments on the MNE function can be specified as a dictonary.
+    keys in ``dataset``. Additional arguments on the MNE function can be specified as a dictionary.
 
     Parameters
     ----------
@@ -430,7 +430,7 @@ def run_mne_annotate_amplitude(dataset, userargs):
 
     This function calls :py:func:`annotate_amplitude <mne.preprocessing.annotate_amplitude>` on
     an MNE object in ``dataset``. Additional arguments on the MNE function can be
-    specified as a dictonary.
+    specified as a dictionary.
 
     Parameters
     ----------
@@ -479,7 +479,7 @@ def run_mne_annotate_muscle_zscore(dataset, userargs):
 
     This function calls :py:func:`annotate_muscle_zscore <mne.preprocessing.annotate_muscle_zscore>` on
     an MNE object in ``dataset``. Additional arguments on the MNE function can be
-    specified as a dictonary.
+    specified as a dictionary.
     
     Parameters
     ----------
@@ -528,7 +528,7 @@ def run_mne_find_bad_channels_maxwell(dataset, userargs):
 
     This function calls :py:func:`find_bad_channels_maxwell <mne.preprocessing.find_bad_channels_maxwell>` on
     an MNE :py:class:`Raw <mne.io.Raw>` object in ``dataset``. Additional arguments on the MNE function can be
-    specified as a dictonary.
+    specified as a dictionary.
 
     Parameters
     ----------
@@ -564,7 +564,7 @@ def run_mne_maxwell_filter(dataset, userargs):
 
     This function calls :py:func:`maxwell_filter <mne.preprocessing.maxwell_filter>` on
     an MNE :py:class:`Raw <mne.io.Raw>` object in ``dataset``. Additional arguments on the MNE function can be
-    specified as a dictonary.
+    specified as a dictionary.
 
     Parameters
     ----------
@@ -596,7 +596,7 @@ def run_mne_compute_current_source_density(dataset, userargs):
 
     This function calls :py:func:`compute_current_source_density <mne.preprocessing.compute_current_source_density>` on
     an MNE object in ``dataset``. Additional arguments on the MNE function can be
-    specified as a dictonary.
+    specified as a dictionary.
 
     Parameters
     ----------
@@ -635,7 +635,7 @@ def run_mne_tfr_multitaper(dataset, userargs):
 
     This function calls :py:func:`tfr_multitaper <mne.time_frequency.tfr_multitaper>` on
     an MNE :py:class:`Epochs <mne.Epochs>` or :py:class:`Evoked <mne.Evoked>` object in ``dataset``. Additional arguments on the MNE function can be
-    specified as a dictonary.
+    specified as a dictionary.
 
     Parameters
     ----------
@@ -670,7 +670,7 @@ def run_mne_tfr_morlet(dataset, userargs):
 
     This function calls :py:func:`tfr_morlet <mne.time_frequency.tfr_morlet>` on
     an MNE :py:class:`Epochs <mne.Epochs>` or :py:class:`Evoked <mne.Evoked>` object in ``dataset``. Additional arguments on the MNE function can be
-    specified as a dictonary.
+    specified as a dictionary.
 
     Parameters
     ----------
@@ -701,7 +701,7 @@ def run_mne_tfr_stockwell(dataset, userargs):
 
     This function calls :py:func:`tfr_stockwell <mne.time_frequency.tfr_stockwell>` on
     an MNE :py:class:`Epochs <mne.Epochs>` or :py:class:`Evoked <mne.Evoked>` object in ``dataset``. Additional arguments on the MNE function can be
-    specified as a dictonary.
+    specified as a dictionary.
 
     Parameters
     ----------
@@ -740,7 +740,7 @@ def run_mne_ica_raw(dataset, userargs):
 
     This function creates class :py:class:`ICA <mne.preprocessing.ICA>` 
     and fits it to an MNE object in ``dataset``. Additional arguments on the MNE function can be
-    specified as a dictonary. The ``raw`` object in ``dataset`` is filtered (1 Hz high pass) before
+    specified as a dictionary. The ``raw`` object in ``dataset`` is filtered (1 Hz high pass) before
     fitting the ICA.
 
     Parameters
@@ -788,7 +788,7 @@ def run_mne_ica_autoreject(dataset, userargs):
     :py:meth:`find_bads_ecg <mne.preprocessing.ICA.find_bads_ecg>` and 
     :py:meth:`find_bads_eog <mne.preprocessing.ICA.find_bads_eog>` on
     the ``raw`` and ``ica`` objects in ``dataset``. Additional arguments on the MNE functions can be
-    specified as a dictonary.
+    specified as a dictionary.
 
     Parameters
     ----------
@@ -846,7 +846,7 @@ def run_mne_apply_ica(dataset, userargs):
 
     This function creates class :py:meth:`mne.preprocessing.ICA.apply <mne.preprocessing.ICA.apply>` 
     and fits it to an MNE object in ``dataset``. Additional arguments on the MNE function can be
-    specified as a dictonary.
+    specified as a dictionary.
 
     Parameters
     ----------

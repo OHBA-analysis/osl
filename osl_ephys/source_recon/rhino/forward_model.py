@@ -249,7 +249,7 @@ def setup_volume_source_space(subjects_dir, subject, gridstep=5, mindist=5.0, ex
     """
     filenames = get_coreg_filenames(subjects_dir, subject)
 
-    # Note that due to the unusal naming conventions used by BET and MNE:
+    # Note that due to the unusual naming conventions used by BET and MNE:
     # - bet_inskull_*_file is actually the brain surface
     # - bet_outskull_*_file is actually the inner skull surface
     # - bet_outskin_*_file is the outer skin/scalp surface

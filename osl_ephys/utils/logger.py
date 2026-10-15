@@ -101,6 +101,26 @@ def set_up(prefix='', log_file=None, level=None, console_format=None, startup=Tr
     osl_logger.already_setup = True
 
 
+def set_format(formatter='brief', prefix='', handler='console'):
+    """Change the message format of a handler of the osl-ephys logger.
+
+    Parameters
+    ----------
+    formatter : {'brief', 'default', 'verbose'}
+        Name of a format in the default config.
+    prefix : str
+        Prefix inserted into the format.
+    handler : str
+        Name of the handler to change.
+    """
+    config = yaml.load(default_config.format(prefix=prefix, log_file=None), Loader=yaml.FullLoader)
+    spec = config['formatters'][formatter]
+    fmt = logging.Formatter(spec['format'], datefmt=spec.get('datefmt'))
+    for h in osl_logger.handlers:
+        if h.get_name() == handler:
+            h.setFormatter(fmt)
+
+
 def set_level(level, handler='console'):
     """Set new logging level for osl-ephys module.
     

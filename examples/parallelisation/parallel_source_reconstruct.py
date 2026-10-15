@@ -72,7 +72,7 @@ if __name__ == "__main__":
         hs = hs[:, keep]
 
         # Overwrite headshape file
-        logger.info(f"overwritting {filenames['polhemus_headshape_file']}")
+        logger.info(f"overwriting {filenames['polhemus_headshape_file']}")
         np.savetxt(filenames["polhemus_headshape_file"], hs)
 
     # Get subjects

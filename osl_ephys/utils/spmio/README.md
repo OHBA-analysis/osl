@@ -2,7 +2,7 @@
 
 A simple(ish) data reader for SPM files. This is intended to provide basic spm-file data reading capability into osl-ephys. The data are loaded into an SPM-like python object HOWEVER this is only intended to all the reading of already-preprocessed data, NOT to facilitate mixing preprocessing between SPM and python.
 
-For example, an intended useage would be to complete a whole preprocessing pipeline in SPM before loading the data into python to run a GLM using general purpose tools. A not intended purpose would be to run part of a preprocessing pipeline in SPM before loading data into Python for source reconstruction. These MEG-specific analyses use lots of meta-data which are often assumed to be in a specific format. We cannot guarantee compatibility between how sensor locations are represented in SPM compared to MNE-Python. (However the reverse is more likely to be true - MNE-Python can save fif files which are easily readable by SPM.)
+For example, an intended usage would be to complete a whole preprocessing pipeline in SPM before loading the data into python to run a GLM using general purpose tools. A not intended purpose would be to run part of a preprocessing pipeline in SPM before loading data into Python for source reconstruction. These MEG-specific analyses use lots of meta-data which are often assumed to be in a specific format. We cannot guarantee compatibility between how sensor locations are represented in SPM compared to MNE-Python. (However the reverse is more likely to be true - MNE-Python can save fif files which are easily readable by SPM.)
 
 
 ## Example usage

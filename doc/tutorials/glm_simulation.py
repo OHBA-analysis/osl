@@ -32,7 +32,7 @@ import matplotlib.pyplot as plt
 #
 # A frequency spectrum is a description of how the variance in a time domain signal can be distributed across a range of frequencies. This is a core analysis approach across science and engineering. The underlying mathematics is built upon the Fourier transform which is one of the fundamental algorithms in signal processing.
 #
-# The Fourier transform can then be used to compute a frequency spectrum to describe the signal. The profile of the frequency spectrum describes how energy in the time-domain signal is distrbuted across frequency.
+# The Fourier transform can then be used to compute a frequency spectrum to describe the signal. The profile of the frequency spectrum describes how energy in the time-domain signal is distributed across frequency.
 #
 # A huge number of resources provide an introductory of power spectra and the Fourier transform. Here are a few for wider reading (after the workshop!)
 #
@@ -42,7 +42,7 @@ import matplotlib.pyplot as plt
 #  - `Welch's method for smooth spectral decomposition (YouTube) <https://www.youtube.com/watch?v=YK1F0-3VvQI>`_
 #
 #
-# In EEG and MEG analysis, we're typically intrested in using these methods to identify and describe any oscillations that might be present in a time-series. This is performed by many papers in many different analysis but the main computation of the spectrum itself tends to be computed in a consistent way - Welch's Periodogram.
+# In EEG and MEG analysis, we're typically interested in using these methods to identify and describe any oscillations that might be present in a time-series. This is performed by many papers in many different analysis but the main computation of the spectrum itself tends to be computed in a consistent way - Welch's Periodogram.
 #
 # Let's take a look at this standard approach using a simulated signal.
 #
@@ -254,7 +254,7 @@ plt.ylabel('Power')
 #
 # The GLM-Spectrum method replaces this simple average with a multiple regression model which provides way to quantify changes in the spectrum across the sliding window time segments.
 #
-# The advantage of a GLM-Spectrum is that we can extend the model to describe more than just the mean term. This has a several advantages including some modelling of temporal dynamics and the abililty to accout for covariates and confounds when computing the spectrum.
+# The advantage of a GLM-Spectrum is that we can extend the model to describe more than just the mean term. This has a several advantages including some modelling of temporal dynamics and the abililty to account for covariates and confounds when computing the spectrum.
 #
 # Here, we define a single covariate regressor describing a linear trend in time and fit GLM-Spectrum with a mean term and the linear trend covariate. We add the linear trend using the `reg_ztrans` keyword argument to `glm_spectrum` this specifies that we're adding a regressor and that we want the values in that regressor to be z-transformed prior to the regression.
 #
@@ -337,7 +337,7 @@ plt.ylim(-0.05, 0.35)
 # *********************
 # This is all great but we're missing a critical ingredient from real data - Noise. Data recordings aren't sine waves so they can only be so instructive for real data analysis.
 #
-# Let's modify out simulation to include some noise and, to be even more realistic, let's make somme high frequency noise that changes over time. We'll also compute a longer time series of 100 seconds, rather than just 10.
+# Let's modify out simulation to include some noise and, to be even more realistic, let's make some high frequency noise that changes over time. We'll also compute a longer time series of 100 seconds, rather than just 10.
 #
 # We compute our noise by computing the gradient (difference between adjacent time points) of some normally distribiuted white noise. The white noise will have a constant power spectrum across all frequencies. The gradient operation removes some of the slower drifts in the noise as it keeps only the difference between adjacent time-points and discards trends across many time points. This is a quick, convenient way of simulating noise with relatively high frequency activity.
 #
@@ -427,7 +427,7 @@ fig = glmsp.design.plot_summary()
 #%%
 # We now have three regressors, our constant term and linear trend are included as before but we now have an additional 'Artefact' regressor whose values are scaled between zero and one. We can see that the value of the artefact fluctuates over time following the dynamics of the simulated noise source.
 #
-# In this case, we know the dynamics of the artefact as we've designed our own simulation. This is unlikely to be the case for real data but we can still create meaningful regressors from potential source of artefact. This might include EOG channels recording eye movements, bad segment annotations in the dataset or head movements estimated from maxfilter. Any of these potental artefact sources can be processed and added to the design matrix using ``reg_unitmax``.
+# In this case, we know the dynamics of the artefact as we've designed our own simulation. This is unlikely to be the case for real data but we can still create meaningful regressors from potential source of artefact. This might include EOG channels recording eye movements, bad segment annotations in the dataset or head movements estimated from maxfilter. Any of these potential artefact sources can be processed and added to the design matrix using ``reg_unitmax``.
 #
 # Let's visualise the fitted GLM-Spectra of this model
 
@@ -484,7 +484,7 @@ plt.ylabel('Power')
 plt.ylim(0, 0.0055)
 
 #%%
-# We can see that the noise is effectively supressed in the intercept term, and that the difference between the two models is captured by the cope-spectrum of the noise regressor itself.
+# We can see that the noise is effectively suppressed in the intercept term, and that the difference between the two models is captured by the cope-spectrum of the noise regressor itself.
 #
 # Great - this can be really useful for including confound regressors into our spectrum estimate in cases where we might know something about the dynamics of a noise source. In real EEG/MEG data this might come from movement, or blinking.
 #
@@ -550,7 +550,7 @@ print(glmsp.design.design_matrix)
 
 # The intercept value is always the same with a value of 1. This is as we expect as the intercept does not vary with the values of our other predictor variables. The Linear predictor values vary between around -1.64 and +1.64, these slightly odd values are what we get when we z-transform a straight line.
 #
-# We can see the regression parameter estimates in the fitted model, let's look specifically at the betas for 22Hz. Remember we have vectors of coefficents for every frequency.
+# We can see the regression parameter estimates in the fitted model, let's look specifically at the betas for 22Hz. Remember we have vectors of coefficients for every frequency.
 
 print(glmsp.model.betas)
 
@@ -574,7 +574,7 @@ plt.title('GLM predicted spectra')
 # ****************************************
 # This is an optional section going into detail on the intuition behind confound regression. This can be a tricky concept, even for those who are already familiar with regression. Here we try to provide some insight by visualising the difference between a model with a single constant regressor, and a model with one constant regressor and one non-zero mean regressor.
 #
-# So, let's dig into why this noise supression works. We'll fit three models in this section. The first is by a very simple model with a single constant regressor.
+# So, let's dig into why this noise suppression works. We'll fit three models in this section. The first is by a very simple model with a single constant regressor.
 
 
 
@@ -592,7 +592,7 @@ fig = glmsp_meanonly.design.plot_summary()
 #
 # Our second model includes a covariate regressor based on the dynamic amplitude of the artefact component in the signal. This is designed to quantify the part of our data that covary with the artefact amplitude.
 #
-# Critcially, this regressor is z-transformed prior to fitting the model. This means that we have a zero-mean regressor. Let's take a look.
+# Critically, this regressor is z-transformed prior to fitting the model. This means that we have a zero-mean regressor. Let's take a look.
 
 
 # A two regressor model with a constant and a covariate containing the z-transformed artefact amplitude
@@ -610,7 +610,7 @@ fig = glmsp_artefact_ztrans.design.plot_summary()
 # - $m$ is a gradient describing the 'slope' relationship between $x$ and $y$.
 # - $c$ is the 'intercept' term that describes where the line crosses the y-axis.
 #
-# This is the standard form of this equation. $x$ and $y$ are known in advance whilst the intercept and slope terms, $c$ and $m$ are estimated by the regression. In our model above, $m$ is the parametere from the 'Constant' regressor and $x$ is the parameter from the 'artefact' regressor.
+# This is the standard form of this equation. $x$ and $y$ are known in advance whilst the intercept and slope terms, $c$ and $m$ are estimated by the regression. In our model above, $m$ is the parameter from the 'Constant' regressor and $x$ is the parameter from the 'artefact' regressor.
 #
 # In the GLM literature, this equation is often written in terms of $\beta$ values and design matrices. In this form, our second model might look like this:
 #
@@ -632,7 +632,7 @@ fig = glmsp_artefact_unitmax.design.plot_summary()
 #%%
 # This design is very similar to our second, only the second column has changed. All the maths and interpretations above still hold.
 #
-# However, ths change in scaling makes an important difference to the interpretation of the fitted model parameters. Most importantly, the interpretation of $\beta_0$ as the intercept term is critically dependant on the scaling used in the second column.
+# However, this change in scaling makes an important difference to the interpretation of the fitted model parameters. Most importantly, the interpretation of $\beta_0$ as the intercept term is critically dependent on the scaling used in the second column.
 #
 # :*note*: Though all models contain a constant regressor, these are not doing the same thing. We must remember that the interpretation of each regressor changes when we add new ones. The interpretation of the terms in our model can only be created by considering the model as a whole.
 #
@@ -804,7 +804,7 @@ plt.title('Constant + unitmax(artefact)', fontsize=16)
 
 
 #%%
-# Futher reading
+# Further reading
 # **************
 #
 #   Andrew J. Quinn, Lauren Z. Atkinson, Chetan Gohil, Oliver Kohl, Jemma Pitt, Catharina Zich, Anna C. Nobre, Mark W. Woolrich; The GLM-spectrum: A multilevel framework for spectrum analysis with covariate and confound modelling. Imaging Neuroscience 2024; 2 1–26. doi: https://doi.org/10.1162/imag_a_00082

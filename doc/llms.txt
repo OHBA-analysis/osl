@@ -1,0 +1,20 @@
+# osl-ephys
+
+> osl-ephys is a Python toolbox for analysing electrophysiological data (MEG, EEG and OPM) from the raw recording to parcellated source-space time courses: YAML-driven preprocessing run in parallel over a dataset, a MaxFilter wrapper, coregistration and volumetric source reconstruction with RHINO (FSL surfaces, LCMV beamforming, minimum norm), parcellation with leakage correction and sign flipping, quality control reports, and GLM-Spectrum sensor-level statistics.
+
+osl-ephys was developed by the OHBA Methods Group at the University of Oxford. It builds on MNE-Python and works hand in hand with osl-dynamics, which models the dynamics of the parcel time courses osl-ephys produces.
+
+If you use osl-ephys, please cite: van Es, M. W. J., Gohil, C., Quinn, A. J., and Woolrich, M. W. (2025). osl-ephys: a Python toolbox for the analysis of electrophysiology data. Frontiers in Neuroscience, 19, 1522675.
+
+## Documentation
+
+- [Installation](https://osl-ephys.readthedocs.io/en/latest/install.html): conda and pip installation, Oxford computers, development install.
+- [Tutorials](https://osl-ephys.readthedocs.io/en/latest/documentation.html): preprocessing (manual, automatic, batch), coregistration, source reconstruction, GLM-Spectrum.
+- [FAQ](https://osl-ephys.readthedocs.io/en/latest/faq.html)
+- [API reference](https://osl-ephys.readthedocs.io/en/latest/autoapi/index.html): documentation for every module, class and function.
+
+## Source
+
+- [GitHub repository](https://github.com/OHBA-analysis/osl-ephys)
+- [osl-dynamics](https://github.com/OHBA-analysis/osl-dynamics): the companion toolbox for dynamic network modelling.
+- [osl-files](https://github.com/OHBA-analysis/osl-files): the parcellations, templates and test data both toolboxes download at runtime.

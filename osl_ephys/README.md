@@ -1,6 +1,6 @@
 # OSL Packages
 
-OSL containes the following modules:
+OSL contains the following modules:
 
 - maxfilter : interface for Megin's commandline maxfilter
 - preprocessing : MEEG data processing and cleaning (similar to OPT)

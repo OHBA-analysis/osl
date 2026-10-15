@@ -13,8 +13,6 @@ import os
 import pickle
 from pathlib import Path
 
-import matplotlib
-matplotlib.use('Agg') 
 import mne
 from mne.coreg import Coregistration
 from mne.io import read_info

@@ -30,7 +30,7 @@ class Data:
         if self.permission == 'rw':
             self.permission = 'readwrite'
 
-        # Load data as memorymap - note dimenions are flipped compared to what
+        # Load data as memorymap - note dimensions are flipped compared to what
         # we'd expect so transpose the result to get back to something
         # sensible.
         self.data = np.memmap(self.fname,

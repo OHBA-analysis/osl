@@ -74,7 +74,7 @@ def convert_notts(notts_opm_mat_file, smri_file, tsv_file, fif_file, smri_fixed_
 
     #import pdb; pdb.set_trace()
         
-    # Need to undo orginal sform on sensor locs and oris and then apply new sform
+    # Need to undo original sform on sensor locs and oris and then apply new sform
     smri = nib.load(smri_file)
     overall_xform = sform_std_fixed @ np.linalg.pinv(smri.header.get_sform())
     

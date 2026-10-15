@@ -16,7 +16,7 @@ This tutorial looks as follows:
 # Batch processing
 # ^^^^^^^^^^^^^^^^
 # Once we have a preprocessing config that we think is effectively cleaning our data, we will use it on more datasets. Initially, we might want to still limit it to a few datasets, but when we're confident we will want to preprocess all data.
-# Rather than running ``osl_proc_chain`` for every dataset seperately, we can achieve batch processing with a single call to ``osl_proc_batch`` (which internally loops over ``run_proc_chain`` and does some bookkeeping). We will first run ``osl_proc_batch`` on all run 1 from subjects 1-3. Note that this function never returns the ``dataset` (this would be too much data to keep in memory). Instead, the data is saved to disk, and the function returns ``True`` for every successfully processed dataset, and ``False`` for every failed dataset.
+# Rather than running ``osl_proc_chain`` for every dataset separately, we can achieve batch processing with a single call to ``osl_proc_batch`` (which internally loops over ``run_proc_chain`` and does some bookkeeping). We will first run ``osl_proc_batch`` on all run 1 from subjects 1-3. Note that this function never returns the ``dataset` (this would be too much data to keep in memory). Instead, the data is saved to disk, and the function returns ``True`` for every successfully processed dataset, and ``False`` for every failed dataset.
 
 
 import osl_ephys
@@ -66,7 +66,7 @@ run_proc_batch(config, infiles, subjects=subjects_ids, outdir=outdir, overwrite=
 #
 # - Channels: Shows a histogram of the per sensor variance including and excluding outliers. Below it lists which sensors are labeled as "bad" (also annotated in red)
 #
-# - Power Spectra: The power spectrum seperately for each channel type; full spectrum (left) and zoomed in (right). Each line is a sensor.
+# - Power Spectra: The power spectrum separately for each channel type; full spectrum (left) and zoomed in (right). Each line is a sensor.
 #
 # - Digitisation: Shows the Polhemus and HPI information.
 #

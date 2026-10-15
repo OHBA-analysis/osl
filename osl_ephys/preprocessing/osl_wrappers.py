@@ -147,7 +147,7 @@ def _find_outliers_in_segments(X, axis=-1, segment_len=100,
     - gesd_args: dict
         Additional arguments to pass to the GESD.
     - channel_wise: bool
-        If True, the function will treat each channel seperately when detecting bad segments.
+        If True, the function will treat each channel separately when detecting bad segments.
     - channel_axis: int
         The axis to treat as the channel axis. Only used when ``channel_wise=True``.
     - threshold: str or float
@@ -270,12 +270,12 @@ def detect_artefacts(X, axis=None, reject_mode='dim', metric_func=np.std,
         removed (zero_bads) or the input data with outliers replaced with nans
         (nan_bads)
     channel_wise : bool
-        If True, the function will treat each channel seperately when detecting bad segments,
+        If True, the function will treat each channel separately when detecting bad segments,
         only used when ``reject_mode='segments'``.
     channel_axis : int
         The axis to treat as the channel axis. Only used when ``channel_wise=True``.
     channel_threshold : str or float
-        The treshold to use for channel-wise detection. Only used when ``channel_wise=True``.  
+        The threshold to use for channel-wise detection. Only used when ``channel_wise=True``.  
 
     Returns
     -------
@@ -347,7 +347,7 @@ def detect_maxfilt_zeros(raw, use_maxfilter_log=True):
     bad_inds : np.array of bool (n_times,) or None
         Boolean array indicating which time points are zeroed out.
     """    
-    if 'mag' in raw.get_channel_types() or 'grad' in raw.get_channel_types():
+    if not {'mag', 'grad'} & set(raw.get_channel_types()):
         logger.info("No MEG data detected - not looking for MaxFilter zeroed-out data.")
         return np.zeros(raw.n_times).astype(bool)
     
@@ -381,9 +381,9 @@ def detect_maxfilt_zeros(raw, use_maxfilter_log=True):
                 stop = starts[ii] + duration  # in samples
                 bad_inds[int(starts[ii]):int(stop)] = 1
             
-        except:
+        except Exception:
             logger.info("detecting zeroed-out data from maxfilter log file failed")
-            detect_maxfilt_zeros(raw, use_maxfilter_log=False)
+            return detect_maxfilt_zeros(raw, use_maxfilter_log=False)
     else:
         logger.info("Detecting zeroed-out data from the data itself")
         d = raw.get_data(picks='meg', reject_by_annotation='omit')
@@ -391,7 +391,7 @@ def detect_maxfilt_zeros(raw, use_maxfilter_log=True):
     
     # check if most of the data is marked as bad
     if np.sum(bad_inds)/len(bad_inds) > 0.5:
-        raise RuntimeError("More than half of the data is marked as bad. This often happens when maxfilter movement compensation is used but not enough HPI coils are useable. Please check your data and/or maxfilter settings.")
+        raise RuntimeError("More than half of the data is marked as bad. This often happens when maxfilter movement compensation is used but not enough HPI coils are usable. Please check your data and/or maxfilter settings.")
     return bad_inds.astype(bool)
 
 
@@ -435,11 +435,11 @@ def bad_segments(
     detect_zeros : bool
         Should we detect segments of zeros based on the maxfilter files?
     channel_wise : bool
-        If True, the function will treat each channel seperately.
+        If True, the function will treat each channel separately.
     channel_axis : int
         The axis to treat as the channel axis. Only used when ``channel_wise=True``.
     channel_threshold : str or float
-        The treshold to use for channel-wise detection. Only used when ``channel_wise=True``.
+        The threshold to use for channel-wise detection. Only used when ``channel_wise=True``.
 
     Returns
     -------

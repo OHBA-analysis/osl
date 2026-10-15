@@ -888,7 +888,7 @@ def covariance_matrix_correlation(M1, M2, diag_offset=0, mode=None):
         Second covariance matrix.
     diag_offset : int
         To calculate the distance we take the upper triangle.
-        This argument allows us to specify an offet from the diagonal
+        This argument allows us to specify an offset from the diagonal
         so we can choose not to take elements near the diagonal.
     mode : str
         Either 'abs', 'sign' or None.

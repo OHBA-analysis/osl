@@ -58,7 +58,7 @@ def convert_4dparc_to_3d(parcel4d_fname, parcel3d_fname):
     parcel4d_fname : str
         4D nifii file, where each volume is a parcel
     parcel3d_fname : str
-        3D nifii output fule with each voxel with a value of 0 if not in a parcel,
+        3D nifii output file with each voxel with a value of 0 if not in a parcel,
         or 1...p...n_parcels if in parcel p
     """
     os.system("fslmaths {} -Tmaxn -add 1 {}".format(parcel4d_fname, parcel3d_fname))

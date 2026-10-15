@@ -13,9 +13,11 @@ import inspect
 
 from copy import deepcopy
 from time import localtime, strftime
+import functools
 from functools import partial
 from dask.distributed import Variable, Queue
 
+import matplotlib
 import numpy as np
 import yaml
 import mne
@@ -92,7 +94,7 @@ def find_func(method, extra_funcs):
     return func
 
 
-def run_src_chain(
+def _run_src_chain(
     config,
     outdir,
     subject,
@@ -277,6 +279,19 @@ def run_src_chain(
         src_report.gen_html_page(reportdir)
 
     return True
+
+
+@functools.wraps(_run_src_chain)
+def run_src_chain(*args, **kwargs):
+    # The coregistration and source reconstruction plots are written to
+    # files, so they are drawn with the non-interactive backend; the caller's
+    # backend is restored afterwards so a notebook keeps its own
+    backend = matplotlib.get_backend()
+    matplotlib.use("Agg")
+    try:
+        return _run_src_chain(*args, **kwargs)
+    finally:
+        matplotlib.use(backend)
 
 
 def run_src_batch(

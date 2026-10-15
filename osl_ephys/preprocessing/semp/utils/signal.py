@@ -89,7 +89,7 @@ def correct_trigger(raw, event, event_id, tmin, tmax, template='mid', channel=0,
 
 def mne_epoch2raw(epoch, raw, ndarray=None, tmin=0, overwrite='new', picks='eeg'):
     """ Convert an mne.Epochs object to an mne.RawArray object by overwriting the raw data.
-    An easier way to realize this is to 1) use mne.Epochs.get_data() to get the data in ndarray format, 2) reshape, and then 3) use mne.io.RawArray to create a new Raw object. However, this approach is dangerous if the epoch data have overlapping time windows, which is common in BCG correction, or FASTR GA correction. In this case artifact would appear at the edge of concatenated epochs.
+    An easier way to realize this is to 1) use mne.Epochs.get_data() to get the data in ndarray format, 2) reshape, and then 3) use mne.io.RawArray to create a new Raw object. However, this approach is dangerous if the epoch data have overlapping time windows, which is common in BCG correction, or FASTER GA correction. In this case artifact would appear at the edge of concatenated epochs.
     Instead, this function directly overwrites the data in the raw object, which can avoid the edge artifact issue. The overwrite parameter specifies the behavior when overwriting the raw data. 'new' means the epoch with a larger index will overwrite the epoch with a smaller index, while 'even' means the datapoint closer to the event onset will be retained.
     Parameters
     ----------

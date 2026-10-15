@@ -50,7 +50,7 @@ parser.add_argument('--trans', type=str, default=None,
 parser.add_argument('--origin', nargs='+',
                     help='Set specific sphere origin')
 parser.add_argument('--frame', type=str, default=None,
-                    help='Set device/dead co-ordinate frame')
+                    help='Set device/dead coordinate frame')
 parser.add_argument('--force', action='store_true',
                     help='Ignore program warnings')
 
@@ -704,7 +704,7 @@ def run_maxfilter_batch(files, outdir, args=None):
         print('Outputs will be saved alongside inputs\n\n')
     else:
         if '{' in args['outdir'] and '}' in args['outdir']:
-            # validate the parrent outdir - later do so for each subdirectory
+            # validate the parent outdir - later do so for each subdirectory
             _ = validate_outdir(args['outdir'].split('{')[0])
         else:
             args['outdir'] = validate_outdir(args['outdir'])

@@ -1,131 +1,62 @@
-# OSL: Electrophysiological Data Analysis Toolbox
+# OHBA Software Library: Electrophysiology Toolbox
 
-Tools for analysing electrophysiological (M/EEG) data.
+[![PyPI version](https://img.shields.io/pypi/v/osl-ephys)](https://pypi.org/project/osl-ephys/)
+[![Documentation](https://readthedocs.org/projects/osl-ephys/badge/?version=latest)](https://osl-ephys.readthedocs.io)
+[![License](https://img.shields.io/badge/license-Apache%202.0-green)](https://github.com/OHBA-analysis/osl-ephys/blob/main/LICENSE)
+[![Paper](https://img.shields.io/badge/paper-Frontiers-orange)](https://doi.org/10.3389/fnins.2025.1522675)
 
-Documentation: https://osl-ephys.readthedocs.io/en/latest/.
+osl-ephys is a Python toolbox for analysing electrophysiological data (MEG, EEG and OPM) from the raw recording to parcellated source-space time courses. It builds on [MNE-Python](https://mne.tools) and adds the pieces an M/EEG pipeline needs around it:
+
+- **Preprocessing** driven by a YAML config: filtering, bad segment and bad channel detection, ICA artefact rejection, epoching, with the same config run on one session or batched over a dataset in parallel.
+- **MaxFilter** wrapper for Elekta/MEGIN data (SSS and tSSS), with multistage and chunked runs.
+- **Coregistration and source reconstruction** with RHINO: surface extraction from a structural MRI with FSL, coregistration to the head shape, forward modelling, LCMV beamforming and volumetric minimum norm.
+- **Parcellation** of source-space data into parcel time courses, with spatial leakage correction and sign flipping across sessions.
+- **Quality control**: an HTML report across sessions with the plots and numbers of every step.
+- **Sensor-level statistics**: GLM-Spectrum and GLM-Epochs with permutation testing.
+
+For a full description of the toolbox, see the [documentation](https://osl-ephys.readthedocs.io).
 
 ## Installation
 
-We recommend installing osl-ephys in a Conda environment.
-
-### Conda / mamba
-
-[Miniforge](https://github.com/conda-forge/miniforge) (`conda`/`mamba`) can be
-installed on Linux or macOS with:
-
-```bash
-wget "https://github.com/conda-forge/miniforge/releases/latest/download/Miniforge3-$(uname)-$(uname -m).sh"
-bash Miniforge3-$(uname)-$(uname -m).sh
-rm Miniforge3-$(uname)-$(uname -m).sh
+The recommended installation is:
 ```
-
-### osl-ephys
-
-Install osl-ephys from its source checkout:
-
-```bash
-git clone https://github.com/OHBA-analysis/osl-ephys.git
-cd osl-ephys
-mamba env create -f envs/osle.yml
+mamba create -n osle -c conda-forge osl-ephys
 conda activate osle
-python -m pip install -e .
 ```
 
-Check the active installation with
-`python -c "import osl_ephys; print(osl_ephys.__version__)"`.
+See the [installation page](https://osl-ephys.readthedocs.io/en/latest/install.html) for more information, including installing with pip and on Oxford computers.
 
-On a headless server, you may also need:
+## Documentation
 
-```bash
-export PYVISTA_OFF_SCREEN=true
+The read the docs page is updated automatically whenever there is a new commit on the `main` branch.
+
+The documentation is included as docstrings in the source code, and the `doc/` directory contains `.rst` files for installation, tutorials and the FAQ. To build the documentation locally:
 ```
-
-### Oxford-specific computers
-
-On an OHBA workstation (HBAWS), use:
-
-```bash
-git clone https://github.com/OHBA-analysis/osl-ephys.git
 cd osl-ephys
-mamba env create -f envs/hbaws.yml
 conda activate osle
-python -m pip install -e .
+pip install -r doc/requirements.txt
+sphinx-build -b html doc build
 ```
+The local build can be found in `build/index.html`.
 
-On the BMRC cluster, use:
+## Releases
 
-```bash
-git clone https://github.com/OHBA-analysis/osl-ephys.git
-cd osl-ephys
-mamba env create -f envs/bmrc.yml
-conda activate osle
-python -m pip install -e .
-```
+To release a new version:
 
-Remember to set `PYVISTA_OFF_SCREEN=true` when visualising on a headless
-cluster.
+1. Check the latest commit on `main` has compiled successfully on [readthedocs](https://readthedocs.org/projects/osl-ephys).
 
-## Removing osl-ephys
+2. Create a new release using the 'Create a new release' link on the right of the GitHub repo webpage:
 
-Remove the Conda environment with `conda env remove -n osle`. After confirming
-you are in the checkout's parent directory and no longer need local changes,
-delete the cloned `osl-ephys` directory.
+    - Set the tag to the new version number with a `v` prefix (e.g. `v3.0.0`).
+    - Write the release notes.
+    - Select 'Latest' for the release label and click 'Publish release'.
 
-## Interactive manual ICA review
+3. Publishing the release triggers a GitHub Actions workflow (`.github/workflows/release.yml`) that builds the package and uploads it to [PyPI](https://pypi.org/project/osl-ephys/). Check the workflow succeeded under the Actions tab of the GitHub repo.
 
-The browser-based [manual ICA tutorial](doc/source/tutorials/preprocessing_manual-ica.py)
-shows how to fit ICA, inspect and label components, mark bad intervals, and
-apply the saved decisions. It uses a noisy simultaneous EEG-fMRI recording as
-an example, but the review workflow works with any OSL-Ephys EEG preprocessing
-pipeline; TR and slice timing are only needed for the optional gradient-artifact
-score.
+## Citation
 
-Watch the [manual ICA review walkthrough](https://drive.google.com/file/d/1IxYQBHKlFOTMEGhLchoDoy79Gb7gTN9H/view?usp=sharing)
-for a demonstration of the browser interface.
+If you find this toolbox useful, please cite the [paper](https://doi.org/10.3389/fnins.2025.1522675):
 
-| Single-component review | Between-component comparison |
-| --- | --- |
-| [![Single-component ICA review](doc/source/images/manual_ica/single_ic.jpg)](doc/source/images/manual_ica/single_ic.jpg) | [![Between-component ICA comparison](doc/source/images/manual_ica/between_ic.jpg)](doc/source/images/manual_ica/between_ic.jpg) |
+> **van Es, M. W. J., Gohil, C., Quinn, A. J., & Woolrich, M. W. (2025). osl-ephys: a Python toolbox for the analysis of electrophysiology data. Frontiers in Neuroscience, 19, 1522675.**
 
-Click either screenshot to enlarge it.
-
-To generate the manual ICA tutorial as a notebook without executing its code:
-
-```bash
-python -m pip install -e ".[doc]"
-sphinx-build -b html -D sphinx_gallery_conf.plot_gallery=0 doc/source build/html
-ls doc/source/tutorials_build/preprocessing_manual-ica.ipynb
-```
-
-## SEMP: simultaneous EEG-fMRI preprocessing
-
-SEMP adds simultaneous EEG-fMRI artifact removal to the existing OSL-Ephys
-preprocessing workflow.
-
-[EEG-fMRI preprocessing tutorial](doc/source/tutorials/preprocessing_eeg-fmri.py):
-inspect NATVIEW acquisition metadata, run SEMP step by step, and compare
-sensor-space output.
-
-Like the manual ICA tutorial, generate the SEMP notebook with Sphinx-Gallery
-without running its data-dependent code:
-
-```bash
-sphinx-build -b html -D sphinx_gallery_conf.plot_gallery=0 doc/source build/html
-ls doc/source/tutorials_build/preprocessing_eeg-fmri.ipynb
-```
-
-## For developers
-
-Install development and documentation requirements with
-`python -m pip install -r requirements.txt` (after the editable install above).
-
-Run the full tests from the repository root with `pytest osl_ephys/tests`, or
-run one file with `pytest osl_ephys/tests/test_file_handling.py`.
-
-Build documentation without executing tutorials that require external data:
-
-```bash
-sphinx-build -b html -D sphinx_gallery_conf.plot_gallery=0 doc/source build/html
-```
-
-Compiled docs can be found in `build/html/index.html`.
+osl-ephys builds on MNE-Python, and the source reconstruction on FSL. Please cite those packages as well when you use them.

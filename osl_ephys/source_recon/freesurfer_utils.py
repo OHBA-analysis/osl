@@ -87,7 +87,7 @@ def get_freesurfer_filenames(subjects_dir, subject):
     surf_files = {
         "basedir": surfaces_dir,
         "smri_file": op.join(surfaces_dir, f"{subject.split('-')[-1]}.mgz"), # TODO: make more robust
-        "talairach_xform": op.join(surfaces_dir,  "tranforms", "talairach.xfm"),
+        "talairach_xform": op.join(surfaces_dir,  "transforms", "talairach.xfm"),
         "bem_brain_surf_file": op.join(surfaces_dir,  "bem", "brain.surf"),
         "bem_scalp_surf_fif": op.join(surfaces_dir, "bem", f"{subject}-head.fif"),
         "bem_inner_skull_surf_file": op.join(surfaces_dir,  "bem", "inner_skull.surf"),
@@ -95,7 +95,7 @@ def get_freesurfer_filenames(subjects_dir, subject):
         "bem_outer_skin_surf_file": op.join(surfaces_dir,  "bem", "outer_skin.surf"),
         "bem_ws_brain_surf_file": op.join(surfaces_dir, "bem", "watershed", f"{subject}_brain_surface"),
         "bem_ws_inner_skull_surf_file": op.join(surfaces_dir, "bem", "watershed", f"{subject}_inner_skull_surface"),
-        "talairach_xform": op.join(surfaces_dir,  "tranforms", "talairach.xfm"),
+        "talairach_xform": op.join(surfaces_dir,  "transforms", "talairach.xfm"),
         "std_brain_dir": op.join(os.environ["FREESURFER_HOME"], "subjects", "fsaverage"),
         "std_brain_mri": op.join(os.environ["FREESURFER_HOME"], "subjects", "fsaverage", "mri", "T1.mgz"),
         "completed": op.join(surfaces_dir, "completed.txt"),

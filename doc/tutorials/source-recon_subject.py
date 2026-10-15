@@ -25,7 +25,7 @@ To run this tutorial you will need to have osl-ephys and FSL installed, with the
 
 The public Wakeman-Henson dataset provides MaxFiltered data. Note that the full dataset is available on `OpenNeuro <https://openneuro.org/datasets/ds000117/versions/1.0.4>`_. Here, we will work with just a single subject from this dataset, which can be downloaded from the OSF project website. 
 
-Let's download the data. Note, to download the dataset you need ``osfclient`` installed. This can be installed by excuting the following code in a jupyter notebook cell:
+Let's download the data. Note, to download the dataset you need ``osfclient`` installed. This can be installed by executing the following code in a jupyter notebook cell:
 
 ``!pip install osfclient``
 
@@ -216,7 +216,7 @@ print("Dimensions of reconstructed timeseries in MNI space is (dipoles x all_tpt
 # 
 # At this point, the data has been source reconstructed to dipoles (in this case, a scalar value) at each point on a regular 3D grid, with spacings of 10mm. We could then analyse the data across all these dipoles.
 # 
-# An alternative, is to map the data onto a brain parcellation. This reduces the number of samples in the space from number of dipoles down to number of parcels. Using a parcellation helps to boost the signal to noise ratio, boost correspondance between subjects, reduce the severity of multiple comparison correction when doing any statistics, and aids anatomical interpretability.
+# An alternative, is to map the data onto a brain parcellation. This reduces the number of samples in the space from number of dipoles down to number of parcels. Using a parcellation helps to boost the signal to noise ratio, boost correspondence between subjects, reduce the severity of multiple comparison correction when doing any statistics, and aids anatomical interpretability.
 # 
 # The parcellation we use here is a combination of cortical regions from the Harvard Oxford atlas, and selected sub-cortical regions from the Schaefer 100 parcellation. 
 # 

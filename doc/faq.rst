@@ -96,7 +96,7 @@ Can I add custom information to the reports?
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 Yes, you can (for the preproc module)! You can add custom figures to the report by adding them to the ``dataset['fig']`` dictionary in your custom function as ``dataset['fig']['figure name']``. Here, 'figure name' will be used as the tab name in the report.
-This works for both the subject-level and group analyses, and the figures will be added to the subject/summary reports respecively. For example:
+This works for both the subject-level and group analyses, and the figures will be added to the subject/summary reports respectively. For example:
 
 .. code-block:: Python
 
@@ -134,7 +134,7 @@ Have a look at the :doc:`tutorials_build/preprocessing_automatic` tutorial.
 What is MaxFilter and how do I use it?
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 MaxFilter is Elekta licensed software, and is typically only used for Elekta/Megin data, though in principle it can be applied to other data source (incl. OPM's). It is used to remove external noise (e.g., environmental noise) and do head movement compensation. 
-Maxfilter uses some extra reference sensors in the MEG together with Signal Space Seperation (SSS) to achieve this. MaxFilter has various settings, for which osl-ephys has `wrappers <https://osl-ephys.readthedocs.io/en/latest/autoapi/osl_ephys/maxfilter/maxfilter/index.html>`_ for the 
+Maxfilter uses some extra reference sensors in the MEG together with Signal Space Separation (SSS) to achieve this. MaxFilter has various settings, for which osl-ephys has `wrappers <https://osl-ephys.readthedocs.io/en/latest/autoapi/osl_ephys/maxfilter/maxfilter/index.html>`_ for the 
 Elekta software with some explanations of settings. Furthermore, `MNE-Python also has a maxfilter that doesn't require a license <https://mne.tools/stable/generated/mne.preprocessing.maxwell_filter.html>`_. Besides these references, also have a look at the 
 `Maxfilter user manual <https://ohba-analysis.github.io/osl-docs/downloads/maxfilter_user_guide.pdf>`_ and at `these guidelines <https://lsr-wiki-01.mrc-cbu.cam.ac.uk/meg/maxpreproc>`_.
 
@@ -169,7 +169,7 @@ We also need to start a Client and specify ``threads_per_worker=1`` and the numb
 
 How do I select which components to remove in ICA?
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-There are several ways to identify artefact-related components. Comonly, components related to heartbeats and eyemovements (saccades/blinks) are removed.
+There are several ways to identify artefact-related components. Commonly, components related to heartbeats and eyemovements (saccades/blinks) are removed.
 These can be identified either automatically, e.g., by correlation with the ECG / EOG (when recorded), or manually, by inspecting the component topographies and timecourses. 
 We recommend a combination of the two: have a automatic first pass, and manually adapting the labels where necessary. 
 
@@ -241,7 +241,7 @@ For example:
       hs = hs[:, ~remove]
 
       # Overwrite headshape file
-      osl_ephys.utils.logger.log_or_print(f"overwritting {filenames['polhemus_headshape_file']}")
+      osl_ephys.utils.logger.log_or_print(f"overwriting {filenames['polhemus_headshape_file']}")
       np.savetxt(filenames["polhemus_headshape_file"], hs)
 
 

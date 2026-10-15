@@ -419,7 +419,7 @@ def remove_stray_headshape_points(outdir, subject, nose=True):
     hs = hs[:, ~remove]
 
     # Overwrite headshape file
-    log_or_print(f"overwritting: {filenames['polhemus_headshape_file']}")
+    log_or_print(f"overwriting: {filenames['polhemus_headshape_file']}")
     np.savetxt(filenames["polhemus_headshape_file"], hs)
 
 
@@ -576,5 +576,5 @@ def rescale_sensor_positions(fif_file, xscale=1, yscale=1, zscale=1):
 
     # Save
     raw.set_montage(montage)
-    log_or_print(f"Overwritting {fif_file} with new sensor positions")
+    log_or_print(f"Overwriting {fif_file} with new sensor positions")
     raw.save(fif_file, overwrite=True)

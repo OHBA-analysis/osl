@@ -116,6 +116,9 @@ come after the scaffolding exists to test them.
 
 ### Phase 1: Packaging, tooling, CI  (todo: dependencies, codespell/black, release process)
 
+Status 2026-10-16: done on `v3` except the one-time PyPI/GitHub setup and
+the ReadTheDocs build check. 122 tests pass locally on Python 3.12.
+
 - `pyproject.toml` with setuptools_scm; delete `setup.py`, `setup.cfg`,
   `requirements.txt`, `Makefile`; `__version__` from `importlib.metadata`.
   Version then lives only in git tags (fixes the four-file bump in
@@ -138,7 +141,11 @@ come after the scaffolding exists to test them.
     needs a conda-forge feedstock before phase 9), `fslpy`, `parse`,
     `numba`, `jinja2` (until D5)
   - add: `osl-dynamics` (D1a) or `pooch` (D1b/c)
-  - pin `sails` or fix the incompatibility behind issue #449
+  - `sails<1.8`: `glm_irasa` in sails 1.8 to 1.13 raises inside sails itself
+    (its own code warns "not fully operational"); 1.7.0 is the last version
+    where it works, and `glm_periodogram` works on all of them. Raise with
+    Andrew; lift the pin when sails fixes it. osl-ephys' `glm_irasa` already
+    tolerates the removed `method` argument (#449).
 - `.github/workflows/`: `tests.yml` (push + PR, matrix Python 3.10-3.13,
   ubuntu + macos, `pip install -e .[dev]`, pytest), `codespell.yml`,
   `black.yml`, `release.yml`. Delete `osl-cicd-actions.yml`.

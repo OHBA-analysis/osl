@@ -12,11 +12,11 @@ In MEG/EEG analysis we have a number of coordinate systems including:
 * sMRI (Native) space - defined with respect to the structural MRI scan.
 * MNI space - defined with respect to the MNI standard space brain.
  
-In order to compute foward models and carry out source reconstruction we need to have all of the necessary things (MEG sensors, dipoles, scalp surface etc.) in a common coordinate space. However, prior to coregistration, this is not the case. For example, we only have the MEG sensors located in MEG (device) space.
+In order to compute forward models and carry out source reconstruction we need to have all of the necessary things (MEG sensors, dipoles, scalp surface etc.) in a common coordinate space. However, prior to coregistration, this is not the case. For example, we only have the MEG sensors located in MEG (device) space.
  
 Coregistration is the process of learning a mapping between each pair of coordinate systems. To do this, we make use of landmarks (these act as a kind of Rosetta stone) whose locations are known in two different coordinate systems. Knowing where these landmarks are in two coordinate systems allows us to learn a mapping between the coordinate systems.
  
-For example, the fiducials (LPA, RPA and Nasion) are known in both sMRI (Native) space and Polhemus (Head) space, and provide the information we need to learn a linear (affine) transform betwen sMRI (Native) space and Polhemus (Head) space.
+For example, the fiducials (LPA, RPA and Nasion) are known in both sMRI (Native) space and Polhemus (Head) space, and provide the information we need to learn a linear (affine) transform between sMRI (Native) space and Polhemus (Head) space.
  
 The different landmarks, and the coordinate systems they are known in prior to coregistration, are summarised here:
 
@@ -39,7 +39,7 @@ Coregistration using RHINO
 
 In osl-ephys, the standard approach for coregistration is to use RHINO (Registration of Headshapes Including Nose in osl-ephys). The RHINO pipeline is actually not just used for the coregistration, it can also:
 
-* Compute the head and brain surfaces needed for coregistration and forward modelling from the strucural MRI (using FSL tools such as BET and Flirt)
+* Compute the head and brain surfaces needed for coregistration and forward modelling from the structural MRI (using FSL tools such as BET and Flirt)
 * Perform coregistration so that the MEG sensors and head / brain surfaces can be placed into a common coordinate system.
 * Compute the forward model (the lead fields) given the relative geometry of the MEG sensors and head / brain surfaces.
 
@@ -75,7 +75,7 @@ To run this tutorial you will need to have osl-ephys and FSL installed, with the
 
 Let's download the two subjects' data from the OSF project website.
 
-:note: To download the dataset you need ``osfclient`` installed. This can be installed by excuting the following code in a jupyter notebook cell:
+:note: To download the dataset you need ``osfclient`` installed. This can be installed by executing the following code in a jupyter notebook cell:
 
 
 

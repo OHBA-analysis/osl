@@ -54,7 +54,7 @@ def my_var_cut_fn(epochs, plow, phigh, to_plot=True):
         plt.figure(), plt.scatter(
             trlindx, trl_var, marker="o", s=50, c="g", label="Good trials"
         ),
-        plt.ylabel("Max. Variance accros channels-->")
+        plt.ylabel("Max. Variance across channels-->")
         plt.scatter(
             outlr_idx,
             trl_var[outlr_idx],

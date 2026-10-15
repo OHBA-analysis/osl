@@ -4,6 +4,8 @@ from copy import deepcopy
 from pathlib import Path
 from itertools import compress
 
+import inspect
+import warnings
 import mne
 import numpy as np
 import matplotlib.pyplot as plt
@@ -577,13 +579,20 @@ def glm_irasa(XX, method='modified', resample_factors=None, aperiodic_average='m
                  contrasts=None, fit_intercept=True, standardise_data=False,
                  window_type='hann', nperseg=None, noverlap=None, nfft=None,
                  detrend='constant', return_onesided=True, scaling='density',
-                 mode='psd', fmin=None, fmax=None, axis=-1, fs=1, verbose='WARNING'):
+                 mode='psd', fmin=None, fmax=None, axis=-1, fs=1, verbose='WARNING',
+                 **kwargs):
     """Compute a GLM-IRASA from a MNE-Python Raw data object.
 
     Parameters
     ----------
     XX : {MNE Raw object, or data array}
         Data to compute GLM-Spectrum from
+    method : str
+        IRASA method, passed to sails when the installed version supports it
+        (sails 1.13 has a single method and ignores this)
+    **kwargs
+        Further arguments passed to :py:func:`sails.stft.glm_irasa`, e.g.
+        ``spectrum_method`` in sails 1.13
     standardise_data : bool
         Flag indicating whether to z-transform input data (Default value = False)
     reg_categorical : dict or None
@@ -678,9 +687,14 @@ def glm_irasa(XX, method='modified', resample_factors=None, aperiodic_average='m
     if standardise_data:
         YY = stats.zscore(YY, axis=axis)
 
+    # sails dropped the IRASA `method` argument in 1.13; older versions need it
+    if 'method' in inspect.signature(sails_glm_irasa).parameters:
+        kwargs['method'] = method
+    elif method != 'modified':
+        warnings.warn(f"method='{method}' is ignored by the installed sails, which has one IRASA method")
+
     # sails.sftf.config freqvals isn't right when frange is trimmed!
     aper, osc = sails_glm_irasa(YY, axis=axis,
-                            method=method,
                             resample_factors=resample_factors,
                             aperiodic_average=aperiodic_average,
                             reg_categorical=reg_categorical,
@@ -699,7 +713,8 @@ def glm_irasa(XX, method='modified', resample_factors=None, aperiodic_average='m
                             mode=mode,
                             fmin=fmin,
                             fmax=fmax,
-                            verbose=verbose)
+                            verbose=verbose,
+                            **kwargs)
 
     if isinstance(XX, mne.io.base.BaseRaw):
         return SensorGLMSpectrum(aper, XX.info), SensorGLMSpectrum(osc, XX.info)

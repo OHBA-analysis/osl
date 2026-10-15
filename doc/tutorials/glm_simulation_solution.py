@@ -15,7 +15,7 @@ print(glmsp.design.design_matrix)
 
 # The intercept value is always the same with a value of 1. This is as we expect as the intercept does not vary with the values of our other predictor variables. The Linear predictor values vary between around -1.64 and +1.64, these slightly odd values are what we get when we z-transform a straight line.
 #
-# We can see the regression parameter estimates in the fitted model, let's look specifically at the betas for 22Hz. Remember we have vectors of coefficents for every frequency.
+# We can see the regression parameter estimates in the fitted model, let's look specifically at the betas for 22Hz. Remember we have vectors of coefficients for every frequency.
 
 print(glmsp.model.betas)
 

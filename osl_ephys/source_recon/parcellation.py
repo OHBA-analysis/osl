@@ -161,7 +161,7 @@ def guess_parcellation(data, return_path=False):
     # the following are FreeSurfer parcellations:
     elif nparc==68: # Desikan-Killiany (2006)
         fname = "aparc"
-    # TODO: find out how many valid parcels these contain (might contain unkowns and ??? etc).
+    # TODO: find out how many valid parcels these contain (might contain unknowns and ??? etc).
     # elif nparc==156:
     #     fname = "aparc.a2005s"
     elif nparc==144: # Destrieux et al. 2010
@@ -740,7 +740,7 @@ def plot_psd(parc_ts, fs, parcellation_file, filename, freq_range=None, freesurf
             psd.append(p)
         psd = np.mean(psd, axis=0)
     else:
-        # Calcualte PSD of continuous data
+        # Calculate PSD of continuous data
         f, psd = welch(parc_ts, fs=fs, nperseg=fs, nfft=fs*2)
 
     n_parcels = psd.shape[0]

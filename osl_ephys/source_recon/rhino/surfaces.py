@@ -12,13 +12,10 @@ from pathlib import Path
 from datetime import datetime
 from copy import deepcopy
 
-import cv2
 import numpy as np
 import nibabel as nib
-import matplotlib
-matplotlib.use('Agg') 
 import nilearn as nil
-from scipy.ndimage import morphology
+from scipy.ndimage import morphology, grey_dilation, grey_erosion
 from sklearn.mixture import GaussianMixture
 from mne.transforms import write_trans, Transform
 from fsl import wrappers as fsl_wrappers
@@ -42,7 +39,7 @@ def get_surfaces_filenames(subjects_dir, subject):
     Returns
     -------
     filenames : dict
-        A dict of files generated and used by rhino.compute_surfaces. Note that  due to the unusal naming conventions used by BET:
+        A dict of files generated and used by rhino.compute_surfaces. Note that  due to the unusual naming conventions used by BET:
         - bet_inskull_*_file is actually the brain surface
         - bet_outskull_*_file is actually the inner skull surface
         - bet_outskin_*_file is the outer skin/scalp surface
@@ -103,7 +100,7 @@ def compute_surfaces(
     3) Use flirt to register skull stripped sMRI to MNI space
     4) Use BET/BETSURF to get:
     a) The scalp surface (excluding nose), this gives the sMRI-derived headshape points in native sMRI space, which can be used in the headshape points registration later.
-    b) The scalp surface (outer skin), inner skull and brain surface, these can be used for forward modelling later. Note that  due to the unusal naming conventions used by BET:
+    b) The scalp surface (outer skin), inner skull and brain surface, these can be used for forward modelling later. Note that  due to the unusual naming conventions used by BET:
        - bet_inskull_mesh_file is actually the brain surface
        - bet_outskull_mesh_file is actually the inner skull surface
        - bet_outskin_mesh_file is the outer skin/scalp surface
@@ -144,7 +141,7 @@ def compute_surfaces(
     # MRI (native) -- mri_mrivoxel_t (native2nativeindex) --> MRI (native) voxel indices
     # MRI (native) -- sform (mri2mniaxes) --> MNI axes
     #
-    # RHINO does everthing in mm
+    # RHINO does everything in mm
 
     filenames = get_surfaces_filenames(subjects_dir, subject)
 
@@ -291,7 +288,7 @@ def compute_surfaces(
     # --------------------------
     # 4) Use BET/BETSURF to get:
     # a) The scalp surface (excluding nose), this gives the sMRI-derived headshape points in native sMRI space, which can be used in the headshape points registration later.
-    # b) The scalp surface (outer skin), inner skull and brain surface, these can be used for forward modelling later. Note that due to the unusal naming conventions used by BET:
+    # b) The scalp surface (outer skin), inner skull and brain surface, these can be used for forward modelling later. Note that due to the unusual naming conventions used by BET:
     #    - bet_inskull_mesh_file is actually the brain surface
     #    - bet_outskull_mesh_file is actually the inner skull surface
     #    - bet_outskin_mesh_file is the outer skin/scalp surface
@@ -405,16 +402,15 @@ def compute_surfaces(
 
     # Extract outline
     outline = np.zeros(mask.shape)
-    kernel = cv2.getStructuringElement(cv2.MORPH_RECT, (3, 3))
     mask = mask.astype(np.uint8)
 
     # Use morph gradient to find the outline of the solid mask
     for i in range(outline.shape[0]):
-        outline[i, :, :] += cv2.morphologyEx(mask[i, :, :], cv2.MORPH_GRADIENT, kernel)
+        outline[i, :, :] += grey_dilation(mask[i, :, :], size=(3, 3)) - grey_erosion(mask[i, :, :], size=(3, 3))
     for i in range(outline.shape[1]):
-        outline[:, i, :] += cv2.morphologyEx(mask[:, i, :], cv2.MORPH_GRADIENT, kernel)
+        outline[:, i, :] += grey_dilation(mask[:, i, :], size=(3, 3)) - grey_erosion(mask[:, i, :], size=(3, 3))
     for i in range(50, 300, 1):
-        outline[:, :, i] += cv2.morphologyEx(mask[:, :, i], cv2.MORPH_GRADIENT, kernel)
+        outline[:, :, i] += grey_dilation(mask[:, :, i], size=(3, 3)) - grey_erosion(mask[:, :, i], size=(3, 3))
     outline /= 3
 
     outline[np.where(outline > 0.6)] = 1

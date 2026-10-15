@@ -134,8 +134,8 @@ def coreg(
     # HEAD (polhemus)-- head_mri_t (polhemus2native) --> MRI (native)
     # MRI (native) -- mri_mrivoxel_t (native2nativeindex) --> MRI (native) voxel indices
     #
-    # RHINO does everthing in mm
-    # (MNE does everthing in metres)
+    # RHINO does everything in mm
+    # (MNE does everything in metres)
 
     log_or_print("*** RUNNING OSL-EPHYS RHINO COREGISTRATION ***")
 
@@ -482,7 +482,7 @@ def coreg_display(
 
     Display is done in MEG (device) space (in mm).
 
-    Purple dots are the polhemus derived fiducials (these only get used to initialse the coreg, if headshape points are being used).
+    Purple dots are the polhemus derived fiducials (these only get used to initialise the coreg, if headshape points are being used).
 
     Yellow diamonds are the MNI standard space derived fiducials.
 
@@ -549,7 +549,7 @@ def coreg_display(
     # HEAD (polhemus)-- head_mri_t (polhemus2native) --> MRI (native)
     # MRI (native) -- mri_mrivoxel_t (native2nativeindex) --> MRI (native) voxel indices
     #
-    # RHINO does everthing in mm
+    # RHINO does everything in mm
 
     coreg_filenames = get_coreg_filenames(subjects_dir, subject)
 

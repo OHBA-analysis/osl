@@ -111,7 +111,7 @@ epochs.drop_bad({"eog": 6e-4, "mag": 4e-11, "grad": 4e-10})
 #%%
 # Specifying the ``config`` 
 # ^^^^^^^^^^^^^^^^^^
-# Let's now try to put these processing steps into a config. We gave it a head start, but try to fill in the rest before continueing.
+# Let's now try to put these processing steps into a config. We gave it a head start, but try to fill in the rest before continuing.
 #
 # :Tip: Use the  `Preprocessing API documentation <https://osl-ephys.readthedocs.io/en/latest/autoapi/osl_ephys/preprocessing/index.html>`_ and `MNE API <https://mne.tools/stable/api/python_reference.html>`_ to find the correct function names and settings. In the pipeline shown above, most steps are methods on the mne ``Raw`` class. You can see the available methods using ``dir(mne.io.Raw)``, and get help info as follows: e.g. ``help(mne.io.Raw.filter)``.
 # 
@@ -219,7 +219,7 @@ print(f"run_proc_chain returned a dictionary with the following items: \n {datas
 # - ``mneverbose``:  print MNE-Python info
 # 
 # 
-# The ``dataset`` dictionary that is returned by ``run_proc_chain`` contains different items depending on the preprocessing pipeline. For example ``dataset["epochs"]`` is only returned because we specified our pipeline to include creating epochs. If we're saving the data to disk (i.e., ``outdir`` is specified), every item in ``dataset`` is saved seperately. The filenames will look something like:
+# The ``dataset`` dictionary that is returned by ``run_proc_chain`` contains different items depending on the preprocessing pipeline. For example ``dataset["epochs"]`` is only returned because we specified our pipeline to include creating epochs. If we're saving the data to disk (i.e., ``outdir`` is specified), every item in ``dataset`` is saved separately. The filenames will look something like:
 #
 # - ``raw``: `sub-001_run-01_preproc-raw.fif`
 # - ``events``: `sub-001_run-01_events.npy` - numpy's way of saving data (load with `numpy.load()`)
@@ -339,7 +339,7 @@ run_proc_chain(config_text, sub1run1, subject= 'sub001-ses01', outdir=outdir, re
 #
 # - Channels: Shows a histogram of the per sensor variance including and excluding outliers. Below it lists which sensors are labeled as "bad" (also annotated in red)
 #
-# - Power Spectra: The power spectrum seperately for each channel type; full spectrum (left) and zoomed in (right). Each line is a sensor.
+# - Power Spectra: The power spectrum separately for each channel type; full spectrum (left) and zoomed in (right). Each line is a sensor.
 #
 # - Digitisation: Shows the Polhemus and HPI information.
 #

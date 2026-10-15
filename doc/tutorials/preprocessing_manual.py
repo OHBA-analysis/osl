@@ -8,7 +8,7 @@ From our experience, preprocessing pipelines are rarely directly generalizable b
 This can for example be done by applying preprocessing steps one by one and visualising the data each time to see what effects every step has on your data. In this section we will do just that; starting from the raw data.
 
 **Note**: the data we'll use has already had a MaxFilter applied to it. MaxFilter is Elekta licensed software, and is also only needed for Elekta/Megin data. It is used to remove external noise (e.g., environmental noise) and do head movement compensation. 
-Maxfilter uses some extra reference sensors in the MEG together with Signal Space Seperation (SSS) to achieve this. MaxFilter has various settings, which we will not go into here, but osl-ephys does have a `wrapper <https://osl-ephys.readthedocs.io/en/latest/autoapi/osl_ephys/maxfilter/maxfilter/index.html>`_ for the 
+Maxfilter uses some extra reference sensors in the MEG together with Signal Space Separation (SSS) to achieve this. MaxFilter has various settings, which we will not go into here, but osl-ephys does have a `wrapper <https://osl-ephys.readthedocs.io/en/latest/autoapi/osl_ephys/maxfilter/maxfilter/index.html>`_ for the 
 Elekta software with some explanations of settings. Furthermore, `MNE-Python also has a maxfilter that doesn't require a license <https://mne.tools/stable/generated/mne.preprocessing.maxwell_filter.html>`_. Besides these references, also have a look at the 
 `MaxFilter user manual <https://ohba-analysis.github.io/osl-docs/downloads/maxfilter_user_guide.pdf>`_ and at `these guidelines <https://lsr-wiki-01.mrc-cbu.cam.ac.uk/meg/maxpreproc>`_).
 
@@ -168,7 +168,7 @@ def plot_var(raw):
     return fig, ax 
 
 #%%
-# Now plot the variance over time and over channels - seperately for each channel type. Note that the temporal variance peaks at ~20 s and then suddenly increases around 150 s.
+# Now plot the variance over time and over channels - separately for each channel type. Note that the temporal variance peaks at ~20 s and then suddenly increases around 150 s.
 
 # Plot variance over time and over channels
 fig, ax = plot_var(raw)
@@ -266,11 +266,11 @@ fig, ax = plot_var(raw_badseg)
 #%%
 # In the bad segment detection above we used the default parameters. This is a good start: it has removed the high variance event in gradiometers at the end of the recording (see top left plot), but there are still some time points with high variance. This illustrates that different datasets and artefact types might require different settings, or even running bad segment detection multiple times with different settings. 
 # By default, bad segment detection is run on 1000 sample segments, and with a significance level of 0.05. 
-# :Excercise Try running the bad segment detection with different settings. For example, try a smaller segment length (e.g., 50, 100, 500, 2000 samples) and a higher significance level (e.g., 0.1). Play around with this until you are satisfied with the results before continueing (i.e., the variance looks equally distributed over time). Often it can also help to run the bad segment detection on the temporal derivative of the data (use mode='diff'), or on the variance or kurtosis, rather than the standard deviation (metric=...)):
+# :Exercise Try running the bad segment detection with different settings. For example, try a smaller segment length (e.g., 50, 100, 500, 2000 samples) and a higher significance level (e.g., 0.1). Play around with this until you are satisfied with the results before continuing (i.e., the variance looks equally distributed over time). Often it can also help to run the bad segment detection on the temporal derivative of the data (use mode='diff'), or on the variance or kurtosis, rather than the standard deviation (metric=...)):
 
 
 #%%
-# We found that using a segment length of 100, and a significance of 0.05 does a reasonable job. Keep in mind that there is not neccessarily one correct answer, and in any case we'll have to see how well these settings generalise to other datasets later. Doing these steps on multiple datasets will guide us to find the best general settings for this dataset.
+# We found that using a segment length of 100, and a significance of 0.05 does a reasonable job. Keep in mind that there is not necessarily one correct answer, and in any case we'll have to see how well these settings generalise to other datasets later. Doing these steps on multiple datasets will guide us to find the best general settings for this dataset.
 raw_badseg = osl_ephys.preprocessing.osl_wrappers.bad_segments(raw_notch.copy(), picks='grad', segment_len=100)
 raw_badseg = osl_ephys.preprocessing.osl_wrappers.bad_segments(raw_badseg, picks='mag', segment_len=100)
 
@@ -288,7 +288,7 @@ fig, ax = plot_var(raw_badchan)
 #%%
 # The bad channel detection still has marked a few channels as bad. Usually the amount of bad channels in MEG data is quite limited, because we don't expect individual channels to misbehave. This is different in EEG, where the conductance of certain channels might be particularly bad.
 # Let's visualize the data again. The segments that we detected before are annotated as bad. This means they are not removed from the data, but an annotation is saved as meta info. Further MNE/osl-ephys-functions have different ways of handling this, e.g. by replacing those segments with NaN's, omitting the data, etc. In the plot below, the bad segments are annotated in red, bad channels are gray.
-# We can interact with this figure for manually annotating segments (draggin a window over a time period) or channels (clicking on a channel).
+# We can interact with this figure for manually annotating segments (dragging a window over a time period) or channels (clicking on a channel).
     
 fig = raw_badchan.plot(duration=100, n_channels=50)
 
@@ -309,7 +309,7 @@ ica.fit(raw_badchan.copy().filter(l_freq=1, h_freq=None))
 ica = mne.preprocessing.read_ica('ica.fif')
 
 #%%
-# We now have to label the components that we think correspond to cardiac/ocular activity. Generally, there are two strategies to use here (alse see `MNE-Python's tutorial on this <https://mne.tools/stable/auto_tutorials/preprocessing/40_artifact_correction_ica.html#sphx-glr-auto-tutorials-preprocessing-40-artifact-correction-ica-py>`_):
+# We now have to label the components that we think correspond to cardiac/ocular activity. Generally, there are two strategies to use here (also see `MNE-Python's tutorial on this <https://mne.tools/stable/auto_tutorials/preprocessing/40_artifact_correction_ica.html#sphx-glr-auto-tutorials-preprocessing-40-artifact-correction-ica-py>`_):
 #
 # 1. Correlating component time courses with the recorded ECG and EOG data. Those components that have a high correlation likely correspond to these types of noise.
 # 2. Visualizing the component time course and spatial topography and use our knowledge of the biophysics of these signals to manually detect components corresponding to these types of noise.
@@ -339,7 +339,7 @@ ica.exclude += eog_indices
 print(ica.exclude)
 
 #%%
-# Let's use osl-ephys's ICA databrowser to make corrections where needed. The browser will show the topographies on the left (seperate for each channel type), and the time course on the right. We can click on a time course if we want to label a component as bad (another click unlabels the component). After clicking, we can optionally use numbers 1-5 to specify what type of artefact we're labeling. This is currently not used for anything, but can aid later analyses of ICA (it is saved in ``ica.labels_``).
+# Let's use osl-ephys's ICA databrowser to make corrections where needed. The browser will show the topographies on the left (separate for each channel type), and the time course on the right. We can click on a time course if we want to label a component as bad (another click unlabels the component). After clicking, we can optionally use numbers 1-5 to specify what type of artefact we're labeling. This is currently not used for anything, but can aid later analyses of ICA (it is saved in ``ica.labels_``).
 #
 # :note: Interacting with the figure in Jupyter Notebook does not work well. In the `preprocessing using the osl-ephys config API tutorial <https://osl-ephys.readthedocs.io/en/latest/tutorials_build/preprocessing_automatic.html#manually-checking-ica>_` we'll show a way to do this using a command line function. Also see `How do I select which components to remove in ICA <https://osl-ephys.readthedocs.io/en/latest/faq.html#how-do-i-select-which-components-to-remove-in-ica>`_. For now, we will create a simple python script that will be launched from the terminal. We may have to browse through time/space for the figure to render correctly.
 #

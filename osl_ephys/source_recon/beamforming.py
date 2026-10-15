@@ -266,7 +266,7 @@ def make_lcmv(
         # Note that if chantypes are meg, eeg; and meg includes mag, grad then compute_covariance will project data separately for meg and eeg to reduced
         # rank subspace (i.e. mag and grad will be combined together inside the meg subspace, eeg will haeve a separate subspace). I.e. data will become
         # (ntpts x (rank_meg + rank_eeg)) and cov will be (rank_meg + rank_eeg) x (rank_meg + rank_eeg) and include correlations between eeg and meg subspaces.
-        # The output data_cov is cov projected back onto the indivdual sensor types mag, grad, eeg.
+        # The output data_cov is cov projected back onto the individual sensor types mag, grad, eeg.
         #
         # Prior to computing anything, including the subspaces each of mag, grad, eeg are scaled so that they are on comparable scales to aid mixing in the
         # subspace and improve numerical stability. This is equivalent to what the osl_normalise_sensor_data.m function in Matlab OSL is trying to do.
@@ -1088,7 +1088,7 @@ def plot_dipole_locations(outdir,
     dipole_patches_file : string
         File name of dipole patches description (xml) file.
         If None, do not use dipole patches.
-        Overides use_bilateral_pairs.
+        Overrides use_bilateral_pairs.
     group_patches : bool
         If True, group patches using the "group" field in the dipole patches description (xml) file.
         If False, do not group patches.
@@ -1585,7 +1585,7 @@ def _compute_beamformer(G, Cm, reg, n_orient,
         signs[signs == 0] = 1.0
         max_power_ori *= signs
 
-        # Compute the lead field for the optimal orientation, and adjust numer/denom
+        # Compute the lead field for the optimal orientation, and adjust number/denom
         Gk = np.matmul(Gk, max_power_ori[..., np.newaxis])
         n_orient = 1
 

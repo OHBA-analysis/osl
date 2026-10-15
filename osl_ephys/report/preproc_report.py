@@ -738,7 +738,7 @@ def plot_sensors(raw, savebase=None):
     # skip if there is no channel position info
     if raw.get_montage() is None:
         return None
-    # plot channel types seperately for neuromag306 (3 coils in same location)
+    # plot channel types separately for neuromag306 (3 coils in same location)
     if 3012 in np.unique([i['coil_type'] for i in raw.info['chs']]):
         with open(str(Path(__file__).parent.parent) + "/utils/neuromag306_info.yml", 'r') as f:
             channels = yaml.safe_load(f)

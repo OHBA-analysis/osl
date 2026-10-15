@@ -60,7 +60,7 @@ get_data(name, basedir)
 # **********************************************
 # Our first analysis in this tutorial will involve a single MEG recording. We'll fit a separate GLM-Spectrum to each channel of our dataset. Remembering that single GLM-Spectrum already fits a separate GLM for each frequency bin, we see that we can easily end up fitting several hundreds of GLMs on each single dataset.
 #
-# The same theory and priniciples from the simulations apply here. We'll plot the standard Welch's perioidogram before briefly explore the effect of changing the sliding window segment length (`nperseg`) on our real dataset. We will then build a more complex model that quantifies trends over time and accounts for how EOG artefacts might appear in our recording.
+# The same theory and principles from the simulations apply here. We'll plot the standard Welch's perioidogram before briefly explore the effect of changing the sliding window segment length (`nperseg`) on our real dataset. We will then build a more complex model that quantifies trends over time and accounts for how EOG artefacts might appear in our recording.
 #
 # We'll start by loading a single file and doing a little preparation. We're going to look at the first dataset from subject nine - but do come back and run through this section after selecting a different dataset to get an idea of between subject variability.
 
@@ -86,7 +86,7 @@ glmspec1 = osl_ephys.glm.glm_spectrum(raw, fmin=1, fmax=95,
                                       mode='magnitude', standardise_data=True,)
 
 #%%
-# The GLM equivalent to this approach is to fit a model with a single constant regressor. Let's take a look at the design matrix to confim that the model is as expected
+# The GLM equivalent to this approach is to fit a model with a single constant regressor. Let's take a look at the design matrix to confirm that the model is as expected
 
 
 
@@ -121,7 +121,7 @@ ax = plt.subplot(111)
 glmspec1.plot_sensor_spectrum(0, ax=ax, sensor_proj=True, base=0.5)
 
 #%%
-# Finally, we can make a ``joint`` plot which includes both the spectrum and a series of topoplots displaying the spatial topography at key frequencies in the spectrum. This is computed using ``plot_joint_spectrum``. Let's visualise the spatial maps at the two prominant peaks around 10.5Hz and 15Hz.
+# Finally, we can make a ``joint`` plot which includes both the spectrum and a series of topoplots displaying the spatial topography at key frequencies in the spectrum. This is computed using ``plot_joint_spectrum``. Let's visualise the spatial maps at the two prominent peaks around 10.5Hz and 15Hz.
 
 
 
@@ -211,7 +211,7 @@ for ii in range(4):
 #%%
 # Quite a bit to unpack from this plot! Let's break it down.
 #
-#  - The ``'Mean'`` spectrum corresponds to our constant regressor (though this actually computes an intercept as we've included other non-zero regressors in the model - see theory and simulation tutorial for more details). this contains the familiar 1/f-type power spectrum shape with a prominant alpha and beta peak around 10 and 15Hz respectively.
+#  - The ``'Mean'`` spectrum corresponds to our constant regressor (though this actually computes an intercept as we've included other non-zero regressors in the model - see theory and simulation tutorial for more details). this contains the familiar 1/f-type power spectrum shape with a prominent alpha and beta peak around 10 and 15Hz respectively.
 #
 #  - The ``'Linear'`` regressor has a sharp negative deflection around 9Hz which appears centered around occipital cortex. This suggests that occipital alpha power is decreasing over time during the data recording.
 #
@@ -219,7 +219,7 @@ for ii in range(4):
 #
 #  - The ``'BadSegs'`` regressor also has its largest values around low frequencies but has a less structured topography than the EOGs.
 #
-# The GLM-Spectrum has quantified all these effects in one shot across all sensors and all frequencies. Critically, this is a multiple regression so the parameter esimates for each regressor are partialled from the other regressors and only quantify the unique contribution of that regressor in describing the data.
+# The GLM-Spectrum has quantified all these effects in one shot across all sensors and all frequencies. Critically, this is a multiple regression so the parameter estimates for each regressor are partialled from the other regressors and only quantify the unique contribution of that regressor in describing the data.
 #
 # We can explore the relationship between our regressors by exploring the 'efficiency' of the design matrix.
 #
@@ -271,9 +271,9 @@ for ii in range(4):
 #
 # It is rarely the case that we want to study a single data recording. Though this can be interesting in and of itself, we typically want to combine results across multiple (or many!) recordings to try and identify if there are consistent effects that might generalise to a wider population.
 #
-# A group analysis serves this purpose. In the context of General Linear Modelling, a group analysis takes in the results from 'first-level' analyses of single datasets and combines them with a 'second-level' or 'group-level' analysis. In the case of our GLM-Spectra, our second level dataset is the set of parameter estimates fitted across all individual recordngs. We describe variability across partcipants in this group dataset with a group design matrix to provide a final set of results.
+# A group analysis serves this purpose. In the context of General Linear Modelling, a group analysis takes in the results from 'first-level' analyses of single datasets and combines them with a 'second-level' or 'group-level' analysis. In the case of our GLM-Spectra, our second level dataset is the set of parameter estimates fitted across all individual recordngs. We describe variability across participants in this group dataset with a group design matrix to provide a final set of results.
 #
-# As a example - let's say we fit first-level models with 4 regressors across 100 frequencies and 306 sensors. The copes for each first-level result would be a matrix of shape ``(4, 100, 306)``. If our second level analysis combines results across 48 particpants, the first level results would be combined into a group-dataset of shape ``(48, 4, 100, 306)``. A group design matrix might then contain 2 regressors describing between subject variability. So, the final fitted model will be a matrix of shape `(2, 4, 100, 306)` containing (2 group contrasts, 4 first level contrasts, 100 frequencies, 306 sensors).
+# As a example - let's say we fit first-level models with 4 regressors across 100 frequencies and 306 sensors. The copes for each first-level result would be a matrix of shape ``(4, 100, 306)``. If our second level analysis combines results across 48 participants, the first level results would be combined into a group-dataset of shape ``(48, 4, 100, 306)``. A group design matrix might then contain 2 regressors describing between subject variability. So, the final fitted model will be a matrix of shape `(2, 4, 100, 306)` containing (2 group contrasts, 4 first level contrasts, 100 frequencies, 306 sensors).
 #
 # As the second level is still just a GLM, the same principles about varability and t-statistics that we saw in the previous section still apply to group analyses.
 #
@@ -291,7 +291,7 @@ fl_contrast_names = ['Intercept', 'LinearTime', 'HeartRate', 'VEOG', 'BadSegment
 # We take 'mags' as this group analysis was run on combined gradiometers so we only have 102 channels.
 name = "mf2pt2_sub-CC220999_ses-rest_task-rest_megtransdef_preproc-raw.fif"
 ginfo = mne.io.read_raw_fif(os.path.join(basedir, name), preload=False).pick_types(meg='mag').info
-# We can use hte same frequency vector as for the first levels
+# We can use the same frequency vector as for the first levels
 gfreq = glmspec2.f
 
 #%%
@@ -332,7 +332,7 @@ plt.suptitle('First level EOG effect for 25 participants')
 
 
 #%%
-# Again, there is lot of variability, some runs show a strong positive effect in low frequencies in green/yellow channels (these correspond to frontal sensors). Potentially suggesting that some of the eye movemenet artefact has not been removed during preprocessing.
+# Again, there is lot of variability, some runs show a strong positive effect in low frequencies in green/yellow channels (these correspond to frontal sensors). Potentially suggesting that some of the eye movement artefact has not been removed during preprocessing.
 #
 # Try taking a look at the other first level effects using these indices:
 # - 0 : average spectrum
@@ -415,7 +415,7 @@ print(gglmsp.data.data.shape)
 #%%
 # This is our 4-dimensional group data. We have 557 datasets, 5 first-level contrasts, 102 channels and 189 frequencies in this dataset.
 #
-# We can do a quick check to see if any of the 557 datasets are an obvious outlier. The ``plot_outliers`` function computes the variability across the final three dimensions to visualise a vector with one number per dataset. We can see that the variability within each of the 557 datasets is pretty comparable across the group. There would be much more variability if we hadn't chosed the ``standardise_data`` option during the first level analysis.
+# We can do a quick check to see if any of the 557 datasets are an obvious outlier. The ``plot_outliers`` function computes the variability across the final three dimensions to visualise a vector with one number per dataset. We can see that the variability within each of the 557 datasets is pretty comparable across the group. There would be much more variability if we hadn't chose the ``standardise_data`` option during the first level analysis.
 
 
 
@@ -446,7 +446,7 @@ for ii in range(5):
 #%%
 # There is lots of structure in these group averages. We can see
 #
-# - The overall average has a familiar 1/f-type slope interrupted by a prominant alpha peak around 9Hz, and a prominant beta peak around 15-30Hz.
+# - The overall average has a familiar 1/f-type slope interrupted by a prominent alpha peak around 9Hz, and a prominent beta peak around 15-30Hz.
 #
 # - The linear trend response has a broad peak between 5 and 9Hz covering bilateral temporal sensors. This indicates that the low alpha/theta power in these sensors increased over time within each recording.
 #
@@ -471,7 +471,7 @@ for ii in range(5):
                                metric='tstats')
 
 #%%
-# Again lots of structure, but now we can make a stronger interpretation of the units on the y-axis. These are t-statistics which show the magnitude of an effect as a ratio with its stanard error. t-stats close to zero indicate that any effect is insubstantial compared to its variance.
+# Again lots of structure, but now we can make a stronger interpretation of the units on the y-axis. These are t-statistics which show the magnitude of an effect as a ratio with its standard error. t-stats close to zero indicate that any effect is insubstantial compared to its variance.
 #
 # We see a broadly similar structure to the point estimates but now can see that the low frequency EOG effect is likely to be very strong. The linear trend and bad-segment effects are still substantial but have much smaller t-statistics.
 #
@@ -491,9 +491,9 @@ for ii in range(5):
 #%%
 # The t-values here are much smaller but there is some structure. Perhaps the area around alpha in the change over runs of the mean spectrum shows an effect.
 #
-# To formally assess an effect we need more than the t-value. It may have been the case that we were just lucky to observe a given effect with our data - but how can we quantify whether an effect was likely to have occured by chance?
+# To formally assess an effect we need more than the t-value. It may have been the case that we were just lucky to observe a given effect with our data - but how can we quantify whether an effect was likely to have occurred by chance?
 #
-# We assess this using non-parametric permutation statistics. This is a numerical method for quantifying how often a particular result could have occured according to a particular null hypothesis. This is a pragmatic approach which simulates models that remove structure in the design matrix in accordance with the null hypothesis. We can compute hundreds or thousands of these null models and place their statistical estimates into a 'null' distrbution. Our observed statistic can then be compared to this null to create an estimate of how likely our result could have happened by chance.
+# We assess this using non-parametric permutation statistics. This is a numerical method for quantifying how often a particular result could have occurred according to a particular null hypothesis. This is a pragmatic approach which simulates models that remove structure in the design matrix in accordance with the null hypothesis. We can compute hundreds or thousands of these null models and place their statistical estimates into a 'null' distribution. Our observed statistic can then be compared to this null to create an estimate of how likely our result could have happened by chance.
 #
 # Let's take the group mean of the EOG effect as a specific example. Our null hypthesis is that the GLM-Spectra of the EOG effect is no different from zero. If this were true, we would expect the parameter estimates of the model to be randomly distributed around zero. In turn, if this is true - then flipping the sign of half our first-level parameter estimates will not change the group result.
 #
@@ -541,7 +541,7 @@ plt.xlabel('Maximum t-statistic')
 plt.ylabel('Frequency')
 
 #%%
-# Most of the maximum statistics are between 3 and 5 but there is one massive one! this is our observed maximum statisics from the unpermuted design matrix. The original data is always included in the null distribution during non-parametric permutations.
+# Most of the maximum statistics are between 3 and 5 but there is one massive one! this is our observed maximum statistics from the unpermuted design matrix. The original data is always included in the null distribution during non-parametric permutations.
 #
 # We can compute the threshold for significance from the percentiles of this distribution. Let's use a standard alpha value of 5% and compute the critical value.
 
@@ -561,7 +561,7 @@ plt.xlabel('Maximum t-statistic')
 plt.ylabel('Frequency')
 
 #%%
-# Most of the observed values lie well below the null distribution of maximum statisics but there are a good proportion look like they're above the critical value. We have some significant effects!
+# Most of the observed values lie well below the null distribution of maximum statistics but there are a good proportion look like they're above the critical value. We have some significant effects!
 
 # Once the permutations are complete - we can visualise the t-value spectrum alongside the critical thresholds for significance.
 plt.figure(figsize=(9, 9))

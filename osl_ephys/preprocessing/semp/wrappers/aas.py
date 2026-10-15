@@ -23,11 +23,11 @@ def epoch_aas(dataset, userargs):
     """
     userargs = proc_userargs(userargs, {
         'epoch_key': 'tr_ep',
-        'window_length': 30,   # fastr defaults to 10 -- cleaner, but would notch the volume harmonics for volume trigger
+        'window_length': 30,   # faster defaults to 10 -- cleaner, but would notch the volume harmonics for volume trigger
         'picks': 'eeg',
         'overwrite': 'new',
-        'fit': False,          # if False, standard AAS is used. if True, the avg template is fitted to the data first and then subtracted. (FASTR code style)
-        'pre_pad': 0.5,        # in percentage, the padding before the first epoch. 1-pre_pad is the padding after the last epoch. (FASTR use pre_pad=0)
+        'fit': False,          # if False, standard AAS is used. if True, the avg template is fitted to the data first and then subtracted. (FASTER code style)
+        'pre_pad': 0.5,        # in percentage, the padding before the first epoch. 1-pre_pad is the padding after the last epoch. (FASTER use pre_pad=0)
     })
     epoch_key = userargs['epoch_key']
     window_length = userargs['window_length']

@@ -28,7 +28,7 @@ will run each fif file in `input_files.txt` through maxfilter with default optio
 
 ### Customising Options
 
-Maxfilter processing can be customised using command line flags which are (mostly) mapped to the options in Maxfilter itself. For exmaple, we can specify that `autobad` be included by adding the `--autobad` command line flag.
+Maxfilter processing can be customised using command line flags which are (mostly) mapped to the options in Maxfilter itself. For example, we can specify that `autobad` be included by adding the `--autobad` command line flag.
 
 ```
 osl_maxfilter input_files.txt /path/to/my/output/dir/ --autobad
@@ -50,7 +50,7 @@ A [complete list of customisation options](#optional-arguments) is included at t
 
 #### Temporal Extension
 
-The temporal extension can be turned on with the `--tsss` flag, the buffer length and correlation threshold can then be cusomised using the `--st` and `--corr` options. This is slightly different to main maxfilter which only requires you to specify -st to turn on the temporal extension.
+The temporal extension can be turned on with the `--tsss` flag, the buffer length and correlation threshold can then be customised using the `--st` and `--corr` options. This is slightly different to main maxfilter which only requires you to specify -st to turn on the temporal extension.
 
 This example specifys a temporal extension with a twenty second buffer window and a correlation threshold of 0.9
 
@@ -60,7 +60,7 @@ osl_maxfilter input_files.txt /path/to/my/output/dir/ --movecomp --headpos --tss
 
 #### Position Translation
 
-There are several ways to customised head position translation to align head position between two recordings. One option is to align both scans to the same pre-specified position. This is done by specifying `--trans` to default and providing a head origin co-ordinate. For example:
+There are several ways to customised head position translation to align head position between two recordings. One option is to align both scans to the same pre-specified position. This is done by specifying `--trans` to default and providing a head origin coordinate. For example:
 
 ```
 osl_maxfilter input_files.txt /path/to/my/output/dir/ --trans default --origin 0 0 40 --frame head --force
@@ -93,7 +93,7 @@ The multistage maxfilter is selected using `--mode multistage`. This will first 
 
 The CBU maxfilter processing chain is selected using `--mode cbu`. This will first run:
 
-1) A custom head-origin co-ordinate is estimated from the headshape points with any nose points removed.
+1) A custom head-origin coordinate is estimated from the headshape points with any nose points removed.
 2) Maxfilter with limited customisation, no movement compensation and autobad on to identify bad channels. 
 3) Maxfilter with full customisation and movement compensation with the specific bad channels from stage 1
 4) Position translation to a default head position.
@@ -120,7 +120,7 @@ optional arguments:
                         file
   --origin ORIGIN [ORIGIN ...]
                         Set specific sphere origin
-  --frame FRAME         Set device/dead co-ordinate frame
+  --frame FRAME         Set device/dead coordinate frame
   --force               Ignore program warnings
   --tsss                Apply temporal extension of maxfilter
   --st ST               Data buffer length for TSSS processing

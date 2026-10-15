@@ -1,4 +1,4 @@
-"""Standalone script for peforming sign flipping with MATLAB data.
+"""Standalone script for performing sign flipping with MATLAB data.
 
 """
 

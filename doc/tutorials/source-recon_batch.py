@@ -15,7 +15,7 @@ The steps are:
 5. First-Level GLM 
 6. Group-Level GLM
 
-To run this tutorial you will need to have osl-ephys and FSL installed, with the appropriate paths specified in your environment. See the instructions on the repo/read the docs for how to install these packages. Before running this tutorial, we recommend going through the **Soure reconstruction** and **Statistics (General Linear Modelling)** tutorials first.
+To run this tutorial you will need to have osl-ephys and FSL installed, with the appropriate paths specified in your environment. See the instructions on the repo/read the docs for how to install these packages. Before running this tutorial, we recommend going through the **Source reconstruction** and **Statistics (General Linear Modelling)** tutorials first.
 
 1. Downloading the raw data from OSF
 ************************************
@@ -24,7 +24,7 @@ The public Wakeman-Henson dataset provides MaxFiltered data. Note that the full 
 
 The full dataset contains 19 subjects, each with 6 sessions. To limit the amount of data that we have to handle for the tutorial, we will use only the first 3 sessions from each of the 19 subjects. This data can be downloaded from the OSF project website. 
 
-Let's download the data. Note, to download the dataset you need osfclient installed. This can be installed by excuting the following code in a jupyter notebook cell:
+Let's download the data. Note, to download the dataset you need osfclient installed. This can be installed by executing the following code in a jupyter notebook cell:
 
 ``!pip install osfclient``
 
@@ -69,7 +69,7 @@ subjects_dir = "./wake_hen_group_raw"
 out_dir = op.join(subjects_dir, "glm")
 
 nsubjects = 19
-nsessions = 3 # we will only use 3 of the 6 session/runs avaible from each subject
+nsessions = 3 # we will only use 3 of the 6 session/runs available from each subject
 subjects_to_do = np.arange(0, nsubjects)
 sessions_to_do = np.arange(0, nsessions)
 subj_sess_2exclude = np.zeros([nsubjects, nsessions]).astype(bool)

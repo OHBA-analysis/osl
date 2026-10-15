@@ -281,7 +281,7 @@ def get_vol_info_from_nii(mri):
 
 def get_sform(nii_file):
     """
-    sform allows mapping from simple voxel index cordinates (e.g. from 0 to 256) in scanner space to continuous coordinates (in mm)
+    sform allows mapping from simple voxel index coordinates (e.g. from 0 to 256) in scanner space to continuous coordinates (in mm)
 
     sformcode = os.popen('fslorient -getsformcode {}'.format(nii_file)).read().strip()
     """
@@ -437,7 +437,7 @@ def rigid_transform_3D(B, A, compute_scaling=False):
 
 
 def xform_points(xform, pnts):
-    """Applies homogenous linear transformation to an array of 3D coordinates.
+    """Applies homogeneous linear transformation to an array of 3D coordinates.
 
     Parameters
     ----------
@@ -740,9 +740,9 @@ def get_flirtcoords2native_xform(nii_mesh_file):
 
     See the bet_surf manual: https://fsl.fmrib.ox.ac.uk/fsl/fslwiki/BET/UserGuide#betsurf
 
-    If the image has radiological ordering (see fslorient) then the mm co-ordinates are the voxel co-ordinates scaled by the mm voxel sizes.
+    If the image has radiological ordering (see fslorient) then the mm coordinates are the voxel coordinates scaled by the mm voxel sizes.
 
-    i.e. (x_mm = x_dim * x) where x_mm are the flirtcoords coords in mm, x is the voxel co-ordinate and x_dim is the voxel size in mm.
+    i.e. (x_mm = x_dim * x) where x_mm are the flirtcoords coords in mm, x is the voxel coordinate and x_dim is the voxel size in mm.
     """
 
     # We will assume orientation of the smri is RADIOLOGICAL as RHINO will have made the smri the same orientation as the standard brain nii.

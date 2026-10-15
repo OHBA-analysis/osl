@@ -43,6 +43,11 @@ logger = logging.getLogger(__name__)
 # Decorators
 
 
+def _confirm(question):
+    """Ask a yes/no question on the console; returns True for yes."""
+    return input(f"{question} [y/N] ").strip().lower() in ("y", "yes")
+
+
 def print_custom_func_info(func):
     """Prints info for user-specified functions.
 
@@ -790,7 +795,7 @@ def run_proc_chain(
     if outdir is not None:
         # We're saving the output to disk
 
-        # Generate a report by default, this is overriden if the user passes
+        # Generate a report by default, this is overridden if the user passes
         # gen_report=False
         gen_report = True if gen_report is None else gen_report
         
@@ -803,7 +808,7 @@ def run_proc_chain(
     else:
         # We're not saving the output to disk
 
-        # Don't generate a report by default, this is overriden if the user passes
+        # Don't generate a report by default, this is overridden if the user passes
         # something for reportdir or gen_report=True
         gen_report = gen_report or reportdir is not None or False
         if gen_report:
@@ -1094,7 +1099,7 @@ def run_proc_batch(
                 "Please fix the subjects list or pass subjects=None."
             )
 
-    if strictrun and click.confirm('Is this correct set of inputs?') is False:
+    if strictrun and _confirm('Is this correct set of inputs?') is False:
         logger.critical('Stopping : User indicated incorrect number of input files')
         sys.exit(1)
     else:
@@ -1102,7 +1107,7 @@ def run_proc_batch(
             logger.info('User confirms input files')
 
     logger.info('Outputs saving to: {0}'.format(outdir))
-    if strictrun and click.confirm('Is this correct output directory?') is False:
+    if strictrun and _confirm('Is this correct output directory?') is False:
         logger.critical('Stopping : User indicated incorrect output directory')
         sys.exit(1)
     else:
@@ -1112,7 +1117,7 @@ def run_proc_batch(
     config = load_config(config)
     config_str = pprint.PrettyPrinter().pformat(config)
     logger.info('Running config\n {0}'.format(config_str))
-    if strictrun and click.confirm('Is this the correct config?') is False:
+    if strictrun and _confirm('Is this the correct config?') is False:
         logger.critical('Stopping : User indicated incorrect preproc config')
         sys.exit(1)
     else:
