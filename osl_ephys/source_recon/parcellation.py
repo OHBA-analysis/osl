@@ -1,6 +1,4 @@
-"""Functions to handle parcellation.
-
-"""
+"""Functions to handle parcellation."""
 
 # Authors: Mark Woolrich <mark.woolrich@ohba.ox.ac.uk>
 #          Chetan Gohil <chetan.gohil@psych.ox.ac.uk>
@@ -31,25 +29,25 @@ from osl_ephys.source_recon.utils import find_file
 
 import pandas as pd
 
-def load_parcellation_description(parcellation_file, freesurfer=False, subject=None):
 
+def load_parcellation_description(parcellation_file, freesurfer=False, subject=None):
     """Load a parcellation description file.
-    
+
     Parameters
     ----------
     parcellation_file : str
-        Path to parcellation file. 
+        Path to parcellation file.
         Function will look for a xml file with same name but .xml extension.
     freesurfer : bool, optional
         Is this a FreeSurfer parcellation?
     subject : str
         Subject ID. Only needed for FreeSurfer parcellations.
-        
+
     Returns
     -------
     df : dict
         Dictionary with keys 'index', 'group', 'label', 'x', 'y', 'z' for each parcel.
-    
+
     """
 
     parcellation_dict = None
@@ -63,18 +61,26 @@ def load_parcellation_description(parcellation_file, freesurfer=False, subject=N
             # load xml_file without parcellation library
             df = pd.read_xml(xml_file)
             # if no index column, use ordinal index
-            df = df.set_index('index') if 'index' in df.columns else df.reset_index(drop=True)
+            df = (
+                df.set_index("index")
+                if "index" in df.columns
+                else df.reset_index(drop=True)
+            )
 
             # keep only relevant columns
-            df = df.loc[:, df.columns.str.lower().isin(["index", "group", "label", "x", "y", "z"])]
+            df = df.loc[
+                :,
+                df.columns.str.lower().isin(["index", "group", "label", "x", "y", "z"]),
+            ]
 
             # turn df into a dictionary using the index as keys
-            parcellation_dict = df.to_dict(orient='index')
-            
+            parcellation_dict = df.to_dict(orient="index")
+
         else:
             print(f"No xml file found for {parcellation_file}")
 
     return parcellation_dict
+
 
 def load_parcellation(parcellation_file, freesurfer=False, subject=None):
     """Load a parcellation file.
@@ -93,27 +99,34 @@ def load_parcellation(parcellation_file, freesurfer=False, subject=None):
     parcellation : nibabel image or mne.Label
         Parcellation.
     """
-    
+
     # is it a freesurfer parcellation
     if freesurfer:
         if subject is None:
             subject = "fsaverage"
-        
-        avail = mne.label._read_annot_cands(os.path.join(os.environ["SUBJECTS_DIR"], subject, 'label'))
+
+        avail = mne.label._read_annot_cands(
+            os.path.join(os.environ["SUBJECTS_DIR"], subject, "label")
+        )
         if parcellation_file in avail:
             labels = mne.label.read_labels_from_annot(subject, parcellation_file)
-            if parcellation_file == 'aparc' or parcellation_file == "oasis.chubs":
+            if parcellation_file == "aparc" or parcellation_file == "oasis.chubs":
                 labels = [l for l in labels if "unknown" not in l.name]
-            elif parcellation_file == 'aparc.a2009s':
+            elif parcellation_file == "aparc.a2009s":
                 labels = [l for l in labels if "Unknown" not in l.name]
-            elif parcellation_file == "Yeo2011_7Networks_N1000" or parcellation_file == "Yeo2011_17Networks_N1000":
-                labels = [l for l in labels if "FreeSurfer_Defined_Medial_Wall" not in l.name]
+            elif (
+                parcellation_file == "Yeo2011_7Networks_N1000"
+                or parcellation_file == "Yeo2011_17Networks_N1000"
+            ):
+                labels = [
+                    l for l in labels if "FreeSurfer_Defined_Medial_Wall" not in l.name
+                ]
             elif parcellation_file == "PALS_B12_Brodmann":
                 labels = [l for l in labels if "Brodmann" in l.name]
             elif parcellation_file == "PALS_B12_Lobes":
-                labels = [l for l in labels if "LOBE" in l.name] 
+                labels = [l for l in labels if "LOBE" in l.name]
             return labels
-    
+
     # otherwise, load the nifti parcellation file
     parcellation_file = find_file(parcellation_file, freesurfer=freesurfer)
     if parcellation_file is not None:
@@ -123,14 +136,14 @@ def load_parcellation(parcellation_file, freesurfer=False, subject=None):
 
 def guess_parcellation(data, return_path=False):
     """Guess parcellation file from data.
-    
+
     Parameters
     ----------
     data : vector or matrix
         Data to guess parcellation from. first dimension is assumed to be parcels.
     return_path : bool
         If True, return path to parcellation file, otherwise return filename.
-        
+
     returns
     -------
     filename : str
@@ -140,45 +153,45 @@ def guess_parcellation(data, return_path=False):
         nparc = data
     else:
         nparc = data.shape[0]
-        
+
     # print('Guessing parcellation from data with {} parcels'.format(nparc))
-    if nparc in [52,50,38,39,78]:
-        freesurfer=False
+    if nparc in [52, 50, 38, 39, 78]:
+        freesurfer = False
     elif nparc in [68, 144, 16, 82, 10, 34, 14]:
-        freesurfer=True
-        
-    if nparc==52:
+        freesurfer = True
+
+    if nparc == 52:
         fname = "Glasser52_binary_space-MNI152NLin6_res-8x8x8.nii.gz"
-    elif nparc==50:
+    elif nparc == 50:
         fname = "Glasser50_space-MNI152NLin6_res-8x8x8.nii.gz"
-    elif nparc==38:
+    elif nparc == 38:
         fname = "fMRI_parcellation_ds8mm.nii.gz"
-    elif nparc==39:
+    elif nparc == 39:
         fname = "fmri_d100_parcellation_with_PCC_tighterMay15_v2_8mm.nii.gz"
-    elif nparc==78:
+    elif nparc == 78:
         fname = "aal_cortical_merged_8mm_stacked.nii.gz"
-    
+
     # the following are FreeSurfer parcellations:
-    elif nparc==68: # Desikan-Killiany (2006)
+    elif nparc == 68:  # Desikan-Killiany (2006)
         fname = "aparc"
     # TODO: find out how many valid parcels these contain (might contain unknowns and ??? etc).
     # elif nparc==156:
     #     fname = "aparc.a2005s"
-    elif nparc==144: # Destrieux et al. 2010
+    elif nparc == 144:  # Destrieux et al. 2010
         fname = "aparc.a2009s"
-    elif nparc==16:
+    elif nparc == 16:
         fname = "oasis.chubs"
-    elif nparc==82:
+    elif nparc == 82:
         fname = "PALS_B12_Brodmann"
-    elif nparc==10:
+    elif nparc == 10:
         fname = "PALS_B12_Lobes"
     # elif nparc==105:
     #     fname = "PALS_B12_OrbitoFrontal"
     # elif nparc==43:
     #     fname = "PALS_B12_Visuotopic"
-    elif nparc==34:
+    elif nparc == 34:
         fname = "Yeo2011_17Networks_N1000"
-    elif nparc==14:
+    elif nparc == 14:
         fname = "Yeo2011_7Networks_N1000"
     else:
         raise ValueError("Can't guess parcellation for {} channels".format(nparc))
@@ -187,9 +200,11 @@ def guess_parcellation(data, return_path=False):
         return find_file(fname, freesurfer=freesurfer)
     else:
         return fname
- 
 
-def vol_parcellate_timeseries(parcellation_file, voxel_timeseries, voxel_coords, method, working_dir):
+
+def vol_parcellate_timeseries(
+    parcellation_file, voxel_timeseries, voxel_coords, method, working_dir
+):
     """Parcellate a voxel time series.
 
     Parameters
@@ -217,11 +232,17 @@ def vol_parcellate_timeseries(parcellation_file, voxel_timeseries, voxel_coords,
     voxel_assignments: bool numpy.ndarray
         nvoxels x nparcels, Boolean assignments indicating for each voxel the winner takes all parcel it belongs to.
     """
-    parcellation_asmatrix = resample_parcellation(parcellation_file, voxel_coords, working_dir)
-    return _get_parcel_timeseries(voxel_timeseries, parcellation_asmatrix, method=method)
+    parcellation_asmatrix = resample_parcellation(
+        parcellation_file, voxel_coords, working_dir
+    )
+    return _get_parcel_timeseries(
+        voxel_timeseries, parcellation_asmatrix, method=method
+    )
 
 
-def _get_parcel_timeseries(voxel_timeseries, parcellation_asmatrix, method="spatial_basis"):
+def _get_parcel_timeseries(
+    voxel_timeseries, parcellation_asmatrix, method="spatial_basis"
+):
     """Calculate parcel timeseries.
 
     Parameters
@@ -250,7 +271,11 @@ def _get_parcel_timeseries(voxel_timeseries, parcellation_asmatrix, method="spat
     """
 
     if parcellation_asmatrix.shape[0] != voxel_timeseries.shape[0]:
-        Exception("Parcellation has {} voxels, but data has {}".format(parcellation_asmatrix.shape[0], voxel_timeseries.shape[0]))
+        Exception(
+            "Parcellation has {} voxels, but data has {}".format(
+                parcellation_asmatrix.shape[0], voxel_timeseries.shape[0]
+            )
+        )
 
     if len(voxel_timeseries.shape) == 2:
         # Add dim for trials
@@ -264,26 +289,43 @@ def _get_parcel_timeseries(voxel_timeseries, parcellation_asmatrix, method="spat
     ntrials = voxel_timeseries.shape[2]
 
     # Combine the trials and time dimensions together, we will re-separate them after the parcel timeseries are computed
-    voxel_timeseries_reshaped = np.reshape(voxel_timeseries, (voxel_timeseries.shape[0], ntpts * ntrials))
+    voxel_timeseries_reshaped = np.reshape(
+        voxel_timeseries, (voxel_timeseries.shape[0], ntpts * ntrials)
+    )
     parcel_timeseries_reshaped = np.zeros((nparcels, ntpts * ntrials))
 
     voxel_weightings = np.zeros(parcellation_asmatrix.shape)
 
     if method == "spatial_basis":
         # estimate temporal-STD of data for normalisation
-        temporal_std = np.maximum(np.std(voxel_timeseries_reshaped, axis=1), np.finfo(float).eps)
+        temporal_std = np.maximum(
+            np.std(voxel_timeseries_reshaped, axis=1), np.finfo(float).eps
+        )
 
         for pp in range(nparcels):
             # Scale group maps so all have a positive peak of height 1 in case there is a very noisy outlier, choose the sign from the top 5% of magnitudes
             thresh = np.percentile(np.abs(parcellation_asmatrix[:, pp]), 95)
-            mapsign = np.sign(np.mean(parcellation_asmatrix[parcellation_asmatrix[:, pp] > thresh, pp]))
-            scaled_parcellation = mapsign * parcellation_asmatrix[:, pp] / np.max(np.abs(parcellation_asmatrix[:, pp]))
+            mapsign = np.sign(
+                np.mean(
+                    parcellation_asmatrix[parcellation_asmatrix[:, pp] > thresh, pp]
+                )
+            )
+            scaled_parcellation = (
+                mapsign
+                * parcellation_asmatrix[:, pp]
+                / np.max(np.abs(parcellation_asmatrix[:, pp]))
+            )
 
             # Weight all voxels by the spatial map in question. Apply the mask first then weight to reduce memory use
             weighted_ts = voxel_timeseries_reshaped[scaled_parcellation > 0, :]
-            weighted_ts = np.multiply(weighted_ts, np.reshape(scaled_parcellation[scaled_parcellation > 0], [-1, 1]))
-            weighted_ts = weighted_ts - np.reshape(np.mean(weighted_ts, axis=1), [-1, 1])
-            
+            weighted_ts = np.multiply(
+                weighted_ts,
+                np.reshape(scaled_parcellation[scaled_parcellation > 0], [-1, 1]),
+            )
+            weighted_ts = weighted_ts - np.reshape(
+                np.mean(weighted_ts, axis=1), [-1, 1]
+            )
+
             # Perform SVD and take scores of 1st PC as the node time-series
             #
             # U is nVoxels by nComponents - the basis transformation
@@ -302,13 +344,26 @@ def _get_parcel_timeseries(voxel_timeseries, parcellation_asmatrix, method="spat
                 # U is the basis by which voxels in the mask are weighted to form the scores of the 1st PC
                 relative_weighting = np.abs(U[this_mask]) / np.sum(np.abs(U[this_mask]))
                 ts_sign = np.sign(np.mean(U[this_mask]))
-                ts_scale = np.dot(np.reshape(relative_weighting, [-1]), temporal_std[scaled_parcellation > 0][this_mask])
+                ts_scale = np.dot(
+                    np.reshape(relative_weighting, [-1]),
+                    temporal_std[scaled_parcellation > 0][this_mask],
+                )
 
-                node_ts = ts_sign * (ts_scale / np.maximum(np.std(pca_scores), np.finfo(float).eps)) * pca_scores
+                node_ts = (
+                    ts_sign
+                    * (ts_scale / np.maximum(np.std(pca_scores), np.finfo(float).eps))
+                    * pca_scores
+                )
 
                 inds = np.where(scaled_parcellation > 0)[0]
                 voxel_weightings[inds, pp] = (
-                    ts_sign * ts_scale / np.maximum(np.std(pca_scores), np.finfo(float).eps) * (np.reshape(U, [-1]) * scaled_parcellation[scaled_parcellation > 0].T)
+                    ts_sign
+                    * ts_scale
+                    / np.maximum(np.std(pca_scores), np.finfo(float).eps)
+                    * (
+                        np.reshape(U, [-1])
+                        * scaled_parcellation[scaled_parcellation > 0].T
+                    )
                 )
 
             else:
@@ -333,16 +388,24 @@ def _get_parcel_timeseries(voxel_timeseries, parcellation_asmatrix, method="spat
 
         # Check that each voxel is only a member of one parcel
         if any(np.sum(parcellation_asmatrix, axis=1) > 1):
-            log_or_print("WARNING: Each voxel is meant to be a member of at most one parcel, when using the PCA method.\nResults may not be sensible")
+            log_or_print(
+                "WARNING: Each voxel is meant to be a member of at most one parcel, when using the PCA method.\nResults may not be sensible"
+            )
 
         # Estimate temporal-STD of data for normalisation
-        temporal_std = np.maximum(np.std(voxel_timeseries_reshaped, axis=1), np.finfo(float).eps)
+        temporal_std = np.maximum(
+            np.std(voxel_timeseries_reshaped, axis=1), np.finfo(float).eps
+        )
 
         # Perform PCA on each parcel and select 1st PC scores to represent parcel
         for pp in range(nparcels):
             if any(parcellation_asmatrix[:, pp]):  # non-zero
-                parcel_data = voxel_timeseries_reshaped[parcellation_asmatrix[:, pp] > 0, : ]
-                parcel_data = parcel_data - np.reshape(np.mean(parcel_data, axis=1), [-1, 1])
+                parcel_data = voxel_timeseries_reshaped[
+                    parcellation_asmatrix[:, pp] > 0, :
+                ]
+                parcel_data = parcel_data - np.reshape(
+                    np.mean(parcel_data, axis=1), [-1, 1]
+                )
 
                 # Perform svd and take scores of 1st PC as the node time-series
                 #
@@ -359,12 +422,24 @@ def _get_parcel_timeseries(voxel_timeseries, parcellation_asmatrix, method="spat
                 # U indicates the weight with which each voxel in the parcel contributes to the 1st PC
                 relative_weighting = np.abs(U) / np.sum(np.abs(U))
                 ts_sign = np.sign(np.mean(U))
-                ts_scale = np.dot(np.reshape(relative_weighting, [-1]), temporal_std[parcellation_asmatrix[:, pp] > 0])
+                ts_scale = np.dot(
+                    np.reshape(relative_weighting, [-1]),
+                    temporal_std[parcellation_asmatrix[:, pp] > 0],
+                )
 
-                node_ts = (ts_sign * ts_scale / np.maximum(np.std(pca_scores), np.finfo(float).eps)) * pca_scores
+                node_ts = (
+                    ts_sign
+                    * ts_scale
+                    / np.maximum(np.std(pca_scores), np.finfo(float).eps)
+                ) * pca_scores
 
                 inds = np.where(parcellation_asmatrix[:, pp] > 0)[0]
-                voxel_weightings[inds, pp] = ts_sign * ts_scale / np.maximum(np.std(pca_scores), np.finfo(float).eps) * np.reshape(U, [-1])
+                voxel_weightings[inds, pp] = (
+                    ts_sign
+                    * ts_scale
+                    / np.maximum(np.std(pca_scores), np.finfo(float).eps)
+                    * np.reshape(U, [-1])
+                )
 
             else:
                 log_or_print(
@@ -384,7 +459,9 @@ def _get_parcel_timeseries(voxel_timeseries, parcellation_asmatrix, method="spat
         Exception("Invalid method specified")
 
     # Re-separate the trials and time dimensions
-    parcel_timeseries = np.reshape(parcel_timeseries_reshaped, (nparcels, ntpts, ntrials))
+    parcel_timeseries = np.reshape(
+        parcel_timeseries_reshaped, (nparcels, ntpts, ntrials)
+    )
     if added_dim:
         parcel_timeseries = np.squeeze(parcel_timeseries, axis=2)
 
@@ -399,7 +476,7 @@ def _get_parcel_timeseries(voxel_timeseries, parcellation_asmatrix, method="spat
 
 def surf_parcellate_timeseries(subject_dir, subject, stc, method, parcellation_file):
     """Save parcellated data as a fif file.
-    
+
     Parameters
     ----------
     subject_dir : str
@@ -417,13 +494,15 @@ def surf_parcellate_timeseries(subject_dir, subject, stc, method, parcellation_f
 
     labels = load_parcellation(parcellation_file, freesurfer=True, subject=subject)
 
-    src = mne.read_source_spaces(fs_files['coreg']['source_space'])
+    src = mne.read_source_spaces(fs_files["coreg"]["source_space"])
     parcel_data = mne.extract_label_time_course(stc, labels, src, mode=method)
 
     return parcel_data
 
 
-def resample_parcellation(parcellation_file, voxel_coords, working_dir=None, freesurfer=False):
+def resample_parcellation(
+    parcellation_file, voxel_coords, working_dir=None, freesurfer=False
+):
     """Resample parcellation so that its voxel coords correspond (using nearest neighbour) to passed in voxel_coords.
     Passed in voxel_coords and parcellation must be in the same space, e.g. MNI.
 
@@ -449,14 +528,18 @@ def resample_parcellation(parcellation_file, voxel_coords, working_dir=None, fre
     log_or_print(f"gridstep = {gridstep} mm")
 
     parcellation_file = find_file(parcellation_file, freesurfer=freesurfer)
-    path, parcellation_name = op.split(op.splitext(op.splitext(parcellation_file)[0])[0])
+    path, parcellation_name = op.split(
+        op.splitext(op.splitext(parcellation_file)[0])[0]
+    )
 
     if working_dir is None:
         working_dir = path
     else:
         os.makedirs(working_dir, exist_ok=True)
 
-    parcellation_resampled = op.join(working_dir, parcellation_name + "_{}mm.nii.gz".format(gridstep))
+    parcellation_resampled = op.join(
+        working_dir, parcellation_name + "_{}mm.nii.gz".format(gridstep)
+    )
 
     # Create standard brain of the required resolution
     #
@@ -469,17 +552,27 @@ def resample_parcellation(parcellation_file, voxel_coords, working_dir=None, fre
     #
     # However, it doesn't look like the input be being truncated, the resampled parcellation appears to be a 4D volume.
 
-    # Check if parcellation is binary 
-    binary_mask = np.array_equal(np.unique(nib.load(parcellation_file).get_fdata()), [0, 1])
+    # Check if parcellation is binary
+    binary_mask = np.array_equal(
+        np.unique(nib.load(parcellation_file).get_fdata()), [0, 1]
+    )
     if binary_mask:
         interp = "nearestneighbour"
     else:
-        interp = "trilinear" 
+        interp = "trilinear"
 
-    fsl_wrappers.flirt(parcellation_file, parcellation_file, out=parcellation_resampled, applyisoxfm=gridstep, interp=interp)
+    fsl_wrappers.flirt(
+        parcellation_file,
+        parcellation_file,
+        out=parcellation_resampled,
+        applyisoxfm=gridstep,
+        interp=interp,
+    )
 
     if nib.load(parcellation_resampled).ndim != 4:
-        raise ValueError(f"Resampled parcellation {parcellation_resampled} should be a 4D NIfTI file.")
+        raise ValueError(
+            f"Resampled parcellation {parcellation_resampled} should be a 4D NIfTI file."
+        )
 
     nparcels = nib.load(parcellation_resampled).get_fdata().shape[3]
 
@@ -487,7 +580,9 @@ def resample_parcellation(parcellation_file, voxel_coords, working_dir=None, fre
     parcellation_asmatrix = np.zeros((voxel_coords.shape[1], nparcels))
 
     for parcel_index in range(nparcels):
-        parcellation_coords, parcellation_vals = rhino_utils.niimask2mmpointcloud(parcellation_resampled, parcel_index)
+        parcellation_coords, parcellation_vals = rhino_utils.niimask2mmpointcloud(
+            parcellation_resampled, parcel_index
+        )
 
         kdtree = KDTree(parcellation_coords.T)
 
@@ -501,9 +596,15 @@ def resample_parcellation(parcellation_file, voxel_coords, working_dir=None, fre
 
     return parcellation_asmatrix
 
-def local_orthogonalise(timeseries, parcellation_file=None, dist=None, adjacency=None, ):
+
+def local_orthogonalise(
+    timeseries,
+    parcellation_file=None,
+    dist=None,
+    adjacency=None,
+):
     """Returns a local orthogonalisation of the timeseries, where the time series of local neighbours are regressed out with multiple linear regression.
-    
+
     Parameters
     ----------
     timeseries : numpy.ndarray
@@ -514,19 +615,21 @@ def local_orthogonalise(timeseries, parcellation_file=None, dist=None, adjacency
         Distance in mm to consider as neighbours. Must be provided together with parcellation file. If None, adjacency must be provided.
     adjacency : numpy.ndarray
         nparcels x nparcels binary adjacency matrix.
-        
+
     Returns
     -------
     ortho_timeseries : numpy.ndarray
         (nparcels x ntpts) or (nparcels x ntpts x ntrials) orthoganalised data
-    
+
     """
 
     # do some checks
     if parcellation_file is None and adjacency is None:
         raise ValueError("Either parcellation_file or adjacency must be provided")
     if parcellation_file is not None and adjacency is not None:
-        raise ValueError("Either parcellation_file or adjacency must be provided, not both")
+        raise ValueError(
+            "Either parcellation_file or adjacency must be provided, not both"
+        )
     if parcellation_file is not None and dist is None:
         raise ValueError("If parcellation_file is provided, dist must also be provided")
 
@@ -557,34 +660,46 @@ def local_orthogonalise(timeseries, parcellation_file=None, dist=None, adjacency
         neighbors = np.where(adjacency[i_parc, :])[0]
 
         DC = glm.design.DesignConfig()
-        DC.add_regressor(name='Constant', rtype='Constant')
+        DC.add_regressor(name="Constant", rtype="Constant")
         datainfo = {}
         for i in neighbors:
             datainfo[f"Parcel_{i}"] = timeseries[:, i]
-            DC.add_regressor(name=f'Parcel_{i}', rtype='Parametric', datainfo=f"Parcel_{i}", preproc='z')
+            DC.add_regressor(
+                name=f"Parcel_{i}",
+                rtype="Parametric",
+                datainfo=f"Parcel_{i}",
+                preproc="z",
+            )
 
         DC.add_simple_contrasts()
 
         for i in range(len(DC.regressors)):
-            DC.regressors[i]['num_observations'] = ntpts * ntrials
+            DC.regressors[i]["num_observations"] = ntpts * ntrials
 
-        design = DC.design_from_datainfo(datainfo)       
-        glmdata = glm.data.TrialGLMData(data=timeseries[:,i_parc])
+        design = DC.design_from_datainfo(datainfo)
+        glmdata = glm.data.TrialGLMData(data=timeseries[:, i_parc])
         model = glm.fit.OLSModel(design, glmdata)
 
         # remove the model prediction from the timeseries (excluding the constant)
-        ortho_timeseries[:, i_parc] = timeseries[:, i_parc] - design.design_matrix[:,1:].dot(model.betas[1:])[:,0]
+        ortho_timeseries[:, i_parc] = (
+            timeseries[:, i_parc]
+            - design.design_matrix[:, 1:].dot(model.betas[1:])[:, 0]
+        )
 
     # Re-separate the trials and time dimensions
-    ortho_timeseries = np.reshape(np.transpose(ortho_timeseries), (nparcels, ntpts, ntrials))
+    ortho_timeseries = np.reshape(
+        np.transpose(ortho_timeseries), (nparcels, ntpts, ntrials)
+    )
 
     if added_dim:
-        ortho_timeseries = np.squeeze(ortho_timeseries, axis=2)  
+        ortho_timeseries = np.squeeze(ortho_timeseries, axis=2)
 
     return ortho_timeseries
 
 
-def symmetric_orthogonalise(timeseries, maintain_magnitudes=False, compute_weights=False):
+def symmetric_orthogonalise(
+    timeseries, maintain_magnitudes=False, compute_weights=False
+):
     """Returns orthonormal matrix L which is closest to A, as measured by the Frobenius norm of (L-A). The orthogonal matrix is constructed from a singular
     value decomposition of A.
 
@@ -641,7 +756,11 @@ def symmetric_orthogonalise(timeseries, maintain_magnitudes=False, compute_weigh
         # polar factors of A
         ortho_timeseries = U @ np.conjugate(V)
     else:
-        raise ValueError("Not full rank, rank required is {}, but rank is only {}".format(timeseries.shape[1], r))
+        raise ValueError(
+            "Not full rank, rank required is {}, but rank is only {}".format(
+                timeseries.shape[1], r
+            )
+        )
 
     if compute_weights:
         # weights are a weighting matrix such that,
@@ -658,7 +777,9 @@ def symmetric_orthogonalise(timeseries, maintain_magnitudes=False, compute_weigh
             weights = D @ weights @ D
 
     # Re-separate the trials and time dimensions
-    ortho_timeseries = np.reshape(np.transpose(ortho_timeseries), (nparcels, ntpts, ntrials))
+    ortho_timeseries = np.reshape(
+        np.transpose(ortho_timeseries), (nparcels, ntpts, ntrials)
+    )
 
     if added_dim:
         ortho_timeseries = np.squeeze(ortho_timeseries, axis=2)
@@ -689,12 +810,19 @@ def parcel_centers(parcellation_file, freesurfer=False):
         n_parcels = parcellation.shape[3]
         data = parcellation.get_fdata()
         nonzero = [np.nonzero(data[..., i]) for i in range(n_parcels)]
-        nonzero_coords = [nib.affines.apply_affine(parcellation.affine, np.array(nz).T) for nz in nonzero ]
+        nonzero_coords = [
+            nib.affines.apply_affine(parcellation.affine, np.array(nz).T)
+            for nz in nonzero
+        ]
         weights = [data[..., i][nz] for i, nz in enumerate(nonzero)]
-        coords = np.array([np.average(c, weights=w, axis=0) for c, w in zip(nonzero_coords, weights)])
-    elif isinstance(parcellation, list) and isinstance(parcellation[0], mne.Label): # freesurfer parcellation
+        coords = np.array(
+            [np.average(c, weights=w, axis=0) for c, w in zip(nonzero_coords, weights)]
+        )
+    elif isinstance(parcellation, list) and isinstance(
+        parcellation[0], mne.Label
+    ):  # freesurfer parcellation
         vertices = np.array([l.center_of_mass() for l in parcellation])
-        hemis = [0 if l.hemi=='lh' else 1 for l in parcellation]
+        hemis = [0 if l.hemi == "lh" else 1 for l in parcellation]
         coords = mne.vertex_to_mni(vertices, hemis, "fsaverage")
     return coords
 
@@ -711,14 +839,22 @@ def plot_parcellation(parcellation_file, **kwargs):
     """
     parc_centers = parcel_centers(parcellation_file)
     n_parcels = parc_centers.shape[0]
-    return plot_markers(np.zeros(n_parcels), parc_centers, colorbar=False, node_cmap="binary_r", **kwargs)
+    return plot_markers(
+        np.zeros(n_parcels),
+        parc_centers,
+        colorbar=False,
+        node_cmap="binary_r",
+        **kwargs,
+    )
 
 
-def plot_psd(parc_ts, fs, parcellation_file, filename, freq_range=None, freesurfer=False):
+def plot_psd(
+    parc_ts, fs, parcellation_file, filename, freq_range=None, freesurfer=False
+):
     """Plot PSD of each parcel time course.
 
     Parameters
-    ---------- 
+    ----------
     parc_ts : np.ndarray
         (parcels, time) or (parcels, time, epochs) time series.
     fs : float
@@ -736,12 +872,12 @@ def plot_psd(parc_ts, fs, parcellation_file, filename, freq_range=None, freesurf
         # Calculate PSD for each epoch individually and average
         psd = []
         for i in range(parc_ts.shape[-1]):
-            f, p = welch(parc_ts[..., i], fs=fs, nperseg=fs, nfft=fs*2)
+            f, p = welch(parc_ts[..., i], fs=fs, nperseg=fs, nfft=fs * 2)
             psd.append(p)
         psd = np.mean(psd, axis=0)
     else:
         # Calculate PSD of continuous data
-        f, psd = welch(parc_ts, fs=fs, nperseg=fs, nfft=fs*2)
+        f, psd = welch(parc_ts, fs=fs, nperseg=fs, nfft=fs * 2)
 
     n_parcels = psd.shape[0]
 
@@ -767,7 +903,9 @@ def plot_psd(parc_ts, fs, parcellation_file, filename, freq_range=None, freesurf
 
     # Plot parcel topomap
     inside_ax = ax.inset_axes([0.45, 0.55, 0.5, 0.55])
-    plot_markers(np.arange(n_parcels), parc_centers, node_size=12, colorbar=False, axes=inside_ax)
+    plot_markers(
+        np.arange(n_parcels), parc_centers, node_size=12, colorbar=False, axes=inside_ax
+    )
 
     # Save
     log_or_print(f"saving {filename}")
@@ -855,7 +993,9 @@ def _parcel_timeseries2nii(
         Output nii filename, will be output at spatial resolution of parcel_timeseries['voxel_coords'].
     """
     parcellation_file = find_file(parcellation_file, freesurfer=freesurfer)
-    path, parcellation_name = op.split(op.splitext(op.splitext(parcellation_file)[0])[0])
+    path, parcellation_name = op.split(
+        op.splitext(op.splitext(parcellation_file)[0])[0]
+    )
 
     if working_dir is None:
         working_dir = path
@@ -865,10 +1005,14 @@ def _parcel_timeseries2nii(
 
     # compute parcellation_mask_file to be mean over all parcels
     parcellation_mask_file = op.join(working_dir, parcellation_name + "_mask.nii.gz")
-    rhino_utils.system_call("fslmaths {} -Tmean {}".format(parcellation_file, parcellation_mask_file))
+    rhino_utils.system_call(
+        "fslmaths {} -Tmean {}".format(parcellation_file, parcellation_mask_file)
+    )
 
     if len(parcel_timeseries_data.shape) == 1:
-        parcel_timeseries_data = np.reshape(parcel_timeseries_data, [parcel_timeseries_data.shape[0], 1])
+        parcel_timeseries_data = np.reshape(
+            parcel_timeseries_data, [parcel_timeseries_data.shape[0], 1]
+        )
 
     # Compute nmaskvoxels x ntpts voxel_data
     if method == "assignments":
@@ -884,14 +1028,29 @@ def _parcel_timeseries2nii(
     gridstep = int(rhino_utils.get_gridstep(voxel_coords.T) / 1000)
 
     # Sample parcellation_mask to the desired resolution
-    path, ref_brain_name = op.split(op.splitext(op.splitext(parcellation_mask_file)[0])[0])
-    parcellation_mask_resampled = op.join(working_dir, ref_brain_name + "_{}mm_brain.nii.gz".format(gridstep))
+    path, ref_brain_name = op.split(
+        op.splitext(op.splitext(parcellation_mask_file)[0])[0]
+    )
+    parcellation_mask_resampled = op.join(
+        working_dir, ref_brain_name + "_{}mm_brain.nii.gz".format(gridstep)
+    )
 
     # create std brain of the required resolution
-    rhino_utils.system_call("flirt -in {} -ref {} -out {} -applyisoxfm {}".format(parcellation_mask_file, parcellation_mask_file, parcellation_mask_resampled, gridstep))
+    rhino_utils.system_call(
+        "flirt -in {} -ref {} -out {} -applyisoxfm {}".format(
+            parcellation_mask_file,
+            parcellation_mask_file,
+            parcellation_mask_resampled,
+            gridstep,
+        )
+    )
 
-    parcellation_mask_coords, vals = rhino_utils.niimask2mmpointcloud(parcellation_mask_resampled)
-    parcellation_mask_inds = rhino_utils.niimask2indexpointcloud(parcellation_mask_resampled)
+    parcellation_mask_coords, vals = rhino_utils.niimask2mmpointcloud(
+        parcellation_mask_resampled
+    )
+    parcellation_mask_inds = rhino_utils.niimask2indexpointcloud(
+        parcellation_mask_resampled
+    )
 
     vol = nib.load(parcellation_mask_resampled).get_fdata()
     vol = np.zeros(np.append(vol.shape[:3], parcel_timeseries_data.shape[1]))
@@ -902,7 +1061,12 @@ def _parcel_timeseries2nii(
         distance, index = kdtree.query(voxel_coords[:, ind])
         # Exclude from parcel any voxel_coords that are further than gridstep away
         if distance < gridstep:
-            vol[parcellation_mask_inds[0, index], parcellation_mask_inds[1, index], parcellation_mask_inds[2, index], :] = voxel_data[ind, :]
+            vol[
+                parcellation_mask_inds[0, index],
+                parcellation_mask_inds[1, index],
+                parcellation_mask_inds[2, index],
+                :,
+            ] = voxel_data[ind, :]
 
     # Save as nifti
     vol_nii = nib.Nifti1Image(vol, nib.load(parcellation_mask_resampled).affine)
@@ -918,7 +1082,9 @@ def _parcel_timeseries2nii(
     return out_nii_fname
 
 
-def convert2niftii(parc_data, parcellation_file, mask_file, tres=1, tmin=0, freesurfer=False):
+def convert2niftii(
+    parc_data, parcellation_file, mask_file, tres=1, tmin=0, freesurfer=False
+):
     """Convert parcellation to NIfTI.
 
     Takes (nparcels) or (nvolumes x nparcels) parc_data and returns (xvoxels x yvoxels x zvoxels x nvolumes) niftii file containing parc_data on a volumetric grid.
@@ -992,7 +1158,9 @@ def convert2niftii(parc_data, parcellation_file, mask_file, tres=1, tmin=0, free
     # Final spatial map as a 3D grid for each mode
     spatial_map = np.zeros([mask_grid.shape[0], n_modes])
     spatial_map[non_zero_voxels] = spatial_map_values
-    spatial_map = spatial_map.reshape(mask.shape[0], mask.shape[1], mask.shape[2], n_modes, order="F")
+    spatial_map = spatial_map.reshape(
+        mask.shape[0], mask.shape[1], mask.shape[2], n_modes, order="F"
+    )
     nii = nib.Nifti1Image(spatial_map, mask.affine, mask.header)
 
     nii.header["pixdim"][4] = tres
@@ -1026,7 +1194,9 @@ def convert2mne_raw(parc_data, raw, parcel_names=None, extra_chans="stim"):
     extra_chans = np.unique(["stim"] + extra_chans)
 
     # parc_data is missing bad segments. For osl/rhino it's missing this data, for mne solutions it's only missing the annotations (data shape is conserved)
-    if raw.get_data().shape[1] != parc_data.shape[1]: # We insert bad segments before creating the new MNE object
+    if (
+        raw.get_data().shape[1] != parc_data.shape[1]
+    ):  # We insert bad segments before creating the new MNE object
         _, times = raw.get_data(reject_by_annotation="omit", return_times=True)
         indices = raw.time_as_index(times, use_rounding=True)
         data = np.zeros([parc_data.shape[0], len(raw.times)], dtype=np.float32)
@@ -1038,16 +1208,18 @@ def convert2mne_raw(parc_data, raw, parcel_names=None, extra_chans="stim"):
     info = raw.info
     if parcel_names is None:
         parcel_names = [f"parcel_{i}" for i in range(data.shape[0])]
-    parc_info = mne.create_info(ch_names=parcel_names, ch_types="misc", sfreq=info["sfreq"])
+    parc_info = mne.create_info(
+        ch_names=parcel_names, ch_types="misc", sfreq=info["sfreq"]
+    )
 
     # Create Raw object
     parc_raw = mne.io.RawArray(data, parc_info)
-    
+
     # Update filter info
     with parc_raw.info._unlock():
-        parc_raw.info["highpass"] = float(raw.info['highpass'])
-        parc_raw.info["lowpass"] = float(raw.info['lowpass'])
-    
+        parc_raw.info["highpass"] = float(raw.info["highpass"])
+        parc_raw.info["lowpass"] = float(raw.info["lowpass"])
+
     # Copy timing info
     parc_raw.set_meas_date(raw.info["meas_date"])
     parc_raw.__dict__["_first_samps"] = raw.__dict__["_first_samps"]
@@ -1064,7 +1236,9 @@ def convert2mne_raw(parc_data, raw, parcel_names=None, extra_chans="stim"):
         if extra_chan in raw:
             chan_raw = raw.copy().pick(extra_chan)
             chan_data = chan_raw.get_data()
-            chan_info = mne.create_info(chan_raw.ch_names, raw.info["sfreq"], [extra_chan] * chan_data.shape[0])
+            chan_info = mne.create_info(
+                chan_raw.ch_names, raw.info["sfreq"], [extra_chan] * chan_data.shape[0]
+            )
             chan_raw = mne.io.RawArray(chan_data, chan_info)
             parc_raw.add_channels([chan_raw], force_update_info=True)
 
@@ -1099,7 +1273,9 @@ def convert2mne_epochs(parc_data, epochs, parcel_names=None):
     if parcel_names is None:
         parcel_names = [f"parcel_{i}" for i in range(parc_data.shape[0])]
 
-    parc_info = mne.create_info(ch_names=parcel_names, ch_types="misc", sfreq=info["sfreq"])
+    parc_info = mne.create_info(
+        ch_names=parcel_names, ch_types="misc", sfreq=info["sfreq"]
+    )
     parc_events = epochs.events
 
     # Parcellated data Epochs object
@@ -1192,7 +1368,9 @@ def parcel_vector_to_voxel_grid(mask_file, parcellation_file, vector, freesurfer
 
     # Check parcellation is compatible
     if vector.shape[0] != n_parcels:
-        raise ValueError("parcellation_file has a different number of parcels to the vector")
+        raise ValueError(
+            "parcellation_file has a different number of parcels to the vector"
+        )
 
     voxel_weights = parcellation_grid.reshape(-1, n_parcels, order="F")[non_zero_voxels]
 
@@ -1205,13 +1383,16 @@ def parcel_vector_to_voxel_grid(mask_file, parcellation_file, vector, freesurfer
     # Final 3D voxel grid
     voxel_grid = np.zeros(mask_grid.shape[0])
     voxel_grid[non_zero_voxels] = voxel_values
-    voxel_grid = voxel_grid.reshape(mask.shape[0], mask.shape[1], mask.shape[2], order="F")
+    voxel_grid = voxel_grid.reshape(
+        mask.shape[0], mask.shape[1], mask.shape[2], order="F"
+    )
 
     return voxel_grid
 
-def convert2source_estimate(subjects_dir, data, parc=None, reference_brain='fsaverage'):
-    """ Convert parcellated data to a source estimate.
-    
+
+def convert2source_estimate(subjects_dir, data, parc=None, reference_brain="fsaverage"):
+    """Convert parcellated data to a source estimate.
+
     Parameters
     ----------
     subjects_dir : str
@@ -1222,39 +1403,48 @@ def convert2source_estimate(subjects_dir, data, parc=None, reference_brain='fsav
         Parcellation name.
     reference_brain : str
         Reference brain. Default is 'fsaverage'.
-        
+
     Returns
     -------
     stc : mne.SourceEstimate
-        Source estimate.    
+        Source estimate.
     """
     os.environ["SUBJECTS_DIR"] = subjects_dir
-    
+
     if reference_brain is None:
-            subject = "fsaverage"
-              
+        subject = "fsaverage"
+
     if parc is None:
-        parc = guess_parcellation(np.ones(data.get_data(picks='misc').shape[0]))
-    
+        parc = guess_parcellation(np.ones(data.get_data(picks="misc").shape[0]))
+
     labels = load_parcellation(parc)
-    nparc=len(labels)
-    
-    src = mne.read_source_spaces(freesurfer_utils.get_freesurfer_filenames(os.environ["SUBJECTS_DIR"], reference_brain)['source_space'])
-    
+    nparc = len(labels)
+
+    src = mne.read_source_spaces(
+        freesurfer_utils.get_freesurfer_filenames(
+            os.environ["SUBJECTS_DIR"], reference_brain
+        )["source_space"]
+    )
+
     vertices = [s["vertno"] for s in src]
-    kernel = np.zeros((src[0]['nuse'], nparc))
+    kernel = np.zeros((src[0]["nuse"], nparc))
     for i, l in enumerate(labels):
         v = mne.source_space.label_src_vertno_sel(l, src)[0]
         v = v[np.argmax([len(iv) for iv in v])]
         kernel[v, i] = 1
-    
-    return mne.SourceEstimate((kernel, data.get_data(picks='misc')), vertices, tmin=0, tstep=1/data.info['sfreq'])   
+
+    return mne.SourceEstimate(
+        (kernel, data.get_data(picks="misc")),
+        vertices,
+        tmin=0,
+        tstep=1 / data.info["sfreq"],
+    )
 
 
 def plot_source_topo(
     data_map,
     parcellation_file=None,
-    mask_file='MNI152_T1_8mm_brain.nii.gz',
+    mask_file="MNI152_T1_8mm_brain.nii.gz",
     axis=None,
     cmap=None,
     vmin=None,
@@ -1263,7 +1453,7 @@ def plot_source_topo(
     freesurfer=False,
 ):
     """Plot a data map on a cortical surface. Wrapper for nilearn.plotting.plot_glass_brain.
-    
+
     Parameters
     ----------
     data_map : array_like
@@ -1290,29 +1480,29 @@ def plot_source_topo(
     image : :py:class:`matplotlib.image.AxesImage <matplotlib.image.AxesImage>`
         AxesImage object
     """
-    
+
     if parcellation_file is None:
         parcellation_file = guess_parcellation(data_map)
     parcellation_file = find_file(parcellation_file, freesurfer=freesurfer)
     mask_file = find_file(mask_file, freesurfer=freesurfer)
-    
+
     if vmin is None:
         vmin = data_map.min()
     if vmax is None:
         vmax = data_map.max()
-    
-    if vmin < 0 and vmax>0:
-        vmax = np.max(np.abs([vmin,vmax]))
+
+    if vmin < 0 and vmax > 0:
+        vmax = np.max(np.abs([vmin, vmax]))
         vmin = -vmax
-    
+
     if cmap is None:
-        if vmin<0 and vmax>0:
-            cmap = 'RdBu_r'
+        if vmin < 0 and vmax > 0:
+            cmap = "RdBu_r"
         elif vmin >= 0:
-            cmap = 'Reds'
+            cmap = "Reds"
         else:
-            cmap = 'Blues_r'
-    
+            cmap = "Blues_r"
+
     if axis is None:
         # Create figure
         fig, axis = plt.subplots()
@@ -1321,13 +1511,13 @@ def plot_source_topo(
     data_map = parcel_vector_to_voxel_grid(mask_file, parcellation_file, data_map)
     data_map = data_map[..., np.newaxis]
     mask = nib.load(mask_file)
-    nii = nib.Nifti1Image(data_map, mask.affine, mask.header)   
-    
+    nii = nib.Nifti1Image(data_map, mask.affine, mask.header)
+
     # Plot
     plot_glass_brain(
         nii,
         output_file=None,
-        display_mode='z',
+        display_mode="z",
         colorbar=False,
         axes=axis,
         cmap=cmap,
@@ -1337,7 +1527,7 @@ def plot_source_topo(
         plot_abs=False,
         annotate=False,
     )
-    
+
     # despite the options of vmin, vmax, the colorbar is always set to -vmax to vmax. correct this
     # plt.gca().get_images()[0].set_clim(vmin, vmax)
     return plt.gca().get_images()[0]
@@ -1359,8 +1549,8 @@ def assign_voxels_to_binary_parcellation(voxel_coords, parcel_file):
     voxel_coords : (nvoxels, 3) np.array
         The 3D coords of the voxels to assign to parcels.
     parcel_file : str
-        Path to a 4D nifti binary parcellation file where 
-        each volume should be a mask with 0 for the background 
+        Path to a 4D nifti binary parcellation file where
+        each volume should be a mask with 0 for the background
         and 1 for the parcel.
         File must be in same coordinate space as voxel_coords.
     Returns
@@ -1374,7 +1564,9 @@ def assign_voxels_to_binary_parcellation(voxel_coords, parcel_file):
 
     kdtrees = []
     for parcel_ind in range(nparcels):
-        coords_mni, _ = rhino_utils.niimask2mmpointcloud(parcel_file, volindex=parcel_ind)
+        coords_mni, _ = rhino_utils.niimask2mmpointcloud(
+            parcel_file, volindex=parcel_ind
+        )
         kdtrees.append(KDTree(coords_mni.T))
 
     gridstep = int(rhino_utils.get_gridstep(coords_mni.T) / 1000)
@@ -1391,7 +1583,7 @@ def assign_voxels_to_binary_parcellation(voxel_coords, parcel_file):
             distance, _ = kdtree.query(voxel_coords[ind, :])
             if distance < gridstep and distance < best_distance:
                 best_distance = distance
-                best_index = parcel_ind    
+                best_index = parcel_ind
         if best_index >= 0:
             parcellation_assignment.append(best_index)
         else:

@@ -13,39 +13,36 @@ is also the canonical schema.
 
 DEFAULT_USERARGS = {
     # ── ICA fit ────────────────────────────────────────────────────────────
-    'n_components':  0.999,
-    'method':        'fastica',
-    'max_iter':      'auto',
-    'seed':          42,
-    'l_freq':        1.0,
-    'picks':         'eeg',
-
+    "n_components": 0.999,
+    "method": "fastica",
+    "max_iter": "auto",
+    "seed": 42,
+    "l_freq": 1.0,
+    "picks": "eeg",
     # ── auto-flagging channels & thresholds ───────────────────────────────
-    'ecg_ch':        None,
-    'eog_ch':        None,
+    "ecg_ch": None,
+    "eog_ch": None,
     # Fixed CTPS threshold, matching the current MNE default.
     # EEG-fMRI examples explicitly use 0.1 for residual pulse artifacts.
-    'ecg_threshold': 0.3,
+    "ecg_threshold": 0.3,
     # Absolute Pearson correlation, matching OSL's ica_autoreject default.
-    'eog_threshold': 0.35,
+    "eog_threshold": 0.35,
     # Gate 1: slice-harmonic peak / median local shoulder PSD.
-    'ga_local_threshold': 8.0,
+    "ga_local_threshold": 8.0,
     # Gate 2: slice-harmonic peak / strongest other 5-45 Hz peak.
-    'ga_dominance_threshold': 1.0,
-    'ga_fmin': 1.0,
-    'ga_fmax': 45.0,
-    'ga_dominance_fmin': 5.0,
-    'ga_peak_window': 1.0,
-    'ga_base_window': 5.0,
-
+    "ga_dominance_threshold": 1.0,
+    "ga_fmin": 1.0,
+    "ga_fmax": 45.0,
+    "ga_dominance_fmin": 5.0,
+    "ga_peak_window": 1.0,
+    "ga_base_window": 5.0,
     # ── plotting ───────────────────────────────────────────────────────────
-    'latex_mode':     False,
-    'seg_len':        None,         # None -> 2.0 s (matches bad_segments)
-    'spec_type':      'linear',     # 'linear' | 'db'
-    'spec_freq_max':  45.0,
-    'psd_resolution': 0.05,
-    'zoom_window':    20.0,
-
+    "latex_mode": False,
+    "seg_len": None,  # None -> 2.0 s (matches bad_segments)
+    "spec_type": "linear",  # 'linear' | 'db'
+    "spec_freq_max": 45.0,
+    "psd_resolution": 0.05,
+    "zoom_window": 20.0,
     # ── output ─────────────────────────────────────────────────────────────
     # IC review root. Per-subject subdirs are created under this. Safe to
     # set in batch userargs because it's the *root*, not subject-keyed. If
@@ -55,5 +52,5 @@ DEFAULT_USERARGS = {
     # across all subjects, so a userargs subject would clobber every
     # subject's review folder. Set dataset['subject'] in an upstream
     # extra_func instead.
-    'outdir':        None,
+    "outdir": None,
 }

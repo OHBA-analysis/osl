@@ -1,6 +1,4 @@
-"""source recon utilities.
-
-"""
+"""source recon utilities."""
 
 # Authors: Mark Woolrich <mark.woolrich@ohba.ox.ac.uk>
 #          Chetan Gohil <chetan.gohil@psych.ox.ac.uk>
@@ -18,15 +16,15 @@ def _find_package_file(filename):
     files_dir = str(Path(__file__).parent) + "/files/"
     if op.exists(files_dir + filename):
         return files_dir + filename
-    
+
 
 def _find_freesurfer_file(filename):
     avail = mne_label._read_annot_cands(
-        os.path.join(os.environ["SUBJECTS_DIR"], 'fsaverage', 'label')
+        os.path.join(os.environ["SUBJECTS_DIR"], "fsaverage", "label")
     )
     if filename in avail:
         filename, hemis = mne_label._get_annot_fname(
-            None, 'fsaverage', 'both', filename, os.environ['SUBJECTS_DIR']
+            None, "fsaverage", "both", filename, os.environ["SUBJECTS_DIR"]
         )
         return filename
 
@@ -51,7 +49,7 @@ def find_file(filename, freesurfer=False):
             filename = _find_freesurfer_file(filename)
         else:
             filename = _find_package_file(filename)
-        
+
     if filename is None:
         raise FileNotFoundError(filename)
 

@@ -1,9 +1,7 @@
-"""Batch processing for source reconstruction.
-
-"""
+"""Batch processing for source reconstruction."""
 
 # Authors: Chetan Gohil <chetan.gohil@psych.ox.ac.uk>
-#          Mats van Es <mats.vanes@psych.ox.ac.uk>           
+#          Mats van Es <mats.vanes@psych.ox.ac.uk>
 
 import os
 import sys
@@ -29,6 +27,7 @@ from ..utils import validate_outdir, find_run_id, parallel
 from ..utils.misc import set_random_seed
 
 import logging
+
 logger = logging.getLogger(__name__)
 
 
@@ -83,7 +82,9 @@ def find_func(method, extra_funcs):
 
     # Look in custom functions
     if extra_funcs is not None:
-        func_ind = [idx if (f.__name__ == method) else -1 for idx, f in enumerate(extra_funcs) ]
+        func_ind = [
+            idx if (f.__name__ == method) else -1 for idx, f in enumerate(extra_funcs)
+        ]
         if np.max(func_ind) > -1:
             func = extra_funcs[np.argmax(func_ind)]
 
@@ -101,14 +102,14 @@ def _run_src_chain(
     preproc_file=None,
     smri_file=None,
     epoch_file=None,
-    surface_extraction_method='fsl',
+    surface_extraction_method="fsl",
     logsdir=None,
     reportdir=None,
     gen_report=True,
     verbose="INFO",
     mneverbose="WARNING",
     extra_funcs=None,
-    random_seed='auto',
+    random_seed="auto",
 ):
     """Source reconstruction.
 
@@ -149,9 +150,9 @@ def _run_src_chain(
     flag : bool
         Flag indicating whether source reconstruction was successful.
     """
-    if surface_extraction_method == 'fsl':
+    if surface_extraction_method == "fsl":
         rhino.fsl_utils.check_fsl()
-    elif surface_extraction_method == 'freesurfer':
+    elif surface_extraction_method == "freesurfer":
         freesurfer_utils.check_freesurfer()
 
     # Directories
@@ -177,13 +178,13 @@ def _run_src_chain(
     logger.info("input : {0}".format(outdir / subject))
 
     # Set random seed
-    if random_seed == 'auto':
+    if random_seed == "auto":
         set_random_seed()
     elif random_seed is None:
         pass
     else:
         set_random_seed(random_seed)
-    
+
     # Load config
     if not isinstance(config, dict):
         config = load_config(config)
@@ -203,10 +204,9 @@ def _run_src_chain(
         epoch_file = epoch_filename
 
     # Validation
-    doing_coreg = (
-        any(["compute_surfaces" in method for method in config["source_recon"]]) or
-        any(["coregister" in method for method in config["source_recon"]])
-    )
+    doing_coreg = any(
+        ["compute_surfaces" in method for method in config["source_recon"]]
+    ) or any(["coregister" in method for method in config["source_recon"]])
     if doing_coreg and smri_file is None:
         raise ValueError("smri_file must be passed if we're doing coregistration.")
 
@@ -224,11 +224,16 @@ def _run_src_chain(
                         + "Please pass via extra_funcs "
                         + f"or use available functions: {avail_names}."
                     )
+
             def wrapped_func(**kwargs):
                 sig = inspect.signature(func)
-                args = [param for param in sig.parameters.keys() if param != 'kwargs']
-                defaults = [param.default for param in sig.parameters.values() if param.default is not inspect.Parameter.empty]
-                args_with_defaults = args[-len(defaults):] if defaults else []
+                args = [param for param in sig.parameters.keys() if param != "kwargs"]
+                defaults = [
+                    param.default
+                    for param in sig.parameters.values()
+                    if param.default is not inspect.Parameter.empty
+                ]
+                args_with_defaults = args[-len(defaults) :] if defaults else []
                 kwargs_to_pass = {}
                 for a in args:
                     if a in kwargs:
@@ -236,6 +241,7 @@ def _run_src_chain(
                     elif a not in args_with_defaults:
                         raise ValueError(f"{a} needs to be passed to {func.__name__}")
                 return func(**kwargs_to_pass)
+
             wrapped_func(
                 outdir=outdir,
                 subject=subject,
@@ -273,7 +279,9 @@ def _run_src_chain(
 
     if gen_report:
         # Generate data and individual HTML data for the report
-        src_report.gen_html_data(config, outdir, subject, reportdir, extra_funcs=extra_funcs)
+        src_report.gen_html_data(
+            config, outdir, subject, reportdir, extra_funcs=extra_funcs
+        )
 
         # Generate individual subject HTML report
         src_report.gen_html_page(reportdir)
@@ -301,7 +309,7 @@ def run_src_batch(
     preproc_files=None,
     smri_files=None,
     epoch_files=None,
-    surface_extraction_method='fsl',
+    surface_extraction_method="fsl",
     logsdir=None,
     reportdir=None,
     gen_report=True,
@@ -309,7 +317,7 @@ def run_src_batch(
     mneverbose="WARNING",
     extra_funcs=None,
     dask_client=False,
-    random_seed='auto',
+    random_seed="auto",
 ):
     """Batch source reconstruction.
 
@@ -353,9 +361,9 @@ def run_src_batch(
     flags : list of bool
         Flags indicating whether coregistration was successful.
     """
-    if surface_extraction_method == 'fsl':
+    if surface_extraction_method == "fsl":
         rhino.fsl_utils.check_fsl()
-    elif surface_extraction_method == 'freesurfer':
+    elif surface_extraction_method == "freesurfer":
         freesurfer_utils.check_freesurfer()
 
     # Directories
@@ -365,22 +373,22 @@ def run_src_batch(
 
     # Initialise Loggers
     mne.set_log_level(mneverbose)
-    logfile = os.path.join(logsdir, 'batch_src.log')
+    logfile = os.path.join(logsdir, "batch_src.log")
     osl_logger.set_up(log_file=logfile, level=verbose, startup=False)
-    logger.info('Starting osl-ephys Batch Source Reconstruction')
+    logger.info("Starting osl-ephys Batch Source Reconstruction")
 
     # Set random seed
-    if random_seed == 'auto':
+    if random_seed == "auto":
         random_seed = set_random_seed()
     elif random_seed is None:
         pass
     else:
         set_random_seed(random_seed)
-    
+
     # Load config
     config = load_config(config)
     config_str = pprint.PrettyPrinter().pformat(config)
-    logger.info('Running config\n {0}'.format(config_str))
+    logger.info("Running config\n {0}".format(config_str))
 
     # Number of files (subjects) to process
     n_subjects = len(subjects)
@@ -427,10 +435,9 @@ def run_src_batch(
         elif len(epoch_files_list) > 0:
             epoch_files = epoch_files_list
 
-    doing_coreg = (
-        any(["compute_surfaces" in method for method in config["source_recon"]]) or
-        any(["coregister" in method for method in config["source_recon"]])
-    )
+    doing_coreg = any(
+        ["compute_surfaces" in method for method in config["source_recon"]]
+    ) or any(["coregister" in method for method in config["source_recon"]])
 
     if doing_coreg and smri_files is None:
         raise ValueError("smri_files must be passed if we are coregistering.")
@@ -458,7 +465,12 @@ def run_src_batch(
 
     # Loop through input files to generate arguments for run_coreg_chain
     args = []
-    for subject, preproc_file, smri_file, epoch_file, in zip(subjects, preproc_files, smri_files, epoch_files):
+    for (
+        subject,
+        preproc_file,
+        smri_file,
+        epoch_file,
+    ) in zip(subjects, preproc_files, smri_files, epoch_files):
         args.append((config, outdir, subject, preproc_file, smri_file, epoch_file))
 
     # Actually run the processes
@@ -468,7 +480,9 @@ def run_src_batch(
         flags = [pool_func(*aa) for aa in args]
 
     osl_logger.set_up(log_file=logfile, level=verbose, startup=False)
-    logger.info("Processed {0}/{1} files successfully".format(int(np.sum(flags)), len(flags)))
+    logger.info(
+        "Processed {0}/{1} files successfully".format(int(np.sum(flags)), len(flags))
+    )
 
     if gen_report and int(np.sum(flags)) > 0:
         # Generate individual subject HTML report

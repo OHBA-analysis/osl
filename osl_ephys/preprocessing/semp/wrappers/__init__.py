@@ -11,7 +11,14 @@
 
 from .misc import voltage_correction, cleanup, mid_crop
 from .report import init_tracer, summary, ckpt_report
-from .epoching import crop_TR, crop_by_epoch, create_epoch, create_TR_epoch, create_He_epoch, simulate_epoch
+from .epoching import (
+    crop_TR,
+    crop_by_epoch,
+    create_epoch,
+    create_TR_epoch,
+    create_He_epoch,
+    simulate_epoch,
+)
 from .ssp import epoch_ssp
 from .aas import epoch_aas
 from .obs import epoch_obs

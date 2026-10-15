@@ -37,10 +37,13 @@ finally applied. They differ in *who fits* and *who chooses the bad ICs*:
 The auto path reuses the single ``ica_raw`` fit (no second ICA); the manual path
 round-trips through disk so a human can review between the fit and the apply.
 """
+
 import numpy as np
 from osl_ephys.utils.logger import log_or_print
 
-from osl_ephys.preprocessing.manual_ica import manual_ica   # re-export; keeps semp configs working
+from osl_ephys.preprocessing.manual_ica import (
+    manual_ica,
+)  # re-export; keeps semp configs working
 from osl_ephys.preprocessing.manual_ica.helpers import (
     _compute_slice_contribution_scores,
     _compute_slice_ga_scores,
@@ -49,7 +52,7 @@ from osl_ephys.preprocessing.manual_ica.helpers import (
 
 from osl_ephys.preprocessing.semp.utils import proc_userargs, require_keys
 
-__all__ = ['slice_reject', 'manual_ica']
+__all__ = ["slice_reject", "manual_ica"]
 
 
 def slice_reject(dataset, userargs):
@@ -84,89 +87,87 @@ def slice_reject(dataset, userargs):
     ``dataset['slice_reject_dominance_threshold']``.
     """
     default_args = {
-        'local_threshold': 8.0,
-        'dominance_threshold': 1.0,
-        'fmin': 1.0,
-        'fmax': 45.0,
-        'dominance_fmin': 5.0,
-        'peak_window': 1.0,
-        'base_window': 5.0,
-        'contribution_gate': False,
-        'contribution_local_threshold': 4.0,
-        'contribution_fraction_threshold': 0.30,
-        'apply': True,
+        "local_threshold": 8.0,
+        "dominance_threshold": 1.0,
+        "fmin": 1.0,
+        "fmax": 45.0,
+        "dominance_fmin": 5.0,
+        "peak_window": 1.0,
+        "base_window": 5.0,
+        "contribution_gate": False,
+        "contribution_local_threshold": 4.0,
+        "contribution_fraction_threshold": 0.30,
+        "apply": True,
     }
     userargs = proc_userargs(userargs, default_args)
 
-    require_keys(dataset, ['ica', 'slice_interval', 'tr_interval'], 'slice_reject')
+    require_keys(dataset, ["ica", "slice_interval", "tr_interval"], "slice_reject")
 
-    local_threshold = userargs['local_threshold']
-    dominance_threshold = userargs['dominance_threshold']
-    peak_window = userargs['peak_window']
-    base_window = userargs['base_window']
+    local_threshold = userargs["local_threshold"]
+    dominance_threshold = userargs["dominance_threshold"]
+    peak_window = userargs["peak_window"]
+    base_window = userargs["base_window"]
 
-    if 'slice_reject_local_threshold' in dataset:
-        local_threshold = dataset['slice_reject_local_threshold']
+    if "slice_reject_local_threshold" in dataset:
+        local_threshold = dataset["slice_reject_local_threshold"]
         log_or_print(
-            'slice_reject: local_threshold='
-            f'{local_threshold} from '
+            "slice_reject: local_threshold="
+            f"{local_threshold} from "
             "dataset['slice_reject_local_threshold']"
         )
-    if 'slice_reject_dominance_threshold' in dataset:
-        dominance_threshold = dataset['slice_reject_dominance_threshold']
+    if "slice_reject_dominance_threshold" in dataset:
+        dominance_threshold = dataset["slice_reject_dominance_threshold"]
         log_or_print(
-            'slice_reject: dominance_threshold='
-            f'{dominance_threshold} from '
+            "slice_reject: dominance_threshold="
+            f"{dominance_threshold} from "
             "dataset['slice_reject_dominance_threshold']"
         )
 
     if base_window <= peak_window or peak_window <= 0:
-        raise ValueError('base_window must be greater than peak_window > 0.')
+        raise ValueError("base_window must be greater than peak_window > 0.")
 
-    ica = dataset['ica']
-    data = ica.get_sources(dataset['raw']).get_data()
+    ica = dataset["ica"]
+    data = ica.get_sources(dataset["raw"]).get_data()
     scores = _compute_slice_ga_scores(
         data,
-        sfreq=dataset['raw'].info['sfreq'],
-        slice_interval=dataset['slice_interval'],
-        tr_interval=dataset['tr_interval'],
-        good_mask=_good_mask(dataset['raw']),
-        fmin=userargs['fmin'],
-        fmax=userargs['fmax'],
-        dominance_fmin=userargs['dominance_fmin'],
+        sfreq=dataset["raw"].info["sfreq"],
+        slice_interval=dataset["slice_interval"],
+        tr_interval=dataset["tr_interval"],
+        good_mask=_good_mask(dataset["raw"]),
+        fmin=userargs["fmin"],
+        fmax=userargs["fmax"],
+        dominance_fmin=userargs["dominance_fmin"],
         peak_window=peak_window,
         base_window=base_window,
         local_threshold=local_threshold,
         dominance_threshold=dominance_threshold,
     )
-    dataset['slice_reject_scores'] = scores
+    dataset["slice_reject_scores"] = scores
 
-    local_scores = scores['peak_to_local']
-    dominance_scores = scores['peak_to_elsewhere']
+    local_scores = scores["peak_to_local"]
+    dominance_scores = scores["peak_to_elsewhere"]
     slice_ics = [
-        int(ic) for ic in np.flatnonzero(
-            (local_scores > local_threshold)
-            & (dominance_scores > dominance_threshold)
+        int(ic)
+        for ic in np.flatnonzero(
+            (local_scores > local_threshold) & (dominance_scores > dominance_threshold)
         )
     ]
 
     contribution_ics = []
-    if userargs['contribution_gate']:
+    if userargs["contribution_gate"]:
         already_excluded = sorted(set(ica.exclude) | set(slice_ics))
         contribution = _compute_slice_contribution_scores(
             scores,
             ica.get_components(),
             excluded=already_excluded,
-            local_threshold=userargs['contribution_local_threshold'],
-            fraction_threshold=userargs['contribution_fraction_threshold'],
+            local_threshold=userargs["contribution_local_threshold"],
+            fraction_threshold=userargs["contribution_fraction_threshold"],
         )
-        contribution_ics = [
-            int(ic) for ic in np.flatnonzero(contribution['passes'])
-        ]
-        scores['contribution_fraction'] = contribution['fraction']
-        scores['contribution_local'] = contribution['local']
-        scores['contribution_harmonic_hz'] = contribution['harmonic_hz']
-        scores['contribution_passes'] = contribution['passes']
+        contribution_ics = [int(ic) for ic in np.flatnonzero(contribution["passes"])]
+        scores["contribution_fraction"] = contribution["fraction"]
+        scores["contribution_local"] = contribution["local"]
+        scores["contribution_harmonic_hz"] = contribution["harmonic_hz"]
+        scores["contribution_passes"] = contribution["passes"]
         contribution_details = [
             f'{ic} (harmonic={contribution["harmonic_hz"][ic]:.3f} Hz, '
             f'local={contribution["local"][ic]:.2f}, '
@@ -174,26 +175,23 @@ def slice_reject(dataset, userargs):
             for ic in contribution_ics
         ]
         log_or_print(
-            'slice_reject: contribution-gate rescue '
-            f'{contribution_details}'
+            "slice_reject: contribution-gate rescue " f"{contribution_details}"
         )
 
     # union with whatever ica_autoreject already marked (EOG/ECG)
-    ica.exclude = sorted(
-        set(ica.exclude) | set(slice_ics) | set(contribution_ics)
-    )
+    ica.exclude = sorted(set(ica.exclude) | set(slice_ics) | set(contribution_ics))
     scored_ics = [
         f'{ic} (harmonic={scores["harmonic_hz"][ic]:.3f} Hz, '
-        f'local={local_scores[ic]:.2f}, '
-        f'dominance={dominance_scores[ic]:.2f})'
+        f"local={local_scores[ic]:.2f}, "
+        f"dominance={dominance_scores[ic]:.2f})"
         for ic in slice_ics
     ]
     log_or_print(
-        'slice_reject: '
-        f'{len(slice_ics)} slice-harmonic IC(s), two-gate scores '
-        f'{scored_ics}; ica.exclude now {ica.exclude}'
+        "slice_reject: "
+        f"{len(slice_ics)} slice-harmonic IC(s), two-gate scores "
+        f"{scored_ics}; ica.exclude now {ica.exclude}"
     )
 
-    if userargs['apply']:
-        dataset['raw'] = ica.apply(dataset['raw'].copy())
+    if userargs["apply"]:
+        dataset["raw"] = ica.apply(dataset["raw"].copy())
     return dataset

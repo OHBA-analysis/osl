@@ -1,6 +1,4 @@
-"""Forward modelling in RHINO.
-
-"""
+"""Forward modelling in RHINO."""
 
 # Authors: Mark Woolrich <mark.woolrich@ohba.ox.ac.uk>
 #          Chetan Gohil <chetan.gohil@psych.ox.ac.uk>
@@ -9,7 +7,12 @@ import os
 import os.path as op
 from copy import deepcopy
 
-from mne import make_bem_model, make_bem_solution, make_forward_solution, write_forward_solution
+from mne import (
+    make_bem_model,
+    make_bem_solution,
+    make_forward_solution,
+    write_forward_solution,
+)
 from mne.bem import ConductorModel, read_bem_solution
 from mne.transforms import read_trans, Transform
 from mne.io import read_info
@@ -20,7 +23,10 @@ try:
     from mne.source_space import _make_volume_source_space, _complete_vol_src
 except ImportError:
     # Depreciated in mne 1.6
-    from mne.source_space._source_space import _make_volume_source_space, _complete_vol_src
+    from mne.source_space._source_space import (
+        _make_volume_source_space,
+        _complete_vol_src,
+    )
 
 import osl_ephys.source_recon.rhino.utils as rhino_utils
 from osl_ephys.source_recon.rhino import get_coreg_filenames
@@ -73,7 +79,9 @@ def forward_model(
     else:
         raise ValueError("{} is an invalid model choice".format(model))
 
-    vol_src = setup_volume_source_space(subjects_dir, subject, gridstep=gridstep, mindist=mindist, exclude=exclude)
+    vol_src = setup_volume_source_space(
+        subjects_dir, subject, gridstep=gridstep, mindist=mindist, exclude=exclude
+    )
 
     # The BEM solution requires a BEM model which describes the geometry of the head the conductivities of the different tissues.
     # See: https://mne.tools/stable/auto_tutorials/forward/30_forward.html#sphx-glr-auto-tutorials-forward-30-forward-py
@@ -83,9 +91,24 @@ def forward_model(
     #
     # This will get the surfaces from: subjects_dir/subject/bem/inner_skull.surf, which is where rhino.setup_volume_source_space will have put it.
 
-    model = make_bem_model(subjects_dir=subjects_dir, subject=subject, ico=None, conductivity=conductivity, verbose=verbose)
+    model = make_bem_model(
+        subjects_dir=subjects_dir,
+        subject=subject,
+        ico=None,
+        conductivity=conductivity,
+        verbose=verbose,
+    )
     bem = make_bem_solution(model)
-    fwd = make_fwd_solution(subjects_dir, subject, src=vol_src, ignore_ref=True, bem=bem, eeg=eeg, meg=meg, verbose=verbose)
+    fwd = make_fwd_solution(
+        subjects_dir,
+        subject,
+        src=vol_src,
+        ignore_ref=True,
+        bem=bem,
+        eeg=eeg,
+        meg=meg,
+        verbose=verbose,
+    )
     write_forward_solution(filenames["fwd_model"], fwd, overwrite=True)
 
     log_or_print("*** OSL-EPHYS RHINO FORWARD MODEL COMPLETE ***")
@@ -194,7 +217,9 @@ def make_fwd_solution(
     return fwd
 
 
-def setup_volume_source_space(subjects_dir, subject, gridstep=5, mindist=5.0, exclude=0.0):
+def setup_volume_source_space(
+    subjects_dir, subject, gridstep=5, mindist=5.0, exclude=0.0
+):
     """Set up a volume source space grid inside the inner skull surface.
 
     This is a RHINO specific version of mne.setup_volume_source_space.
@@ -280,16 +305,34 @@ def setup_volume_source_space(subjects_dir, subject, gridstep=5, mindist=5.0, ex
     # Note that the coreg surf files are in scaled MRI space
     verts, tris = read_surface(filenames["bet_inskull_surf_file"])
     tris = tris.astype(int)
-    write_surface(op.join(bem_dir, "inner_skull.surf"), verts, tris, file_format="freesurfer", overwrite=True)
+    write_surface(
+        op.join(bem_dir, "inner_skull.surf"),
+        verts,
+        tris,
+        file_format="freesurfer",
+        overwrite=True,
+    )
     log_or_print("Using bet_inskull_surf_file for single shell surface")
 
     verts, tris = read_surface(filenames["bet_outskull_surf_file"])
     tris = tris.astype(int)
-    write_surface(op.join(bem_dir, "outer_skull.surf"), verts, tris, file_format="freesurfer", overwrite=True)
+    write_surface(
+        op.join(bem_dir, "outer_skull.surf"),
+        verts,
+        tris,
+        file_format="freesurfer",
+        overwrite=True,
+    )
 
     verts, tris = read_surface(filenames["bet_outskin_surf_file"])
     tris = tris.astype(int)
-    write_surface(op.join(bem_dir, "outer_skin.surf"), verts, tris, file_format="freesurfer", overwrite=True)
+    write_surface(
+        op.join(bem_dir, "outer_skin.surf"),
+        verts,
+        tris,
+        file_format="freesurfer",
+        overwrite=True,
+    )
 
     # ------------------------------------------------
     # Setup main MNE call to _make_volume_source_space
@@ -307,7 +350,16 @@ def setup_volume_source_space(subjects_dir, subject, gridstep=5, mindist=5.0, ex
     # -------------
     # Main MNE call
 
-    sp = _make_volume_source_space(surf, pos, exclude, mindist, filenames["smri_file"], None, vol_info=vol_info, single_volume=False)
+    sp = _make_volume_source_space(
+        surf,
+        pos,
+        exclude,
+        mindist,
+        filenames["smri_file"],
+        None,
+        vol_info=vol_info,
+        single_volume=False,
+    )
     sp[0]["type"] = "vol"
 
     # ----------------------

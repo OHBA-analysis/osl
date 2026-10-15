@@ -12,12 +12,13 @@ import matplotlib.pyplot as plt
 from osl_ephys.utils import mean_psd_in_band  # noqa: F401
 
 EEG_BANDS = {
-    'alpha': (8, 12),
-    'beta': (13, 30),
-    'gamma': (30, 100),
-    'delta': (0.5, 4),
-    'theta': (4, 8)
+    "alpha": (8, 12),
+    "beta": (13, 30),
+    "gamma": (30, 100),
+    "delta": (0.5, 4),
+    "theta": (4, 8),
 }
+
 
 class EEGTracer:
     """A class to trace the evolution of EEG signal statistics across preprocessing steps.
@@ -26,60 +27,69 @@ class EEGTracer:
         checkpoints (list): A list of dicts containing checkpoint names and computed statistics.
         functions (dict): A mapping of statistic names to functions that compute them.
     """
-    
+
     def __init__(self, **kwargs):
         self.checkpoints = []
-        
+
         # Never use lambda functions directly in the class, as they cannot be pickled.
         # Instead, define functions or use partial functions.
         self.functions = {
             # 'variance': lambda x: np.var(x, axis=1),  # this is not picklable
-            'variance': partial(np.var, axis=1),
+            "variance": partial(np.var, axis=1),
         }
         self.psd_functions = {}
         for key, value in kwargs.items():
             if not callable(value):
                 raise ValueError(f"Function {key} must be callable.")
-            if key.startswith('psd_'):
+            if key.startswith("psd_"):
                 self.psd_functions[key] = value
             else:
                 self.functions[key] = value
-        
+
     def checkpoint(self, data, name):
         """Store the variance of the data at a checkpoint.
-        
+
         Args:
             data (np.ndarray): The data to check. Should be a 2D array (#ch, #timepoints).
             name (str): The name of the checkpoint.
         """
-        
+
         ckpt = {}
-        ckpt['name'] = name
-        
+        ckpt["name"] = name
+
         for func_name, func in self.functions.items():
             ckpt[func_name] = func(data)
-        
+
         self.checkpoints.append(ckpt)
-    
+
     def checkpoint_psd(self, psd, name):
         """Store the PSD of the data at a checkpoint.
-        
+
         Args:
             psd (mne.time_frequency.Spectrum): The PSD data to check.
             name (str): The name of the checkpoint.
         """
         psd_ckpt = {}
-        psd_ckpt['name'] = name
-        
+        psd_ckpt["name"] = name
+
         for func_name, func in self.psd_functions.items():
             psd_ckpt[func_name] = func(psd)
-        
+
         self.checkpoints[-1].update(psd_ckpt)
-        
-    def plot(self, func_list=None, scalarizer=np.mean, figsize=(10,3), save_pth=None, show=True):
+
+    def plot(
+        self,
+        func_list=None,
+        scalarizer=np.mean,
+        figsize=(10, 3),
+        save_pth=None,
+        show=True,
+    ):
         if not self.checkpoints:
-            raise RuntimeError("No checkpoints recorded. Call .checkpoint() before plotting.")
-        
+            raise RuntimeError(
+                "No checkpoints recorded. Call .checkpoint() before plotting."
+            )
+
         if func_list is None:
             functions = list(self.functions.keys()) + list(self.psd_functions.keys())
         else:
@@ -90,14 +100,16 @@ class EEGTracer:
         elif isinstance(scalarizer, dict):
             scalarizers = {fn: scalarizer.get(fn, np.mean) for fn in functions}
         else:
-            raise ValueError("scalarizer must be callable or dict, with keys matching function names.")
+            raise ValueError(
+                "scalarizer must be callable or dict, with keys matching function names."
+            )
 
-        checkpoint_names = [ckpt['name'] for ckpt in self.checkpoints]
+        checkpoint_names = [ckpt["name"] for ckpt in self.checkpoints]
         x_positions = range(len(checkpoint_names))
 
-        markers = ['o', 's', '^', 'D', 'x']
+        markers = ["o", "s", "^", "D", "x"]
         colors = plt.cm.tab10.colors  # default Matplotlib qualitative palette
-        
+
         for idx, func_name in enumerate(functions):
             values = []
             for ckpt in self.checkpoints:
@@ -105,14 +117,14 @@ class EEGTracer:
                     values.append(scalarizers[func_name](ckpt[func_name]))
                 else:
                     values.append(np.nan)  # placeholder for missing metric
-        
-        
-            for yscale in ['linear', 'log']:
+
+            for yscale in ["linear", "log"]:
                 fig, ax = plt.subplots(figsize=figsize)
                 ax.plot(
-                    x_positions, values,
+                    x_positions,
+                    values,
                     marker=markers[idx % len(markers)],
-                    color=colors[idx % len(colors)]
+                    color=colors[idx % len(colors)],
                 )
                 ax.set_ylabel(func_name.capitalize())
                 ax.set_title(f"{func_name.capitalize()} at Checkpoints ({yscale})")
@@ -148,7 +160,7 @@ def psd_band_ratio(psd, band1, fn1, band2=None, fn2=None):
 
     Returns:
         np.ndarray: The ratio of the statistic in band1 to the statistic in band2.
-    
+
     Usage example for osl preprocess config:
         SLICE_FREQ = 1/0.07  # Hz, frequency for the first slice in init_tracer
         config = {'preproc': [{"init_tracer": {
@@ -165,11 +177,16 @@ def psd_band_ratio(psd, band1, fn1, band2=None, fn2=None):
         band2 = band1
     if fn2 is None:
         fn2 = fn1
-    
-    if len(band1) != 2 or len(band2) != 2:
-        raise ValueError("Both band1 and band2 must be lists of two elements (fmin, fmax).")
 
-    return fn1(psd.get_data(fmin=band1[0], fmax=band1[1]), axis=1) / fn2(psd.get_data(fmin=band2[0], fmax=band2[1]), axis=1)
+    if len(band1) != 2 or len(band2) != 2:
+        raise ValueError(
+            "Both band1 and band2 must be lists of two elements (fmin, fmax)."
+        )
+
+    return fn1(psd.get_data(fmin=band1[0], fmax=band1[1]), axis=1) / fn2(
+        psd.get_data(fmin=band2[0], fmax=band2[1]), axis=1
+    )
+
 
 def psd_band_stat(psd, band, fn=np.mean):
     """Calculate the statistic of the power spectral density in a specified frequency range.
@@ -210,4 +227,3 @@ def psd_band_stat(psd, band, fn=np.mean):
         band = EEG_BANDS[band]
     fmin, fmax = band
     return fn(psd.get_data(fmin=fmin, fmax=fmax), axis=1)
-

@@ -1,6 +1,4 @@
-"""Functions related to polhemus fiducials.
-
-"""
+"""Functions related to polhemus fiducials."""
 
 # Authors: Mark Woolrich <mark.woolrich@ohba.ox.ac.uk>
 #          Chetan Gohil <chetan.gohil@psych.ox.ac.uk>
@@ -85,7 +83,7 @@ def get_polhemus_from_info(
     polhemus_nasion = np.array(polhemus_nasion)
 
     return polhemus_headshape, polhemus_rpa, polhemus_lpa, polhemus_nasion
-    
+
 
 def extract_polhemus_from_info(
     fif_file,
@@ -132,10 +130,12 @@ def extract_polhemus_from_info(
     info = read_info(fif_file)
 
     # Get coordinates from the fif file
-    polhemus_headshape, polhemus_rpa, polhemus_lpa, polhemus_nasion = get_polhemus_from_info(
-        info=info,
-        include_eeg_as_headshape=include_eeg_as_headshape,
-        include_hpi_as_headshape=include_hpi_as_headshape,
+    polhemus_headshape, polhemus_rpa, polhemus_lpa, polhemus_nasion = (
+        get_polhemus_from_info(
+            info=info,
+            include_eeg_as_headshape=include_eeg_as_headshape,
+            include_hpi_as_headshape=include_hpi_as_headshape,
+        )
     )
 
     # Rescale
@@ -185,14 +185,25 @@ def extract_polhemus_from_info(
     np.savetxt(headshape_outfile, np.array(polhemus_headshape).T * 1000)
 
     if info["dev_ctf_t"] is not None:
-        log_or_print(f"dummy headshape points saved, overwrite {headshape_outfile} or set use_headshape=False in coregisteration")
+        log_or_print(
+            f"dummy headshape points saved, overwrite {headshape_outfile} or set use_headshape=False in coregisteration"
+        )
 
     # Warning if 'trans' in filename we assume -trans was applied using MaxFiltering
     # This may make the coregistration appear incorrect, but this is not an issue.
     if "_trans" in fif_file:
-        log_or_print("fif filename contains '_trans' which suggests -trans was passed during MaxFiltering", warning=True)
-        log_or_print("This means the location of the head in the coregistration plot may not be correct", warning=True)
-        log_or_print("Either use the _tsss.fif file or ignore the centroid of the head in coregistration plot", warning=True)
+        log_or_print(
+            "fif filename contains '_trans' which suggests -trans was passed during MaxFiltering",
+            warning=True,
+        )
+        log_or_print(
+            "This means the location of the head in the coregistration plot may not be correct",
+            warning=True,
+        )
+        log_or_print(
+            "Either use the _tsss.fif file or ignore the centroid of the head in coregistration plot",
+            warning=True,
+        )
 
 
 def save_mni_fiducials(
@@ -244,9 +255,11 @@ def save_mni_fiducials(
     np.savetxt(lpa_outfile, lpa)
 
 
-def plot_polhemus_points(txt_fnames, colors=None, scales=None, markers=None, alphas=None):
+def plot_polhemus_points(
+    txt_fnames, colors=None, scales=None, markers=None, alphas=None
+):
     """Plot polhemus points.
-    
+
     Parameters
     ----------
     txt_fnames : list of strings
@@ -281,7 +294,10 @@ def plot_polhemus_points(txt_fnames, colors=None, scales=None, markers=None, alp
             marker = markers[ss]
 
         pnts = np.loadtxt(txt_fnames[ss])
-        ax.scatter(pnts[0], pnts[1], pnts[2], color=color, s=scale, alpha=alpha, marker=marker)
+        ax.scatter(
+            pnts[0], pnts[1], pnts[2], color=color, s=scale, alpha=alpha, marker=marker
+        )
+
 
 def delete_headshape_points(recon_dir=None, subject=None, polhemus_headshape_file=None):
     """Interactively delete headshape points.
@@ -299,20 +315,20 @@ def delete_headshape_points(recon_dir=None, subject=None, polhemus_headshape_fil
     polhemus_headshape_file: string
         Full file path to get the polhemus_headshape_file from, and to save any changes to. Note that this is an npy file containing the
         (3 x num_headshapepoints) numpy array of headshape points.
-        
+
     Notes
     -----
     We can call this in two different ways, either:
 
-    1) Specify the subjects_dir AND the subject directory in the 
+    1) Specify the subjects_dir AND the subject directory in the
        directory structure used by RHINO:
-    
+
             delete_headshape_points(recon_dir=recon_dir, subject=subject)
-    
+
     or:
-    
+
     2) Specify the full path to the .npy file containing the (3 x num_headshapepoints) numpy array of headshape points:
-    
+
             delete_headshape_points(polhemus_headshape_file=polhemus_headshape_file)
     """
 
@@ -321,14 +337,14 @@ def delete_headshape_points(recon_dir=None, subject=None, polhemus_headshape_fil
         polhemus_headshape_file = coreg_filenames["polhemus_headshape_file"]
     elif polhemus_headshape_file is not None:
         polhemus_headshape_file = polhemus_headshape_file
-        coreg_filenames = {'polhemus_headshape_file': polhemus_headshape_file}
+        coreg_filenames = {"polhemus_headshape_file": polhemus_headshape_file}
     else:
-        ValueError('Invalid inputs. See function\'s documentation.')
-      
+        ValueError("Invalid inputs. See function's documentation.")
+
     polhemus_headshape_polhemus = np.loadtxt(polhemus_headshape_file)
 
     print("Num headshape points={}".format(polhemus_headshape_polhemus.shape[1]))
-    print('Click on points to delete them.')
+    print("Click on points to delete them.")
     print('Press "w" to write changes to the file')
     print('Press "q" to close the figure')
     sys.stdout.flush()
@@ -339,9 +355,9 @@ def delete_headshape_points(recon_dir=None, subject=None, polhemus_headshape_fil
         ax.scatter(x, y, z, color=color, marker=marker, s=scale, alpha=alpha, picker=5)
         plt.draw()
 
-    x = list(polhemus_headshape_polhemus[0,:])
-    y = list(polhemus_headshape_polhemus[1,:])
-    z = list(polhemus_headshape_polhemus[2,:])
+    x = list(polhemus_headshape_polhemus[0, :])
+    y = list(polhemus_headshape_polhemus[1, :])
+    z = list(polhemus_headshape_polhemus[2, :])
 
     # Create scatter plot
     fig = plt.figure()
@@ -354,9 +370,9 @@ def delete_headshape_points(recon_dir=None, subject=None, polhemus_headshape_fil
         ind = event.ind
 
         # Remove selected points from data arrays
-        print('Deleted: {}, {}, {}'.format(x[ind[0]], y[ind[0]], z[ind[0]]))
+        print("Deleted: {}, {}, {}".format(x[ind[0]], y[ind[0]], z[ind[0]]))
         sys.stdout.flush()
-        
+
         x.pop(ind[0])
         y.pop(ind[0])
         z.pop(ind[0])
@@ -366,20 +382,32 @@ def delete_headshape_points(recon_dir=None, subject=None, polhemus_headshape_fil
         scatter_headshapes(ax, x, y, z)
 
     def on_press(event):
-        if event.key == 'w':
+        if event.key == "w":
             polhemus_headshape_polhemus_new = np.array([x, y, z])
-            print("Num headshape points remaining={}".format(polhemus_headshape_polhemus_new.shape[1]))
-            np.savetxt(coreg_filenames["polhemus_headshape_file"], polhemus_headshape_polhemus_new)
-            print('Changes saved to file {}'.format(coreg_filenames["polhemus_headshape_file"]))
-        elif event.key == 'q':
-            print('Closing figure')
+            print(
+                "Num headshape points remaining={}".format(
+                    polhemus_headshape_polhemus_new.shape[1]
+                )
+            )
+            np.savetxt(
+                coreg_filenames["polhemus_headshape_file"],
+                polhemus_headshape_polhemus_new,
+            )
+            print(
+                "Changes saved to file {}".format(
+                    coreg_filenames["polhemus_headshape_file"]
+                )
+            )
+        elif event.key == "q":
+            print("Closing figure")
             plt.close(fig)
-                    
+
     # Connect click event to function
-    fig.canvas.mpl_connect('pick_event', on_click)
-    fig.canvas.mpl_connect('key_press_event', on_press)
+    fig.canvas.mpl_connect("pick_event", on_click)
+    fig.canvas.mpl_connect("key_press_event", on_press)
 
     plt.show()
+
 
 def remove_stray_headshape_points(outdir, subject, nose=True):
     """Remove stray headshape points.
@@ -415,7 +443,9 @@ def remove_stray_headshape_points(outdir, subject, nose=True):
     hs = hs[:, ~remove]
 
     # Remove headshape points far from the head in any direction
-    remove = np.logical_or(hs[0] < lpa[0] - 5, np.logical_or(hs[0] > rpa[0] + 5, hs[1] > nas[1] + 5))
+    remove = np.logical_or(
+        hs[0] < lpa[0] - 5, np.logical_or(hs[0] > rpa[0] + 5, hs[1] > nas[1] + 5)
+    )
     hs = hs[:, ~remove]
 
     # Overwrite headshape file
@@ -458,12 +488,32 @@ def extract_polhemus_from_pos(outdir, subject, filepath):
     data.iloc[:, 1:4] = data.iloc[:, 1:4] * 10
 
     # Polhemus fiducial points in polhemus space
-    polhemus_nasion = data[data.iloc[:, 0].str.match("nasion")].iloc[0, 1:4].to_numpy().astype("float64").T
-    polhemus_rpa = data[data.iloc[:, 0].str.match("right")].iloc[0, 1:4].to_numpy().astype("float64").T
-    polhemus_lpa = data[data.iloc[:, 0].str.match("left")].iloc[0, 1:4].to_numpy().astype("float64").T
+    polhemus_nasion = (
+        data[data.iloc[:, 0].str.match("nasion")]
+        .iloc[0, 1:4]
+        .to_numpy()
+        .astype("float64")
+        .T
+    )
+    polhemus_rpa = (
+        data[data.iloc[:, 0].str.match("right")]
+        .iloc[0, 1:4]
+        .to_numpy()
+        .astype("float64")
+        .T
+    )
+    polhemus_lpa = (
+        data[data.iloc[:, 0].str.match("left")]
+        .iloc[0, 1:4]
+        .to_numpy()
+        .astype("float64")
+        .T
+    )
 
     # Polhemus headshape points in polhemus space in mm
-    polhemus_headshape = data[0:num_headshape_pnts].iloc[:, 1:4].to_numpy().astype("float64").T
+    polhemus_headshape = (
+        data[0:num_headshape_pnts].iloc[:, 1:4].to_numpy().astype("float64").T
+    )
 
     # Save
     log_or_print(f"saved: {filenames['polhemus_nasion_file']}")
@@ -476,7 +526,9 @@ def extract_polhemus_from_pos(outdir, subject, filepath):
     np.savetxt(filenames["polhemus_headshape_file"], polhemus_headshape)
 
 
-def extract_polhemus_from_elc(outdir, subject, filepath, remove_headshape_near_nose=False):
+def extract_polhemus_from_elc(
+    outdir, subject, filepath, remove_headshape_near_nose=False
+):
     """Saves fiducials/headshape from an elc file.
 
     Parameters
@@ -518,12 +570,16 @@ def extract_polhemus_from_elc(outdir, subject, filepath, remove_headshape_near_n
         # Polhemus headshape points in polhemus space
         for i in range(len(lines)):
             if lines[i] == "HeadShapePoints\n":
-                headshape = np.array([l.split() for l in lines[i + 1:]]).astype(np.float64).T
+                headshape = (
+                    np.array([l.split() for l in lines[i + 1 :]]).astype(np.float64).T
+                )
                 break
 
     if remove_headshape_near_nose:
         # Remove headshape points on the nose
-        remove = np.logical_and(headshape[0] > max(lpa[0], rpa[0]), headshape[2] < nasion[2])
+        remove = np.logical_and(
+            headshape[0] > max(lpa[0], rpa[0]), headshape[2] < nasion[2]
+        )
         headshape = headshape[:, ~remove]
 
     # Save
@@ -572,7 +628,9 @@ def rescale_sensor_positions(fif_file, xscale=1, yscale=1, zscale=1):
         d["r"][2] *= zscale
 
     # Add scaling info to the fif description
-    raw.info["description"] += f"\n\n%% rescale_sensor_positions start %%\nxscale={xscale}, yscale={yscale}, zscale={zscale}\n%% rescale_sensor_positions end %%"
+    raw.info[
+        "description"
+    ] += f"\n\n%% rescale_sensor_positions start %%\nxscale={xscale}, yscale={yscale}, zscale={zscale}\n%% rescale_sensor_positions end %%"
 
     # Save
     raw.set_montage(montage)

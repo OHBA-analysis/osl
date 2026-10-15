@@ -7,5 +7,5 @@ from .util import (  # config / dataset
     require_keys,
     resolve_channel_names,
 )
-from .io import load_pkl, save_pkl, SingletonEEG   # file io / loaders
-from .signal import pearson_corr, correct_trigger, mne_epoch2raw            # EEG signal ops
+from .io import load_pkl, save_pkl, SingletonEEG  # file io / loaders
+from .signal import pearson_corr, correct_trigger, mne_epoch2raw  # EEG signal ops

@@ -29,6 +29,7 @@ For each ``<subject>``::
 If no subject is given, every directory under ``<ica_root>`` that contains
 a ``label.txt`` is processed.
 """
+
 import argparse
 import sys
 import time
@@ -38,10 +39,9 @@ import mne
 
 from .io import parse_label_txt, parse_bads_txt
 
-
-RAW_SUFFIX = '_preproc-raw.fif'
-ICA_SUFFIX = '_ica.fif'
-OUT_SUFFIX = '_after_ica-raw.fif'
+RAW_SUFFIX = "_preproc-raw.fif"
+ICA_SUFFIX = "_ica.fif"
+OUT_SUFFIX = "_after_ica-raw.fif"
 
 
 def _purge_review_assets(subject_dir):
@@ -52,8 +52,7 @@ def _purge_review_assets(subject_dir):
     """
     n_removed = 0
     freed = 0
-    for pattern in ('ic_*.svg', 'topo_*.svg',
-                    'single_ic.html', 'between_ic.html'):
+    for pattern in ("ic_*.svg", "topo_*.svg", "single_ic.html", "between_ic.html"):
         for p in subject_dir.glob(pattern):
             try:
                 freed += p.stat().st_size
@@ -61,10 +60,10 @@ def _purge_review_assets(subject_dir):
                 n_removed += 1
             except OSError:
                 pass
-    for sub in ('zoomed', 'zoomed_clean'):
+    for sub in ("zoomed", "zoomed_clean"):
         d = subject_dir / sub
         if d.is_dir():
-            for p in d.glob('*.svg'):
+            for p in d.glob("*.svg"):
                 try:
                     freed += p.stat().st_size
                     p.unlink()
@@ -101,28 +100,31 @@ def apply_one(ica_root, raw_root, subject, overwrite=False, purge_svgs=False):
     """
     ica_root = Path(ica_root)
     raw_root = Path(raw_root)
-    raw_path   = raw_root / subject / f'{subject}{RAW_SUFFIX}'
-    ica_path   = raw_root / subject / f'{subject}{ICA_SUFFIX}'
-    label_path = ica_root / subject / 'label.txt'
-    bads_path  = ica_root / subject / 'bads.txt'
-    out_path   = raw_root / subject / f'{subject}{OUT_SUFFIX}'
+    raw_path = raw_root / subject / f"{subject}{RAW_SUFFIX}"
+    ica_path = raw_root / subject / f"{subject}{ICA_SUFFIX}"
+    label_path = ica_root / subject / "label.txt"
+    bads_path = ica_root / subject / "bads.txt"
+    out_path = raw_root / subject / f"{subject}{OUT_SUFFIX}"
 
     missing = [p for p in (raw_path, ica_path, label_path) if not p.exists()]
     if missing:
-        return f'skip --- missing: {[p.name for p in missing]}'
+        return f"skip --- missing: {[p.name for p in missing]}"
     if out_path.exists() and not overwrite:
-        return f'skip --- exists: {out_path.name}'
+        return f"skip --- exists: {out_path.name}"
 
     ica = mne.preprocessing.read_ica(ica_path, verbose=False)
     bad_ics, n_unsure, n_unlabeled, warnings = parse_label_txt(
-        label_path, expected_components=ica.n_components_,
+        label_path,
+        expected_components=ica.n_components_,
     )
     if warnings:
-        return (f'skip --- {len(warnings)} bad lines in label.txt: '
-                + ' | '.join(warnings[:3])
-                + ('...' if len(warnings) > 3 else ''))
+        return (
+            f"skip --- {len(warnings)} bad lines in label.txt: "
+            + " | ".join(warnings[:3])
+            + ("..." if len(warnings) > 3 else "")
+        )
     if n_unlabeled:
-        return f'skip --- {n_unlabeled} unlabeled ICs (review not finished)'
+        return f"skip --- {n_unlabeled} unlabeled ICs (review not finished)"
 
     bad_segs = parse_bads_txt(bads_path) if bads_path.exists() else []
 
@@ -135,68 +137,87 @@ def apply_one(ica_root, raw_root, subject, overwrite=False, purge_svgs=False):
         raw.annotations.append(
             [s + raw.first_time for s, _ in bad_segs],
             [d for _, d in bad_segs],
-            ['BAD_manual'] * len(bad_segs),
+            ["BAD_manual"] * len(bad_segs),
         )
     ica.exclude = list(bad_ics)
     cleaned = ica.apply(raw, verbose=False)
     cleaned.save(out_path, overwrite=overwrite, verbose=False)
-    msg = (f'ok --- removed {len(bad_ics)} bad / kept '
-           f'{ica.n_components_ - len(bad_ics)} '
-           f'(unsure={n_unsure}, bad segs={len(bad_segs)}) -> {out_path.name}')
+    msg = (
+        f"ok --- removed {len(bad_ics)} bad / kept "
+        f"{ica.n_components_ - len(bad_ics)} "
+        f"(unsure={n_unsure}, bad segs={len(bad_segs)}) -> {out_path.name}"
+    )
     if purge_svgs:
         n_removed, freed = _purge_review_assets(ica_root / subject)
-        msg += f' [+ purged {n_removed} review files, freed {freed / 1e6:.1f} MB]'
+        msg += f" [+ purged {n_removed} review files, freed {freed / 1e6:.1f} MB]"
     return msg
 
 
 def main():
     p = argparse.ArgumentParser(
-        description='Apply manual ICA review decisions to preprocessed fifs.'
+        description="Apply manual ICA review decisions to preprocessed fifs."
     )
-    p.add_argument('ica_root', help='Root containing <subject>/label.txt')
-    p.add_argument('raw_root', help='Root containing <subject>/<subject>_preproc-raw.fif and _ica.fif')
-    p.add_argument('subjects', nargs='*',
-                   help='Subjects to process. Default: every subject under '
-                        'ica_root with a label.txt.')
-    p.add_argument('--overwrite', action='store_true',
-                   help='Overwrite existing <subject>_after_ica-raw.fif.')
-    p.add_argument('--purge-svgs', action='store_true',
-                   help='After a successful apply, delete the per-IC SVGs '
-                        'and HTML review pages under <ica_root>/<subject>/ '
-                        'to save disk space (label.txt + bads.txt are kept).')
+    p.add_argument("ica_root", help="Root containing <subject>/label.txt")
+    p.add_argument(
+        "raw_root",
+        help="Root containing <subject>/<subject>_preproc-raw.fif and _ica.fif",
+    )
+    p.add_argument(
+        "subjects",
+        nargs="*",
+        help="Subjects to process. Default: every subject under "
+        "ica_root with a label.txt.",
+    )
+    p.add_argument(
+        "--overwrite",
+        action="store_true",
+        help="Overwrite existing <subject>_after_ica-raw.fif.",
+    )
+    p.add_argument(
+        "--purge-svgs",
+        action="store_true",
+        help="After a successful apply, delete the per-IC SVGs "
+        "and HTML review pages under <ica_root>/<subject>/ "
+        "to save disk space (label.txt + bads.txt are kept).",
+    )
     args = p.parse_args()
 
     ica_root = Path(args.ica_root)
     if not ica_root.exists():
-        sys.exit(f'ICA folder not found: {ica_root}')
+        sys.exit(f"ICA folder not found: {ica_root}")
 
     subjects = args.subjects or sorted(
-        d.name for d in ica_root.iterdir()
-        if d.is_dir() and (d / 'label.txt').exists()
+        d.name for d in ica_root.iterdir() if d.is_dir() and (d / "label.txt").exists()
     )
-    print(f'[osl-ica-apply] {len(subjects)} subject(s)')
+    print(f"[osl-ica-apply] {len(subjects)} subject(s)")
     if not subjects:
-        print('[osl-ica-apply] no subjects to process')
+        print("[osl-ica-apply] no subjects to process")
         return 1
 
     n_done = n_skip = 0
     t0 = time.time()
     for s in subjects:
         try:
-            msg = apply_one(ica_root, args.raw_root, s,
-                            overwrite=args.overwrite,
-                            purge_svgs=args.purge_svgs)
+            msg = apply_one(
+                ica_root,
+                args.raw_root,
+                s,
+                overwrite=args.overwrite,
+                purge_svgs=args.purge_svgs,
+            )
         except Exception as e:
-            msg = f'error --- {type(e).__name__}: {e}'
-        print(f'  {s}: {msg}')
-        if msg.startswith('ok'):
+            msg = f"error --- {type(e).__name__}: {e}"
+        print(f"  {s}: {msg}")
+        if msg.startswith("ok"):
             n_done += 1
         else:
             n_skip += 1
-    print(f'[osl-ica-apply] {n_done} processed, {n_skip} skipped '
-          f'in {time.time() - t0:.1f} s')
+    print(
+        f"[osl-ica-apply] {n_done} processed, {n_skip} skipped "
+        f"in {time.time() - t0:.1f} s"
+    )
     return 1 if n_skip else 0
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     sys.exit(main())

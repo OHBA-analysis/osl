@@ -1,6 +1,4 @@
-"""Wrappers for fsleyes.
-
-"""
+"""Wrappers for fsleyes."""
 
 # Authors: Mark Woolrich <mark.woolrich@ohba.ox.ac.uk>
 #          Chetan Gohil <chetan.gohil@psych.ox.ac.uk>
@@ -32,7 +30,9 @@ def setup_fsl(directory):
 def check_fsl():
     """Check FSL is installed."""
     if "FSLDIR" not in os.environ:
-        raise RuntimeError("Please setup FSL, e.g. with osl_ephys.source_recon.setup_fsl().")
+        raise RuntimeError(
+            "Please setup FSL, e.g. with osl_ephys.source_recon.setup_fsl()."
+        )
 
 
 def fsleyes(image_list):
@@ -75,10 +75,18 @@ def fsleyes_overlay(background_img, overlay_img):
     if type(background_img) is str:
         if background_img == "mni":
             mni_resolution = int(nib.load(overlay_img).header.get_zooms()[0])
-            background_img = op.join(os.environ["FSLDIR"], "data/standard/MNI152_T1_{}mm_brain.nii.gz".format(mni_resolution))
+            background_img = op.join(
+                os.environ["FSLDIR"],
+                "data/standard/MNI152_T1_{}mm_brain.nii.gz".format(mni_resolution),
+            )
         elif background_img[0:3] == "mni":
             mni_resolution = int(background_img[3])
-            background_img = op.join(os.environ["FSLDIR"], "data/standard/MNI152_T1_{}mm_brain.nii.gz".format(mni_resolution))
+            background_img = op.join(
+                os.environ["FSLDIR"],
+                "data/standard/MNI152_T1_{}mm_brain.nii.gz".format(mni_resolution),
+            )
 
-    cmd = "fsleyes {} --volume 0 {} --alpha 100.0 --cmap red-yellow --negativeCmap blue-lightblue --useNegativeCmap &".format(background_img, overlay_img)
+    cmd = "fsleyes {} --volume 0 {} --alpha 100.0 --cmap red-yellow --negativeCmap blue-lightblue --useNegativeCmap &".format(
+        background_img, overlay_img
+    )
     rhino_utils.system_call(cmd)

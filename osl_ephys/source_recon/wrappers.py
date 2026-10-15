@@ -30,7 +30,6 @@ from ..report import src_report
 from ..report.preproc_report import plot_freqbands
 from ..utils.logger import log_or_print
 
-
 # --------------
 # RHINO wrappers
 
@@ -267,9 +266,7 @@ def compute_surfaces(
     )
 
     # Plot surfaces
-    surface_plots = rhino.plot_surfaces(
-        outdir, subject, include_nose, already_computed
-    )
+    surface_plots = rhino.plot_surfaces(outdir, subject, include_nose, already_computed)
     surface_plots = [s.replace(f"{outdir}/", "") for s in surface_plots]
 
     if reportdir is not None:
@@ -286,13 +283,9 @@ def compute_surfaces(
         )
 
 
-def make_watershed_bem(
-    outdir, 
-    subject, 
-    overwrite=False,
-    reportdir=None):
+def make_watershed_bem(outdir, subject, overwrite=False, reportdir=None):
     """Wrapper for making the watershed BEM.
-    
+
     Parameters
     ----------
     outdir : str
@@ -309,21 +302,26 @@ def make_watershed_bem(
     #     subject=subject,
     #     overwrite=overwrite,
     # )
-    surfaces = ['axial', 'coronal', 'sagittal']
-    surf_dir = freesurfer_utils.get_freesurfer_filenames(subjects_dir=outdir, subject=subject)['surf']['basedir'].__str__()
-    output_files = [f"{surf_dir.replace(outdir.__str__() + '/', '')}/{surface}.png" for surface in surfaces]
+    surfaces = ["axial", "coronal", "sagittal"]
+    surf_dir = freesurfer_utils.get_freesurfer_filenames(
+        subjects_dir=outdir, subject=subject
+    )["surf"]["basedir"].__str__()
+    output_files = [
+        f"{surf_dir.replace(outdir.__str__() + '/', '')}/{surface}.png"
+        for surface in surfaces
+    ]
 
     for surf, file in zip(surfaces, output_files):
         plot_bem_kwargs = dict(
-        subject=subject,
-        subjects_dir=outdir,
-        brain_surfaces="orig",
-        orientation=surf,
-        slices=range(60,201,20),
+            subject=subject,
+            subjects_dir=outdir,
+            brain_surfaces="orig",
+            orientation=surf,
+            slices=range(60, 201, 20),
         )
         fig = mne.viz.plot_bem(**plot_bem_kwargs)
         fig.savefig(os.path.join(outdir, file))
-    
+
     # Save info for the report
     if reportdir is not None:
         # Save info for the report
@@ -334,14 +332,14 @@ def make_watershed_bem(
                 "surface_plots": output_files,
             },
         )
-    
+
 
 def coregister(
     outdir,
     subject,
     preproc_file=None,
     epoch_file=None,
-    surface_extraction_method='fsl',
+    surface_extraction_method="fsl",
     use_nose=True,
     use_headshape=True,
     already_coregistered=False,
@@ -380,7 +378,7 @@ def coregister(
         using a template sMRI that has not come from this subject.
         if in surface_extraction_method='freesurfer', this can be 'uniform' or '3-axis'.
     n_init : int, optional
-        Number of initialisations for coregistration. Different defaults 
+        Number of initialisations for coregistration. Different defaults
         for surface_extraction_method='fsl' and surface_extraction_method='freesurfer'
     reportdir : str, optional
         Path to report directory.
@@ -392,7 +390,7 @@ def coregister(
     if surface_extraction_method == "fsl":
         if n_init is None:
             n_init = 1
-        
+
         rhino.coreg(
             fif_file=preproc_file,
             subjects_dir=outdir,
@@ -414,48 +412,43 @@ def coregister(
         coreg_dir = rhino.get_coreg_filenames(outdir, subject)["basedir"]
         # The coreg display may have to be delayed until after Dask processing because of rendering
         # issues on dask workers
-        rhino.coreg_display( 
+        rhino.coreg_display(
             subjects_dir=outdir,
             subject=subject,
             display_outskin_with_nose=False,
             filename=f"{coreg_dir}/coreg.html",
         )
         coreg_filename = f"{coreg_dir}/coreg.html".replace(f"{outdir}/", "")
-            
-    elif surface_extraction_method == 'freesurfer':
+
+    elif surface_extraction_method == "freesurfer":
         coreg_files = freesurfer_utils.get_coreg_filenames(outdir, subject)
-        coreg_filename = coreg_files['coreg_html']
-        
+        coreg_filename = coreg_files["coreg_html"]
+
         def save_coreg_html(filename):
             fig = mne.viz.plot_alignment(info, trans=coreg.trans, **plot_kwargs)
             print("Saving", filename)
             fig.plotter.export_html(filename)
 
         info = read_info(preproc_file)
-        
+
         raw = mne.io.RawArray(np.zeros([len(info["ch_names"]), 1]), info)
         raw.save(coreg_files["info_fif_file"], overwrite=True)
-        
+
         fiducials = "estimated"  # get fiducials from fsaverage
-        coreg = Coregistration(
-            info, 
-            subject, 
-            outdir, 
-            fiducials=fiducials
-        )
-        
+        coreg = Coregistration(info, subject, outdir, fiducials=fiducials)
+
         if allow_smri_scaling is False:
             coreg.set_scale_mode(allow_smri_scaling)
         if n_init is None:
             n_init = 20
-        
+
         fiducials_kwargs = kwargs.pop("fit_fiducials", {})
         coreg.fit_fiducials(**fiducials_kwargs)
-        
+
         icp_kwargs = kwargs.pop("fit_icp", {})
         coreg.fit_icp(n_iterations=n_init, **icp_kwargs)
-        #coreg.omit_head_shape_points(distance=1e-3)
-        
+        # coreg.omit_head_shape_points(distance=1e-3)
+
         plot_kwargs = dict(
             subject=subject,
             subjects_dir=outdir,
@@ -469,17 +462,32 @@ def coregister(
             f"Distance between HSP and MRI (mean/min/max):\n{np.mean(dists * 1e3):.2f} mm "
             f"/ {np.min(dists * 1e3):.2f} mm / {np.max(dists * 1e3):.2f} mm"
         )
-        
-        save_coreg_html(coreg_files['coreg_html'])
-        mne.write_trans(coreg_files['coreg_trans'], coreg.trans, overwrite=True)
-        
+
+        save_coreg_html(coreg_files["coreg_html"])
+        mne.write_trans(coreg_files["coreg_trans"], coreg.trans, overwrite=True)
+
         # Distance between polhemus and sMRI fiducials in m, and the median distance between the scalp and headshape points.
-        lpa_distance = np.sqrt(np.sum((coreg._dig_dict["lpa"] - coreg.fiducials.dig[0]["r"]) ** 2))
-        nasion_distance = np.sqrt(np.sum((coreg._dig_dict["nasion"] - coreg.fiducials.dig[1]["r"]) ** 2))
-        rpa_distance = np.sqrt(np.sum((coreg._dig_dict["rpa"] - coreg.fiducials.dig[2]["r"]) ** 2))
-        fid_err = np.array([nasion_distance, lpa_distance, rpa_distance, np.sqrt(np.mean(dists**2))]) * 1e2 # now in cm
-            
-            
+        lpa_distance = np.sqrt(
+            np.sum((coreg._dig_dict["lpa"] - coreg.fiducials.dig[0]["r"]) ** 2)
+        )
+        nasion_distance = np.sqrt(
+            np.sum((coreg._dig_dict["nasion"] - coreg.fiducials.dig[1]["r"]) ** 2)
+        )
+        rpa_distance = np.sqrt(
+            np.sum((coreg._dig_dict["rpa"] - coreg.fiducials.dig[2]["r"]) ** 2)
+        )
+        fid_err = (
+            np.array(
+                [
+                    nasion_distance,
+                    lpa_distance,
+                    rpa_distance,
+                    np.sqrt(np.mean(dists**2)),
+                ]
+            )
+            * 1e2
+        )  # now in cm
+
     if reportdir is not None:
         # Save info for the report
         src_report.add_to_data(
@@ -496,14 +504,14 @@ def coregister(
                 "coreg_plot": coreg_filename,
             },
         )
-        
+
         if surface_extraction_method == "freesurfer":
             src_report.add_to_data(
                 f"{reportdir}/{subject}/data.pkl",
                 {
                     "fiducials_kwargs": fiducials_kwargs,
                     "icp_kwargs": icp_kwargs,
-                }
+                },
             )
 
 
@@ -511,7 +519,7 @@ def forward_model(
     outdir,
     subject,
     smri_file=None,
-    surface_extraction_method='fsl',
+    surface_extraction_method="fsl",
     gridstep=8,
     model="Single Layer",
     source_space="volumetric",
@@ -530,7 +538,7 @@ def forward_model(
     smri_file : str, optional
         Path to the T1 weighted structural MRI file to use in source
         reconstruction. Only required if using freesurfer and a volumentric source
-        space.    
+        space.
     surface_extraction_method : str, optional
         Method used to extract the surfaces. Can be 'fsl' or 'freesurfer'.
     gridstep : int, optional
@@ -542,7 +550,7 @@ def forward_model(
         'Single Layer' use a single layer (brain/cortex)
         'Triple Layer' uses three layers (scalp, inner skull, brain/cortex)
     source_space : str, optional
-        Are we using volumetric, or surface based forward model? 
+        Are we using volumetric, or surface based forward model?
         Can be 'volumetric' (or 'vol') or 'surface' (or 'surf').
         Currently, `surface_extraction_method='fsl' is only supported
         for volumetric forward models.
@@ -552,13 +560,13 @@ def forward_model(
         Path to report directory.
     """
     # Compute forward model
-    if surface_extraction_method == 'fsl':
-        if source_space in ['surf', 'surface']:
+    if surface_extraction_method == "fsl":
+        if source_space in ["surf", "surface"]:
             raise ValueError(
                 "Surface based forward models are currently not supported with "
                 "surface_extraction_method='fsl'."
             )
-        
+
         rhino.forward_model(
             subjects_dir=outdir,
             subject=subject,
@@ -567,50 +575,51 @@ def forward_model(
             eeg=eeg,
         )
 
-    elif surface_extraction_method == 'freesurfer': 
+    elif surface_extraction_method == "freesurfer":
         log_or_print("*** RUNNING MNE FORWARD MODEL ***")
         filenames = freesurfer_utils.get_coreg_filenames(outdir, subject)
-        fwd_fname = freesurfer_utils.get_freesurfer_filenames(outdir, subject)['fwd_model']
-        
-        if source_space in ['volumetric', 'vol']:
+        fwd_fname = freesurfer_utils.get_freesurfer_filenames(outdir, subject)[
+            "fwd_model"
+        ]
+
+        if source_space in ["volumetric", "vol"]:
             src = mne.setup_volume_source_space(
-            subjects_dir=outdir,
-            pos=gridstep,
-            subject=subject,
-            mri=smri_file,
+                subjects_dir=outdir,
+                pos=gridstep,
+                subject=subject,
+                mri=smri_file,
             )
-        elif source_space in ['surf', 'surface']:
+        elif source_space in ["surf", "surface"]:
             src = mne.setup_source_space(
-            subjects_dir=outdir,
-            spacing=gridstep,
-            subject=subject,
-            add_dist="patch",
+                subjects_dir=outdir,
+                spacing=gridstep,
+                subject=subject,
+                add_dist="patch",
             )
-            
-        mne.write_source_spaces(filenames['source_space'], src, overwrite=True)
-        
+
+        mne.write_source_spaces(filenames["source_space"], src, overwrite=True)
+
         conductivity = kwargs.pop("conductivity", None)
         if conductivity is None:
             if model == "Single Layer":
                 conductivity = (0.3,)  # for single layer
             elif model == "Triple Layer":
                 conductivity = (0.3, 0.006, 0.3)  # for three layers
-            
-        
+
         ico = kwargs.pop("ico", 4)
         mindist = kwargs.pop("mindist", 0)
-        
+
         model = mne.make_bem_model(
             subjects_dir=outdir,
             subject=subject,
             conductivity=conductivity,
             ico=ico,
         )
-        
+
         bem = mne.make_bem_solution(model)
-        
-        trans = mne.read_trans(filenames['coreg_trans'])
-        info = read_info(filenames['info_fif_file'])
+
+        trans = mne.read_trans(filenames["coreg_trans"])
+        info = read_info(filenames["info_fif_file"])
         fwd = mne.make_forward_solution(
             info,
             trans=trans,
@@ -620,7 +629,7 @@ def forward_model(
         )
         mne.write_forward_solution(fwd_fname, fwd, overwrite=True)
         log_or_print("*** FINISHED SURFACE BASED FORWARD MODEL ***")
-        
+
     if reportdir is not None:
         # Save info for the report
         src_report.add_to_data(
@@ -633,15 +642,15 @@ def forward_model(
                 "eeg": eeg,
             },
         )
-        
-        if surface_extraction_method == 'freesurfer':
+
+        if surface_extraction_method == "freesurfer":
             src_report.add_to_data(
-            f"{reportdir}/{subject}/data.pkl",
-            {
-                "conductivity": conductivity,
-                "ico": ico,
-                "mindist": mindist,
-            }
+                f"{reportdir}/{subject}/data.pkl",
+                {
+                    "conductivity": conductivity,
+                    "ico": ico,
+                    "mindist": mindist,
+                },
             )
 
 
@@ -707,10 +716,10 @@ def beamform(
         The minimum distance in mm from the midline for a dipole to be
         considered for bilateral pairing. Only used if use_bilateral_pairs
         is True. Recommended value is ~gridstep/2 mm.
-        If None, is set to bilateral_tol. 
+        If None, is set to bilateral_tol.
     dipole_patches_file : str, optional
         Path to a 4D nifti binary, mutually exclusive parcellation file, where
-        each volume should be a mask with 0 for the background  
+        each volume should be a mask with 0 for the background
         and 1 for the parcel and each parcel should be non-overlapping.
         Dipoles within a parcel will be considered as a group
         of dipoles that will be beamformed together as a multi-dipole.
@@ -722,8 +731,8 @@ def beamform(
         then the dipole_patches_file needs to be
         accompanied by a text file with the same name but a .xml
         extension that contains a "group" field
-        with a unique integer value shared by patches that are 
-        to be grouped into a multi-dipole (if group=0 then the patch 
+        with a unique integer value shared by patches that are
+        to be grouped into a multi-dipole (if group=0 then the patch
         is assumed to not be in a group).
         (see also parcellation.load_parcellation_description).
         Using a dipole_patches_file only works with volumetric (RHINO)
@@ -777,8 +786,8 @@ def beamform(
         use_bilateral_pairs=use_bilateral_pairs,
         bilateral_tol=bilateral_tol,
         bilateral_tol_midline=bilateral_tol_midline,
-        dipole_patches_file=dipole_patches_file,  
-        group_patches=group_patches,      
+        dipole_patches_file=dipole_patches_file,
+        group_patches=group_patches,
     )
 
     # Make plots
@@ -789,15 +798,17 @@ def beamform(
     filters_svd_plot = filters_svd_plot.replace(f"{outdir}/", "")
 
     dipole_locations_plot = f"{subject}/dipole_locations_plot.html"
-    beamforming.plot_dipole_locations(outdir, 
-                                    subject, 
-                                    use_bilateral_pairs, 
-                                    bilateral_tol, 
-                                    bilateral_tol_midline, 
-                                    dipole_patches_file,
-                                    group_patches,
-                                    f"{outdir}/{dipole_locations_plot}")
-    
+    beamforming.plot_dipole_locations(
+        outdir,
+        subject,
+        use_bilateral_pairs,
+        bilateral_tol,
+        bilateral_tol_midline,
+        dipole_patches_file,
+        group_patches,
+        f"{outdir}/{dipole_locations_plot}",
+    )
+
     if reportdir is not None:
         # Save info for the report
         src_report.add_to_data(
@@ -825,7 +836,7 @@ def minimum_norm(
     surface_extraction_method="fsl",
     depth=0.8,
     loose="auto",
-    lambda2=1.0/9,
+    lambda2=1.0 / 9,
     pick_ori="pca",
     freq_range=None,
     reportdir=None,
@@ -868,12 +879,12 @@ def minimum_norm(
 
     if isinstance(chantypes, str):
         chantypes = [chantypes]
-    
+
     if epoch_file is not None:
         data = mne.read_epochs(epoch_file, preload=True)
     else:
         data = mne.io.read_raw(preproc_file, preload=True)
-    
+
     # Bandpass filter
     if freq_range is not None:
         log_or_print(f"bandpass filtering: {freq_range[0]}-{freq_range[1]} Hz")
@@ -888,13 +899,13 @@ def minimum_norm(
     if surface_extraction_method == "freesurfer":
         fs_files = freesurfer_utils.get_freesurfer_filenames(outdir, subject)
         fwd_fname = fs_files["fwd_model"]
-    elif surface_extraction_method == 'fsl':
+    elif surface_extraction_method == "fsl":
         rhino_files = rhino.utils.get_rhino_filenames(outdir, subject)
         fwd_fname = rhino_files["fwd_model"]
 
     mne_files = osle_minimum_norm.get_mne_filenames(outdir, subject)
     inv_op_fname = mne_files["inverse_operator"]
-    
+
     log_or_print("creating MNE inverse operator")
     osle_minimum_norm.create_inverse_operator(
         fwd_fname,
@@ -905,7 +916,7 @@ def minimum_norm(
         loose=loose,
         filename=inv_op_fname,
     )
-    
+
     if reportdir is not None:
         # Save info for the report
         src_report.add_to_data(
@@ -932,8 +943,8 @@ def parcellate(
     method,
     orthogonalisation,
     source_space,
-    surface_extraction_method='fsl',
-    source_method='lcmv',
+    surface_extraction_method="fsl",
+    source_method="lcmv",
     spatial_resolution=None,
     reference_brain=None,
     voxel_trans="ztrans",
@@ -956,13 +967,13 @@ def parcellate(
         Path to epoched preprocessed fif file.
     parcellation_file : str
         If surface_extraction_method='fsl':
-            Path to a 4D nifti file providing the parcellation to use, 
+            Path to a 4D nifti file providing the parcellation to use,
             with each volume correspond to a parcel.
             Must be in MNI space.
     method : str
         Method to use in the parcellation.
     orthogonalisation : str, None
-        Options are 'symmetric', 'local', None. If 'local', neighbour_distance 
+        Options are 'symmetric', 'local', None. If 'local', neighbour_distance
         must be specified.
     source_space : str
         Source model to use. Can be 'volumetric' (/'vol') or 'surface' (/'surf').
@@ -987,7 +998,7 @@ def parcellate(
         Defaults to 'stim'. Stim channels are always added to parc-raw.fif
         in addition to extra_chans.
     neighbour_distance : float, optional
-        Distance in mm between parcel centers to consider neighbours 
+        Distance in mm between parcel centers to consider neighbours
         for orthogonalisation='local'.
     reportdir : str, optional
         Path to report directory.
@@ -1011,7 +1022,10 @@ def parcellate(
     available_source_methods = ["lcmv", "beamform", "mne", "dspm", "sloreta", "eloreta"]
     if source_method.lower() not in available_source_methods:
         raise ValueError(f"source_method must be one of {available_source_methods}")
-    elif source_method.lower() in ["lcmv", "beamform"] and source_space in ['surf', 'surface']:
+    elif source_method.lower() in ["lcmv", "beamform"] and source_space in [
+        "surf",
+        "surface",
+    ]:
         raise ValueError(
             "Surface based source models are not supported with "
             "source_method='lcmv' or 'beamform'."
@@ -1023,7 +1037,7 @@ def parcellate(
     chantypes = report_data.pop("chantypes")
     if isinstance(chantypes, str):
         chantypes = [chantypes]
-        
+
     # Bandpass filter
     if freq_range is not None:
         log_or_print(f"bandpass filtering: {freq_range[0]}-{freq_range[1]} Hz")
@@ -1039,12 +1053,12 @@ def parcellate(
     # source recon is applied in place
     if source_method in ["lcmv", "beamform"]:
         if reference_brain is None:
-            reference_brain = 'mni'
+            reference_brain = "mni"
         log_or_print(f"using reference_brain: {reference_brain}")
 
         # Pick channels
         chantype_data = data.copy().pick(chantypes)
-    
+
         # Load beamforming filter and apply
         filters = beamforming.load_lcmv(outdir, subject)
         bf_data = beamforming.apply_lcmv(chantype_data, filters)
@@ -1071,7 +1085,7 @@ def parcellate(
             method=method,
             working_dir=f"{outdir}/{subject}/parc",
         )
-        
+
     elif source_method.lower() in ["mne", "eloreta", "dspm", "sloreta", "eloreta"]:
 
         os.environ["SUBJECTS_DIR"] = str(outdir)
@@ -1083,8 +1097,8 @@ def parcellate(
         if source_space in ["surf", "surface"]:
 
             if reference_brain is None:
-                reference_brain = 'fsaverage'
-            if reference_brain == 'mri':
+                reference_brain = "fsaverage"
+            if reference_brain == "mri":
                 reference_brain = subject
             log_or_print(f"using reference_brain: {reference_brain}")
 
@@ -1094,7 +1108,7 @@ def parcellate(
                 subject,
                 data=data,
                 method=source_method,
-                lambda2=lambda2, 
+                lambda2=lambda2,
                 pick_ori=pick_ori,
                 inverse_operator=None,
                 morph=reference_brain,
@@ -1118,7 +1132,7 @@ def parcellate(
             mne_data = osle_minimum_norm.apply_inverse_operator_vol(
                 outdir,
                 subject,
-                data, 
+                data,
                 method=source_method,
                 lambda2=lambda2,
                 pick_ori="pca",
@@ -1155,7 +1169,9 @@ def parcellate(
     elif orthogonalisation == "local":
         log_or_print(f"{orthogonalisation} orthogonalisation")
         parcel_data = parcellation.local_orthogonalise(
-            parcel_data, parcellation_file, neighbour_distance,
+            parcel_data,
+            parcellation_file,
+            neighbour_distance,
         )
 
     os.makedirs(f"{outdir}/{subject}/parc", exist_ok=True)
@@ -1182,17 +1198,17 @@ def parcellate(
         freq_range=freq_range,
         parcellation_file=parcellation_file,
         filename=f"{outdir}/{parc_psd_plot}",
-        freesurfer=surface_extraction_method=='freesurfer',
+        freesurfer=surface_extraction_method == "freesurfer",
     )
     parc_corr_plot = f"{subject}/parc/corr.png"
     parcellation.plot_correlation(parcel_data, filename=f"{outdir}/{parc_corr_plot}")
 
-    if surface_extraction_method == 'fsl':
+    if surface_extraction_method == "fsl":
         parc_freqbands_plot = f"{subject}/parc/freqbands.png"
         plot_freqbands(parc_raw, f"{outdir}/{parc_freqbands_plot}")
     else:
         parc_freqbands_plot = None
-    
+
     # Save info for the report
     n_parcels = parcel_data.shape[0]
     n_samples = parcel_data.shape[1]
@@ -1239,9 +1255,9 @@ def beamform_and_parcellate(
     neighbour_distance=None,
     use_bilateral_pairs=False,
     bilateral_tol=5,
-    bilateral_tol_midline=None, 
-    dipole_patches_file=None,  
-    group_patches=False, 
+    bilateral_tol_midline=None,
+    dipole_patches_file=None,
+    group_patches=False,
     reportdir=None,
 ):
     """Wrapper function for beamforming and parcellation.
@@ -1266,7 +1282,7 @@ def beamform_and_parcellate(
     method : str
         Method to use in the parcellation.
     orthogonalisation : str, None
-        Options are 'symmetric', 'local', None. If 'local', neighbour_distance 
+        Options are 'symmetric', 'local', None. If 'local', neighbour_distance
         must be specified.
     freq_range : list, optional
         Lower and upper band to bandpass filter before beamforming.
@@ -1296,7 +1312,7 @@ def beamform_and_parcellate(
         Defaults to 'stim'. Stim channels are always added to parc-raw.fif
         in addition to extra_chans.
     neighbour_distance : float, optional
-        Distance in mm between parcel centers to consider neighbours 
+        Distance in mm between parcel centers to consider neighbours
         for orthogonalisation='local'.
     use_bilateral_pairs : bool, optional
         Whether to use bilateral dipole pairs and a bilateral beamformer.
@@ -1315,7 +1331,7 @@ def beamform_and_parcellate(
         If None, is set to bilateral_tol.
     dipole_patches_file : str, optional
         Path to a 4D nifti binary, mutually exclusive parcellation file, where
-        each volume should be a mask with 0 for the background  
+        each volume should be a mask with 0 for the background
         and 1 for the parcel and each parcel should be non-overlapping.
         Dipoles within a parcel will be considered as a group
         of dipoles that will be beamformed together as a multi-dipole.
@@ -1327,8 +1343,8 @@ def beamform_and_parcellate(
         then the dipole_patches_file needs to be
         accompanied by a text file with the same name but a .xml
         extension that contains a "group" field
-        with a unique integer value shared by patches that are 
-        to be grouped into a multi-dipole (if group=0 then the patch 
+        with a unique integer value shared by patches that are
+        to be grouped into a multi-dipole (if group=0 then the patch
         is assumed to not be in a group).
         (see also parcellation.load_parcellation_description).
         Using a dipole_patches_file only works with volumetric (RHINO)
@@ -1381,7 +1397,7 @@ def beamform_and_parcellate(
         save_filters=True,
         use_bilateral_pairs=use_bilateral_pairs,
         bilateral_tol=bilateral_tol,
-        bilateral_tol_midline=bilateral_tol_midline,    
+        bilateral_tol_midline=bilateral_tol_midline,
         dipole_patches_file=dipole_patches_file,
         group_patches=group_patches,
     )
@@ -1394,14 +1410,16 @@ def beamform_and_parcellate(
     filters_svd_plot = filters_svd_plot.replace(f"{outdir}/", "")
 
     dipole_locations_plot = f"{subject}/dipole_locations_plot.html"
-    beamforming.plot_dipole_locations(outdir, 
-                                    subject, 
-                                    use_bilateral_pairs, 
-                                    bilateral_tol, 
-                                    bilateral_tol_midline, 
-                                    dipole_patches_file,
-                                    group_patches,
-                                    f"{outdir}/{dipole_locations_plot}")
+    beamforming.plot_dipole_locations(
+        outdir,
+        subject,
+        use_bilateral_pairs,
+        bilateral_tol,
+        bilateral_tol_midline,
+        dipole_patches_file,
+        group_patches,
+        f"{outdir}/{dipole_locations_plot}",
+    )
 
     # Apply beamforming
     bf_data = beamforming.apply_lcmv(chantype_data, filters)
@@ -1442,7 +1460,9 @@ def beamform_and_parcellate(
     elif orthogonalisation == "local":
         log_or_print(f"{orthogonalisation} orthogonalisation")
         parcel_data = parcellation.local_orthogonalise(
-            parcel_data, parcellation_file, neighbour_distance,
+            parcel_data,
+            parcellation_file,
+            neighbour_distance,
         )
 
     if epoch_file is None:
@@ -1511,6 +1531,7 @@ def beamform_and_parcellate(
             },
         )
 
+
 def minimum_norm_and_parcellate(
     outdir,
     subject,
@@ -1526,7 +1547,7 @@ def minimum_norm_and_parcellate(
     surface_extraction_method="fsl",
     depth=0.8,
     loose="auto",
-    lambda2=1.0/9,
+    lambda2=1.0 / 9,
     pick_ori="pca",
     freq_range=None,
     spatial_resolution=None,
@@ -1561,7 +1582,7 @@ def minimum_norm_and_parcellate(
     parcellation_file : str
         Path to the parcellation file to use.
     orthogonalisation : str, None
-        Options are 'symmetric', 'local', None. If 'local', neighbour_distance 
+        Options are 'symmetric', 'local', None. If 'local', neighbour_distance
         must be specified.
     surface_extraction_method : str, optional
         Method used for surface extraction. Can be 'freesurfer' or 'fsl'.
@@ -1593,7 +1614,7 @@ def minimum_norm_and_parcellate(
         Defaults to 'stim'. Stim channels are always added to parc-raw.fif
         in addition to extra_chans.
     neighbour_distance : float, optional
-        Distance in mm between parcel centers to consider neighbours 
+        Distance in mm between parcel centers to consider neighbours
         for orthogonalisation='local'.
     reportdir : str, optional
         Path to report directory.
@@ -1603,7 +1624,7 @@ def minimum_norm_and_parcellate(
 
     if isinstance(chantypes, str):
         chantypes = [chantypes]
-    
+
     # Load sensor-level data
     if epoch_file is not None:
         log_or_print("using epoched data")
@@ -1625,13 +1646,13 @@ def minimum_norm_and_parcellate(
     if surface_extraction_method == "freesurfer":
         fs_files = freesurfer_utils.get_freesurfer_filenames(outdir, subject)
         fwd_fname = fs_files["fwd_model"]
-    elif surface_extraction_method == 'fsl':
+    elif surface_extraction_method == "fsl":
         rhino_files = rhino.utils.get_rhino_filenames(outdir, subject)
         fwd_fname = rhino_files["fwd_model"]
 
     mne_files = osle_minimum_norm.get_mne_filenames(outdir, subject)
     inv_op_fname = mne_files["inverse_operator"]
-    
+
     log_or_print("creating MNE inverse operator")
     osle_minimum_norm.create_inverse_operator(
         fwd_fname,
@@ -1648,9 +1669,9 @@ def minimum_norm_and_parcellate(
     # MNE surface parcellation
     if source_space in ["surf", "surface"]:
 
-        if reference_brain is None or reference_brain=='None':
-            reference_brain = 'fsaverage'
-        if reference_brain == 'mri':
+        if reference_brain is None or reference_brain == "None":
+            reference_brain = "fsaverage"
+        if reference_brain == "mri":
             reference_brain = subject
         log_or_print(f"using reference_brain: {reference_brain}")
 
@@ -1660,7 +1681,7 @@ def minimum_norm_and_parcellate(
             subject,
             data=data,
             method=source_method,
-            lambda2=lambda2, 
+            lambda2=lambda2,
             pick_ori=pick_ori,
             inverse_operator=None,
             morph=reference_brain,
@@ -1684,7 +1705,7 @@ def minimum_norm_and_parcellate(
         mne_data = osle_minimum_norm.apply_inverse_operator_vol(
             outdir,
             subject,
-            data, 
+            data,
             method=source_method,
             lambda2=lambda2,
             pick_ori="pca",
@@ -1692,7 +1713,7 @@ def minimum_norm_and_parcellate(
             transform=voxel_trans,
         )
 
-        mne_data_mni, _, coords_mni, _ = beamforming.transform_recon_timeseries( 
+        mne_data_mni, _, coords_mni, _ = beamforming.transform_recon_timeseries(
             subjects_dir=outdir,
             subject=subject,
             recon_timeseries=mne_data,
@@ -1721,7 +1742,9 @@ def minimum_norm_and_parcellate(
     elif orthogonalisation == "local":
         log_or_print(f"{orthogonalisation} orthogonalisation")
         parcel_data = parcellation.local_orthogonalise(
-            parcel_data, parcellation_file, neighbour_distance,
+            parcel_data,
+            parcellation_file,
+            neighbour_distance,
         )
 
     os.makedirs(f"{outdir}/{subject}/parc", exist_ok=True)
@@ -1748,17 +1771,17 @@ def minimum_norm_and_parcellate(
         freq_range=freq_range,
         parcellation_file=parcellation_file,
         filename=f"{outdir}/{parc_psd_plot}",
-        freesurfer=surface_extraction_method=='freesurfer',
+        freesurfer=surface_extraction_method == "freesurfer",
     )
     parc_corr_plot = f"{subject}/parc/corr.png"
     parcellation.plot_correlation(parcel_data, filename=f"{outdir}/{parc_corr_plot}")
 
-    if surface_extraction_method == 'fsl':
+    if surface_extraction_method == "fsl":
         parc_freqbands_plot = f"{subject}/parc/freqbands.png"
         plot_freqbands(parc_raw, f"{outdir}/{parc_freqbands_plot}")
     else:
         parc_freqbands_plot = None
-    
+
     if reportdir is not None:
         # Save info for the report
         n_parcels = parcel_data.shape[0]
@@ -1796,6 +1819,7 @@ def minimum_norm_and_parcellate(
                 "parc_freqbands_plot": parc_freqbands_plot,
             },
         )
+
 
 # ----------------------
 # Sign flipping wrappers
@@ -2044,7 +2068,9 @@ def fix_sign_ambiguity(
         )
 
     # Apply flips to the parcellated data
-    sign_flipping.apply_flips(outdir, subject, flips, epoched=epoched, source_method=source_method)
+    sign_flipping.apply_flips(
+        outdir, subject, flips, epoched=epoched, source_method=source_method
+    )
 
     if reportdir is not None:
         # Save info for the report

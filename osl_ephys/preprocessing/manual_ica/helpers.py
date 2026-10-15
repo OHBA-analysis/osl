@@ -3,6 +3,7 @@
 Nothing in this module touches matplotlib --- those primitives live in
 ``vis.py``. Anything HTML-rendering-related lives in ``html.py``.
 """
+
 from pathlib import Path
 
 import numpy as np
@@ -10,18 +11,21 @@ import mne
 
 # ── annotations -------------------------------------------------------------
 
+
 def _good_mask(raw):
     """Boolean mask of length ``raw.n_times``: True iff sample is NOT inside
     any annotation whose description starts with ``'bad'``
     (case-insensitive)."""
     n = raw.n_times
-    sfreq = raw.info['sfreq']
+    sfreq = raw.info["sfreq"]
     first_time = raw.first_samp / sfreq
     mask = np.ones(n, dtype=bool)
     for ann in raw.annotations:
-        if str(ann['description']).lower().startswith('bad'):
-            i0 = max(0, int(round((ann['onset'] - first_time) * sfreq)))
-            i1 = min(n, int(round((ann['onset'] + ann['duration'] - first_time) * sfreq)))
+        if str(ann["description"]).lower().startswith("bad"):
+            i0 = max(0, int(round((ann["onset"] - first_time) * sfreq)))
+            i1 = min(
+                n, int(round((ann["onset"] + ann["duration"] - first_time) * sfreq))
+            )
             if i1 > i0:
                 mask[i0:i1] = False
     return mask
@@ -29,9 +33,10 @@ def _good_mask(raw):
 
 # ── channel selection ------------------------------------------------------
 
+
 def _safe_chname(name):
     """Filename-safe channel name (alnum or underscore)."""
-    return ''.join(c if c.isalnum() else '_' for c in str(name))
+    return "".join(c if c.isalnum() else "_" for c in str(name))
 
 
 def _pick_supp_channels(raw):
@@ -39,7 +44,7 @@ def _pick_supp_channels(raw):
     types = raw.get_channel_types()
     out = []
     for i, t in enumerate(types):
-        if t in ('ecg', 'eog', 'emg'):
+        if t in ("ecg", "eog", "emg"):
             name = raw.ch_names[i]
             out.append((name, _safe_chname(name)))
     return out
@@ -47,8 +52,8 @@ def _pick_supp_channels(raw):
 
 # ── scoring ----------------------------------------------------------------
 
-def _slice_peak_to_base(psd_row, freqs, harmonic, peak_half_width,
-                        base_half_width):
+
+def _slice_peak_to_base(psd_row, freqs, harmonic, peak_half_width, base_half_width):
     """Peak PSD near one harmonic divided by its local shoulder median.
 
     A maximum is intentional: residual gradient artefact can occupy only one
@@ -69,12 +74,20 @@ def _slice_peak_to_base(psd_row, freqs, harmonic, peak_half_width,
     return peak / base
 
 
-def _compute_slice_ga_scores(src_data, sfreq, slice_interval, tr_interval,
-                             good_mask=None, fmin=1.0, fmax=45.0,
-                             dominance_fmin=5.0,
-                             peak_window=1.0, base_window=5.0,
-                             local_threshold=8.0,
-                             dominance_threshold=1.0):
+def _compute_slice_ga_scores(
+    src_data,
+    sfreq,
+    slice_interval,
+    tr_interval,
+    good_mask=None,
+    fmin=1.0,
+    fmax=45.0,
+    dominance_fmin=5.0,
+    peak_window=1.0,
+    base_window=5.0,
+    local_threshold=8.0,
+    dominance_threshold=1.0,
+):
     """Return complementary local-prominence and global-dominance GA scores.
 
     If ``good_mask`` is given, only those samples are used (bad-annotation
@@ -91,26 +104,24 @@ def _compute_slice_ga_scores(src_data, sfreq, slice_interval, tr_interval,
     but locally broad peak at another harmonic from being combined.
     """
     if slice_interval <= 0 or tr_interval <= 0:
-        raise ValueError('slice_interval and tr_interval must be positive.')
+        raise ValueError("slice_interval and tr_interval must be positive.")
     if peak_window <= 0 or base_window <= peak_window:
-        raise ValueError('base_window must be greater than peak_window > 0.')
+        raise ValueError("base_window must be greater than peak_window > 0.")
     if fmax <= dominance_fmin:
-        raise ValueError('fmax must be greater than dominance_fmin.')
+        raise ValueError("fmax must be greater than dominance_fmin.")
     if local_threshold <= 0 or dominance_threshold <= 0:
-        raise ValueError('GA thresholds must be positive.')
+        raise ValueError("GA thresholds must be positive.")
     slice_freq = 1.0 / slice_interval
     tr_freq = 1.0 / tr_interval
-    analysis_fmax = min(
-        float(fmax), sfreq / 2.0 - max(2.0, base_window * tr_freq)
-    )
+    analysis_fmax = min(float(fmax), sfreq / 2.0 - max(2.0, base_window * tr_freq))
     empty = {
-        'peak_to_local': np.zeros(src_data.shape[0]),
-        'peak_to_elsewhere': np.zeros(src_data.shape[0]),
-        'harmonic_hz': np.zeros(src_data.shape[0]),
-        'harmonics_hz': np.zeros(0),
-        'local_by_harmonic': np.zeros((src_data.shape[0], 0)),
-        'peak_power_by_harmonic': np.zeros((src_data.shape[0], 0)),
-        'base_power_by_harmonic': np.zeros((src_data.shape[0], 0)),
+        "peak_to_local": np.zeros(src_data.shape[0]),
+        "peak_to_elsewhere": np.zeros(src_data.shape[0]),
+        "harmonic_hz": np.zeros(src_data.shape[0]),
+        "harmonics_hz": np.zeros(0),
+        "local_by_harmonic": np.zeros((src_data.shape[0], 0)),
+        "peak_power_by_harmonic": np.zeros((src_data.shape[0], 0)),
+        "base_power_by_harmonic": np.zeros((src_data.shape[0], 0)),
     }
     if analysis_fmax <= slice_freq:
         return empty
@@ -118,7 +129,10 @@ def _compute_slice_ga_scores(src_data, sfreq, slice_interval, tr_interval,
     if data_for_psd.shape[1] < 2:
         return empty
     psds, freqs = mne.time_frequency.psd_array_welch(
-        data_for_psd, sfreq=sfreq, fmin=fmin, fmax=analysis_fmax,
+        data_for_psd,
+        sfreq=sfreq,
+        fmin=fmin,
+        fmax=analysis_fmax,
         n_fft=min(int(round(sfreq * 20)), data_for_psd.shape[1]),
         verbose=False,
     )
@@ -142,10 +156,7 @@ def _compute_slice_ga_scores(src_data, sfreq, slice_interval, tr_interval,
         for harmonic_index, harmonic in enumerate(harmonics):
             distance = np.abs(freqs - harmonic)
             peak_mask = np.abs(freqs - harmonic) <= peak_half_width
-            base_mask = (
-                (distance > peak_half_width)
-                & (distance <= base_half_width)
-            )
+            base_mask = (distance > peak_half_width) & (distance <= base_half_width)
             harmonic_peak = float(np.max(psd_row[peak_mask]))
             harmonic_base = float(np.median(psd_row[base_mask]))
             peak_power_by_harmonic[ic, harmonic_index] = harmonic_peak
@@ -155,9 +166,7 @@ def _compute_slice_ga_scores(src_data, sfreq, slice_interval, tr_interval,
                     np.inf if harmonic_peak > 0 else 0.0
                 )
             else:
-                local_by_harmonic[ic, harmonic_index] = (
-                    harmonic_peak / harmonic_base
-                )
+                local_by_harmonic[ic, harmonic_index] = harmonic_peak / harmonic_base
             if elsewhere_peak <= 0:
                 dominance_by_harmonic[ic, harmonic_index] = (
                     np.inf if harmonic_peak > 0 else 0.0
@@ -177,24 +186,22 @@ def _compute_slice_ga_scores(src_data, sfreq, slice_interval, tr_interval,
     best_harmonic = np.argmax(joint_margin, axis=1)
     component_index = np.arange(src_data.shape[0])
     return {
-        'peak_to_local': local_by_harmonic[component_index, best_harmonic],
-        'peak_to_elsewhere': dominance_by_harmonic[
-            component_index, best_harmonic
-        ],
-        'harmonic_hz': harmonics[best_harmonic],
+        "peak_to_local": local_by_harmonic[component_index, best_harmonic],
+        "peak_to_elsewhere": dominance_by_harmonic[component_index, best_harmonic],
+        "harmonic_hz": harmonics[best_harmonic],
         # The matrices below retain the per-harmonic information needed by
         # optional downstream gates. The three historical one-dimensional
         # scores above remain unchanged.
-        'harmonics_hz': harmonics,
-        'local_by_harmonic': local_by_harmonic,
-        'peak_power_by_harmonic': peak_power_by_harmonic,
-        'base_power_by_harmonic': base_power_by_harmonic,
+        "harmonics_hz": harmonics,
+        "local_by_harmonic": local_by_harmonic,
+        "peak_power_by_harmonic": peak_power_by_harmonic,
+        "base_power_by_harmonic": base_power_by_harmonic,
     }
 
 
-def _compute_slice_contribution_scores(scores, component_maps, excluded=(),
-                                       local_threshold=4.0,
-                                       fraction_threshold=0.30):
+def _compute_slice_contribution_scores(
+    scores, component_maps, excluded=(), local_threshold=4.0, fraction_threshold=0.30
+):
     """Score each IC's share of the remaining sensor-level harmonic excess.
 
     For each component and slice harmonic, the scale-invariant contribution is
@@ -206,31 +213,29 @@ def _compute_slice_contribution_scores(scores, component_maps, excluded=(),
     local-prominence/global-dominance gate.
     """
     if local_threshold <= 0:
-        raise ValueError('contribution local_threshold must be positive.')
+        raise ValueError("contribution local_threshold must be positive.")
     if not 0 < fraction_threshold <= 1:
         raise ValueError(
-            'contribution fraction_threshold must be in the interval (0, 1].'
+            "contribution fraction_threshold must be in the interval (0, 1]."
         )
 
-    local = np.asarray(scores['local_by_harmonic'], dtype=float)
-    peak = np.asarray(scores['peak_power_by_harmonic'], dtype=float)
-    base = np.asarray(scores['base_power_by_harmonic'], dtype=float)
-    harmonics = np.asarray(scores['harmonics_hz'], dtype=float)
+    local = np.asarray(scores["local_by_harmonic"], dtype=float)
+    peak = np.asarray(scores["peak_power_by_harmonic"], dtype=float)
+    base = np.asarray(scores["base_power_by_harmonic"], dtype=float)
+    harmonics = np.asarray(scores["harmonics_hz"], dtype=float)
     maps = np.asarray(component_maps, dtype=float)
     if local.shape != peak.shape or local.shape != base.shape:
-        raise ValueError('slice score matrices must have identical shapes.')
+        raise ValueError("slice score matrices must have identical shapes.")
     if maps.ndim != 2 or maps.shape[1] != local.shape[0]:
-        raise ValueError(
-            'component_maps must have shape (n_channels, n_components).'
-        )
+        raise ValueError("component_maps must have shape (n_channels, n_components).")
 
-    map_power = np.mean(maps ** 2, axis=0)
+    map_power = np.mean(maps**2, axis=0)
     excess = np.maximum(peak - base, 0.0) * map_power[:, np.newaxis]
     remaining = np.ones(local.shape[0], dtype=bool)
     excluded = np.asarray(list(excluded), dtype=int)
     if excluded.size:
         if np.any(excluded < 0) or np.any(excluded >= local.shape[0]):
-            raise ValueError('excluded contains an out-of-range ICA index.')
+            raise ValueError("excluded contains an out-of-range ICA index.")
         remaining[excluded] = False
 
     denominator = np.sum(excess[remaining], axis=0)
@@ -251,8 +256,10 @@ def _compute_slice_contribution_scores(scores, component_maps, excluded=(),
         fractions,
         -1.0,
     )
-    best = np.argmax(eligible_fraction, axis=1) if fractions.shape[1] else np.zeros(
-        local.shape[0], dtype=int
+    best = (
+        np.argmax(eligible_fraction, axis=1)
+        if fractions.shape[1]
+        else np.zeros(local.shape[0], dtype=int)
     )
     components = np.arange(local.shape[0])
     if fractions.shape[1]:
@@ -264,18 +271,26 @@ def _compute_slice_contribution_scores(scores, component_maps, excluded=(),
         best_local = np.zeros(local.shape[0])
         best_harmonic = np.zeros(local.shape[0])
     return {
-        'fraction': best_fraction,
-        'local': best_local,
-        'harmonic_hz': best_harmonic,
-        'passes': np.any(passes, axis=1),
-        'fraction_by_harmonic': fractions,
+        "fraction": best_fraction,
+        "local": best_local,
+        "harmonic_hz": best_harmonic,
+        "passes": np.any(passes, axis=1),
+        "fraction_by_harmonic": fractions,
     }
 
 
-def _build_scores_list(n_components, ecg_scores, ecg_idx_auto, ecg_threshold,
-                       eog_scores_list, eog_idx_auto, eog_threshold,
-                       slice_scores=None, ga_local_threshold=8.0,
-                       ga_dominance_threshold=1.0):
+def _build_scores_list(
+    n_components,
+    ecg_scores,
+    ecg_idx_auto,
+    ecg_threshold,
+    eog_scores_list,
+    eog_idx_auto,
+    eog_threshold,
+    slice_scores=None,
+    ga_local_threshold=8.0,
+    ga_dominance_threshold=1.0,
+):
     """Build per-IC scores dicts for embedding in the review HTML.
 
     Each dict has at most:
@@ -293,35 +308,37 @@ def _build_scores_list(n_components, ecg_scores, ecg_idx_auto, ecg_threshold,
         entry = {}
         if ecg_scores is not None:
             v = float(ecg_scores[i])
-            entry['ecg'] = round(v, 4)
-            entry['ecg_thr'] = ecg_threshold
-            entry['ecg_flag'] = abs(v) >= ecg_threshold
+            entry["ecg"] = round(v, 4)
+            entry["ecg_thr"] = ecg_threshold
+            entry["ecg_flag"] = abs(v) >= ecg_threshold
         eog_items = []
-        for ch_name, ch_scores in (eog_scores_list or []):
+        for ch_name, ch_scores in eog_scores_list or []:
             v = float(ch_scores[i])
-            eog_items.append({
-                'ch':   ch_name,
-                'val':  round(v, 4),
-                'thr':  eog_threshold,
-                'flag': abs(v) > eog_threshold,
-            })
-        entry['eog'] = eog_items
+            eog_items.append(
+                {
+                    "ch": ch_name,
+                    "val": round(v, 4),
+                    "thr": eog_threshold,
+                    "flag": abs(v) > eog_threshold,
+                }
+            )
+        entry["eog"] = eog_items
         if slice_scores is not None:
-            local = float(slice_scores['peak_to_local'][i])
-            dominance = float(slice_scores['peak_to_elsewhere'][i])
-            entry['ga_local'] = round(local, 3)
-            entry['ga_local_thr'] = ga_local_threshold
-            entry['ga_dominance'] = round(dominance, 3)
-            entry['ga_dominance_thr'] = ga_dominance_threshold
-            entry['ga_flag'] = (
-                local > ga_local_threshold
-                and dominance > ga_dominance_threshold
+            local = float(slice_scores["peak_to_local"][i])
+            dominance = float(slice_scores["peak_to_elsewhere"][i])
+            entry["ga_local"] = round(local, 3)
+            entry["ga_local_thr"] = ga_local_threshold
+            entry["ga_dominance"] = round(dominance, 3)
+            entry["ga_dominance_thr"] = ga_dominance_threshold
+            entry["ga_flag"] = (
+                local > ga_local_threshold and dominance > ga_dominance_threshold
             )
         out.append(entry)
     return out
 
 
 # ── dataset/userargs resolution -------------------------------------------
+
 
 def _resolve_subject_and_outdir(dataset, userargs):
     """Pick (subject, ica_outdir) from ``dataset['subject']`` and userargs.
@@ -342,7 +359,7 @@ def _resolve_subject_and_outdir(dataset, userargs):
       2. ``dataset['target_pth'] / 'ica'``  (semp convention)
       3. ``Path.cwd() / 'manual_ica_review'``  (last-resort default)
     """
-    subject = dataset.get('subject')
+    subject = dataset.get("subject")
     if subject is None:
         raise KeyError(
             "manual_ica needs dataset['subject'] to be set by an upstream "
@@ -352,11 +369,11 @@ def _resolve_subject_and_outdir(dataset, userargs):
             "subject's review folder."
         )
 
-    if userargs.get('outdir') is not None:
-        ica_root = Path(userargs['outdir'])
-    elif dataset.get('target_pth') is not None:
-        ica_root = Path(dataset['target_pth']) / 'ica'
+    if userargs.get("outdir") is not None:
+        ica_root = Path(userargs["outdir"])
+    elif dataset.get("target_pth") is not None:
+        ica_root = Path(dataset["target_pth"]) / "ica"
     else:
-        ica_root = Path.cwd() / 'manual_ica_review'
+        ica_root = Path.cwd() / "manual_ica_review"
 
     return subject, ica_root / subject

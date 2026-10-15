@@ -23,7 +23,6 @@ import mne
 import numpy as np
 from scipy.signal import welch
 
-
 # ---------------------------------------------------------------------------
 # Shared plotting configuration
 # ---------------------------------------------------------------------------
@@ -31,12 +30,36 @@ from scipy.signal import welch
 # MNE accepts these channel-type names in ``pick`` and ``create_info``.  The
 # set is used only to recognise an ndarray's requested channel type; Raw input
 # keeps its channel metadata unchanged.
-ALL_CHANNEL_LIST = frozenset({
-    "grad", "mag", "eeg", "csd", "stim", "eog", "emg", "ecg",
-    "ref_meg", "resp", "exci", "ias", "syst", "misc", "seeg", "dbs",
-    "bio", "chpi", "dipole", "gof", "ecog", "hbo", "hbr", "temperature",
-    "gsr", "eyetrack",
-})
+ALL_CHANNEL_LIST = frozenset(
+    {
+        "grad",
+        "mag",
+        "eeg",
+        "csd",
+        "stim",
+        "eog",
+        "emg",
+        "ecg",
+        "ref_meg",
+        "resp",
+        "exci",
+        "ias",
+        "syst",
+        "misc",
+        "seeg",
+        "dbs",
+        "bio",
+        "chpi",
+        "dipole",
+        "gof",
+        "ecog",
+        "hbo",
+        "hbr",
+        "temperature",
+        "gsr",
+        "eyetrack",
+    }
+)
 
 
 # The same small-font style is used by the public plots and by ``ckpt_report``.
@@ -57,6 +80,7 @@ _DEFAULT_EVENT_COLORS = ("r", "g", "m", "c", "y", "k", "#7f7f7f")
 # ---------------------------------------------------------------------------
 # Generic figure and input helpers
 # ---------------------------------------------------------------------------
+
 
 def _unpack_plot(plot_out):
     """Return ``(figure, axes)`` for both MNE Spectrum plot return styles."""
@@ -119,9 +143,7 @@ def _prepare_psd_input(eeg, fs, picks):
     # Step 2: validate and wrap array-like input with minimal EEG metadata.
     data = np.asarray(eeg)
     if data.ndim != 2:
-        raise ValueError(
-            "Array input to psd_plot must have shape (channels, samples)."
-        )
+        raise ValueError("Array input to psd_plot must have shape (channels, samples).")
     if fs is None:
         raise ValueError("fs must be provided when eeg is not an MNE Raw object.")
 
@@ -209,9 +231,7 @@ def _compute_psd_with_retry(raw, fmin, fmax, n_fft, picks, dB, fs, debug=False):
                 raise
             n_fft = max(16, n_fft // 2)
             if debug:
-                print(
-                    "PSD retry with {:.6g} Hz/bin.".format(float(fs) / n_fft)
-                )
+                print("PSD retry with {:.6g} Hz/bin.".format(float(fs) / n_fft))
 
 
 def _format_psd_axes(fig, axes, dB):
@@ -270,6 +290,7 @@ def _save_or_show_psd(fig, save_pth):
 # PSD plotting
 # ---------------------------------------------------------------------------
 
+
 def psd_plot(
     eeg,
     name=None,
@@ -325,11 +346,7 @@ def psd_plot(
     # short spans that trigger repeated nperseg warnings.
     raw, n_removed = _make_finite_contiguous_raw(raw)
     if debug and n_removed:
-        print(
-            "PSD: removed and concatenated {} non-finite samples.".format(
-                n_removed
-            )
-        )
+        print("PSD: removed and concatenated {} non-finite samples.".format(n_removed))
 
     if raw.n_times < 2:
         raise ValueError("PSD calculation needs at least two finite samples.")
@@ -346,9 +363,7 @@ def psd_plot(
 
     # Step 4: calculate and render the spectrum while restoring MNE's global
     # log level even if MNE raises an exception.
-    old_level = mne.set_log_level(
-        "INFO" if debug else "ERROR", return_old_level=True
-    )
+    old_level = mne.set_log_level("INFO" if debug else "ERROR", return_old_level=True)
     try:
         with matplotlib.rc_context(rc):
             spectrum, fig, axes = _compute_psd_with_retry(
@@ -374,6 +389,7 @@ def psd_plot(
 # ---------------------------------------------------------------------------
 # Time-domain plotting helpers
 # ---------------------------------------------------------------------------
+
 
 def _amplitude_yticks(seg, ylim=None, candidate_tick_counts=(7, 9, 11)):
     """Return readable, symmetric amplitude ticks for a signal segment.
@@ -413,12 +429,12 @@ def _amplitude_yticks(seg, ylim=None, candidate_tick_counts=(7, 9, 11)):
         exponent = 0
     else:
         exponent = int(np.floor(np.log10(maximum)))
-        while maximum / (10 ** exponent) < 1:
+        while maximum / (10**exponent) < 1:
             exponent -= 1
-        while maximum / (10 ** exponent) >= 10:
+        while maximum / (10**exponent) >= 10:
             exponent += 1
 
-    factor = 10 ** exponent
+    factor = 10**exponent
     raw_min_scaled = raw_min / factor
     raw_max_scaled = raw_max / factor
     centre_scaled = round(0.5 * (raw_min_scaled + raw_max_scaled), 2)
@@ -456,7 +472,9 @@ def _amplitude_yticks(seg, ylim=None, candidate_tick_counts=(7, 9, 11)):
 
     # Step 4: use the tightest valid candidate, or a conservative seven-tick
     # fallback when the signal spans an unusually large scaled range.
-    chosen = min(candidates, key=lambda candidate: candidate["span"]) if candidates else None
+    chosen = (
+        min(candidates, key=lambda candidate: candidate["span"]) if candidates else None
+    )
     if chosen is None:
         n_ticks = 7
         step = max(
@@ -475,9 +493,7 @@ def _amplitude_yticks(seg, ylim=None, candidate_tick_counts=(7, 9, 11)):
 
     # Step 5: return raw-unit tick positions and scaled labels.
     indexes = np.arange(chosen["n"])
-    display_ticks = np.round(
-        chosen["tmin"] + indexes * chosen["step"], 2
-    )
+    display_ticks = np.round(chosen["tmin"] + indexes * chosen["step"], 2)
     tick_values = display_ticks * factor
     tick_labels = ["{:.2f}".format(value) for value in display_ticks]
     return tick_values, tick_labels, chosen["ylim"], exponent
@@ -516,9 +532,7 @@ def _channel_index(channel, channel_names, n_channels):
     index = int(channel)
     if index < 0 or index >= n_channels:
         raise IndexError(
-            "Channel index {} is outside the range [0, {}).".format(
-                index, n_channels
-            )
+            "Channel index {} is outside the range [0, {}).".format(index, n_channels)
         )
     return index
 
@@ -531,9 +545,7 @@ def _plot_window(start, length, n_samples):
         raise ValueError("start must be non-negative.")
     if start >= n_samples:
         raise ValueError(
-            "start={} is outside the data with {} samples.".format(
-                start, n_samples
-            )
+            "start={} is outside the data with {} samples.".format(start, n_samples)
         )
     if length is None:
         length = n_samples - start
@@ -647,9 +659,7 @@ def _draw_event_raster(
     for row, (event_array, selected_id, label) in enumerate(
         zip(event_list, id_list, name_list)
     ):
-        samples = _event_samples(
-            event_array, selected_id, first_samp, start, stop
-        )
+        samples = _event_samples(event_array, selected_id, first_samp, start, stop)
         if not samples:
             continue
         y_row = y0 - row_gap - row * row_step
@@ -692,6 +702,7 @@ def _save_or_show(fig, save_pth, **save_kwargs):
 # ---------------------------------------------------------------------------
 # Time-domain plots
 # ---------------------------------------------------------------------------
+
 
 def temp_plot(
     eeg,
@@ -797,8 +808,8 @@ def temp_plot_diff(
     n_samples = min(data1.shape[1] - offset1, data2.shape[1] - offset2)
     if n_samples <= 0:
         raise ValueError("eeg and eeg2 have no overlapping samples.")
-    data1 = data1[:, offset1:offset1 + n_samples]
-    data2 = data2[:, offset2:offset2 + n_samples]
+    data1 = data1[:, offset1 : offset1 + n_samples]
+    data2 = data2[:, offset2 : offset2 + n_samples]
     start, stop = _plot_window(start, length, n_samples)
 
     # Step 3: draw either both traces or their aligned difference.
@@ -816,9 +827,7 @@ def temp_plot_diff(
 
     # Step 4: mark selected events using the overlap's sample origin.
     if events is not None and event_id is not None:
-        samples = _event_samples(
-            events, event_id, overlap_start, start, stop
-        )
+        samples = _event_samples(events, event_id, overlap_start, start, stop)
         for index, sample in enumerate(samples):
             ax.axvline(
                 sample / fs1 + event_onset,
@@ -834,7 +843,10 @@ def temp_plot_diff(
 # PCA component plots
 # ---------------------------------------------------------------------------
 
-def _plot_pc_panel(component_data, channel_name, title_prefix, fs, n_fft, psd_lim, output_path, figsize):
+
+def _plot_pc_panel(
+    component_data, channel_name, title_prefix, fs, n_fft, psd_lim, output_path, figsize
+):
     """Write one component's time/PSD panel for one channel and window."""
 
     n_components = component_data.shape[-1]
@@ -849,9 +861,7 @@ def _plot_pc_panel(component_data, channel_name, title_prefix, fs, n_fft, psd_li
             signal,
             label="PC{}".format(component),
         )
-        axes[component, 0].set_title(
-            "PC{} for {}".format(component, title_prefix)
-        )
+        axes[component, 0].set_title("PC{} for {}".format(component, title_prefix))
         axes[component, 0].set_xlim(x[0], x[-1])
         axes[component, 0].legend()
 
@@ -866,9 +876,7 @@ def _plot_pc_panel(component_data, channel_name, title_prefix, fs, n_fft, psd_li
                 nperseg=min(n_fft, signal_for_psd.size),
             )
             axes[component, 1].plot(freqs, power, label="PSD")
-        axes[component, 1].set_title(
-            "PC{} PSD for {}".format(component, title_prefix)
-        )
+        axes[component, 1].set_title("PC{} PSD for {}".format(component, title_prefix))
         axes[component, 1].set_xlim(psd_lim)
         axes[component, 1].legend()
 
@@ -923,8 +931,7 @@ def pcs_plot(
         )
 
     requested_channels = [
-        name for name in ch_list
-        if name not in bad_channels and name in ch_names
+        name for name in ch_list if name not in bad_channels and name in ch_names
     ]
     if not requested_channels:
         raise ValueError("ch_list contains no usable channel names.")
@@ -952,15 +959,11 @@ def pcs_plot(
             else:
                 if int(window) < 0 or int(window) >= pcs.shape[0]:
                     raise IndexError(
-                        "PCA window {} is outside the available range.".format(
-                            window
-                        )
+                        "PCA window {} is outside the available range.".format(window)
                     )
                 component_data = pcs[int(window), channel_index]
                 output_name = "pc_{}_win_{}.png".format(channel_name, window)
-                title_prefix = "window {} of channel {}".format(
-                    window, channel_name
-                )
+                title_prefix = "window {} of channel {}".format(window, channel_name)
             _plot_pc_panel(
                 component_data,
                 channel_name,

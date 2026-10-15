@@ -1,6 +1,4 @@
-"""Functions for fixing the dipole sign ambiguity of beamformed data.
-
-"""
+"""Functions for fixing the dipole sign ambiguity of beamformed data."""
 
 # Authors: Chetan Gohil <chetan.gohil@psych.ox.ac.uk>
 #          SungJun Cho <sungjun.cho@ndcn.ox.ac.uk>
@@ -117,7 +115,9 @@ def _solve_sdp_mixing(W, rank=None, n_restarts=5, max_iter=1000, tol=1e-8, rng=N
         for _ in range(int(max_iter)):
             max_change = 0.0
             for i in range(n):
-                g = W[i] @ V  # sum_j W[i, j] v_j (the diagonal term vanishes as W[i, i] = 0)
+                g = (
+                    W[i] @ V
+                )  # sum_j W[i, j] v_j (the diagonal term vanishes as W[i, i] = 0)
                 g_norm = np.linalg.norm(g)
                 if g_norm > eps:
                     new_v = g / g_norm
@@ -248,12 +248,14 @@ class _FlipMetricEvaluator:
         self.N = float(len(rows))  # number of scored entries
         self.tmpl_mean = np.mean(tmpl_vals)  # mean template entries
         self.tmpl_std = np.std(tmpl_vals)  # standard deviation of template entries
-        self.cov_mean_sq = float((cov_vals ** 2).sum() / self.N)  # mean squared subject entries
+        self.cov_mean_sq = float(
+            (cov_vals**2).sum() / self.N
+        )  # mean squared subject entries
 
     def correlation_from_PQ(self, P, Q):
         """Computes Pearson correlation between the flipped subject covariance and the
         template covariance (over the scored entries).
-        
+
         This function gives exact correlation given the two quadratic forms ``P`` and ``Q``.
         ``P`` and ``Q`` may each be a scalar or an array (the best-improvement sweep scores
         every single-channel flip at once). A (near-)constant flipped covariance gives a zero
@@ -282,8 +284,8 @@ def _greedy_refine(
     Starting from ``flips``, we flip the sign of channels whenever doing so increases the
     covariance correlation metric. Unlike the affinity-based solvers, this optimises the
     exact evaluation metric, so it recovers the (centering and normalisation) terms those
-    solvers approximate away. Each sweep costs ``O(n_channels)`` rather than 
-    ``O(n_channels * D**2)``, as it never touches the full covariance while scoring the 
+    solvers approximate away. Each sweep costs ``O(n_channels)`` rather than
+    ``O(n_channels * D**2)``, as it never touches the full covariance while scoring the
     identical exact metric.
 
     Two strategies are available:
@@ -432,7 +434,9 @@ def find_flips(
 
     # Validation
     if max_flips > n_channels:
-        raise ValueError(f"max_flips ({max_flips}) must be less than the number of channels ({n_channels})")
+        raise ValueError(
+            f"max_flips ({max_flips}) must be less than the number of channels ({n_channels})"
+        )
 
     # Find the best channels to flip
     best_flips = np.ones(n_channels)
@@ -454,7 +458,9 @@ def find_flips(
         for _ in iterator:
             new_flips = randomly_flip(flips, max_flips, rng=rng)
             new_cov = apply_flips_to_covariance(cov, new_flips, n_embeddings)
-            new_metric = covariance_matrix_correlation(new_cov, template_cov, n_embeddings)
+            new_metric = covariance_matrix_correlation(
+                new_cov, template_cov, n_embeddings
+            )
             if new_metric > metric:
                 # We've found an improved solution, let's save it
                 flips = new_flips
@@ -531,7 +537,9 @@ def find_flips_spectral(
         )
     else:
         new_cov = apply_flips_to_covariance(cov, flips, n_embeddings)
-        metric_after = covariance_matrix_correlation(new_cov, template_cov, n_embeddings)
+        metric_after = covariance_matrix_correlation(
+            new_cov, template_cov, n_embeddings
+        )
     metrics = np.array([metric_before, metric_after], dtype=float)
 
     log_or_print(f"metric before: {metric_before}, after: {metric_after}")
@@ -639,6 +647,7 @@ def find_flips_belief_propagation(
         P = 0.5 * f @ (obj.M @ f)
         Q = 0.5 * f @ (obj.S @ f)
         return float(obj.correlation_from_PQ(P, Q))
+
     # NOTE: `correlation_from_PQ` reproduces `covariance_matrix_correlation` to machine
     # precision but costs only O(n_channels**2) per iteration instead of rebuilding the
     # full covariance.
@@ -767,7 +776,12 @@ def find_flips_sdp(
 
     # Solve the SDP relaxation and round the continuous solution back to +/-1
     _, V = _solve_sdp_mixing(
-        W, rank=sdp_rank, n_restarts=sdp_n_restarts, max_iter=sdp_max_iter, tol=sdp_tol, rng=rng
+        W,
+        rank=sdp_rank,
+        n_restarts=sdp_n_restarts,
+        max_iter=sdp_max_iter,
+        tol=sdp_tol,
+        rng=rng,
     )
     flips = _gw_round(W, V, n_samples=gw_samples, rng=rng)
 
@@ -779,7 +793,9 @@ def find_flips_sdp(
         )
     else:
         new_cov = apply_flips_to_covariance(cov, flips, n_embeddings)
-        metric_after = covariance_matrix_correlation(new_cov, template_cov, n_embeddings)
+        metric_after = covariance_matrix_correlation(
+            new_cov, template_cov, n_embeddings
+        )
     metrics = np.array([metric_before, metric_after], dtype=float)
 
     log_or_print(f"metric before: {metric_before}, after: {metric_after}")
@@ -787,7 +803,9 @@ def find_flips_sdp(
     return flips, metrics
 
 
-def load_covariances(parc_files, n_embeddings=1, standardize=True, loader=None, use_tqdm=True):
+def load_covariances(
+    parc_files, n_embeddings=1, standardize=True, loader=None, use_tqdm=True
+):
     """Loads data and returns its covariance matrix.
 
     Parameters
@@ -821,16 +839,22 @@ def load_covariances(parc_files, n_embeddings=1, standardize=True, loader=None, 
         elif "raw.fif" in parc_files[i]:
             # We assume this is a parc-raw.fif file created in beamform_and_parcellated
             raw = mne.io.read_raw_fif(parc_files[i], verbose=False)
-            x = raw.get_data(picks=_get_parc_chans(raw), reject_by_annotation="omit", verbose=False)
+            x = raw.get_data(
+                picks=_get_parc_chans(raw), reject_by_annotation="omit", verbose=False
+            )
             x = x.T  # (channels, time) -> (time, channels)
         elif "epo.fif" in parc_files[i]:
             # We assume this is a parc-epo.fif file created in beamform_and_parcellated
             epochs = mne.read_epochs(parc_files[i], verbose=False)
-            x = epochs.get_data(picks=_get_parc_chans(epochs))  # (epochs, channels, time)
+            x = epochs.get_data(
+                picks=_get_parc_chans(epochs)
+            )  # (epochs, channels, time)
             x = np.swapaxes(x, 1, 2)
             x = x.reshape(-1, x.shape[-1])  # (time, channels)
         else:
-            raise ValueError("Don't know how to load the parcellated data. Please pass loader.")
+            raise ValueError(
+                "Don't know how to load the parcellated data. Please pass loader."
+            )
 
         # Prepare
         x = time_embed(x, n_embeddings)
@@ -867,7 +891,9 @@ def find_template_subject(covs, diag_offset=0):
     metric = np.zeros([n_subjects, n_subjects])
     for i in trange(n_subjects, desc="Comparing subjects"):
         for j in range(i + 1, n_subjects):
-            metric[i, j] = covariance_matrix_correlation(covs[i], covs[j], diag_offset, mode="abs")
+            metric[i, j] = covariance_matrix_correlation(
+                covs[i], covs[j], diag_offset, mode="abs"
+            )
             metric[j, i] = metric[i, j]
 
     # Get the median subject
@@ -936,7 +962,9 @@ def randomly_flip(flips, max_flips, rng=None):
 
     # Select the channels to flip
     n_channels = flips.shape[0]
-    random_channels_to_flip = rng.choice(n_channels, size=n_channels_to_flip, replace=False)
+    random_channels_to_flip = rng.choice(
+        n_channels, size=n_channels_to_flip, replace=False
+    )
     new_flips = np.copy(flips)
     new_flips[random_channels_to_flip] *= -1
 
@@ -996,16 +1024,22 @@ def apply_flips(outdir, subject, flips, epoched=False, source_method="lcmv"):
         def flip(data):
             return data * flips[np.newaxis, :, np.newaxis]
 
-        sflip_epochs.apply_function(flip, picks=_get_parc_chans(epochs), channel_wise=False)
+        sflip_epochs.apply_function(
+            flip, picks=_get_parc_chans(epochs), channel_wise=False
+        )
 
         # Save
-        outfile = op.join(outdir, str(subject), str(subject) + f"_sflip_{source_method}-parc-epo.fif")
+        outfile = op.join(
+            outdir, str(subject), str(subject) + f"_sflip_{source_method}-parc-epo.fif"
+        )
         log_or_print(f"saving: {outfile}")
         sflip_epochs.save(outfile, overwrite=True)
 
     else:
         # Load parcellated data
-        parc_file = op.join(outdir, str(subject), "parc", f"{source_method}-parc-raw.fif")
+        parc_file = op.join(
+            outdir, str(subject), "parc", f"{source_method}-parc-raw.fif"
+        )
         raw = mne.io.read_raw_fif(parc_file, verbose=False)
         sflip_raw = raw.copy()
         sflip_raw.load_data()
@@ -1017,7 +1051,9 @@ def apply_flips(outdir, subject, flips, epoched=False, source_method="lcmv"):
         sflip_raw.apply_function(flip, picks=_get_parc_chans(raw), channel_wise=False)
 
         # Save
-        outfile = op.join(outdir, str(subject), str(subject) + f"_sflip_{source_method}-parc-raw.fif")
+        outfile = op.join(
+            outdir, str(subject), str(subject) + f"_sflip_{source_method}-parc-raw.fif"
+        )
         log_or_print(f"saving: {outfile}")
         sflip_raw.save(outfile, overwrite=True)
 
@@ -1042,7 +1078,11 @@ def time_embed(x, n_embeddings):
 
     te_shape = (x.shape[0] - (n_embeddings - 1), x.shape[1] * n_embeddings)
 
-    return np.lib.stride_tricks.sliding_window_view(x=x, window_shape=te_shape[0], axis=0).T[..., ::-1].reshape(te_shape)
+    return (
+        np.lib.stride_tricks.sliding_window_view(x=x, window_shape=te_shape[0], axis=0)
+        .T[..., ::-1]
+        .reshape(te_shape)
+    )
 
 
 def std_data(x):

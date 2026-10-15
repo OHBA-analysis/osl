@@ -19,6 +19,7 @@ POST endpoints (per-subject):
     /<subject>/save_bads   -> writes /<subject>/bads.txt
 All other requests are served as static files (same as python -m http.server).
 """
+
 import argparse
 import http.server
 import os
@@ -28,10 +29,9 @@ from functools import partial
 from pathlib import Path
 from urllib.parse import unquote, urlsplit
 
-
 _FILE_FOR_ENDPOINT = {
-    'save_label': 'label.txt',
-    'save_bads':  'bads.txt',
+    "save_label": "label.txt",
+    "save_bads": "bads.txt",
 }
 
 # label.txt and bads.txt are normally only a few KiB. Keep a generous bound so
@@ -48,7 +48,7 @@ def _safe_relpath(server_root, requested):
     Defends against ``..`` segments, absolute paths, and symlink escapes.
     """
     server_root = Path(server_root).resolve()
-    candidate = (server_root / requested.lstrip('/')).resolve()
+    candidate = (server_root / requested.lstrip("/")).resolve()
     try:
         candidate.relative_to(server_root)
     except ValueError:
@@ -59,44 +59,44 @@ def _safe_relpath(server_root, requested):
 class ReviewHandler(http.server.SimpleHTTPRequestHandler):
     def _send_text(self, status, message):
         """Send a complete response that proxies can delimit reliably."""
-        body = message.encode('utf-8')
+        body = message.encode("utf-8")
         self.send_response(status)
-        self.send_header('Content-Type', 'text/plain; charset=utf-8')
-        self.send_header('Content-Length', str(len(body)))
-        self.send_header('Cache-Control', 'no-store')
+        self.send_header("Content-Type", "text/plain; charset=utf-8")
+        self.send_header("Content-Length", str(len(body)))
+        self.send_header("Cache-Control", "no-store")
         self.end_headers()
         self.wfile.write(body)
 
     def do_POST(self):
         request_path = unquote(urlsplit(self.path).path)
-        endpoint = request_path.rsplit('/', 1)[-1]
+        endpoint = request_path.rsplit("/", 1)[-1]
         out_name = _FILE_FOR_ENDPOINT.get(endpoint)
         if out_name is None:
-            self._send_text(405, 'method not allowed')
+            self._send_text(405, "method not allowed")
             return
 
         # Strip the trailing endpoint name --- the rest is the subject dir.
-        rel_dir = os.path.dirname(request_path.lstrip('/'))
+        rel_dir = os.path.dirname(request_path.lstrip("/"))
         target_dir = _safe_relpath(self.server.review_root, rel_dir)
         if target_dir is None:
-            self._send_text(403, 'forbidden: path escapes server root')
-            print(f'[review] REFUSED escape attempt: {self.path!r}')
+            self._send_text(403, "forbidden: path escapes server root")
+            print(f"[review] REFUSED escape attempt: {self.path!r}")
             return
         if not target_dir.is_dir():
-            self._send_text(404, 'review subject directory not found')
+            self._send_text(404, "review subject directory not found")
             return
 
-        length_header = self.headers.get('Content-Length')
+        length_header = self.headers.get("Content-Length")
         if length_header is None:
-            self._send_text(411, 'Content-Length is required')
+            self._send_text(411, "Content-Length is required")
             return
         try:
             length = int(length_header)
         except ValueError:
-            self._send_text(400, 'invalid Content-Length')
+            self._send_text(400, "invalid Content-Length")
             return
         if length < 0:
-            self._send_text(400, 'invalid Content-Length')
+            self._send_text(400, "invalid Content-Length")
             return
         if length > MAX_POST_BYTES:
             # Read what the client is still sending so it can receive the
@@ -108,12 +108,12 @@ class ReviewHandler(http.server.SimpleHTTPRequestHandler):
                     break
                 remaining -= len(chunk)
             self.close_connection = True
-            self._send_text(413, 'request body is too large')
+            self._send_text(413, "request body is too large")
             return
         try:
-            body = self.rfile.read(length).decode('utf-8')
+            body = self.rfile.read(length).decode("utf-8")
         except UnicodeDecodeError:
-            self._send_text(400, 'request body must be UTF-8')
+            self._send_text(400, "request body must be UTF-8")
             return
 
         out_path = target_dir / out_name
@@ -123,8 +123,11 @@ class ReviewHandler(http.server.SimpleHTTPRequestHandler):
             tmp_path = None
             try:
                 with tempfile.NamedTemporaryFile(
-                    mode='w', encoding='utf-8', dir=target_dir,
-                    prefix='.' + out_name + '.', delete=False,
+                    mode="w",
+                    encoding="utf-8",
+                    dir=target_dir,
+                    prefix="." + out_name + ".",
+                    delete=False,
                 ) as tmp:
                     tmp.write(body)
                     tmp.flush()
@@ -135,11 +138,11 @@ class ReviewHandler(http.server.SimpleHTTPRequestHandler):
                 if tmp_path is not None and tmp_path.exists():
                     tmp_path.unlink()
 
-        self._send_text(200, 'saved')
-        print(f'[review] saved {out_path}')
+        self._send_text(200, "saved")
+        print(f"[review] saved {out_path}")
 
     def log_message(self, fmt, *args):
-        print(f'[review] {self.address_string()} {fmt % args}')
+        print(f"[review] {self.address_string()} {fmt % args}")
 
 
 class ReviewServer(http.server.ThreadingHTTPServer):
@@ -163,32 +166,37 @@ class ReviewServer(http.server.ThreadingHTTPServer):
         return request, address
 
 
-def create_server(host='127.0.0.1', port=8000, review_root=None):
+def create_server(host="127.0.0.1", port=8000, review_root=None):
     """Create a review server; separated from ``main`` for testing/reuse."""
     return ReviewServer((host, port), review_root or Path.cwd())
 
 
 def main():
-    p = argparse.ArgumentParser(description='ICA manual-review HTTP server')
-    p.add_argument('port', nargs='?', type=int, default=8000)
-    p.add_argument('--host', default='127.0.0.1',
-                   help='Interface to bind. Default 127.0.0.1 (loopback). '
-                        'Use 0.0.0.0 to expose on the network.')
+    p = argparse.ArgumentParser(description="ICA manual-review HTTP server")
+    p.add_argument("port", nargs="?", type=int, default=8000)
+    p.add_argument(
+        "--host",
+        default="127.0.0.1",
+        help="Interface to bind. Default 127.0.0.1 (loopback). "
+        "Use 0.0.0.0 to expose on the network.",
+    )
     args = p.parse_args()
 
     server = create_server(args.host, args.port)
-    print(f'ICA review server -> http://{args.host}:{args.port}/')
-    if args.host == '0.0.0.0':
-        print('[review] WARNING: bound to 0.0.0.0 --- POST endpoints '
-              'are reachable from the network.')
-    print('Ctrl-C to stop.')
+    print(f"ICA review server -> http://{args.host}:{args.port}/")
+    if args.host == "0.0.0.0":
+        print(
+            "[review] WARNING: bound to 0.0.0.0 --- POST endpoints "
+            "are reachable from the network."
+        )
+    print("Ctrl-C to stop.")
     try:
         server.serve_forever()
     except KeyboardInterrupt:
-        print('\n[review] stopping')
+        print("\n[review] stopping")
     finally:
         server.server_close()
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     main()

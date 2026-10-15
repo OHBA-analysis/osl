@@ -29,14 +29,15 @@ To apply the review decisions::
 
     osl-ica-apply <ica_root> <raw_root> <subject>
 """
+
 from .ica import manual_ica, apply_ica
 from .io import parse_label_txt, parse_bads_txt
 from .apply import apply_one as apply_manual_ica
 
 __all__ = [
-    'manual_ica',
-    'apply_ica',
-    'parse_label_txt',
-    'parse_bads_txt',
-    'apply_manual_ica',
+    "manual_ica",
+    "apply_ica",
+    "parse_label_txt",
+    "parse_bads_txt",
+    "apply_manual_ica",
 ]

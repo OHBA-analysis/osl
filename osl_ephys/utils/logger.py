@@ -13,7 +13,7 @@ import logging
 osl_logger = logging.getLogger("osl_ephys")
 osl_logger.setLevel(logging.WARNING)
 
-#%% ------------------------------------------------------------
+# %% ------------------------------------------------------------
 
 
 default_config = """
@@ -52,7 +52,7 @@ disable_existing_loggers: true
 """
 
 
-def set_up(prefix='', log_file=None, level=None, console_format=None, startup=True):
+def set_up(prefix="", log_file=None, level=None, console_format=None, startup=True):
     """Initialise the osl-ephys module osl_logger.
 
     Parameters
@@ -68,20 +68,20 @@ def set_up(prefix='', log_file=None, level=None, console_format=None, startup=Tr
 
     """
     # Format config with user options
-    if (len(prefix) > 0) and (console_format != 'verbose'):
-        prefix = prefix + ' :'
+    if (len(prefix) > 0) and (console_format != "verbose"):
+        prefix = prefix + " :"
     new_config = default_config.format(prefix=prefix, log_file=log_file)
     # Load config to dict
     new_config = yaml.load(new_config, Loader=yaml.FullLoader)
 
     # Remove log file from dict if not user requested
     if log_file is None:
-        new_config['loggers']['osl_ephys']['handlers'] = ['console']
-        del new_config['handlers']['file']
+        new_config["loggers"]["osl_ephys"]["handlers"] = ["console"]
+        del new_config["handlers"]["file"]
 
     # Configure osl_logger with dict
     logging.config.dictConfig(new_config)
-    #osl_logger.config.dictConfig(new_config)
+    # osl_logger.config.dictConfig(new_config)
 
     # Customise options
     if level is not None:
@@ -91,17 +91,17 @@ def set_up(prefix='', log_file=None, level=None, console_format=None, startup=Tr
 
     if startup:
         # Say hello
-        osl_logger.info('osl-ephys Logger Started')
+        osl_logger.info("osl-ephys Logger Started")
 
     # Print some info
     if log_file is not None:
-        osl_logger.info('logging to file: {0}'.format(log_file))
+        osl_logger.info("logging to file: {0}".format(log_file))
 
     # Attribute to let us know if we have setup the OSL logger
     osl_logger.already_setup = True
 
 
-def set_format(formatter='brief', prefix='', handler='console'):
+def set_format(formatter="brief", prefix="", handler="console"):
     """Change the message format of a handler of the osl-ephys logger.
 
     Parameters
@@ -113,17 +113,19 @@ def set_format(formatter='brief', prefix='', handler='console'):
     handler : str
         Name of the handler to change.
     """
-    config = yaml.load(default_config.format(prefix=prefix, log_file=None), Loader=yaml.FullLoader)
-    spec = config['formatters'][formatter]
-    fmt = logging.Formatter(spec['format'], datefmt=spec.get('datefmt'))
+    config = yaml.load(
+        default_config.format(prefix=prefix, log_file=None), Loader=yaml.FullLoader
+    )
+    spec = config["formatters"][formatter]
+    fmt = logging.Formatter(spec["format"], datefmt=spec.get("datefmt"))
     for h in osl_logger.handlers:
         if h.get_name() == handler:
             h.setFormatter(fmt)
 
 
-def set_level(level, handler='console'):
+def set_level(level, handler="console"):
     """Set new logging level for osl-ephys module.
-    
+
     Parameters
     ----------
     level : {'CRITICAL', 'WARNING', 'INFO', 'DEBUG'}
@@ -131,31 +133,35 @@ def set_level(level, handler='console'):
     handler : str
         The handler to set the level for. Defaults to 'console'.
     """
-    osl_logger = logging.getLogger('osl')
+    osl_logger = logging.getLogger("osl")
     for handler in osl_logger.handlers:
-        if handler.get_name() == 'console':
-            if level in ['INFO', 'DEBUG']:
-                osl_logger.info("osl-ephys osl_logger: handler '{0}' level set to '{1}'".format(handler.get_name(), level))
+        if handler.get_name() == "console":
+            if level in ["INFO", "DEBUG"]:
+                osl_logger.info(
+                    "osl-ephys osl_logger: handler '{0}' level set to '{1}'".format(
+                        handler.get_name(), level
+                    )
+                )
             handler.setLevel(getattr(logging, level))
 
 
-def get_level(handler='console'):
+def get_level(handler="console"):
     """Return current logging level for osl-ephys module.
-    
+
     Parameters
     ----------
     handler : str
         The handler to get the level for. Defaults to 'console'.
-        
+
     Returns
     -------
     level : {'CRITICAL', 'WARNING', 'INFO', 'DEBUG'}
         String indicating current logging level
-    
+
     """
-    osl_logger = logging.getLogger('osl')
+    osl_logger = logging.getLogger("osl")
     for handler in osl_logger.handlers:
-        if handler.get_name() == 'console':
+        if handler.get_name() == "console":
             return handler.level
 
 

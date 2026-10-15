@@ -1,14 +1,12 @@
 """Classes relating to the format and storage of MEEG data and sensors."""
 
-
 import numpy as np
 from ._spmmeeg_utils import empty_to_none
 
-#%% -------------------------------------------------------------
+# %% -------------------------------------------------------------
 
-KNOWN_DTYPEIDS = {
-        16: np.dtype('<f4') # FLOAT32-LE
-        }
+KNOWN_DTYPEIDS = {16: np.dtype("<f4")}  # FLOAT32-LE
+
 
 class Data:
     def __init__(
@@ -27,21 +25,22 @@ class Data:
         # pythonise options
         self.dtype = KNOWN_DTYPEIDS.get(self.dtype, None)
 
-        if self.permission == 'rw':
-            self.permission = 'readwrite'
+        if self.permission == "rw":
+            self.permission = "readwrite"
 
         # Load data as memorymap - note dimensions are flipped compared to what
         # we'd expect so transpose the result to get back to something
         # sensible.
-        self.data = np.memmap(self.fname,
-                              dtype=self.dtype,
-                              mode=self.permission,
-                              shape=tuple(np.flipud(self.shape)))
+        self.data = np.memmap(
+            self.fname,
+            dtype=self.dtype,
+            mode=self.permission,
+            shape=tuple(np.flipud(self.shape)),
+        )
         if len(self.shape) == 2:
             self.data = np.transpose(self.data, (1, 0))
         else:
             self.data = np.transpose(self.data, (2, 1, 0))
-
 
     def __repr__(self):
         return (
@@ -58,7 +57,7 @@ class Data:
         )
 
 
-#%% ---------------------------------------------------------------
+# %% ---------------------------------------------------------------
 
 chan_types = {
     "EOG": ["VEOG", "HEOG"],
@@ -109,11 +108,14 @@ class Channel:
             f"units='{self.units}')"
         )
 
-#%% -------------------------------------------------------------
+
+# %% -------------------------------------------------------------
 
 
 class Montage:
-    def __init__(self, name=None, tra=None, labelnew=None, labelorg=None, channels=None):
+    def __init__(
+        self, name=None, tra=None, labelnew=None, labelorg=None, channels=None
+    ):
         self.name = name
         self.tra = tra
         self.labelnew = labelnew
@@ -121,7 +123,7 @@ class Montage:
         self.channels = channels
 
     def apply(self, data):
-        print('Applying montage:  {0}'.format(self.name))
+        print("Applying montage:  {0}".format(self.name))
         if data.ndim == 2:
             return self.tra.dot(data)
         elif data.ndim == 3:
@@ -129,4 +131,3 @@ class Montage:
             for ii in range(data.shape[2]):
                 out[:, :, ii] = self.tra.dot(data[:, :, ii])
             return out
-

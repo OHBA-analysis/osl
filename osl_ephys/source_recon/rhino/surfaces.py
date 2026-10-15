@@ -1,6 +1,4 @@
-"""Calculation of surfaces in RHINO.
-
-"""
+"""Calculation of surfaces in RHINO."""
 
 # Authors: Mark Woolrich <mark.woolrich@ohba.ox.ac.uk>
 #          Chetan Gohil <chetan.gohil@psych.ox.ac.uk>
@@ -156,14 +154,20 @@ def compute_surfaces(
     log_or_print("*** RUNNING OSL-EPHYS RHINO COMPUTE SURFACES ***")
     if include_nose:
         log_or_print("The nose is going to be added to the outer skin (scalp) surface.")
-        log_or_print("Please ensure that the structural MRI has a FOV that includes the nose")
+        log_or_print(
+            "Please ensure that the structural MRI has a FOV that includes the nose"
+        )
     else:
-        log_or_print("The nose is not going to be added to the outer skin (scalp) surface")
+        log_or_print(
+            "The nose is not going to be added to the outer skin (scalp) surface"
+        )
 
     # Check smri_file
     smri_ext = "".join(Path(smri_file).suffixes)
     if smri_ext not in [".nii", ".nii.gz"]:
-        raise ValueError("smri_file needs to be a niftii file with a .nii or .nii.gz extension")
+        raise ValueError(
+            "smri_file needs to be a niftii file with a .nii or .nii.gz extension"
+        )
 
     # Copy sMRI to new file for modification
     img = nib.load(smri_file)
@@ -175,21 +179,29 @@ def compute_surfaces(
         log_or_print("Using qform in surface extraction")
 
         # Command: fslorient -copyqform2sform <smri_file>
-        fsl_wrappers.misc.fslorient(filenames['smri_file'], copyqform2sform=True)
+        fsl_wrappers.misc.fslorient(filenames["smri_file"], copyqform2sform=True)
     else:
         # Command: fslorient -copysform2qform <smri_file>
-        fsl_wrappers.misc.fslorient(filenames['smri_file'], copysform2qform=True)
+        fsl_wrappers.misc.fslorient(filenames["smri_file"], copysform2qform=True)
 
     # We will assume orientation of standard brain is RADIOLOGICAL. But let's check that is the case:
     std_orient = rhino_utils.get_orient(filenames["std_brain"])
     if std_orient != "RADIOLOGICAL":
-        raise ValueError("Orientation of standard brain must be RADIOLOGICAL, please check output of:\n fslorient -orient {}".format(filenames["std_brain"]))
+        raise ValueError(
+            "Orientation of standard brain must be RADIOLOGICAL, please check output of:\n fslorient -orient {}".format(
+                filenames["std_brain"]
+            )
+        )
 
     # We will assume orientation of sMRI brain is RADIOLOGICAL. But let's check that is the case:
     smri_orient = rhino_utils.get_orient(filenames["smri_file"])
 
     if smri_orient != "RADIOLOGICAL" and smri_orient != "NEUROLOGICAL":
-        raise ValueError("Cannot determine orientation of subject brain, please check output of:\n fslorient -getorient {}".format(filenames["smri_file"]))
+        raise ValueError(
+            "Cannot determine orientation of subject brain, please check output of:\n fslorient -getorient {}".format(
+                filenames["smri_file"]
+            )
+        )
 
     # If orientation is not RADIOLOGICAL then force it to be RADIOLOGICAL
     if smri_orient != "RADIOLOGICAL":
@@ -198,10 +210,14 @@ def compute_surfaces(
         # Command: fslorient -forceradiological <smri_file>
         fsl_wrappers.misc.fslorient(filenames["smri_file"], forceradiological=True)
 
-    log_or_print("You can use the following call to check the passed in structural MRI is appropriate,")
+    log_or_print(
+        "You can use the following call to check the passed in structural MRI is appropriate,"
+    )
     log_or_print("including checking that the L-R, S-I, A-P labels are sensible:")
     log_or_print("In Python:")
-    log_or_print('fsleyes("{}", "{}")'.format(filenames["smri_file"], filenames["std_brain"]))
+    log_or_print(
+        'fsleyes("{}", "{}")'.format(filenames["smri_file"], filenames["std_brain"])
+    )
     log_or_print("From the cmd line:")
     log_or_print("fsleyes {} {}".format(filenames["smri_file"], filenames["std_brain"]))
 
@@ -215,18 +231,28 @@ def compute_surfaces(
 
     # Calculate mri2mniaxes
     if do_mri2mniaxes_xform:
-        flirt_mri2mniaxes_xform = rhino_utils.get_flirt_xform_between_axes(filenames["smri_file"], filenames["std_brain"])
+        flirt_mri2mniaxes_xform = rhino_utils.get_flirt_xform_between_axes(
+            filenames["smri_file"], filenames["std_brain"]
+        )
     else:
         flirt_mri2mniaxes_xform = np.eye(4)
 
     # Write xform to disk so flirt can use it
-    flirt_mri2mniaxes_xform_file = op.join(filenames["basedir"], "flirt_mri2mniaxes_xform.txt")
+    flirt_mri2mniaxes_xform_file = op.join(
+        filenames["basedir"], "flirt_mri2mniaxes_xform.txt"
+    )
     np.savetxt(flirt_mri2mniaxes_xform_file, flirt_mri2mniaxes_xform)
 
     # Apply mri2mniaxes xform to smri to get smri_mniaxes, which means sMRIs voxel indices axes are aligned to be the same as MNI's
     # Command: flirt -in <smri_file> -ref <std_brain> -applyxfm -init <mri2mniaxes_xform_file> -out <smri_mni_axes_file>
     flirt_smri_mniaxes_file = op.join(filenames["basedir"], "flirt_smri_mniaxes.nii.gz")
-    fsl_wrappers.flirt(filenames["smri_file"], filenames["std_brain"], applyxfm=True, init=flirt_mri2mniaxes_xform_file, out=flirt_smri_mniaxes_file)
+    fsl_wrappers.flirt(
+        filenames["smri_file"],
+        filenames["std_brain"],
+        applyxfm=True,
+        init=flirt_mri2mniaxes_xform_file,
+        out=flirt_smri_mniaxes_file,
+    )
 
     img = nib.load(flirt_smri_mniaxes_file)
     img_latest_density = np.sum(img.get_fdata()) / np.prod(img.get_fdata().shape)
@@ -235,7 +261,9 @@ def compute_surfaces(
         raise Exception(
             "Something is wrong with the passed in structural MRI:\n   {}\nEither it is empty or the sformcode is incorrectly set.\n"
             "Try running the following from a cmd line: \n   fsleyes {} {} \nAnd see if the standard space brain is shown in the same postcode as the structural.\n"
-            "If it is not, then the sformcode in the structural image needs setting correctly.\n".format(filenames["smri_file"], filenames["std_brain"], filenames["smri_file"])
+            "If it is not, then the sformcode in the structural image needs setting correctly.\n".format(
+                filenames["smri_file"], filenames["std_brain"], filenames["smri_file"]
+            )
         )
 
     # -------------------------------------------------------
@@ -243,16 +271,24 @@ def compute_surfaces(
 
     # Check sMRI doesn't contain nans (this can cause segmentation faults with FSL's bet)
     if rhino_utils.check_nii_for_nan(filenames["smri_file"]):
-        log_or_print("WARNING: nan found in sMRI file. This might cause issues with BET.")
+        log_or_print(
+            "WARNING: nan found in sMRI file. This might cause issues with BET."
+        )
         old_smri_file = Path(smri_file)
-        new_smri_file = old_smri_file.with_name(old_smri_file.stem + '_fixed' + old_smri_file.suffix)
-        log_or_print("If you encounter an error, it might be possible to fix the file with:")
+        new_smri_file = old_smri_file.with_name(
+            old_smri_file.stem + "_fixed" + old_smri_file.suffix
+        )
+        log_or_print(
+            "If you encounter an error, it might be possible to fix the file with:"
+        )
         log_or_print(f"fslmaths {old_smri_file} -nan {new_smri_file}")
 
     log_or_print("Running BET pre-FLIRT...")
 
     # Command: bet <flirt_smri_mniaxes_file> <flirt_smri_mniaxes_bet_file>
-    flirt_smri_mniaxes_bet_file = op.join(filenames["basedir"], "flirt_smri_mniaxes_bet")
+    flirt_smri_mniaxes_bet_file = op.join(
+        filenames["basedir"], "flirt_smri_mniaxes_bet"
+    )
     fsl_wrappers.bet(flirt_smri_mniaxes_file, flirt_smri_mniaxes_bet_file)
 
     # ---------------------------------------------------------
@@ -265,25 +301,40 @@ def compute_surfaces(
     # Command: flirt -in <flirt_smri_mniaxes_bet_file> -ref <std_brain> -omat <flirt_mniaxes2mni_file> -o <flirt_smri_mni_bet_file>
     flirt_mniaxes2mni_file = op.join(filenames["basedir"], "flirt_mniaxes2mni.txt")
     flirt_smri_mni_bet_file = op.join(filenames["basedir"], "flirt_smri_mni_bet.nii.gz")
-    fsl_wrappers.flirt(flirt_smri_mniaxes_bet_file, filenames["std_brain"], omat=flirt_mniaxes2mni_file, o=flirt_smri_mni_bet_file)
+    fsl_wrappers.flirt(
+        flirt_smri_mniaxes_bet_file,
+        filenames["std_brain"],
+        omat=flirt_mniaxes2mni_file,
+        o=flirt_smri_mni_bet_file,
+    )
 
     # Calculate overall flirt transform, from MRI to MNI
     #
     # Command: convert_xfm -omat <flirt_mri2mni_xform_file> -concat <flirt_mniaxes2mni_file> <flirt_mri2mniaxes_xform_file>
     flirt_mri2mni_xform_file = op.join(filenames["basedir"], "flirt_mri2mni_xform.txt")
-    fsl_wrappers.concatxfm(flirt_mri2mniaxes_xform_file, flirt_mniaxes2mni_file, flirt_mri2mni_xform_file)  # Note, the wrapper reverses the order of arguments
+    fsl_wrappers.concatxfm(
+        flirt_mri2mniaxes_xform_file, flirt_mniaxes2mni_file, flirt_mri2mni_xform_file
+    )  # Note, the wrapper reverses the order of arguments
 
     # and also calculate its inverse, from MNI to MRI
     #
     # Command: convert_xfm -omat <mni2mri_flirt_xform_file>  -inverse <flirt_mri2mni_xform_file>
     mni2mri_flirt_xform_file = filenames["mni2mri_flirt_xform_file"]
-    fsl_wrappers.invxfm(flirt_mri2mni_xform_file, mni2mri_flirt_xform_file)  # Note, the wrapper reverses the order of arguments
+    fsl_wrappers.invxfm(
+        flirt_mri2mni_xform_file, mni2mri_flirt_xform_file
+    )  # Note, the wrapper reverses the order of arguments
 
     # Move full sMRI into MNI space to do full bet and betsurf
     #
     # Command: flirt -in <smri_file> -ref <std_brain> -applyxfm -init <flirt_mri2mni_xform_file> -out <flirt_smri_mni_file>
     flirt_smri_mni_file = op.join(filenames["basedir"], "flirt_smri_mni.nii.gz")
-    fsl_wrappers.flirt(filenames["smri_file"], filenames["std_brain"], applyxfm=True, init=flirt_mri2mni_xform_file, out=flirt_smri_mni_file)
+    fsl_wrappers.flirt(
+        filenames["smri_file"],
+        filenames["std_brain"],
+        applyxfm=True,
+        init=flirt_mri2mni_xform_file,
+        out=flirt_smri_mni_file,
+    )
 
     # --------------------------
     # 4) Use BET/BETSURF to get:
@@ -309,28 +360,52 @@ def compute_surfaces(
     # We do this in MNI big FOV space, to allow the full nose to be included
 
     # Calculate flirt_mni2mnibigfov_xform
-    mni2mnibigfov_xform = rhino_utils.get_flirt_xform_between_axes(from_nii=flirt_smri_mni_file, target_nii=filenames["std_brain_bigfov"])
-    flirt_mni2mnibigfov_xform_file = op.join(filenames["basedir"], "flirt_mni2mnibigfov_xform.txt")
+    mni2mnibigfov_xform = rhino_utils.get_flirt_xform_between_axes(
+        from_nii=flirt_smri_mni_file, target_nii=filenames["std_brain_bigfov"]
+    )
+    flirt_mni2mnibigfov_xform_file = op.join(
+        filenames["basedir"], "flirt_mni2mnibigfov_xform.txt"
+    )
     np.savetxt(flirt_mni2mnibigfov_xform_file, mni2mnibigfov_xform)
 
     # Calculate overall transform, from smri to MNI big fov
     #
     # Command: convert_xfm -omat <flirt_mri2mnibigfov_xform_file> -concat <flirt_mni2mnibigfov_xform_file> <flirt_mri2mni_xform_file>"
-    flirt_mri2mnibigfov_xform_file = op.join(filenames["basedir"], "flirt_mri2mnibigfov_xform.txt")
-    fsl_wrappers.concatxfm(flirt_mri2mni_xform_file, flirt_mni2mnibigfov_xform_file, flirt_mri2mnibigfov_xform_file)  # Note, the wrapper reverses the order of arguments
+    flirt_mri2mnibigfov_xform_file = op.join(
+        filenames["basedir"], "flirt_mri2mnibigfov_xform.txt"
+    )
+    fsl_wrappers.concatxfm(
+        flirt_mri2mni_xform_file,
+        flirt_mni2mnibigfov_xform_file,
+        flirt_mri2mnibigfov_xform_file,
+    )  # Note, the wrapper reverses the order of arguments
 
     # Move MRI to MNI big FOV space and load in
     #
     # Command: flirt -in <smri_file> -ref <std_brain_bigfov> -applyxfm -init <flirt_mri2mnibigfov_xform_file> -out <flirt_smri_mni_bigfov_file>
     flirt_smri_mni_bigfov_file = op.join(filenames["basedir"], "flirt_smri_mni_bigfov")
-    fsl_wrappers.flirt(filenames["smri_file"], filenames["std_brain_bigfov"], applyxfm=True, init=flirt_mri2mnibigfov_xform_file, out=flirt_smri_mni_bigfov_file)
+    fsl_wrappers.flirt(
+        filenames["smri_file"],
+        filenames["std_brain_bigfov"],
+        applyxfm=True,
+        init=flirt_mri2mnibigfov_xform_file,
+        out=flirt_smri_mni_bigfov_file,
+    )
 
     # Move scalp to MNI big FOV space and load in
     #
     # Command: flirt -in <flirt_outskin_file> -ref <std_brain_bigfov> -applyxfm -init <flirt_mni2mnibigfov_xform_file> -out <flirt_outskin_bigfov_file>
     flirt_outskin_file = op.join(filenames["basedir"], "flirt_outskin_mesh")
-    flirt_outskin_bigfov_file = op.join(filenames["basedir"], "flirt_outskin_mesh_bigfov")
-    fsl_wrappers.flirt(flirt_outskin_file, filenames["std_brain_bigfov"], applyxfm=True, init=flirt_mni2mnibigfov_xform_file, out=flirt_outskin_bigfov_file)
+    flirt_outskin_bigfov_file = op.join(
+        filenames["basedir"], "flirt_outskin_mesh_bigfov"
+    )
+    fsl_wrappers.flirt(
+        flirt_outskin_file,
+        filenames["std_brain_bigfov"],
+        applyxfm=True,
+        init=flirt_mni2mnibigfov_xform_file,
+        out=flirt_outskin_bigfov_file,
+    )
     scalp = nib.load(flirt_outskin_bigfov_file + ".nii.gz")
 
     # Create mask by filling outline
@@ -406,11 +481,17 @@ def compute_surfaces(
 
     # Use morph gradient to find the outline of the solid mask
     for i in range(outline.shape[0]):
-        outline[i, :, :] += grey_dilation(mask[i, :, :], size=(3, 3)) - grey_erosion(mask[i, :, :], size=(3, 3))
+        outline[i, :, :] += grey_dilation(mask[i, :, :], size=(3, 3)) - grey_erosion(
+            mask[i, :, :], size=(3, 3)
+        )
     for i in range(outline.shape[1]):
-        outline[:, i, :] += grey_dilation(mask[:, i, :], size=(3, 3)) - grey_erosion(mask[:, i, :], size=(3, 3))
+        outline[:, i, :] += grey_dilation(mask[:, i, :], size=(3, 3)) - grey_erosion(
+            mask[:, i, :], size=(3, 3)
+        )
     for i in range(50, 300, 1):
-        outline[:, :, i] += grey_dilation(mask[:, :, i], size=(3, 3)) - grey_erosion(mask[:, :, i], size=(3, 3))
+        outline[:, :, i] += grey_dilation(mask[:, :, i], size=(3, 3)) - grey_erosion(
+            mask[:, :, i], size=(3, 3)
+        )
     outline /= 3
 
     outline[np.where(outline > 0.6)] = 1
@@ -422,15 +503,22 @@ def compute_surfaces(
     nib.save(outline_nii, op.join(flirt_outskin_bigfov_file + "_plus_nose.nii.gz"))
 
     # Command: fslcpgeom <src> <dest>
-    fsl_wrappers.fslcpgeom(op.join(flirt_outskin_bigfov_file + ".nii.gz"), op.join(flirt_outskin_bigfov_file + "_plus_nose.nii.gz"))
+    fsl_wrappers.fslcpgeom(
+        op.join(flirt_outskin_bigfov_file + ".nii.gz"),
+        op.join(flirt_outskin_bigfov_file + "_plus_nose.nii.gz"),
+    )
 
     # Transform outskin plus nose nii mesh from MNI big FOV to MRI space
 
     # First we need to invert the flirt_mri2mnibigfov_xform_file xform:
     #
     # Command: convert_xfm -omat <flirt_mnibigfov2mri_xform_file> -inverse <flirt_mri2mnibigfov_xform_file>
-    flirt_mnibigfov2mri_xform_file = op.join(filenames["basedir"], "flirt_mnibigfov2mri_xform.txt")
-    fsl_wrappers.invxfm(flirt_mri2mnibigfov_xform_file, flirt_mnibigfov2mri_xform_file)  # Note, the wrapper reverses the order of arguments
+    flirt_mnibigfov2mri_xform_file = op.join(
+        filenames["basedir"], "flirt_mnibigfov2mri_xform.txt"
+    )
+    fsl_wrappers.invxfm(
+        flirt_mri2mnibigfov_xform_file, flirt_mnibigfov2mri_xform_file
+    )  # Note, the wrapper reverses the order of arguments
 
     # Command: flirt -in <dest> -ref <smri_file> -applyxfm -init <flirt_mnibigfov2mri_xform_file> -out <bet_outskin_plus_nose_mesh_file>
     fsl_wrappers.flirt(
@@ -445,7 +533,9 @@ def compute_surfaces(
     # 6) Output the transform from sMRI space to MNI
 
     flirt_mni2mri = np.loadtxt(mni2mri_flirt_xform_file)
-    xform_mni2mri = rhino_utils.get_mne_xform_from_flirt_xform(flirt_mni2mri, filenames["std_brain"], filenames["smri_file"])
+    xform_mni2mri = rhino_utils.get_mne_xform_from_flirt_xform(
+        flirt_mni2mri, filenames["std_brain"], filenames["smri_file"]
+    )
     mni_mri_t = Transform("mni_tal", "mri", xform_mni2mri)
     write_trans(filenames["mni_mri_t_file"], mni_mri_t, overwrite=True)
 
@@ -453,7 +543,12 @@ def compute_surfaces(
     # 7) Output surfaces in sMRI(native) space
 
     # Transform betsurf output mask/mesh output from MNI to sMRI space
-    rhino_utils.transform_bet_surfaces(mni2mri_flirt_xform_file, filenames["mni_mri_t_file"], filenames, filenames["smri_file"])
+    rhino_utils.transform_bet_surfaces(
+        mni2mri_flirt_xform_file,
+        filenames["mni_mri_t_file"],
+        filenames,
+        filenames["smri_file"],
+    )
 
     # -------------------------------------------
     # Write a file to indicate RHINO has been run
@@ -467,9 +562,15 @@ def compute_surfaces(
     # Clean up
 
     if cleanup_files:
-        rhino_utils.system_call("rm -f {}".format(op.join(filenames["basedir"], "flirt*")))
+        rhino_utils.system_call(
+            "rm -f {}".format(op.join(filenames["basedir"], "flirt*"))
+        )
 
-    log_or_print('rhino.surfaces.surfaces_display("{}", "{}") can be used to check the result'.format(subjects_dir, subject))
+    log_or_print(
+        'rhino.surfaces.surfaces_display("{}", "{}") can be used to check the result'.format(
+            subjects_dir, subject
+        )
+    )
     log_or_print("*** OSL-EPHYS RHINO COMPUTE SURFACES COMPLETE ***")
 
     return False
@@ -496,7 +597,8 @@ def surfaces_display(subjects_dir, subject):
 
     filenames = get_surfaces_filenames(subjects_dir, subject)
 
-    rhino_utils.system_call("fsleyes {} {} {} {} {} &".format(
+    rhino_utils.system_call(
+        "fsleyes {} {} {} {} {} &".format(
             filenames["smri_file"],
             filenames["bet_inskull_mesh_file"],
             filenames["bet_outskin_mesh_file"],
@@ -549,7 +651,7 @@ def plot_surfaces(subjects_dir, subject, include_nose, already_computed=False):
 
     # Plot the structural MRI
     with warnings.catch_warnings():
-        warnings.simplefilter("ignore")  # suppress warnings from plotting
+        warnings.simplefilter("ignore")  # suppress warnings from plotting
         display = nil.plotting.plot_anat(filenames["smri_file"])
 
     # Plot each surface

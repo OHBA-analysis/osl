@@ -1,24 +1,24 @@
 """Wrappers for MNE functions to perform preprocessing.
 
-    We have run_mne_anonymous which tries to run a method directly on a target
-    object (typically an mne Raw or Epochs object).
+We have run_mne_anonymous which tries to run a method directly on a target
+object (typically an mne Raw or Epochs object).
 
-    In addition, there are a set of wrapper functions for MNE methods which need
-    a bit more option processing than the default - for example, converting input
-    strings into arrays of frequencies
+In addition, there are a set of wrapper functions for MNE methods which need
+a bit more option processing than the default - for example, converting input
+strings into arrays of frequencies
 
-    Wrapper functions have priority and will be run rather than the direct method
-    call if a wrapper is present. If no wrapper is present then we fall back to
-    the direct method call.
-    
-    Most wrapper functions run on the `` object in `dataset` by default
-    and the function docstrings assume this - but is most cases `mne.io.Raw` can
-    be replaced with `mne.Epochs` (or `dataset['raw']` by `dataset['epochs']` and 
-    the function will still work, e.g. :py:meth:`mne.Epochs.pick <mne.Epochs.pick>`.
-    In order to apply the method to an object different from `mne.Raw`, the `target`
-    argument can be specified in `userargs`. For example, `target: 'epochs'` can be
-    specified in the userargs to apply the method to `dataset['epochs']` instead of
-    `dataset['raw']`.
+Wrapper functions have priority and will be run rather than the direct method
+call if a wrapper is present. If no wrapper is present then we fall back to
+the direct method call.
+
+Most wrapper functions run on the `` object in `dataset` by default
+and the function docstrings assume this - but is most cases `mne.io.Raw` can
+be replaced with `mne.Epochs` (or `dataset['raw']` by `dataset['epochs']` and
+the function will still work, e.g. :py:meth:`mne.Epochs.pick <mne.Epochs.pick>`.
+In order to apply the method to an object different from `mne.Raw`, the `target`
+argument can be specified in `userargs`. For example, `target: 'epochs'` can be
+specified in the userargs to apply the method to `dataset['epochs']` instead of
+`dataset['raw']`.
 """
 
 # Authors: Andrew Quinn <a.quinn@bham.ac.uk>
@@ -41,8 +41,8 @@ logger = logging.getLogger(__name__)
 def run_mne_anonymous(dataset, userargs, method):
     """OSL-Batch function which runs a method directly on a target MNE object in ``dataset``,
     typically an :py:class:`mne.io.Raw <mne.io.Raw>` or :py:class:`mne.Epochs <mne.Epochs>` object.
-    
-    OSL Batch will first look for OSL/MNE wrapper functions for the method, and 
+
+    OSL Batch will first look for OSL/MNE wrapper functions for the method, and
     otherwise will try to run the method directly on the target object.
 
     Parameters
@@ -58,15 +58,17 @@ def run_mne_anonymous(dataset, userargs, method):
     -------
     dataset: dict
         Input dictionary containing MNE objects that have been modified in place.
-        
-    """    
+
+    """
     target = userargs.pop("target", "raw")
     logger.info("MNE Stage - {0}.{1}".format(target, method))
     logger.info("userargs: {0}".format(str(userargs)))
     if hasattr(dataset[target], method) and callable(getattr(dataset[target], method)):
         getattr(dataset[target], method)(**userargs)
     else:
-        raise ValueError("Method '{0}' not found on target '{1}'".format(method, target))
+        raise ValueError(
+            "Method '{0}' not found on target '{1}'".format(method, target)
+        )
     return dataset
 
 
@@ -94,15 +96,17 @@ def run_mne_notch_filter(dataset, userargs):
     -------
     dataset: dict
         Input dictionary containing MNE objects that have been modified in place.
-    """    
+    """
     target = userargs.pop("target", "raw")
     logger.info("MNE Stage - {0}.{1}".format(target, "notch_filter"))
     logger.info("userargs: {0}".format(str(userargs)))
     freqs = userargs.pop("freqs")
     freqs = [
-        float(freqs)
-        if np.logical_or(type(freqs) == int, type(freqs) == float)
-        else np.array(freqs.split(" ")).astype(float)
+        (
+            float(freqs)
+            if np.logical_or(type(freqs) == int, type(freqs) == float)
+            else np.array(freqs.split(" ")).astype(float)
+        )
     ]
     dataset[target].notch_filter(freqs, **userargs)
     return dataset
@@ -111,7 +115,7 @@ def run_mne_notch_filter(dataset, userargs):
 def run_mne_pick(dataset, userargs):
     """OSL-Batch wrapper for :py:meth:`mne.io.Raw.pick <mne.io.Raw.pick>`.
 
-    This function calls :py:meth:`pick <mne.io.Raw.pick>` on an MNE object in 
+    This function calls :py:meth:`pick <mne.io.Raw.pick>` on an MNE object in
     ``dataset``. Additional arguments on the MNE function can be
     specified as a dictionary.
 
@@ -169,7 +173,7 @@ def run_mne_pick_channels(dataset, userargs):
     -------
     dataset: dict
         Input dictionary containing MNE objects that have been modified in place.
-    """    
+    """
     target = userargs.pop("target", "raw")
     logger.info("MNE Stage - {0}.{1}".format(target, "pick_channels"))
     logger.info("userargs: {0}".format(str(userargs)))
@@ -194,7 +198,7 @@ def run_mne_pick_types(dataset, userargs):
     -------
     dataset: dict
         Input dictionary containing MNE objects that have been modified in place.
-    """    
+    """
     target = userargs.pop("target", "raw")
     logger.info("MNE Stage - {0}.{1}".format(target, "pick_types"))
     logger.info("userargs: {0}".format(str(userargs)))
@@ -220,7 +224,7 @@ def run_mne_resample(dataset, userargs):
     -------
     dataset: dict
         Input dictionary containing MNE objects that have been modified in place.
-    """    
+    """
     target = userargs.pop("target", "raw")
     logger.info("MNE Stage - {0}.{1}".format(target, "resample"))
     logger.info("userargs: {0}".format(str(userargs)))
@@ -251,7 +255,7 @@ def run_mne_set_channel_types(dataset, userargs):
     -------
     dataset: dict
         Input dictionary containing MNE objects that have been modified in place.
-    """    
+    """
     target = userargs.pop("target", "raw")
     logger.info("MNE Stage - {0}.{1}".format(target, "set_channel_types"))
     logger.info("userargs: {0}".format(str(userargs)))
@@ -278,18 +282,18 @@ def run_mne_interpolate_bads(dataset, userargs):
     -------
     dataset: dict
         Input dictionary containing MNE objects that have been modified in place.
-    """    
+    """
     target = userargs.pop("target", "raw")
     logger.info("MNE Stage - {0}.{1}".format(target, "interpolate_bads"))
     logger.info("userargs: {0}".format(str(userargs)))
-    
-    # remember the bad channels 
-    original_bads = dataset[target].info['bads'].copy()
+
+    # remember the bad channels
+    original_bads = dataset[target].info["bads"].copy()
     dataset[target].interpolate_bads(**userargs)
-    
+
     # if the bad channels were reset, we want to keep a local copy for the report
-    if dataset[target].info['bads'] != original_bads:
-        dataset[target].info['temp'] = {'bads': original_bads}
+    if dataset[target].info["bads"] != original_bads:
+        dataset[target].info["temp"] = {"bads": original_bads}
     return dataset
 
 
@@ -302,7 +306,7 @@ def run_mne_drop_bad(dataset, userargs):
     This function calls :py:meth:`drop_bad <mne.Epochs.drop_bad>` on
     an MNE :py:class:`Epochs <mne.Epochs>` object in ``dataset``. Additional arguments on the MNE function can be
     specified as a dictionary.
-    
+
     Parameters
     ----------
     dataset: dict
@@ -314,7 +318,7 @@ def run_mne_drop_bad(dataset, userargs):
     -------
     dataset: dict
         Input dictionary containing MNE objects that have been modified in place.
-    """    
+    """
     target = userargs.pop("target", "epochs")  # should only be epochs
     logger.info("MNE Stage - {0}.{1}".format(target, "drop_bad"))
     logger.info("userargs: {0}".format(str(userargs)))
@@ -339,7 +343,7 @@ def run_mne_apply_baseline(dataset, userargs):
     This function calls :py:meth:`mne.Epochs.apply_baseline <mne.Epochs.apply_baseline>` on
     an MNE :py:class:`Epochs <mne.Epochs>` object in ``dataset``. Additional arguments on the MNE function can be
     specified as a dictionary.
-    
+
     Parameters
     ----------
     dataset: dict
@@ -351,7 +355,7 @@ def run_mne_apply_baseline(dataset, userargs):
     -------
     dataset: dict
         Input dictionary containing MNE objects that have been modified in place.
-    """    
+    """
     target = userargs.pop("target", "epochs")  # should only be epochs
     logger.info("MNE Stage - {0}.{1}".format(target, "apply_baseline"))
     logger.info("userargs: {0}".format(str(userargs)))
@@ -387,7 +391,7 @@ def run_mne_find_events(dataset, userargs):
     -------
     dataset: dict
         Input dictionary containing MNE objects that have been modified in place.
-    """    
+    """
     logger.info("MNE Stage - {0}.{1}".format("mne", "find_events"))
     logger.info("userargs: {0}".format(str(userargs)))
 
@@ -412,7 +416,7 @@ def run_mne_epochs(dataset, userargs):
     -------
     dataset: dict
         Input dictionary containing MNE objects that have been modified in place.
-    """    
+    """
     logger.info("MNE Stage - {0}.{1}".format("mne", "epochs"))
     logger.info("userargs: {0}".format(str(userargs)))
     tmin = userargs.pop("tmin", -0.2)
@@ -443,7 +447,7 @@ def run_mne_annotate_amplitude(dataset, userargs):
     -------
     dataset: dict
         Input dictionary containing MNE objects that have been modified in place.
-    """    
+    """
     logger.info("MNE Stage - {0}.{1}".format("mne.preprocessing", "annotate_amplitude"))
     logger.info("userargs: {0}".format(str(userargs)))
     target = userargs.pop("target", "raw")
@@ -480,7 +484,7 @@ def run_mne_annotate_muscle_zscore(dataset, userargs):
     This function calls :py:func:`annotate_muscle_zscore <mne.preprocessing.annotate_muscle_zscore>` on
     an MNE object in ``dataset``. Additional arguments on the MNE function can be
     specified as a dictionary.
-    
+
     Parameters
     ----------
     dataset: dict
@@ -492,7 +496,7 @@ def run_mne_annotate_muscle_zscore(dataset, userargs):
     -------
     dataset: dict
         Input dictionary containing MNE objects that have been modified in place.
-    """    
+    """
     logger.info(
         "MNE Stage - {0}.{1}".format("mne.preprocessing", "annotate_muscle_zscore")
     )
@@ -541,7 +545,7 @@ def run_mne_find_bad_channels_maxwell(dataset, userargs):
     -------
     dataset: dict
         Input dictionary containing MNE objects that have been modified in place.
-    """    
+    """
     logger.info(
         "MNE Stage - {0}.{1}".format("mne.preprocessing", "find_bad_channels_maxwell")
     )
@@ -572,12 +576,12 @@ def run_mne_maxwell_filter(dataset, userargs):
         Dictionary containing at least an MNE object with the key ``raw``.
     userargs: dict
         Dictionary of additional arguments to be passed to :py:func:`mne.preprocessing.maxwell_filter <mne.preprocessing.maxwell_filter>`.
-        
+
     Returns
     -------
     dataset: dict
         Input dictionary containing MNE objects that have been modified in place.
-    """    
+    """
     logger.info("MNE Stage - {0}.{1}".format("mne.preprocessing", "maxwell_filter"))
     logger.info("userargs: {0}".format(str(userargs)))
     target = userargs.pop("target", "raw")
@@ -609,7 +613,7 @@ def run_mne_compute_current_source_density(dataset, userargs):
     -------
     dataset: dict
         Input dictionary containing MNE objects that have been modified in place.
-    """    
+    """
     logger.info(
         "MNE Stage - {0}.{1}".format(
             "mne.preprocessing", "compute_current_source_density"
@@ -648,7 +652,7 @@ def run_mne_tfr_multitaper(dataset, userargs):
     -------
     dataset: dict
         Input dictionary containing MNE objects that have been modified in place.
-    """    
+    """
     target = userargs.pop("target", "epochs")
     logger.info("MNE Stage - {0} on {1}".format("tfr_multitaper", target))
     logger.info("userargs: {0}".format(str(userargs)))
@@ -683,7 +687,7 @@ def run_mne_tfr_morlet(dataset, userargs):
     -------
     dataset: dict
         Input dictionary containing MNE objects that have been modified in place.
-    """    
+    """
     target = userargs.pop("target", "epochs")
     logger.info("MNE Stage - {0} on {1}".format("tfr_morlet", target))
     logger.info("userargs: {0}".format(str(userargs)))
@@ -714,7 +718,7 @@ def run_mne_tfr_stockwell(dataset, userargs):
     -------
     dataset: dict
         Input dictionary containing MNE objects that have been modified in place.
-    """    
+    """
     target = userargs.pop("target", "epochs")
     logger.info("MNE Stage - {0} on {1}".format("tfr_stockwell", target))
     logger.info("userargs: {0}".format(str(userargs)))
@@ -738,7 +742,7 @@ def run_mne_tfr_stockwell(dataset, userargs):
 def run_mne_ica_raw(dataset, userargs):
     """OSL-Batch wrapper for :py:class:`mne.preprocessing.ICA <mne.preprocessing.ICA>`.
 
-    This function creates class :py:class:`ICA <mne.preprocessing.ICA>` 
+    This function creates class :py:class:`ICA <mne.preprocessing.ICA>`
     and fits it to an MNE object in ``dataset``. Additional arguments on the MNE function can be
     specified as a dictionary. The ``raw`` object in ``dataset`` is filtered (1 Hz high pass) before
     fitting the ICA.
@@ -748,18 +752,18 @@ def run_mne_ica_raw(dataset, userargs):
     dataset: dict
         Dictionary containing at least an MNE object with the key ``raw``.
     userargs: dict
-        Dictionary of additional arguments to be passed to :py:class:`mne.preprocessing.ICA <mne.preprocessing.ICA>` , 
+        Dictionary of additional arguments to be passed to :py:class:`mne.preprocessing.ICA <mne.preprocessing.ICA>` ,
         :py:meth:`mne.preprocessing.ICA.fit <mne.preprocessing.ICA.fit>`, and :py:meth:`mne.io.Raw.filter <mne.io.Raw.filter>` .
 
     Returns
     -------
     dataset: dict
         Input dictionary containing MNE objects that have been modified in place.
-    """    
+    """
     target = userargs.pop("target", "raw")
     logger.info("MNE Stage - {0}".format("mne.preprocessing.ICA"))
     logger.info("userargs: {0}".format(str(userargs)))
-    
+
     # MNE recommends applying a high pass filter at 1 Hz before calculating
     # the ICA (make this adjustable by user):
     # https://mne.tools/stable/auto_tutorials/preprocessing/40_artifact_correction_ica.html#filtering-to-remove-slow-drifts
@@ -772,10 +776,17 @@ def run_mne_ica_raw(dataset, userargs):
     random_state = userargs.pop("random_state", None)
     method = userargs.pop("method", "fastica")
     fit_params = userargs.pop("fit_params", None)
-    max_iter = userargs.pop("max_iter", 'auto')
+    max_iter = userargs.pop("max_iter", "auto")
     allow_ref_meg = userargs.pop("allow_ref_meg", False)
-    ica = mne.preprocessing.ICA(n_components=userargs["n_components"], noise_cov=noise_cov, random_state=random_state,
-                               method=method, fit_params=fit_params, max_iter=max_iter, allow_ref_meg=allow_ref_meg)
+    ica = mne.preprocessing.ICA(
+        n_components=userargs["n_components"],
+        noise_cov=noise_cov,
+        random_state=random_state,
+        method=method,
+        fit_params=fit_params,
+        max_iter=max_iter,
+        allow_ref_meg=allow_ref_meg,
+    )
     ica.fit(filt_raw, picks=userargs["picks"])
     dataset["ica"] = ica
     return dataset
@@ -785,7 +796,7 @@ def run_mne_ica_autoreject(dataset, userargs):
     """OSL-Batch wrapper for :py:meth:`mne.preprocessing.ICA.find_bads_ecg <mne.preprocessing.ICA.find_bads_ecg>` and :py:meth:`mne.preprocessing.ICA.find_bads_eog <mne.preprocessing.ICA.find_bads_eog>`.
 
     This function identifies IC's that are deemed to correspond to ECG or EOG artifacts, as found by
-    :py:meth:`find_bads_ecg <mne.preprocessing.ICA.find_bads_ecg>` and 
+    :py:meth:`find_bads_ecg <mne.preprocessing.ICA.find_bads_ecg>` and
     :py:meth:`find_bads_eog <mne.preprocessing.ICA.find_bads_eog>` on
     the ``raw`` and ``ica`` objects in ``dataset``. Additional arguments on the MNE functions can be
     specified as a dictionary.
@@ -802,7 +813,7 @@ def run_mne_ica_autoreject(dataset, userargs):
     -------
     dataset: dict
         Input dictionary containing MNE objects that have been modified in place.
-    """    
+    """
     target = userargs.pop("target", "raw")
     logger.info("OSL Stage - {0}".format("ICA Autoreject"))
     logger.info("userargs: {0}".format(str(userargs)))
@@ -814,11 +825,13 @@ def run_mne_ica_autoreject(dataset, userargs):
     ecgmethod = userargs.pop("ecgmethod", "ctps")
     ecgthreshold = userargs.pop("ecgthreshold", "auto")
     remove_components = userargs.pop("apply", True)
-    
+
     # Reject components based on the EOG channel
     if not (eogmethod is None or eogmethod == "None"):
         eog_indices, eog_scores = dataset["ica"].find_bads_eog(
-            dataset["raw"], threshold=eogthreshold, measure=eogmeasure,
+            dataset["raw"],
+            threshold=eogthreshold,
+            measure=eogmeasure,
         )
         dataset["ica"].exclude.extend(eog_indices)
         logger.info("Marking {0} as EOG ICs".format(len(eog_indices)))
@@ -844,7 +857,7 @@ def run_mne_ica_autoreject(dataset, userargs):
 def run_mne_apply_ica(dataset, userargs):
     """OSL-Batch wrapper for :py:meth:`mne.preprocessing.ICA.apply <mne.preprocessing.ICA.apply>`.
 
-    This function creates class :py:meth:`mne.preprocessing.ICA.apply <mne.preprocessing.ICA.apply>` 
+    This function creates class :py:meth:`mne.preprocessing.ICA.apply <mne.preprocessing.ICA.apply>`
     and fits it to an MNE object in ``dataset``. Additional arguments on the MNE function can be
     specified as a dictionary.
 
@@ -859,7 +872,7 @@ def run_mne_apply_ica(dataset, userargs):
     -------
     dataset: dict
         Input dictionary containing MNE objects that have been modified in place.
-    """    
+    """
     target = userargs.pop("target", "raw")
     logger.info("MNE Stage - {0}".format("ica.apply"))
     logger.info("userargs: {0}".format(str(userargs)))

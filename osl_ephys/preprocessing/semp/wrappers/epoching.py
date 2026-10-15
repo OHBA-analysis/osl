@@ -71,8 +71,15 @@ def _deduplicate_event_samples(events, event_id, name):
     return selected[keep]
 
 
-def _check_fixed_spacing(onsets, sfreq, expected_interval=None, first_samp=0,
-                         jitter_tol=0.1, name='create_epoch', max_report=6):
+def _check_fixed_spacing(
+    onsets,
+    sfreq,
+    expected_interval=None,
+    first_samp=0,
+    jitter_tol=0.1,
+    name="create_epoch",
+    max_report=6,
+):
     """Sanity-check fixed-mode trigger spacing; warn on likely forgotten /
     spurious events.
 
@@ -99,18 +106,18 @@ def _check_fixed_spacing(onsets, sfreq, expected_interval=None, first_samp=0,
     onsets = np.sort(np.asarray(onsets, dtype=np.float64))
     diffs = np.diff(onsets)
     if diffs.size < 2:
-        return {'status': 'too_few'}
+        return {"status": "too_few"}
     med = float(np.median(diffs))
     if med <= 0:
         log_or_print(f"{name}: cannot check trigger spacing (non-positive median gap).")
-        return {'status': 'degenerate'}
+        return {"status": "degenerate"}
 
     rel = diffs / med
     on_grid = np.abs(rel - 1.0) <= jitter_tol
     k = np.round(rel)
-    is_gap = (k >= (2*(1-jitter_tol))) & (np.abs(rel - k) <= 0.25)              # forgotten
-    is_short = (rel < 0.6) & ~is_gap                            # spurious/dup
-    is_irregular = ~on_grid & ~is_gap & ~is_short              # off-grid, unclassified
+    is_gap = (k >= (2 * (1 - jitter_tol))) & (np.abs(rel - k) <= 0.25)  # forgotten
+    is_short = (rel < 0.6) & ~is_gap  # spurious/dup
+    is_irregular = ~on_grid & ~is_gap & ~is_short  # off-grid, unclassified
     frac_on = float(on_grid.mean())
 
     def _where(mask, tag=None):
@@ -118,21 +125,27 @@ def _check_fixed_spacing(onsets, sfreq, expected_interval=None, first_samp=0,
         parts = []
         for i in idx[:max_report]:
             t = (onsets[i] - first_samp) / sfreq
-            parts.append(f"~{t:.1f}s(x{int(k[i])})" if tag == 'gap' else f"~{t:.1f}s")
+            parts.append(f"~{t:.1f}s(x{int(k[i])})" if tag == "gap" else f"~{t:.1f}s")
         more = "" if idx.size <= max_report else f", +{idx.size - max_report} more"
         return ", ".join(parts) + more
 
-    findings = {'status': 'grid', 'median_s': med / sfreq, 'frac_on_grid': frac_on,
-                'n_missing': int(np.sum(k[is_gap] - 1)) if is_gap.any() else 0,
-                'n_short': int(is_short.sum()), 'n_irregular': int(is_irregular.sum())}
+    findings = {
+        "status": "grid",
+        "median_s": med / sfreq,
+        "frac_on_grid": frac_on,
+        "n_missing": int(np.sum(k[is_gap] - 1)) if is_gap.any() else 0,
+        "n_short": int(is_short.sum()),
+        "n_irregular": int(is_irregular.sum()),
+    }
 
     if frac_on < 0.5:
-        findings['status'] = 'irregular'
+        findings["status"] = "irregular"
         log_or_print(
             f"{name}: WARNING -- trigger spacing is neither fixed nor clustered "
             f"around one value (only {frac_on:.0%} of {diffs.size} intervals are "
             f"near the median {med/sfreq:.3f}s). Are you sure event_key/mode are "
-            f"right for a fixed-window epoch?")
+            f"right for a fixed-window epoch?"
+        )
         return findings
 
     if is_gap.any():
@@ -141,25 +154,32 @@ def _check_fixed_spacing(onsets, sfreq, expected_interval=None, first_samp=0,
             f"FORGOTTEN: {int(is_gap.sum())} gap(s) ~= an integer multiple of the "
             f"median {med/sfreq:.3f}s at {_where(is_gap, 'gap')}. A missed trigger "
             f"leaves a stretch with no epoch -- add the missing trigger(s) in your "
-            f"initialize (raw.annotations.append(onset, 0, <event_key>)).")
+            f"initialize (raw.annotations.append(onset, 0, <event_key>))."
+        )
     if is_short.any():
         log_or_print(
             f"{name}: WARNING -- {int(is_short.sum())} SHORT interval(s) "
             f"(< 0.6x the median {med/sfreq:.3f}s) at {_where(is_short)}: likely a "
-            f"spurious or duplicated trigger.")
+            f"spurious or duplicated trigger."
+        )
     if is_irregular.any():
         log_or_print(
             f"{name}: note -- {int(is_irregular.sum())} interval(s) off-grid but "
-            f"neither a clean multiple nor a short spike at {_where(is_irregular)}.")
+            f"neither a clean multiple nor a short spike at {_where(is_irregular)}."
+        )
 
-    if expected_interval is not None and abs(med / sfreq - expected_interval) / expected_interval > jitter_tol:
+    if (
+        expected_interval is not None
+        and abs(med / sfreq - expected_interval) / expected_interval > jitter_tol
+    ):
         log_or_print(
             f"{name}: WARNING -- median trigger spacing {med/sfreq:.3f}s differs "
             f"from the expected window {expected_interval:.3f}s by >{jitter_tol:.0%}; "
-            f"wrong tr_interval/tmax or event_key?")
+            f"wrong tr_interval/tmax or event_key?"
+        )
 
     if not (is_gap.any() or is_short.any() or is_irregular.any()):
-        findings['status'] = 'ok'
+        findings["status"] = "ok"
     return findings
 
 
@@ -181,18 +201,21 @@ def crop_TR(dataset, userargs):
     ``TR`` defaults to ``dataset['tr_interval']`` and ``event_name`` to
     ``dataset['tr_event_key']`` (both set by the project ``initialize``).
     """
-    userargs = proc_userargs(userargs, {
-        'TR': dataset.get('tr_interval'),
-        'tmin': 0.0,
-        'event_name': dataset.get('tr_event_key'),
-        'num_edge_TR': 0,
-        'preserve_epochs': False,
-    })
-    TR = userargs['TR']
-    tmin = userargs['tmin']
-    event_name = userargs['event_name']
-    num_edge_TR = userargs['num_edge_TR']
-    preserve_epochs = userargs['preserve_epochs']
+    userargs = proc_userargs(
+        userargs,
+        {
+            "TR": dataset.get("tr_interval"),
+            "tmin": 0.0,
+            "event_name": dataset.get("tr_event_key"),
+            "num_edge_TR": 0,
+            "preserve_epochs": False,
+        },
+    )
+    TR = userargs["TR"]
+    tmin = userargs["tmin"]
+    event_name = userargs["event_name"]
+    num_edge_TR = userargs["num_edge_TR"]
+    preserve_epochs = userargs["preserve_epochs"]
 
     if TR is None:
         raise ValueError("crop_TR needs 'TR' (or dataset['tr_interval']).")
@@ -200,7 +223,8 @@ def crop_TR(dataset, userargs):
         raise ValueError("crop_TR needs 'event_name' (or dataset['tr_event_key']).")
 
     cached_epoch_keys = [
-        key for key, value in dataset.items()
+        key
+        for key, value in dataset.items()
         if key != "raw" and isinstance(value, mne.BaseEpochs)
     ]
     if not cached_epoch_keys:
@@ -210,8 +234,8 @@ def crop_TR(dataset, userargs):
             "full recording and the AAS epoch source remains aligned."
         )
 
-    freq = dataset['raw'].info['sfreq']
-    _, event_name = _resolve_event(dataset['raw'], event_name)   # -> single label
+    freq = dataset["raw"].info["sfreq"]
+    _, event_name = _resolve_event(dataset["raw"], event_name)  # -> single label
 
     def crop_eeg_to_tr(eeg, tmin, num_edge_TR=0):
         events_arr, ev_id = mne.events_from_annotations(eeg)
@@ -242,18 +266,22 @@ def crop_TR(dataset, userargs):
                 f"Possible causes: last TR truncated, TR value wrong, stray "
                 f"annotation outside data window, or first_samp drift."
             )
-            if any(isinstance(value, mne.BaseEpochs)
-                   for key, value in dataset.items() if key != "raw"):
+            if any(
+                isinstance(value, mne.BaseEpochs)
+                for key, value in dataset.items()
+                if key != "raw"
+            ):
                 cache_action = (
                     "will be checked and filtered when preserve_epochs=True"
-                    if preserve_epochs else
-                    "will be invalidated"
+                    if preserve_epochs
+                    else "will be invalidated"
                 )
                 log_or_print(
                     "crop_TR: an existing epoch set may now be missing the "
                     "dropped TR event(s); cached epochs {}. Recreate epochs "
                     "after checking the boundary if needed.".format(cache_action)
                 )
+
             # Strip the offending annotations so downstream stages don't see them.
             def _is_outside(onset_s, desc):
                 if str(desc) != str(event_name):
@@ -300,8 +328,8 @@ def crop_TR(dataset, userargs):
                 del dataset[key]
                 continue
 
-            epoch_sfreq = value.info['sfreq']
-            if not np.isclose(epoch_sfreq, dataset['raw'].info['sfreq']):
+            epoch_sfreq = value.info["sfreq"]
+            if not np.isclose(epoch_sfreq, dataset["raw"].info["sfreq"]):
                 invalidated.append(key)
                 del dataset[key]
                 log_or_print(
@@ -313,12 +341,12 @@ def crop_TR(dataset, userargs):
             starts = (
                 value.events[:, 0]
                 + int(round(value.tmin * epoch_sfreq))
-                - dataset['raw'].first_samp
+                - dataset["raw"].first_samp
             )
             # MNE Epochs exposes the epoch length through ``times`` rather
             # than a Raw-like ``n_times`` attribute.
             ends = starts + len(value.times)
-            keep = (starts >= 0) & (ends <= dataset['raw'].n_times)
+            keep = (starts >= 0) & (ends <= dataset["raw"].n_times)
             n_drop = int((~keep).sum())
             if n_drop:
                 log_or_print(
@@ -360,12 +388,15 @@ def crop_by_epoch(dataset, userargs):
     from ``len(epoch.times)`` avoids the inclusive-``tmax`` off-by-one that can
     otherwise remove the last sample of the final epoch.
     """
-    userargs = proc_userargs(userargs, {
-        'epoch_key': 'sim_ep',
-        'num_edge_epoch': 0,
-    })
-    epoch_key = userargs['epoch_key']
-    num_edge_epoch = userargs['num_edge_epoch']
+    userargs = proc_userargs(
+        userargs,
+        {
+            "epoch_key": "sim_ep",
+            "num_edge_epoch": 0,
+        },
+    )
+    epoch_key = userargs["epoch_key"]
+    num_edge_epoch = userargs["num_edge_epoch"]
 
     epoch = dataset[epoch_key]
     events = copy.deepcopy(epoch.events)
@@ -373,8 +404,8 @@ def crop_by_epoch(dataset, userargs):
     if not len(events):
         raise ValueError(f"{epoch_key!r} contains no epochs to crop around.")
 
-    raw = dataset['raw']
-    sfreq = raw.info['sfreq']
+    raw = dataset["raw"]
+    sfreq = raw.info["sfreq"]
     epoch_start_shift = int(round(epoch.tmin * sfreq))
     first_sample = events[0, 0] + epoch_start_shift
     last_sample = events[-1, 0] + epoch_start_shift + len(epoch.times) - 1
@@ -383,9 +414,7 @@ def crop_by_epoch(dataset, userargs):
     first_sample += edge_samples
     last_sample -= edge_samples
     if first_sample > last_sample:
-        raise ValueError(
-            "num_edge_epoch removes the complete epoch-covered data span."
-        )
+        raise ValueError("num_edge_epoch removes the complete epoch-covered data span.")
 
     first_sample = max(first_sample, raw.first_samp)
     last_sample = min(last_sample, raw.last_samp)
@@ -408,7 +437,7 @@ def create_epoch(dataset, userargs):
       **This is the mode you want for TR (fMRI-volume) epochs.**
     - ``'auto'`` -- the window is estimated from the data: ``tmin`` defaults to
       0 and ``tmax`` is the median inter-event interval (x1.02, capped at the
-      largest gap). Use it when the period is not known a priori, or when the 
+      largest gap). Use it when the period is not known a priori, or when the
       trigger is not perfectly periodic.
       **This is the mode you want for helium-pump (He) epochs.**
 
@@ -428,47 +457,54 @@ def create_epoch(dataset, userargs):
     :func:`create_He_epoch` (auto, from ``dataset['he_event_key']``); reach for
     ``create_epoch`` directly only when you need a non-default window or mode.
     """
-    if 'event' in userargs:
+    if "event" in userargs:
         raise KeyError(
             "create_epoch no longer takes 'event' (the old 'TR'/'He' switch). "
             "Use mode='fixed'|'auto' with an explicit event_key (or the "
             "create_TR_epoch / create_He_epoch wrappers); for a triggerless "
-            "grid use simulate_epoch.")
+            "grid use simulate_epoch."
+        )
 
-    userargs = proc_userargs(userargs, {
-        'mode': 'fixed',
-        'event_key': None,
-        'tmin': 0.0,
-        'tmax': None,
-        'random': False,
-        'correct_trig': False,
-        'epoch_key': None,
-        'check_spacing': True,   # fixed mode: warn on forgotten/spurious triggers
-        'expected_interval': None,
-    })
-    
-    mode = userargs['mode']
-    if mode not in ('fixed', 'auto'):
+    userargs = proc_userargs(
+        userargs,
+        {
+            "mode": "fixed",
+            "event_key": None,
+            "tmin": 0.0,
+            "tmax": None,
+            "random": False,
+            "correct_trig": False,
+            "epoch_key": None,
+            "check_spacing": True,  # fixed mode: warn on forgotten/spurious triggers
+            "expected_interval": None,
+        },
+    )
+
+    mode = userargs["mode"]
+    if mode not in ("fixed", "auto"):
         raise ValueError(
             f"mode {mode!r} not recognized; use 'fixed' or 'auto' "
-            f"(for a triggerless grid use simulate_epoch).")
+            f"(for a triggerless grid use simulate_epoch)."
+        )
 
-    event_key = userargs['event_key']
-    tmin = userargs['tmin']
-    tmax = userargs['tmax']
-    random = userargs['random']
-    correct_trig = userargs['correct_trig']
-    epoch_key = userargs['epoch_key']
-    check_spacing = userargs['check_spacing']
-    expected_interval = userargs['expected_interval']
-    sfreq = dataset['raw'].info['sfreq']
+    event_key = userargs["event_key"]
+    tmin = userargs["tmin"]
+    tmax = userargs["tmax"]
+    random = userargs["random"]
+    correct_trig = userargs["correct_trig"]
+    epoch_key = userargs["epoch_key"]
+    check_spacing = userargs["check_spacing"]
+    expected_interval = userargs["expected_interval"]
+    sfreq = dataset["raw"].info["sfreq"]
 
     if event_key is None:
         raise ValueError(
-            f"mode={mode!r} needs 'event_key' (annotation label[s] to epoch on).")
+            f"mode={mode!r} needs 'event_key' (annotation label[s] to epoch on)."
+        )
     if epoch_key is None:
         raise ValueError(
-            f"mode={mode!r} needs 'epoch_key' (dataset key to store the epochs).")
+            f"mode={mode!r} needs 'epoch_key' (dataset key to store the epochs)."
+        )
 
     # Fast path: reuse an existing epoch set, only rescaling the sample indices
     # if the raw was resampled since (keeps onsets aligned to the new sfreq).
@@ -476,49 +512,72 @@ def create_epoch(dataset, userargs):
     if isinstance(dataset.get(epoch_key), mne.Epochs):
         cached = dataset[epoch_key]
         events = cached.events.copy()
-        events[:, 0] //= int(cached.info['sfreq'] // sfreq)
+        events[:, 0] //= int(cached.info["sfreq"] // sfreq)
         event_id = next(iter(cached.event_id.values()))
     else:
-        all_events, ev_id = mne.events_from_annotations(dataset['raw'])
+        all_events, ev_id = mne.events_from_annotations(dataset["raw"])
         event_id, _ = _first_present(ev_id, event_key)
         events = all_events
-        if mode == 'fixed' and correct_trig:
-            events = correct_trigger(dataset['raw'], events, event_id,
-                                     tmin=tmin, tmax=tmax, template='mid',
-                                     channel=0, hwin=3)
+        if mode == "fixed" and correct_trig:
+            events = correct_trigger(
+                dataset["raw"],
+                events,
+                event_id,
+                tmin=tmin,
+                tmax=tmax,
+                template="mid",
+                channel=0,
+                hwin=3,
+            )
 
     # Work only with the requested event code and remove exact repeated sample
     # annotations before interval diagnostics or MNE Epochs construction.
     events = _deduplicate_event_samples(events, event_id, epoch_key)
 
-    if mode == 'auto':
+    if mode == "auto":
         # size the window from the trigger spacing (period unknown a priori)
         gaps = np.diff(events[:, 0])
         tmax = min(np.median(gaps) * 1.02, np.max(gaps)) / sfreq
     elif tmax is None:
-        raise ValueError("mode='fixed' needs 'tmin' and 'tmax' (the epoch window in s).")
+        raise ValueError(
+            "mode='fixed' needs 'tmin' and 'tmax' (the epoch window in s)."
+        )
 
     # fixed mode assumes a periodic trigger (window ~= period): warn if the
     # spacing looks like it has forgotten / spurious events (diagnostic only).
-    if mode == 'fixed' and check_spacing and not random:
+    if mode == "fixed" and check_spacing and not random:
         if expected_interval is None:
             expected_interval = tmax - tmin
         _check_fixed_spacing(
-            events[:, 0], sfreq, expected_interval=expected_interval,
-            first_samp=int(dataset['raw'].first_samp), name=epoch_key)
+            events[:, 0],
+            sfreq,
+            expected_interval=expected_interval,
+            first_samp=int(dataset["raw"].first_samp),
+            name=epoch_key,
+        )
 
     if random:
         tps = events[:, 0]
-        surrogate = np.sort(np.random.choice(
-            np.arange(tps.min(), tps.max()), size=len(tps), replace=False))
+        surrogate = np.sort(
+            np.random.choice(
+                np.arange(tps.min(), tps.max()), size=len(tps), replace=False
+            )
+        )
         events, event_id = _events_from_timepoints(surrogate), 1
 
     # if random and epoch_key.endswith('_ep'):
     #     epoch_key = epoch_key + '_rand'   # tr_ep -> tr_ep_rand, he_ep -> he_ep_rand
 
     dataset[epoch_key] = mne.Epochs(
-        dataset['raw'], events=events, tmin=tmin, tmax=tmax, event_id=event_id,
-        baseline=None, proj=False, preload=True)
+        dataset["raw"],
+        events=events,
+        tmin=tmin,
+        tmax=tmax,
+        event_id=event_id,
+        baseline=None,
+        proj=False,
+        preload=True,
+    )
     return dataset
 
 
@@ -538,25 +597,28 @@ def create_TR_epoch(dataset, userargs):
     they have forgotten or spurious events -- e.g. one gap ~2x the rest usually
     means a missed trigger (add it in your ``initialize``/``on_init``).
     """
-    userargs = proc_userargs(userargs, {
-        'event_key': dataset.get('tr_event_key'),
-        'tmin': 0.0,
-        'duration': dataset.get('tr_interval'),
-        'epoch_key': 'tr_ep',
-        'correct_trig': True,
-        'random': False,
-        'check_spacing': True,
-    })
-    duration = userargs.pop('duration')
+    userargs = proc_userargs(
+        userargs,
+        {
+            "event_key": dataset.get("tr_event_key"),
+            "tmin": 0.0,
+            "duration": dataset.get("tr_interval"),
+            "epoch_key": "tr_ep",
+            "correct_trig": True,
+            "random": False,
+            "check_spacing": True,
+        },
+    )
+    duration = userargs.pop("duration")
     if duration is None:
         raise KeyError(
             "create_TR_epoch needs dataset['tr_interval'] (or an explicit duration)."
         )
-    sfreq = dataset['raw'].info['sfreq']
+    sfreq = dataset["raw"].info["sfreq"]
     n_samples = _duration_to_n_samples(duration, sfreq, "create_TR_epoch duration")
-    userargs['tmax'] = userargs['tmin'] + (n_samples - 1) / sfreq
-    userargs['expected_interval'] = float(duration)
-    return create_epoch(dataset, {'mode': 'fixed', **userargs})
+    userargs["tmax"] = userargs["tmin"] + (n_samples - 1) / sfreq
+    userargs["expected_interval"] = float(duration)
+    return create_epoch(dataset, {"mode": "fixed", **userargs})
 
 
 def create_He_epoch(dataset, userargs):
@@ -565,13 +627,16 @@ def create_He_epoch(dataset, userargs):
     (mode='auto') that reads ``dataset['he_event_key']``; in the common case a
     config only needs ``{'create_He_epoch': {}}``.
     """
-    userargs = proc_userargs(userargs, {
-        'event_key': dataset.get('he_event_key'),
-        'tmin': 0.0,
-        'epoch_key': 'he_ep',
-        'random': False,
-    })
-    return create_epoch(dataset, {'mode': 'auto', **userargs})
+    userargs = proc_userargs(
+        userargs,
+        {
+            "event_key": dataset.get("he_event_key"),
+            "tmin": 0.0,
+            "epoch_key": "he_ep",
+            "random": False,
+        },
+    )
+    return create_epoch(dataset, {"mode": "auto", **userargs})
 
 
 def simulate_epoch(dataset, userargs):
@@ -591,24 +656,27 @@ def simulate_epoch(dataset, userargs):
       * ``tmin``       -- epoch start relative to each grid point (default 0.0).
       * ``epoch_key`` -- output key (default ``'sim_ep'``).
     """
-    userargs = proc_userargs(userargs, {
-        'width': None,
-        'jitter': 0.0,
-        'tmin': 0.0,
-        'epoch_key': 'sim_ep',
-    })
-    width = userargs['width']
+    userargs = proc_userargs(
+        userargs,
+        {
+            "width": None,
+            "jitter": 0.0,
+            "tmin": 0.0,
+            "epoch_key": "sim_ep",
+        },
+    )
+    width = userargs["width"]
     if width is None:
         raise ValueError("simulate_epoch needs 'width' (the epoch/grid width in s).")
-    jitter_frac = userargs['jitter']
-    tmin = userargs['tmin']
-    epoch_key = userargs['epoch_key']
+    jitter_frac = userargs["jitter"]
+    tmin = userargs["tmin"]
+    epoch_key = userargs["epoch_key"]
 
-    sfreq = dataset['raw'].info['sfreq']
+    sfreq = dataset["raw"].info["sfreq"]
     step = _duration_to_n_samples(width, sfreq, "simulate_epoch width")
     tps = np.arange(
-        dataset['raw'].first_samp,
-        dataset['raw'].last_samp + 1,
+        dataset["raw"].first_samp,
+        dataset["raw"].last_samp + 1,
         step,
         dtype=np.int64,
     )
@@ -621,6 +689,13 @@ def simulate_epoch(dataset, userargs):
     # so jitter=0 produces exact, non-overlapping [onset, onset + width) spans.
     tmax = tmin + (step - 1) / sfreq
     dataset[epoch_key] = mne.Epochs(
-        dataset['raw'], events=_events_from_timepoints(tps), tmin=tmin,
-        tmax=tmax, event_id=1, baseline=None, proj=False, preload=True)
+        dataset["raw"],
+        events=_events_from_timepoints(tps),
+        tmin=tmin,
+        tmax=tmax,
+        event_id=1,
+        baseline=None,
+        proj=False,
+        preload=True,
+    )
     return dataset

@@ -1,6 +1,4 @@
-"""RHINO utilities.
-
-"""
+"""RHINO utilities."""
 
 # Authors: Mark Woolrich <mark.woolrich@ohba.ox.ac.uk>
 #          Chetan Gohil <chetan.gohil@psych.ox.ac.uk>
@@ -37,6 +35,7 @@ from numba.types import CPointer
 
 
 import logging
+
 logging.getLogger("numba").setLevel(logging.WARNING)
 
 from fsl import wrappers as fsl_wrappers
@@ -44,6 +43,7 @@ from fsl import wrappers as fsl_wrappers
 from osl_ephys.source_recon.beamforming import transform_recon_timeseries
 from osl_ephys.utils.logger import log_or_print
 from osl_ephys.utils import soft_import
+
 
 def get_rhino_filenames(subjects_dir, subject):
     """Get paths to all RHINO files.
@@ -79,15 +79,30 @@ def get_rhino_filenames(subjects_dir, subject):
         "smri_file": op.join(surfaces_dir, "smri.nii.gz"),
         "mni2mri_flirt_xform_file": op.join(surfaces_dir, "mni2mri_flirt_xform.txt"),
         "mni_mri_t_file": op.join(surfaces_dir, "mni_mri-trans.fif"),
-        "bet_outskin_mesh_vtk_file": op.join(surfaces_dir, "outskin_mesh.vtk"),  # BET output
-        "bet_inskull_mesh_vtk_file": op.join(surfaces_dir, "inskull_mesh.vtk"),  # BET output
-        "bet_outskull_mesh_vtk_file": op.join(surfaces_dir, "outskull_mesh.vtk"),  # BET output
+        "bet_outskin_mesh_vtk_file": op.join(
+            surfaces_dir, "outskin_mesh.vtk"
+        ),  # BET output
+        "bet_inskull_mesh_vtk_file": op.join(
+            surfaces_dir, "inskull_mesh.vtk"
+        ),  # BET output
+        "bet_outskull_mesh_vtk_file": op.join(
+            surfaces_dir, "outskull_mesh.vtk"
+        ),  # BET output
         "bet_outskin_mesh_file": op.join(surfaces_dir, "outskin_mesh.nii.gz"),
-        "bet_outskin_plus_nose_mesh_file": op.join(surfaces_dir, "outskin_plus_nose_mesh.nii.gz"),
+        "bet_outskin_plus_nose_mesh_file": op.join(
+            surfaces_dir, "outskin_plus_nose_mesh.nii.gz"
+        ),
         "bet_inskull_mesh_file": op.join(surfaces_dir, "inskull_mesh.nii.gz"),
         "bet_outskull_mesh_file": op.join(surfaces_dir, "outskull_mesh.nii.gz"),
-        "std_brain": op.join(os.environ["FSLDIR"], "data", "standard", "MNI152_T1_1mm_brain.nii.gz"),
-        "std_brain_bigfov": op.join(os.environ["FSLDIR"], "data", "standard", "MNI152_T1_1mm_BigFoV_facemask.nii.gz"),
+        "std_brain": op.join(
+            os.environ["FSLDIR"], "data", "standard", "MNI152_T1_1mm_brain.nii.gz"
+        ),
+        "std_brain_bigfov": op.join(
+            os.environ["FSLDIR"],
+            "data",
+            "standard",
+            "MNI152_T1_1mm_BigFoV_facemask.nii.gz",
+        ),
         "completed": op.join(surfaces_dir, "completed.txt"),
     }
 
@@ -101,7 +116,9 @@ def get_rhino_filenames(subjects_dir, subject):
         "head_scaledmri_t_file": op.join(coreg_dir, "head_scaledmri-trans.fif"),
         "head_mri_t_file": op.join(coreg_dir, "head_mri-trans.fif"),
         "ctf_head_mri_t_file": op.join(coreg_dir, "ctf_head_mri-trans.fif"),
-        "mrivoxel_scaledmri_t_file": op.join(coreg_dir, "mrivoxel_scaledmri_t_file-trans.fif"),
+        "mrivoxel_scaledmri_t_file": op.join(
+            coreg_dir, "mrivoxel_scaledmri_t_file-trans.fif"
+        ),
         "mni_nasion_mni_file": op.join(coreg_dir, "mni_nasion.txt"),
         "mni_rpa_mni_file": op.join(coreg_dir, "mni_rpa.txt"),
         "mni_lpa_mni_file": op.join(coreg_dir, "mni_lpa.txt"),
@@ -123,24 +140,34 @@ def get_rhino_filenames(subjects_dir, subject):
         "bet_outskin_surf_file": op.join(coreg_dir, "scaled_outskin_surf.surf"),
         "bet_inskull_surf_file": op.join(coreg_dir, "scaled_inskull_surf.surf"),
         "bet_outskull_surf_file": op.join(coreg_dir, "scaled_outskull_surf.surf"),
-        "bet_outskin_plus_nose_surf_file": op.join(coreg_dir, "scaled_outskin_plus_nose_surf.surf"),
+        "bet_outskin_plus_nose_surf_file": op.join(
+            coreg_dir, "scaled_outskin_plus_nose_surf.surf"
+        ),
         # BET output surface mask as nii in native space
         "bet_outskin_mesh_file": op.join(coreg_dir, "scaled_outskin_mesh.nii.gz"),
-        "bet_outskin_plus_nose_mesh_file": op.join(coreg_dir, "scaled_outskin_plus_nose_mesh.nii.gz"),
+        "bet_outskin_plus_nose_mesh_file": op.join(
+            coreg_dir, "scaled_outskin_plus_nose_mesh.nii.gz"
+        ),
         "bet_inskull_mesh_file": op.join(coreg_dir, "scaled_inskull_mesh.nii.gz"),
         "bet_outskull_mesh_file": op.join(coreg_dir, "scaled_outskull_mesh.nii.gz"),
-        "std_brain": op.join(os.environ["FSLDIR"], "data", "standard", "MNI152_T1_1mm_brain.nii.gz"),
+        "std_brain": op.join(
+            os.environ["FSLDIR"], "data", "standard", "MNI152_T1_1mm_brain.nii.gz"
+        ),
     }
 
     # All RHINO files
-    files = {"surf": surf_files, "coreg": coreg_files, "fwd_model": op.join(rhino_dir, "model-fwd.fif")}
+    files = {
+        "surf": surf_files,
+        "coreg": coreg_files,
+        "fwd_model": op.join(rhino_dir, "model-fwd.fif"),
+    }
 
     return files
 
 
 def system_call(cmd, verbose=False):
-    """ Run a system call.
-    
+    """Run a system call.
+
     Parameters
     ----------
     cmd : string
@@ -196,7 +223,9 @@ def niimask2indexpointcloud(nii_fname, volindex=None):
         vol = vol[:, :, :, volindex]
 
     if not len(vol.shape) == 3:
-        Exception("nii_mask must be a 3D volume, or nii_mask must be a 4D volume with volindex specifying a volume index")
+        Exception(
+            "nii_mask must be a 3D volume, or nii_mask must be a 4D volume with volindex specifying a volume index"
+        )
 
     # Turn the nvoxx x nvoxy x nvoxz volume into a 3 x npoints point cloud
     pc = np.asarray(np.where(vol != 0))
@@ -228,7 +257,9 @@ def niimask2mmpointcloud(nii_mask, volindex=None):
         vol = vol[:, :, :, volindex]
 
     if not len(vol.shape) == 3:
-        Exception("nii_mask must be a 3D volume, or nii_mask must be a 4D volume with volindex specifying a volume index")
+        Exception(
+            "nii_mask must be a 3D volume, or nii_mask must be a 4D volume with volindex specifying a volume index"
+        )
 
     # Turn the nvoxx x nvoxy x nvoxz volume into a 3 x npoints point cloud
     pc_nativeindex = np.asarray(np.where(vol != 0))
@@ -275,7 +306,9 @@ def get_vol_info_from_nii(mri):
         Dictionary with keys 'mri_width', 'mri_height', 'mri_depth' and 'mri_volume_name'.
     """
     dims = nib.load(mri).get_fdata().shape
-    out = dict(mri_width=dims[0], mri_height=dims[1], mri_depth=dims[2], mri_volume_name=mri)
+    out = dict(
+        mri_width=dims[0], mri_height=dims[1], mri_depth=dims[2], mri_volume_name=mri
+    )
     return out
 
 
@@ -587,7 +620,7 @@ def icp(A, B, init_pose=None, max_iterations=50, tolerance=0.0001):
 
     for i in range(max_iterations):
         # Find the nearest neighbors between the current source and destination points
-        #distances, indices = nearest_neighbor(src[:m,:].T, dst[:m,:].T)
+        # distances, indices = nearest_neighbor(src[:m,:].T, dst[:m,:].T)
         distances, indices = kdtree.query(src[:m, :].T)
 
         # Compute the transformation between the current source and nearest # destination points
@@ -675,10 +708,28 @@ def rhino_icp(smri_headshape_polhemus, polhemus_headshape_polhemus, n_init=10):
                 data2r_icp = xform_points(xform, data2)
                 plt.figure(frameon=False)
                 ax = plt.axes(projection="3d")
-                ax.scatter(data1[0, 0:-1:10], data1[1, 0:-1:10], data1[2, 0:-1:10], c="blue", marker=".", s=1)
-                ax.scatter(data2[0, :], data2[1, :], data2[2, :], c="red", marker="o", s=5)
-                ax.scatter(data2r[0, :], data2r[1, :], data2r[2, :], c="green", marker="o", s=5)
-                ax.scatter(data2r_icp[0, :], data2r_icp[1, :], data2r_icp[2, :], c="yellow", marker="o", s=5)
+                ax.scatter(
+                    data1[0, 0:-1:10],
+                    data1[1, 0:-1:10],
+                    data1[2, 0:-1:10],
+                    c="blue",
+                    marker=".",
+                    s=1,
+                )
+                ax.scatter(
+                    data2[0, :], data2[1, :], data2[2, :], c="red", marker="o", s=5
+                )
+                ax.scatter(
+                    data2r[0, :], data2r[1, :], data2r[2, :], c="green", marker="o", s=5
+                )
+                ax.scatter(
+                    data2r_icp[0, :],
+                    data2r_icp[1, :],
+                    data2r_icp[2, :],
+                    c="yellow",
+                    marker="o",
+                    s=5,
+                )
                 plt.show()
                 plt.draw()
 
@@ -687,11 +738,23 @@ def rhino_icp(smri_headshape_polhemus, polhemus_headshape_polhemus, n_init=10):
         b = (np.random.uniform() - 0.5) * np.pi / 6
         c = (np.random.uniform() - 0.5) * np.pi / 6
 
-        Rx = np.array([(1, 0, 0), (0, np.cos(a), -np.sin(a)), (0, np.sin(a), np.cos(a))])
-        Ry = np.array([(np.cos(b), 0, np.sin(b)), (0, 1, 0), (-np.sin(b), 0, np.cos(b))])
-        Rz = np.array([(np.cos(c), -np.sin(c), 0), (np.sin(c), np.cos(c), 0), (0, 0, 1)])
+        Rx = np.array(
+            [(1, 0, 0), (0, np.cos(a), -np.sin(a)), (0, np.sin(a), np.cos(a))]
+        )
+        Ry = np.array(
+            [(np.cos(b), 0, np.sin(b)), (0, 1, 0), (-np.sin(b), 0, np.cos(b))]
+        )
+        Rz = np.array(
+            [(np.cos(c), -np.sin(c), 0), (np.sin(c), np.cos(c), 0), (0, 0, 1)]
+        )
 
-        T = 10 * np.array([np.random.uniform() - 0.5, np.random.uniform() - 0.5, np.random.uniform() - 0.5])
+        T = 10 * np.array(
+            [
+                np.random.uniform() - 0.5,
+                np.random.uniform() - 0.5,
+                np.random.uniform() - 0.5,
+            ]
+        )
         Mr = np.eye(4)
         Mr[0:3, 0:3] = Rx @ Ry @ Rz
         Mr[0:3, -1] = np.reshape(T, (1, -1))
@@ -725,7 +788,9 @@ def get_vtk_mesh_native(vtk_mesh_file, nii_mesh_file):
     rrs_nii = xform_points(xform_flirtcoords2nii, rrs_flirtcoords.T).T
 
     num_tris = int(data.iloc[num_rrs + 4, 1])
-    tris_nii = data.iloc[num_rrs + 5 : num_rrs + 5 + num_tris, 1:4].to_numpy().astype(int)
+    tris_nii = (
+        data.iloc[num_rrs + 5 : num_rrs + 5 + num_tris, 1:4].to_numpy().astype(int)
+    )
 
     return rrs_nii, tris_nii
 
@@ -749,7 +814,11 @@ def get_flirtcoords2native_xform(nii_mesh_file):
     # But let's just double check that is the case:
     smri_orient = get_orient(nii_mesh_file)
     if smri_orient != "RADIOLOGICAL":
-        raise ValueError("Orientation of file must be RADIOLOGICAL, please check output of: fslorient -getorient {}".format(nii_mesh_file))
+        raise ValueError(
+            "Orientation of file must be RADIOLOGICAL, please check output of: fslorient -getorient {}".format(
+                nii_mesh_file
+            )
+        )
 
     xform_nativevox2native = get_sform(nii_mesh_file)["trans"]
     dims = np.append(nib.load(nii_mesh_file).header.get_zooms(), 1)
@@ -761,7 +830,9 @@ def get_flirtcoords2native_xform(nii_mesh_file):
     return xform_flirtcoords2native
 
 
-def transform_vtk_mesh(vtk_mesh_file_in, nii_mesh_file_in, out_vtk_file, nii_mesh_file_out, xform_file):
+def transform_vtk_mesh(
+    vtk_mesh_file_in, nii_mesh_file_in, out_vtk_file, nii_mesh_file_out, xform_file
+):
     """
     Outputs mesh to out_vtk_file, which is the result of applying the transform xform to vtk_mesh_file_in
 
@@ -805,7 +876,11 @@ def get_mne_xform_from_flirt_xform(flirt_xform, nii_mesh_file_in, nii_mesh_file_
     flirtcoords2native_xform_in = get_flirtcoords2native_xform(nii_mesh_file_in)
     flirtcoords2native_xform_out = get_flirtcoords2native_xform(nii_mesh_file_out)
 
-    xform = flirtcoords2native_xform_out @ flirt_xform @ np.linalg.inv(flirtcoords2native_xform_in)
+    xform = (
+        flirtcoords2native_xform_out
+        @ flirt_xform
+        @ np.linalg.inv(flirtcoords2native_xform_in)
+    )
 
     return xform
 
@@ -847,7 +922,9 @@ def get_flirt_xform_between_axes(from_nii, target_nii):
     return from2to
 
 
-def timeseries2nii(timeseries, timeseries_coords, reference_mask_fname, out_nii_fname, times=None):
+def timeseries2nii(
+    timeseries, timeseries_coords, reference_mask_fname, out_nii_fname, times=None
+):
     """Maps the (ndipoles,tpts) array of timeseries to the grid defined by reference_mask_fname and outputs them as a niftii file.
 
     Assumes the timeseries' dipoles correspond to those in reference_mask_fname. Both timeseries and reference_mask_fname are often output from rhino.transform_recon_timeseries.
@@ -890,7 +967,9 @@ def timeseries2nii(timeseries, timeseries_coords, reference_mask_fname, out_nii_
         # Exclude any timeseries_coords that are further than gridstep away
         # from the best matching coords_mni
         if distance < gridstep:
-            mni_nii_values[coords_ind[ind, 0], coords_ind[ind, 1], coords_ind[ind, 2], :] = timeseries[ind, :]
+            mni_nii_values[
+                coords_ind[ind, 0], coords_ind[ind, 1], coords_ind[ind, 2], :
+            ] = timeseries[ind, :]
 
     # SAVE AS NIFTI
     vol_nii = nib.Nifti1Image(mni_nii_values, mni_nii_nib.affine)
@@ -950,14 +1029,26 @@ def recon_timeseries2niftii(
     # ------------------------------------------------------------------------------------------------
     # Convert the recon_timeseries to the standard space brain dipole grid at the specified resolution
 
-    recon_ts_out, reference_brain_fname, recon_coords_out, recon_indices = transform_recon_timeseries(
-        subjects_dir, subject, recon_timeseries=recon_timeseries, spatial_resolution=spatial_resolution, reference_brain=reference_brain,
+    recon_ts_out, reference_brain_fname, recon_coords_out, recon_indices = (
+        transform_recon_timeseries(
+            subjects_dir,
+            subject,
+            recon_timeseries=recon_timeseries,
+            spatial_resolution=spatial_resolution,
+            reference_brain=reference_brain,
+        )
     )
 
     # ----------------------------------
     # Output recon_ts_out as niftii file
 
-    out_nii_fname = timeseries2nii(recon_ts_out, recon_coords_out, reference_brain_fname, out_nii_fname, times=times)
+    out_nii_fname = timeseries2nii(
+        recon_ts_out,
+        recon_coords_out,
+        reference_brain_fname,
+        out_nii_fname,
+        times=times,
+    )
 
     return out_nii_fname, reference_brain_fname
 
@@ -978,12 +1069,16 @@ def save_or_show_renderer(renderer, filename):
         allowed_extensions = [".html", ".pdf", ".svg", ".eps", ".ps", ".tex"]
         ext = Path(filename).suffix
         if ext not in allowed_extensions:
-            raise ValueError(f"{ext} not allowed, please use one of the following: {allowed_extensions}")
+            raise ValueError(
+                f"{ext} not allowed, please use one of the following: {allowed_extensions}"
+            )
 
         log_or_print(f"saving {filename}")
         if ext == ".html":
             logging.getLogger("param.Row").setLevel(logging.ERROR)  # suppress warnings
-            logging.getLogger("param.VTKRenderWindowSynchronized").setLevel(logging.ERROR)
+            logging.getLogger("param.VTKRenderWindowSynchronized").setLevel(
+                logging.ERROR
+            )
             renderer.figure.plotter.export_html(filename)
         elif ext in allowed_extensions:
             renderer.figure.plotter.save_graphic(filename)
@@ -1015,7 +1110,9 @@ def create_freesurfer_meshes_from_bet_surfaces(filenames, xform_mri_voxel2mri):
     )
 
 
-def create_freesurfer_mesh_from_bet_surface(infile, surf_outfile, xform_mri_voxel2mri, nii_mesh_file=None):
+def create_freesurfer_mesh_from_bet_surface(
+    infile, surf_outfile, xform_mri_voxel2mri, nii_mesh_file=None
+):
     """Creates surface mesh in .surf format and in native mri space in mm from infile.
 
     Parameters
@@ -1061,23 +1158,35 @@ def create_freesurfer_mesh_from_bet_surface(infile, surf_outfile, xform_mri_voxe
         # or you might want to flip the normals to make them point outward, not mandatory
         pcd.normals = o3d.utility.Vector3dVector(-np.asarray(pcd.normals))
 
-        mesh = o3d.geometry.TriangleMesh.create_from_point_cloud_poisson(pcd, depth=8)[0]
+        mesh = o3d.geometry.TriangleMesh.create_from_point_cloud_poisson(pcd, depth=8)[
+            0
+        ]
 
-        #mesh = mesh.simplify_quadric_decimation(nii_nativeindex.shape[1])
+        # mesh = mesh.simplify_quadric_decimation(nii_nativeindex.shape[1])
 
         verts = np.asarray(mesh.vertices)
         tris = np.asarray(mesh.triangles).astype(int)
 
         # output in freesurfer file format
-        write_surface(surf_outfile, verts, tris, file_format="freesurfer", overwrite=True)
+        write_surface(
+            surf_outfile, verts, tris, file_format="freesurfer", overwrite=True
+        )
 
     elif ext == ".vtk":
         if nii_mesh_file is None:
-            raise ValueError("You must specify a nii_mesh_file (niftii format), if infile format is vtk")
+            raise ValueError(
+                "You must specify a nii_mesh_file (niftii format), if infile format is vtk"
+            )
 
         rrs_native, tris_native = get_vtk_mesh_native(infile, nii_mesh_file)
 
-        write_surface(surf_outfile, rrs_native, tris_native, file_format="freesurfer", overwrite=True)
+        write_surface(
+            surf_outfile,
+            rrs_native,
+            tris_native,
+            file_format="freesurfer",
+            overwrite=True,
+        )
 
     else:
         raise ValueError("Invalid infile. Needs to be a .nii.gz or .vtk file")
@@ -1085,7 +1194,7 @@ def create_freesurfer_mesh_from_bet_surface(infile, surf_outfile, xform_mri_voxe
 
 def transform_bet_surfaces(flirt_xform_file, mne_xform_file, filenames, smri_file):
     """Transforms bet surfaces into mne space.
-    
+
     Parameters
     ----------
     flirt_xform_file : string
@@ -1097,7 +1206,7 @@ def transform_bet_surfaces(flirt_xform_file, mne_xform_file, filenames, smri_fil
     smri_file : string
         Path to structural MRI file.
     """
-    
+
     # Transform betsurf mask/mesh using passed in flirt transform and mne transform
     for mesh_name in {"outskin_mesh", "inskull_mesh", "outskull_mesh"}:
         # xform mask
@@ -1121,7 +1230,9 @@ def transform_bet_surfaces(flirt_xform_file, mne_xform_file, filenames, smri_fil
         )
 
 
-def extract_rhino_files(old_subjects_dir, new_subjects_dir, subjects="all", exclude=None, gen_report=True):
+def extract_rhino_files(
+    old_subjects_dir, new_subjects_dir, subjects="all", exclude=None, gen_report=True
+):
     """Extract RHINO files.
 
     This function extracts surfaces and coregistration files calculated in a previous run.
@@ -1158,7 +1269,9 @@ def extract_rhino_files(old_subjects_dir, new_subjects_dir, subjects="all", excl
     subjects_to_copy = []
     for subject_dir in sorted(glob(f"{old_subjects_dir}/*")):
         subject_name = Path(subject_dir).name
-        if (subject_name in ["report", "logs"] + exclude) or (subjects != "all" and subject_name not in subjects):
+        if (subject_name in ["report", "logs"] + exclude) or (
+            subjects != "all" and subject_name not in subjects
+        ):
             continue
         subjects_to_copy.append(subject_name)
 
@@ -1204,7 +1317,9 @@ def extract_rhino_files(old_subjects_dir, new_subjects_dir, subjects="all", excl
                 raise FileNotFoundError(old_file)
 
         # Data from old report
-        old_report_data = pickle.load(open(f"{old_subjects_dir}/{subject}/report_data.pkl", "rb"))
+        old_report_data = pickle.load(
+            open(f"{old_subjects_dir}/{subject}/report_data.pkl", "rb")
+        )
 
         # Create surfaces plots
         include_nose = old_report_data["include_nose"]
@@ -1217,7 +1332,9 @@ def extract_rhino_files(old_subjects_dir, new_subjects_dir, subjects="all", excl
             {
                 "compute_surfaces": True,
                 "include_nose": include_nose,
-                "do_mri2mniaxes_xform": old_report_data.pop("do_mri2mniaxes_xform", None),
+                "do_mri2mniaxes_xform": old_report_data.pop(
+                    "do_mri2mniaxes_xform", None
+                ),
                 "surface_plots": surface_plots,
             },
         )
@@ -1289,7 +1406,9 @@ def extract_rhino_files(old_subjects_dir, new_subjects_dir, subjects="all", excl
         coreg_filename = f"{new_dir}/coreg.html".replace(f"{new_subjects_dir}/", "")
 
         # Data from old report
-        old_report_data = pickle.load(open(f"{old_subjects_dir}/{subject}/report_data.pkl", "rb"))
+        old_report_data = pickle.load(
+            open(f"{old_subjects_dir}/{subject}/report_data.pkl", "rb")
+        )
 
         # Save info for the report
         src_report.add_to_data(
@@ -1298,7 +1417,9 @@ def extract_rhino_files(old_subjects_dir, new_subjects_dir, subjects="all", excl
                 "coregister": True,
                 "use_headshape": old_report_data["use_headshape"],
                 "use_nose": old_report_data["use_nose"],
-                "already_coregistered": old_report_data.pop("already_coregistered", None),
+                "already_coregistered": old_report_data.pop(
+                    "already_coregistered", None
+                ),
                 "allow_smri_scaling": old_report_data.pop("allow_smri_scaling", None),
                 "n_init_coreg": old_report_data.pop("n_init", None),
                 "fid_err": old_report_data.pop("fid_err", None),
@@ -1313,7 +1434,16 @@ def extract_rhino_files(old_subjects_dir, new_subjects_dir, subjects="all", excl
         # Generate report data for each subject
         reportdir = f"{new_subjects_dir}/report"
         for subject in subjects_to_copy:
-            src_report.gen_html_data({"source_recon": [{"Extracted RHINO Files From": f" {old_subjects_dir} "}]}, new_subjects_dir, subject, reportdir)
+            src_report.gen_html_data(
+                {
+                    "source_recon": [
+                        {"Extracted RHINO Files From": f" {old_subjects_dir} "}
+                    ]
+                },
+                new_subjects_dir,
+                subject,
+                reportdir,
+            )
 
         # Generate subjects report
         src_report.gen_html_page(reportdir)
@@ -1324,7 +1454,8 @@ def extract_rhino_files(old_subjects_dir, new_subjects_dir, subjects="all", excl
             log_or_print(f"* REMEMBER TO CHECK REPORT: {reportdir} *")
             log_or_print("******************************" + "*" * len(str(reportdir)))
 
-def save_polhemus_fif(raw, subjects_dir,subject):
+
+def save_polhemus_fif(raw, subjects_dir, subject):
     """Save the polhemus information (nasion, LPA, RPA, headshape) from a raw MNE file
 
     Files will be in subjects_dir/subject/coreg.
@@ -1344,56 +1475,85 @@ def save_polhemus_fif(raw, subjects_dir,subject):
         return
 
     # Initialize empty lists to store the 3D coordinates
-    nasion      = np.empty((0, 3))
-    LPA         = np.empty((0, 3))
-    RPA         = np.empty((0, 3))
-    headshape   = np.empty((0, 3))  
+    nasion = np.empty((0, 3))
+    LPA = np.empty((0, 3))
+    RPA = np.empty((0, 3))
+    headshape = np.empty((0, 3))
 
     # Check if there is digitisation information
     if not raw.info["dig"]:
-         log_or_print("Error: raw.info['dig'] is empty. Exiting function.")
-         return 
+        log_or_print("Error: raw.info['dig'] is empty. Exiting function.")
+        return
 
     else:
-    # Iterate through the digitalization points - the *1000 is for m to mm conversion
+        # Iterate through the digitalization points - the *1000 is for m to mm conversion
         for p in raw.info["dig"]:
             if p["kind"] == 1 and p["ident"] == 1:
-                LPA = np.append(LPA,(p["r"]*1000))  # Append the 3D coordinates of LPA
+                LPA = np.append(
+                    LPA, (p["r"] * 1000)
+                )  # Append the 3D coordinates of LPA
             elif p["kind"] == 1 and p["ident"] == 2:
-                nasion = np.append(nasion,p["r"]*1000) # Append the 3D coordinates of nasion
+                nasion = np.append(
+                    nasion, p["r"] * 1000
+                )  # Append the 3D coordinates of nasion
             elif p["kind"] == 1 and p["ident"] == 3:
-                RPA = np.append(RPA,(p["r"]*1000))  # Append the 3D coordinates of RPA
+                RPA = np.append(
+                    RPA, (p["r"] * 1000)
+                )  # Append the 3D coordinates of RPA
             elif p["kind"] == 4:
-                headshape = np.vstack([headshape, p["r"]*1000])  # Stack headshape points
+                headshape = np.vstack(
+                    [headshape, p["r"] * 1000]
+                )  # Stack headshape points
 
     # Get the location to save the files to
     coreg_filenames = get_rhino_filenames(subjects_dir, subject)
-    path_to_save    = coreg_filenames['coreg']['basedir']
+    path_to_save = coreg_filenames["coreg"]["basedir"]
 
     # Save to .txt files
     if nasion.any():
-        np.savetxt(os.path.join(path_to_save, "polhemus_nasion.txt"), nasion.T, delimiter=' ', fmt='%.40e')
+        np.savetxt(
+            os.path.join(path_to_save, "polhemus_nasion.txt"),
+            nasion.T,
+            delimiter=" ",
+            fmt="%.40e",
+        )
     if LPA.any():
-        np.savetxt(os.path.join(path_to_save, "polhemus_LPA.txt"), LPA.T, delimiter=' ', fmt='%.40e')
+        np.savetxt(
+            os.path.join(path_to_save, "polhemus_LPA.txt"),
+            LPA.T,
+            delimiter=" ",
+            fmt="%.40e",
+        )
     if RPA.any():
-        np.savetxt(os.path.join(path_to_save, "polhemus_RPA.txt"), RPA.T, delimiter=' ', fmt='%.40e')
+        np.savetxt(
+            os.path.join(path_to_save, "polhemus_RPA.txt"),
+            RPA.T,
+            delimiter=" ",
+            fmt="%.40e",
+        )
     if headshape.any():
-        np.savetxt(os.path.join(path_to_save, "polhemus_headshape.txt"), headshape.T, delimiter=' ', fmt='%.40e')
+        np.savetxt(
+            os.path.join(path_to_save, "polhemus_headshape.txt"),
+            headshape.T,
+            delimiter=" ",
+            fmt="%.40e",
+        )
 
     log_or_print("Saved files to {}".format(path_to_save))
 
+
 def downsample_headshape(
     headshape,
-    downsample_amount=0.015,    # average over 1.5cm
+    downsample_amount=0.015,  # average over 1.5cm
     include_facial_info=True,
-    remove_zlim=0.02,           # Remove 2cm above nasion
-    angle=10,                   # At an angle of 10deg
+    remove_zlim=0.02,  # Remove 2cm above nasion
+    angle=10,  # At an angle of 10deg
     method="gridaverage",
-    face_Z = [-0.08, 0.02],     # Z-axis (up-down) -8cm to 2cm
-    face_Y = [0.06, 0.15],      # Y-axis (forward-back) 6 to 15cm
-    face_X = [-0.07, 0.07],     # X-axis (left_right) -7 to 7cm
+    face_Z=[-0.08, 0.02],  # Z-axis (up-down) -8cm to 2cm
+    face_Y=[0.06, 0.15],  # Y-axis (forward-back) 6 to 15cm
+    face_X=[-0.07, 0.07],  # X-axis (left_right) -7 to 7cm
     downsample_facial_info=True,
-    downsample_facial_info_amount=0.008 # average over 0.8cm
+    downsample_facial_info_amount=0.008,  # average over 0.8cm
 ):
     """
     Downsample headshape information for more accurate coregistration.
@@ -1432,37 +1592,38 @@ def downsample_headshape(
     # Filter facial points if needed
     if include_facial_info:
         facial_mask = (
-            (headshape[:, 2] > face_Z[0]) &
-            (headshape[:, 2] < face_Z[1]) &
-            (headshape[:, 1] > face_Y[0]) &
-            (headshape[:, 1] < face_Y[1]) &
-            (headshape[:, 0] > face_X[0]) &
-            (headshape[:, 0] < face_X[1])
+            (headshape[:, 2] > face_Z[0])
+            & (headshape[:, 2] < face_Z[1])
+            & (headshape[:, 1] > face_Y[0])
+            & (headshape[:, 1] < face_Y[1])
+            & (headshape[:, 0] > face_X[0])
+            & (headshape[:, 0] < face_X[1])
         )
         # Separate facial points and non-facial points
         facial_points = headshape[facial_mask]
 
         # Print shape of the headshape without facial points
         if downsample_facial_info:
-            facial_points = grid_average_downsample(facial_points, downsample_facial_info_amount)
-
+            facial_points = grid_average_downsample(
+                facial_points, downsample_facial_info_amount
+            )
 
     # Remove points above z-limit
     if remove_zlim is not None:
-        log_or_print('Removing Points Below Z_lim')
+        log_or_print("Removing Points Below Z_lim")
         # Rotate the point cloud to align the Z-axis with the specified angle
-        rotated_headshape = rotate_pointcloud(headshape, angle, 'x')
-        
+        rotated_headshape = rotate_pointcloud(headshape, angle, "x")
+
         # Filter points based on Z-limit
         z_mask = rotated_headshape[:, 2] > remove_zlim
         filtered_rotated_points = rotated_headshape[z_mask]
-        
+
         # Rotate the filtered points back to the original orientation
-        headshape = rotate_pointcloud(filtered_rotated_points, -angle, 'x')
+        headshape = rotate_pointcloud(filtered_rotated_points, -angle, "x")
 
     # Downsample the overall headshape
-    if method == 'gridaverage':
-        headshape = grid_average_downsample(headshape,downsample_amount)
+    if method == "gridaverage":
+        headshape = grid_average_downsample(headshape, downsample_amount)
     else:
         raise ValueError("Unsupported downsampling method: {}".format(method))
 
@@ -1471,16 +1632,25 @@ def downsample_headshape(
         headshape = np.vstack((headshape, facial_points))
 
     fig = plt.figure(figsize=(12, 6))
-    ax = fig.add_subplot(111, projection='3d')
-    ax.scatter(headshape_orig[:, 0], headshape_orig[:, 1], headshape_orig[:, 2], c='red', alpha=0.1, s=1)
-    ax.scatter(headshape[:, 0], headshape[:, 1], headshape[:, 2], c='blue', alpha=1, s=10)
+    ax = fig.add_subplot(111, projection="3d")
+    ax.scatter(
+        headshape_orig[:, 0],
+        headshape_orig[:, 1],
+        headshape_orig[:, 2],
+        c="red",
+        alpha=0.1,
+        s=1,
+    )
+    ax.scatter(
+        headshape[:, 0], headshape[:, 1], headshape[:, 2], c="blue", alpha=1, s=10
+    )
     plt.title("Downsampled Headshape")
     plt.show()
 
     return headshape
 
 
-def rotate_pointcloud(points, angle_degrees, axis='x'):
+def rotate_pointcloud(points, angle_degrees, axis="x"):
     """
     Rotates the point cloud around a specified axis.
 
@@ -1494,27 +1664,33 @@ def rotate_pointcloud(points, angle_degrees, axis='x'):
         Axis to rotate.
     """
     angle_radians = np.radians(angle_degrees)
-    if axis == 'x':
-        rotation_matrix = np.array([
-            [1, 0, 0],
-            [0, np.cos(angle_radians), -np.sin(angle_radians)],
-            [0, np.sin(angle_radians), np.cos(angle_radians)]
-        ])
-    elif axis == 'y':
-        rotation_matrix = np.array([
-            [np.cos(angle_radians), 0, np.sin(angle_radians)],
-            [0, 1, 0],
-            [-np.sin(angle_radians), 0, np.cos(angle_radians)]
-        ])
-    elif axis == 'z':
-        rotation_matrix = np.array([
-            [np.cos(angle_radians), -np.sin(angle_radians), 0],
-            [np.sin(angle_radians), np.cos(angle_radians), 0],
-            [0, 0, 1]
-        ])
+    if axis == "x":
+        rotation_matrix = np.array(
+            [
+                [1, 0, 0],
+                [0, np.cos(angle_radians), -np.sin(angle_radians)],
+                [0, np.sin(angle_radians), np.cos(angle_radians)],
+            ]
+        )
+    elif axis == "y":
+        rotation_matrix = np.array(
+            [
+                [np.cos(angle_radians), 0, np.sin(angle_radians)],
+                [0, 1, 0],
+                [-np.sin(angle_radians), 0, np.cos(angle_radians)],
+            ]
+        )
+    elif axis == "z":
+        rotation_matrix = np.array(
+            [
+                [np.cos(angle_radians), -np.sin(angle_radians), 0],
+                [np.sin(angle_radians), np.cos(angle_radians), 0],
+                [0, 0, 1],
+            ]
+        )
     else:
         raise ValueError("Invalid axis. Choose from 'x', 'y', or 'z'.")
-    
+
     return np.dot(points, rotation_matrix.T)
 
 
@@ -1522,23 +1698,23 @@ def grid_average_downsample(point_cloud, voxel_size):
     """
     Downsample a point cloud using grid averaging.
 
-    This function divides the space into a voxel grid, computes the average 
+    This function divides the space into a voxel grid, computes the average
     position of points within each voxel, and returns a downsampled point cloud.
 
     Parameters
     ----------
     point_cloud : numpy.ndarray
-        A numpy array of shape (N, 3) representing the point cloud, where N 
+        A numpy array of shape (N, 3) representing the point cloud, where N
         is the number of points, and each point has (x, y, z) coordinates.
 
     voxel_size : float
-        The size of the voxel grid. Points within a grid cell are averaged 
+        The size of the voxel grid. Points within a grid cell are averaged
         to compute the downsampled point.
 
     Returns
     -------
     downsampled_cloud : numpy.ndarray
-        A numpy array of shape (M, 3) representing the downsampled point cloud, 
+        A numpy array of shape (M, 3) representing the downsampled point cloud,
         where M is the number of voxels containing points.
 
     Notes
@@ -1556,7 +1732,7 @@ def grid_average_downsample(point_cloud, voxel_size):
     """
     # Quantize the coordinates into voxel indices
     voxel_indices = np.floor(point_cloud / voxel_size).astype(np.int32)
-    
+
     # Use a dictionary to collect points in the same voxel
     voxel_dict = {}
     for idx, point in zip(voxel_indices, point_cloud):
@@ -1564,10 +1740,12 @@ def grid_average_downsample(point_cloud, voxel_size):
         if key not in voxel_dict:
             voxel_dict[key] = []
         voxel_dict[key].append(point)
-    
+
     # Compute the average for each voxel
-    downsampled_cloud = np.array([np.mean(voxel_dict[key], axis=0) for key in voxel_dict])
-    
+    downsampled_cloud = np.array(
+        [np.mean(voxel_dict[key], axis=0) for key in voxel_dict]
+    )
+
     return downsampled_cloud
 
 
@@ -1588,36 +1766,38 @@ def replace_headshape(raw, ds_headshape):
         A copy of the input Raw object with the updated headshape points and montage.
     """
     # Get current digitization points
-    dig = raw.info['dig']
+    dig = raw.info["dig"]
 
     # Initialize fiducial positions
-    fid_positions = {
-        'nasion': None,
-        'lpa': None,
-        'rpa': None
-    }
+    fid_positions = {"nasion": None, "lpa": None, "rpa": None}
 
     # Extract fiducials from the dig points
     for f in dig:
-        if f['coord_frame'] == 4:  # Ensure it's in the head coordinate frame
-            if f['ident'] == 2 and fid_positions['nasion'] is None:  # Nasion
-                fid_positions['nasion'] = f['r']
-            elif f['ident'] == 1 and fid_positions['lpa'] is None:  # Left Preauricular (LPA)
-                fid_positions['lpa'] = f['r']
-            elif f['ident'] == 3 and fid_positions['rpa'] is None:  # Right Preauricular (RPA)
-                fid_positions['rpa'] = f['r']
+        if f["coord_frame"] == 4:  # Ensure it's in the head coordinate frame
+            if f["ident"] == 2 and fid_positions["nasion"] is None:  # Nasion
+                fid_positions["nasion"] = f["r"]
+            elif (
+                f["ident"] == 1 and fid_positions["lpa"] is None
+            ):  # Left Preauricular (LPA)
+                fid_positions["lpa"] = f["r"]
+            elif (
+                f["ident"] == 3 and fid_positions["rpa"] is None
+            ):  # Right Preauricular (RPA)
+                fid_positions["rpa"] = f["r"]
 
     # Verify the extracted fiducials
     if any(v is None for v in fid_positions.values()):
-        raise ValueError("One or more fiducials (nasion, LPA, RPA) not found in the head coordinate frame.")
+        raise ValueError(
+            "One or more fiducials (nasion, LPA, RPA) not found in the head coordinate frame."
+        )
 
     # Create a DigMontage using the extracted fiducials and downsampled headshape points
     montage = make_dig_montage(
         hsp=ds_headshape,  # Downsampled headshape points
-        nasion=fid_positions['nasion'],
-        lpa=fid_positions['lpa'],
-        rpa=fid_positions['rpa'],
-        coord_frame='head'
+        nasion=fid_positions["nasion"],
+        lpa=fid_positions["lpa"],
+        rpa=fid_positions["rpa"],
+        coord_frame="head",
     )
 
     # Create a copy of the raw object and set the new montage
@@ -1625,4 +1805,3 @@ def replace_headshape(raw, ds_headshape):
     raw_copy.set_montage(montage)
 
     return raw_copy
-

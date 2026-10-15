@@ -29,19 +29,27 @@ def init_tracer(dataset, userargs):
     tracer_kwargs = {
         "psd_mean": partial(psd_band_stat, band=[1, 40], fn=np.mean),
         "psd_kurtosis": partial(psd_band_stat, band=[1, 40], fn=kurtosis),
-        "psd_maxmed_ratio": partial(psd_band_ratio, band1=[1, 40], fn1=np.max, band2=[1, 40], fn2=np.median),
-        "psd_alpha_mean": partial(psd_band_stat, band='alpha', fn=np.mean),
-        "psd_alpha_kurtosis": partial(psd_band_stat, band='alpha', fn=kurtosis),
-        "psd_alpha_maxmed_ratio": partial(psd_band_ratio, band1='alpha', fn1=np.max, band2='alpha', fn2=np.median),
-        "psd_beta_mean": partial(psd_band_stat, band='beta', fn=np.mean),
-        "psd_beta_kurtosis": partial(psd_band_stat, band='beta', fn=kurtosis),
-        "psd_beta_maxmed_ratio": partial(psd_band_ratio, band1='beta', fn1=np.max, band2='beta', fn2=np.median),
+        "psd_maxmed_ratio": partial(
+            psd_band_ratio, band1=[1, 40], fn1=np.max, band2=[1, 40], fn2=np.median
+        ),
+        "psd_alpha_mean": partial(psd_band_stat, band="alpha", fn=np.mean),
+        "psd_alpha_kurtosis": partial(psd_band_stat, band="alpha", fn=kurtosis),
+        "psd_alpha_maxmed_ratio": partial(
+            psd_band_ratio, band1="alpha", fn1=np.max, band2="alpha", fn2=np.median
+        ),
+        "psd_beta_mean": partial(psd_band_stat, band="beta", fn=np.mean),
+        "psd_beta_kurtosis": partial(psd_band_stat, band="beta", fn=kurtosis),
+        "psd_beta_maxmed_ratio": partial(
+            psd_band_ratio, band1="beta", fn1=np.max, band2="beta", fn2=np.median
+        ),
     }
 
-    tracer_kwargs.update(dataset.get('tracer', {}))  # Update with any pre-set tracer metrics from dataset
+    tracer_kwargs.update(
+        dataset.get("tracer", {})
+    )  # Update with any pre-set tracer metrics from dataset
     tracer_kwargs.update(userargs)
 
-    dataset['tracer'] = EEGTracer(**tracer_kwargs)
+    dataset["tracer"] = EEGTracer(**tracer_kwargs)
 
     return dataset
 
@@ -49,12 +57,14 @@ def init_tracer(dataset, userargs):
 def summary(dataset, userargs):
     """Generates a summary of the dataset, including basic statistics and channel information.
     Currently only plot the tracer checkpoints."""
-    proc_userargs(userargs, {})   # takes no args; reject typos
-    require_keys(dataset, ['subject', 'target_pth'], 'summary')
+    proc_userargs(userargs, {})  # takes no args; reject typos
+    require_keys(dataset, ["subject", "target_pth"], "summary")
 
-    subject = dataset['subject']
-    if 'tracer' in dataset:
-        dataset['tracer'].plot(save_pth=dataset['target_pth'] / "ckpt" / subject, show=False)
+    subject = dataset["subject"]
+    if "tracer" in dataset:
+        dataset["tracer"].plot(
+            save_pth=dataset["target_pth"] / "ckpt" / subject, show=False
+        )
 
     # dataset.pop('tracer', None)  # Remove tracer from dataset after plotting
     return dataset
@@ -68,21 +78,28 @@ def _plot_psd_panel(dataset, userargs, save_fdr, fs):
     exact channel mapping for artifact arrays.
     """
     return psd_plot(
-        dataset['raw'],
-        resolution=userargs['resolution'],
+        dataset["raw"],
+        resolution=userargs["resolution"],
         fs=fs,
-        figsize=userargs['psd_figsize'],
-        fmax=userargs['max_freq'],
+        figsize=userargs["psd_figsize"],
+        fmax=userargs["max_freq"],
         save_pth=save_fdr / "psd.pdf",
-        picks=userargs['psd_picks'],
-        dB=userargs['dB'],
+        picks=userargs["psd_picks"],
+        dB=userargs["dB"],
     )
 
 
 def _plot_channel_dist(dataset, userargs, save_fdr):
     """Channel-std distribution panel (the mean std goes in the filename)."""
-    std = np.mean(np.std(dataset['raw'].get_data(picks=userargs['std_channel_pick'], reject_by_annotation='omit'), axis=1))
-    plot_channel_dists(dataset['raw'], str(save_fdr / f"std={std:.4e}.pdf"))
+    std = np.mean(
+        np.std(
+            dataset["raw"].get_data(
+                picks=userargs["std_channel_pick"], reject_by_annotation="omit"
+            ),
+            axis=1,
+        )
+    )
+    plot_channel_dists(dataset["raw"], str(save_fdr / f"std={std:.4e}.pdf"))
 
 
 def _print_channel(dataset, ch_name, save_fdr, userargs, fs):
@@ -100,16 +117,57 @@ def _print_channel(dataset, ch_name, save_fdr, userargs, fs):
         print_fdr = save_fdr / extra_str
         ensure_dir(print_fdr)
 
-        psd_plot(dataset['raw'], resolution=userargs['resolution'], fs=fs, figsize=userargs['psd_figsize'], fmax=userargs['max_freq'], picks=ch_name, save_pth=print_fdr / f"{ch_name}_psd.pdf", dB=userargs['dB'])
-        temp_plot(dataset['raw'], ch_name, fs=fs, save_pth=print_fdr / f"{ch_name}.pdf", name=ch_name)
-        temp_plot(dataset['raw'], ch_name, fs=fs, start=userargs['focus_range'][0]*fs, length=(userargs['focus_range'][1]-userargs['focus_range'][0])*fs, save_pth=print_fdr / f"{ch_name}_{userargs['focus_range'][0]}-{userargs['focus_range'][1]}.pdf", name=ch_name)
+        psd_plot(
+            dataset["raw"],
+            resolution=userargs["resolution"],
+            fs=fs,
+            figsize=userargs["psd_figsize"],
+            fmax=userargs["max_freq"],
+            picks=ch_name,
+            save_pth=print_fdr / f"{ch_name}_psd.pdf",
+            dB=userargs["dB"],
+        )
+        temp_plot(
+            dataset["raw"],
+            ch_name,
+            fs=fs,
+            save_pth=print_fdr / f"{ch_name}.pdf",
+            name=ch_name,
+        )
+        temp_plot(
+            dataset["raw"],
+            ch_name,
+            fs=fs,
+            start=userargs["focus_range"][0] * fs,
+            length=(userargs["focus_range"][1] - userargs["focus_range"][0]) * fs,
+            save_pth=print_fdr
+            / f"{ch_name}_{userargs['focus_range'][0]}-{userargs['focus_range'][1]}.pdf",
+            name=ch_name,
+        )
 
         ### Compare with last checkpoint if exists
-        if 'last_ckpt_raw' in dataset:
-            if dataset['last_ckpt_raw'].info['sfreq'] != dataset['raw'].info['sfreq']:
-                dataset['last_ckpt_raw'].resample(dataset['raw'].info['sfreq'])
-            temp_plot_diff(dataset['last_ckpt_raw'], dataset['raw'], ch_name, fs=fs, save_pth=print_fdr / f"{ch_name}_diff.pdf", name=ch_name)
-            temp_plot_diff(dataset['last_ckpt_raw'], dataset['raw'], ch_name, fs=fs, start=userargs['focus_range'][0]*fs, length=(userargs['focus_range'][1]-userargs['focus_range'][0])*fs, save_pth=print_fdr / f"{ch_name}_{userargs['focus_range'][0]}-{userargs['focus_range'][1]}_diff.pdf", name=ch_name)
+        if "last_ckpt_raw" in dataset:
+            if dataset["last_ckpt_raw"].info["sfreq"] != dataset["raw"].info["sfreq"]:
+                dataset["last_ckpt_raw"].resample(dataset["raw"].info["sfreq"])
+            temp_plot_diff(
+                dataset["last_ckpt_raw"],
+                dataset["raw"],
+                ch_name,
+                fs=fs,
+                save_pth=print_fdr / f"{ch_name}_diff.pdf",
+                name=ch_name,
+            )
+            temp_plot_diff(
+                dataset["last_ckpt_raw"],
+                dataset["raw"],
+                ch_name,
+                fs=fs,
+                start=userargs["focus_range"][0] * fs,
+                length=(userargs["focus_range"][1] - userargs["focus_range"][0]) * fs,
+                save_pth=print_fdr
+                / f"{ch_name}_{userargs['focus_range'][0]}-{userargs['focus_range'][1]}_diff.pdf",
+                name=ch_name,
+            )
     except (KeyError, ValueError, RuntimeError, FileNotFoundError) as e:
         print(f"Error in printing channel {ch_name}: {type(e).__name__}: {e}")
 
@@ -120,20 +178,24 @@ def _select_channels(dataset, userargs, psd):
     3 random channels (remembered for next time). ``always_print`` is unioned in.
     """
     channel_to_print = psd.ch_names
-    if 'last_ckpt_print_ch' in dataset and set(dataset['last_ckpt_print_ch']).issubset(set(channel_to_print)):
-        channel_to_print = dataset['last_ckpt_print_ch']
+    if "last_ckpt_print_ch" in dataset and set(dataset["last_ckpt_print_ch"]).issubset(
+        set(channel_to_print)
+    ):
+        channel_to_print = dataset["last_ckpt_print_ch"]
     elif len(channel_to_print) > 3:
         channel_to_print = np.random.choice(channel_to_print, 3, replace=False)
-        dataset['last_ckpt_print_ch'] = channel_to_print
+        dataset["last_ckpt_print_ch"] = channel_to_print
 
-    return np.unique(np.concatenate([np.array(userargs['always_print']), channel_to_print]))
+    return np.unique(
+        np.concatenate([np.array(userargs["always_print"]), channel_to_print])
+    )
 
 
 def _artifact_channel_names(dataset, key):
     """Return and validate the ordered names for an artifact channel axis."""
     pc_key = f"pc_{key}"
     picks_key = f"picks_{key}"
-    require_keys(dataset, [pc_key, picks_key], 'ckpt_report')
+    require_keys(dataset, [pc_key, picks_key], "ckpt_report")
 
     mapping = dataset[picks_key]
     if isinstance(mapping, (list, tuple, np.ndarray)) and all(
@@ -143,7 +205,7 @@ def _artifact_channel_names(dataset, key):
     else:
         # Safe support for datasets produced before AAS/OBS began storing the
         # exact list. The axis-length check below prevents guessed alignment.
-        channel_names = resolve_channel_names(dataset['raw'].info, mapping)
+        channel_names = resolve_channel_names(dataset["raw"].info, mapping)
 
     n_pc_channels = np.asarray(dataset[pc_key]).shape[-3]
     if len(channel_names) != n_pc_channels:
@@ -156,43 +218,70 @@ def _artifact_channel_names(dataset, key):
 
 def _select_artifact_channels(channel_to_print, channel_names, info):
     """Keep report picks that have PCs; fall back to up to three PC channels."""
-    bad_channels = set(info.get('bads', []))
+    bad_channels = set(info.get("bads", []))
     selected = [
-        name for name in channel_to_print
+        name
+        for name in channel_to_print
         if name in channel_names and name not in bad_channels
     ]
     if selected:
         return selected
-    return [
-        name for name in channel_names if name not in bad_channels
-    ][:3]
+    return [name for name in channel_names if name not in bad_channels][:3]
 
 
 def _print_pcs(dataset, userargs, subject, channel_to_print, channel_names):
     """Render the AAS/OBS principal-component templates (``pc_<key_to_print>``)."""
-    pc_fdr_name = dataset['target_pth'] / "ckpt" / subject / f"pc_{userargs['key_to_print']}"
+    pc_fdr_name = (
+        dataset["target_pth"] / "ckpt" / subject / f"pc_{userargs['key_to_print']}"
+    )
     ensure_dir(pc_fdr_name)
     pcs_plot(
         dataset[f"pc_{userargs['key_to_print']}"],
         pc_fdr_name,
         channel_to_print,
         channel_names,
-        info=dataset['raw'].info,
-        resolution=userargs['resolution'],
-        psd_lim=(0, userargs['max_freq']),
+        info=dataset["raw"].info,
+        resolution=userargs["resolution"],
+        psd_lim=(0, userargs["max_freq"]),
     )
 
 
 def _print_noise(dataset, userargs, subject, channel_to_print, fs):
     """Render the removed-noise raw (``noise_<key_to_print>``): per-channel PSD
     + time plots, plus a combined eeg PSD."""
-    noise_fdr_name = dataset['target_pth'] / "ckpt" / subject / f"noise_{userargs['key_to_print']}"
+    noise_fdr_name = (
+        dataset["target_pth"] / "ckpt" / subject / f"noise_{userargs['key_to_print']}"
+    )
     ensure_dir(noise_fdr_name)
     for ch_name in channel_to_print:
-        psd_plot(dataset[f"noise_{userargs['key_to_print']}"], resolution=userargs['resolution'], fs=fs, figsize=userargs['psd_figsize'], fmax=userargs['max_freq'], picks=[ch_name], save_pth=noise_fdr_name / f"{ch_name}_psd.pdf", dB=userargs['dB'])
-        temp_plot(dataset[f"noise_{userargs['key_to_print']}"], ch_name, fs=fs, save_pth=noise_fdr_name / f"{ch_name}.pdf", name=ch_name)
+        psd_plot(
+            dataset[f"noise_{userargs['key_to_print']}"],
+            resolution=userargs["resolution"],
+            fs=fs,
+            figsize=userargs["psd_figsize"],
+            fmax=userargs["max_freq"],
+            picks=[ch_name],
+            save_pth=noise_fdr_name / f"{ch_name}_psd.pdf",
+            dB=userargs["dB"],
+        )
+        temp_plot(
+            dataset[f"noise_{userargs['key_to_print']}"],
+            ch_name,
+            fs=fs,
+            save_pth=noise_fdr_name / f"{ch_name}.pdf",
+            name=ch_name,
+        )
 
-    psd_plot(dataset[f"noise_{userargs['key_to_print']}"], resolution=userargs['resolution'], fs=fs, figsize=userargs['psd_figsize'], fmax=userargs['max_freq'], save_pth=noise_fdr_name / f"noise_psd.pdf", picks='eeg', dB=userargs['dB'])
+    psd_plot(
+        dataset[f"noise_{userargs['key_to_print']}"],
+        resolution=userargs["resolution"],
+        fs=fs,
+        figsize=userargs["psd_figsize"],
+        fmax=userargs["max_freq"],
+        save_pth=noise_fdr_name / f"noise_psd.pdf",
+        picks="eeg",
+        dB=userargs["dB"],
+    )
 
 
 def _log_tracer(dataset, userargs, psd):
@@ -202,12 +291,14 @@ def _log_tracer(dataset, userargs, psd):
     (or seeded a ``tracer`` dict in initialize). With no tracer, ckpt_report just
     skips the logging -- it does not require one.
     """
-    if 'tracer' not in dataset:
+    if "tracer" not in dataset:
         return
-    eeg_names = resolve_channel_names(dataset['raw'].info, 'eeg')
+    eeg_names = resolve_channel_names(dataset["raw"].info, "eeg")
     if set(eeg_names).issubset(psd.ch_names):
-        dataset['tracer'].checkpoint(dataset['raw'].get_data(picks='eeg'), name=userargs['ckpt_name'])
-        dataset['tracer'].checkpoint_psd(psd, name=userargs['ckpt_name'])
+        dataset["tracer"].checkpoint(
+            dataset["raw"].get_data(picks="eeg"), name=userargs["ckpt_name"]
+        )
+        dataset["tracer"].checkpoint_psd(psd, name=userargs["ckpt_name"])
     else:
         log_or_print(
             "Warning: the display PSD does not contain every usable EEG "
@@ -231,34 +322,34 @@ def ckpt_report(dataset, userargs):
         dataset: the updated dataset with the extra metadata
     """
     default_args = {
-        'ckpt_name': datetime.now().strftime("%H:%M:%S"),
-        'resolution': 0.05,
-        'max_freq': 50,
-        'key_to_print': None,
+        "ckpt_name": datetime.now().strftime("%H:%M:%S"),
+        "resolution": 0.05,
+        "max_freq": 50,
+        "key_to_print": None,
         # 'always_print': ['EKG'],    # must be name, 'eeg' is not allowed
-        'always_print': [],    # must be name, 'eeg' is not allowed
-        'std_channel_pick': 'eeg',
-        'print_pcs': True,
-        'print_noise': True,
-        'dB': False,  # whether to plot psd in dB scale
-        'focus_range': [100, 110],  # in seconds, for temp_plot
-        'log_tracer': True,
-        'psd_figsize': (10, 3),
-        'psd_picks': 'eeg',  # display only; PC alignment uses picks_<key>
+        "always_print": [],  # must be name, 'eeg' is not allowed
+        "std_channel_pick": "eeg",
+        "print_pcs": True,
+        "print_noise": True,
+        "dB": False,  # whether to plot psd in dB scale
+        "focus_range": [100, 110],  # in seconds, for temp_plot
+        "log_tracer": True,
+        "psd_figsize": (10, 3),
+        "psd_picks": "eeg",  # display only; PC alignment uses picks_<key>
         # Keeping a full Raw copy enables temporal difference plots at the
         # next checkpoint, but can cost tens of GiB for long 5 kHz cohorts.
-        'store_raw_for_diff': True,
+        "store_raw_for_diff": True,
     }
     userargs = proc_userargs(userargs, default_args)
-    require_keys(dataset, ['subject', 'target_pth'], 'ckpt_report')
+    require_keys(dataset, ["subject", "target_pth"], "ckpt_report")
 
-    fs = dataset['raw'].info['sfreq']
-    subject = dataset['subject']
-    save_fdr = dataset['target_pth'] / "ckpt" / subject / userargs['ckpt_name']
+    fs = dataset["raw"].info["sfreq"]
+    subject = dataset["subject"]
+    save_fdr = dataset["target_pth"] / "ckpt" / subject / userargs["ckpt_name"]
     ensure_dir(save_fdr)
 
-    if userargs['key_to_print'] is None:
-        userargs['print_noise'] = userargs['print_pcs'] = False
+    if userargs["key_to_print"] is None:
+        userargs["print_noise"] = userargs["print_pcs"] = False
 
     psd = _plot_psd_panel(dataset, userargs, save_fdr, fs)
     _plot_channel_dist(dataset, userargs, save_fdr)
@@ -268,12 +359,10 @@ def ckpt_report(dataset, userargs):
         _print_channel(dataset, ch_name, save_fdr, userargs, fs)
 
     ### Print PCs of OBS or AAS if requested.
-    if userargs['print_pcs']:
-        artifact_names = _artifact_channel_names(
-            dataset, userargs['key_to_print']
-        )
+    if userargs["print_pcs"]:
+        artifact_names = _artifact_channel_names(dataset, userargs["key_to_print"])
         artifact_channels = _select_artifact_channels(
-            channel_to_print, artifact_names, dataset['raw'].info
+            channel_to_print, artifact_names, dataset["raw"].info
         )
         _print_pcs(
             dataset,
@@ -284,24 +373,22 @@ def ckpt_report(dataset, userargs):
         )
 
     ### Print noise components if requested.
-    if userargs['print_noise']:
-        if not userargs['print_pcs']:
-            artifact_names = _artifact_channel_names(
-                dataset, userargs['key_to_print']
-            )
+    if userargs["print_noise"]:
+        if not userargs["print_pcs"]:
+            artifact_names = _artifact_channel_names(dataset, userargs["key_to_print"])
             artifact_channels = _select_artifact_channels(
-                channel_to_print, artifact_names, dataset['raw'].info
+                channel_to_print, artifact_names, dataset["raw"].info
             )
         _print_noise(dataset, userargs, subject, artifact_channels, fs)
 
     ### Store the current raw data for diff comparison in the next checkpoint.
-    if userargs['store_raw_for_diff']:
-        dataset['last_ckpt_raw'] = copy.deepcopy(dataset['raw'])
+    if userargs["store_raw_for_diff"]:
+        dataset["last_ckpt_raw"] = copy.deepcopy(dataset["raw"])
     else:
-        dataset.pop('last_ckpt_raw', None)
+        dataset.pop("last_ckpt_raw", None)
 
     ### Log tracer metrics if requested
-    if userargs['log_tracer']:
+    if userargs["log_tracer"]:
         _log_tracer(dataset, userargs, psd)
 
     return dataset

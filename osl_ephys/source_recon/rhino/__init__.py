@@ -1,6 +1,4 @@
-"""Registration of Headshapes Including Nose in OSL (RHINO).
-
-"""
+"""Registration of Headshapes Including Nose in OSL (RHINO)."""
 
 from .coreg import *  # noqa: F401, F403
 from .polhemus import *  # noqa: F401, F403

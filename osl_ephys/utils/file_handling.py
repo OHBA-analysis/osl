@@ -1,6 +1,4 @@
-"""File handling utility functions.
-
-"""
+"""File handling utility functions."""
 
 # Authors: Andrew Quinn <a.quinn@bham.ac.uk>
 #          Chetan Gohil <chetan.gohil@psych.ox.ac.uk>
@@ -14,7 +12,9 @@ import numpy as np
 
 # Housekeeping for logging
 import logging
+
 osl_logger = logging.getLogger(__name__)
+
 
 def process_file_inputs(inputs):
     """Process inputs for several cases
@@ -49,7 +49,7 @@ def process_file_inputs(inputs):
             process_list = False
             try:
                 # Check if path to unicode file...
-                open(inputs, 'r')
+                open(inputs, "r")
                 infiles, outnames = _load_unicode_inputs(inputs)
             except (UnicodeDecodeError, FileNotFoundError, IndexError):
                 # ...else we have a single path or glob expression
@@ -82,19 +82,23 @@ def process_file_inputs(inputs):
     # than objects
     good_files = [1 for ii in range(len(infiles))]
     if check_paths:
-        #infiles = [sanitise_filepath(f) for f in infiles]
+        # infiles = [sanitise_filepath(f) for f in infiles]
         for idx, fif in enumerate(infiles):
-            if fif.endswith('.ds') or fif.endswith('.mff'):
+            if fif.endswith(".ds") or fif.endswith(".mff"):
                 good_files[idx] = int(os.path.isdir(fif))
             else:
                 good_files[idx] = int(os.path.isfile(fif))
             if good_files[idx] == 0:
-                osl_logger.warning('Input file not found: {0}'.format(fif))
+                osl_logger.warning("Input file not found: {0}".format(fif))
 
     if np.all(good_files):
-        osl_logger.info('{0} files to be processed.'.format(len(infiles)))
+        osl_logger.info("{0} files to be processed.".format(len(infiles)))
     else:
-        osl_logger.warning('{0} of {1} input files not found'.format(np.sum(np.array(good_files)==0), len(infiles)))
+        osl_logger.warning(
+            "{0} of {1} input files not found".format(
+                np.sum(np.array(good_files) == 0), len(infiles)
+            )
+        )
 
     return infiles, outnames, good_files
 
@@ -102,14 +106,14 @@ def process_file_inputs(inputs):
 def sanitise_filepath(fname):
     """Remove leading/trailing whitespace, tab, newline and carriage return
     characters."""
-    return fname.strip(' \t\n\r')
+    return fname.strip(" \t\n\r")
 
 
 def _load_unicode_inputs(fname):
     checked_files = []
     outnames = []
     osl_logger.info("loading inputs from : {0}".format(fname))
-    for row in csv.reader(open(fname, 'r'), delimiter=","):
+    for row in csv.reader(open(fname, "r"), delimiter=","):
         infile = sanitise_filepath(row[0])
         checked_files.append(infile)
         if len(row) > 1:
@@ -128,24 +132,24 @@ def find_run_id(infile, preload=True):
     if isinstance(infile, mne.io.Raw):
         infile = infile.filenames[0]
 
-    if os.path.split(infile)[1] == 'c,rfDC':
+    if os.path.split(infile)[1] == "c,rfDC":
         # We have a BTI scan
         runname = os.path.basename(os.path.dirname(infile))
-    elif os.path.splitext(infile)[1] == '.fif':
+    elif os.path.splitext(infile)[1] == ".fif":
         # We have a FIF file
-        #runname = os.path.basename(infile).rstrip('.fif')
+        # runname = os.path.basename(infile).rstrip('.fif')
         runname = os.path.splitext(os.path.basename(infile))[0]
-    elif os.path.splitext(infile)[1] == '.meg4':
+    elif os.path.splitext(infile)[1] == ".meg4":
         # We have the meg file from a ds directory
-        #runname = os.path.basename(infile).rstrip('.ds')
+        # runname = os.path.basename(infile).rstrip('.ds')
         runname = os.path.splitext(os.path.basename(infile))[0]
-    elif os.path.splitext(infile)[1] == '.ds':
-        #runname = os.path.basename(infile).rstrip('.ds')
+    elif os.path.splitext(infile)[1] == ".ds":
+        # runname = os.path.basename(infile).rstrip('.ds')
         runname = os.path.splitext(os.path.basename(infile))[0]
     else:
         # Strip to the left of the dot and hope for the best...
-        runname = os.path.basename(infile).split('.')[0]
-        #raise ValueError('Unable to determine run_id from file {0}'.format(infile))
+        runname = os.path.basename(infile).split(".")[0]
+        # raise ValueError('Unable to determine run_id from file {0}'.format(infile))
 
     return runname
 
@@ -193,17 +197,17 @@ def add_subdir(file, outdir, run_id=None):
 
     if not type(outdir) == str:
         outdir = str(outdir)
-    if '{' in outdir and '}' in outdir:
+    if "{" in outdir and "}" in outdir:
         try:
-            base = outdir.split('{')[0]
-            pat = outdir.split('{')[1].split('}')[0]
-            pat0, pat1 = pat.split(':')
-            outdir = base + pat0 + file.split(pat0)[1][:int(pat1)]
+            base = outdir.split("{")[0]
+            pat = outdir.split("{")[1].split("}")[0]
+            pat0, pat1 = pat.split(":")
+            outdir = base + pat0 + file.split(pat0)[1][: int(pat1)]
         except:
             # pattern extraction failed
             raise ValueError(
-                    "Please make sure the subdirectory structure is present in the input file(s)"
-                    )
+                "Please make sure the subdirectory structure is present in the input file(s)"
+            )
     elif run_id is not None:
         outdir = f"{outdir}/{run_id}"
     return outdir
@@ -213,5 +217,5 @@ def add_subdir(file, outdir, run_id=None):
 def osl_print(s, logfile=None):
     print(s)
     if logfile is not None:
-        with open(logfile, 'a') as f:
-            f.write(str(s) + '\n')
+        with open(logfile, "a") as f:
+            f.write(str(s) + "\n")

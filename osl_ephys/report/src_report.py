@@ -1,6 +1,4 @@
-"""Reporting tool for source reconstruction.
-
-"""
+"""Reporting tool for source reconstruction."""
 
 # Authors: Chetan Gohil <chetan.gohil@psych.ox.ac.uk>
 # Mats van Es <mats.vanes@psych.ox.ac.uk>
@@ -21,7 +19,10 @@ import inspect
 from . import preproc_report
 from ..source_recon import parcellation, batch
 
-def gen_html_data(config, outdir, subject, reportdir, logger=None, extra_funcs=None, logsdir=None):
+
+def gen_html_data(
+    config, outdir, subject, reportdir, logger=None, extra_funcs=None, logsdir=None
+):
     """Generate data for HTML report.
 
     Parameters
@@ -62,10 +63,10 @@ def gen_html_data(config, outdir, subject, reportdir, logger=None, extra_funcs=N
 
     # add extra funcs if they exist
     if extra_funcs is not None:
-        if 'extra_funcs' not in data.keys():
-            data['extra_funcs'] = ""
+        if "extra_funcs" not in data.keys():
+            data["extra_funcs"] = ""
         for func in extra_funcs:
-            data['extra_funcs'] += f"{inspect.getsource(func)}\n\n"
+            data["extra_funcs"] += f"{inspect.getsource(func)}\n\n"
 
     data["fif_id"] = subject
     data["filename"] = subject
@@ -88,53 +89,81 @@ def gen_html_data(config, outdir, subject, reportdir, logger=None, extra_funcs=N
         for plot in data["surface_plots"]:
             surface = "surfaces_" + Path(plot).stem
             data[f"plt_{surface}"] = f"{subject}/{surface}.png"
-            copy("{}/{}".format(outdir, plot), "{}/{}/{}.png".format(reportdir, subject, surface))
+            copy(
+                "{}/{}".format(outdir, plot),
+                "{}/{}/{}.png".format(reportdir, subject, surface),
+            )
 
     if "coreg_plot" in data:
-        data["plt_coreg"] = f"{subject}/coreg.html" # this might not have been rendered yet (if using dask), so potentially need to copy it over later
-        if outdir.__str__() in data['coreg_plot']:
+        data["plt_coreg"] = (
+            f"{subject}/coreg.html"  # this might not have been rendered yet (if using dask), so potentially need to copy it over later
+        )
+        if outdir.__str__() in data["coreg_plot"]:
             origfile = data["coreg_plot"]
         else:
             origfile = "{}/{}".format(outdir, data["coreg_plot"])
-        copy("{}/{}".format(outdir, data["coreg_plot"]), "{}/{}/coreg.html".format(reportdir, subject))
+        copy(
+            "{}/{}".format(outdir, data["coreg_plot"]),
+            "{}/{}/coreg.html".format(reportdir, subject),
+        )
 
     if "filters_cov_plot" in data:
         data["plt_filters_cov"] = f"{subject}/filters_cov.png"
-        copy("{}/{}".format(outdir, data["filters_cov_plot"]), "{}/{}/filters_cov.png".format(reportdir, subject))
+        copy(
+            "{}/{}".format(outdir, data["filters_cov_plot"]),
+            "{}/{}/filters_cov.png".format(reportdir, subject),
+        )
 
     if "filters_svd_plot" in data:
         data["plt_filters_svd"] = f"{subject}/filters_svd.png"
-        copy("{}/{}".format(outdir, data["filters_svd_plot"]), "{}/{}/filters_svd.png".format(reportdir, subject))
+        copy(
+            "{}/{}".format(outdir, data["filters_svd_plot"]),
+            "{}/{}/filters_svd.png".format(reportdir, subject),
+        )
 
     if "dipole_locations_plot" in data:
-        data["plt_dipole_locations"] = f"{subject}/dipole_locations.html" # this might not have been rendered yet (if using dask), so potentially need to copy it over later
-        copy("{}/{}".format(outdir, data["dipole_locations_plot"]), "{}/{}/dipole_locations.html".format(reportdir, subject))
+        data["plt_dipole_locations"] = (
+            f"{subject}/dipole_locations.html"  # this might not have been rendered yet (if using dask), so potentially need to copy it over later
+        )
+        copy(
+            "{}/{}".format(outdir, data["dipole_locations_plot"]),
+            "{}/{}/dipole_locations.html".format(reportdir, subject),
+        )
 
     if "parc_psd_plot" in data:
         data["plt_parc_psd"] = f"{subject}/parc_psd.png"
-        copy("{}/{}".format(outdir, data["parc_psd_plot"]), "{}/{}/parc_psd.png".format(reportdir, subject))
+        copy(
+            "{}/{}".format(outdir, data["parc_psd_plot"]),
+            "{}/{}/parc_psd.png".format(reportdir, subject),
+        )
 
     if "parc_corr_plot" in data:
         data["plt_parc_corr"] = f"{subject}/parc_corr.png"
-        copy("{}/{}".format(outdir, data["parc_corr_plot"]), "{}/{}/parc_corr.png".format(reportdir, subject))
+        copy(
+            "{}/{}".format(outdir, data["parc_corr_plot"]),
+            "{}/{}/parc_corr.png".format(reportdir, subject),
+        )
 
     if "parc_freqbands_plot" in data and data["parc_freqbands_plot"] is not None:
         data["plt_parc_freqbands"] = f"{subject}/parc_freqbands.png"
-        copy("{}/{}".format(outdir, data["parc_freqbands_plot"]), "{}/{}/parc_freqbands.png".format(reportdir, subject))
+        copy(
+            "{}/{}".format(outdir, data["parc_freqbands_plot"]),
+            "{}/{}/parc_freqbands.png".format(reportdir, subject),
+        )
 
     # Logs
     if logsdir is None:
-        logsdir = os.path.join(outdir, 'logs')
-    
+        logsdir = os.path.join(outdir, "logs")
+
     # guess the log file name
-    g = glob(os.path.join(logsdir, f'{subject}*.log'))    
-    if len(g)>0:
+    g = glob(os.path.join(logsdir, f"{subject}*.log"))
+    if len(g) > 0:
         for ig in g:
-            with open(ig, 'r') as log_file:
-                if 'error' in ig:
-                    data['errlog'] = log_file.read()
+            with open(ig, "r") as log_file:
+                if "error" in ig:
+                    data["errlog"] = log_file.read()
                 else:
-                    data['log'] = log_file.read()
+                    data["log"] = log_file.read()
 
     # Save data in the report directory
     pickle.dump(data, open(f"{reportdir}/{subject}/data.pkl", "wb"))
@@ -147,11 +176,11 @@ def gen_html_page(reportdir):
     ----------
     reportdir : str
         Directory to generate HTML report with.
-        
+
     Returns
     -------
     bool
-        Whether the report was generated successfully.    
+        Whether the report was generated successfully.
     """
     reportdir = Path(reportdir)
 
@@ -161,14 +190,14 @@ def gen_html_page(reportdir):
     # Load HTML data
     data = []
     for subdir in subdirs:
-        
+
         subdir = Path(subdir)
         # Just generate the html page with the successful runs
         try:
             report_data = pickle.load(open(reportdir / subdir / "data.pkl", "rb"))
             if "filename" not in report_data:
                 continue
-            data.append(report_data)        
+            data.append(report_data)
         except:
             pass
     total = len(data)
@@ -183,7 +212,7 @@ def gen_html_page(reportdir):
 
     # Create panels
     panels = []
-    panel_template = preproc_report.load_template('src_subject_panel')
+    panel_template = preproc_report.load_template("src_subject_panel")
 
     for i in range(total):
         panels.append(panel_template.render(data=data[i]))
@@ -195,12 +224,12 @@ def gen_html_page(reportdir):
         filenames += "{0}. {1}<br>".format(i + 1, filename)
 
     # Render the full page
-    page_template = preproc_report.load_template('subject_report')
+    page_template = preproc_report.load_template("subject_report")
     page = page_template.render(panels=panels, filenames=filenames)
 
     # Write the output file
-    outpath = Path(reportdir) / 'subject_report.html'
-    with open(outpath, 'w') as f:
+    outpath = Path(reportdir) / "subject_report.html"
+    with open(outpath, "w") as f:
         f.write(page)
 
     return True
@@ -216,7 +245,7 @@ def gen_html_summary(reportdir, logsdir=None):
         logsdir: str
     Directory the log files were saved into. If None, log files are assumed
         to be in reportdir.replace('report', 'logs')
-        
+
     Returns
     -------
     bool
@@ -233,7 +262,9 @@ def gen_html_summary(reportdir, logsdir=None):
         subdir = Path(subdir)
         # Just generate the html page with the successful runs
         try:
-            subject_data.append(pickle.load(open(reportdir / subdir / "data.pkl", "rb")))
+            subject_data.append(
+                pickle.load(open(reportdir / subdir / "data.pkl", "rb"))
+            )
         except:
             pass
 
@@ -246,7 +277,7 @@ def gen_html_summary(reportdir, logsdir=None):
     data["total"] = total
     data["config"] = subject_data[0]["config"]
     if "extra_funcs" in subject_data[0]:
-        data["extra_funcs"] = subject_data[0]["extra_funcs"] 
+        data["extra_funcs"] = subject_data[0]["extra_funcs"]
     data["coregister"] = subject_data[0]["coregister"]
     data["beamform"] = subject_data[0]["beamform"]
     data["beamform_and_parcellate"] = subject_data[0]["beamform_and_parcellate"]
@@ -258,15 +289,33 @@ def gen_html_summary(reportdir, logsdir=None):
         subjects = np.array([d["filename"] for d in subject_data])
 
         fid_err_table = pd.DataFrame()
-        fid_err_table["Session ID"] = [subject_data[i]["fif_id"] for i in range(len(subject_data))]
-        if len(subject_data[0]['fid_err'])==4:
+        fid_err_table["Session ID"] = [
+            subject_data[i]["fif_id"] for i in range(len(subject_data))
+        ]
+        if len(subject_data[0]["fid_err"]) == 4:
             for i_err, hdr in enumerate(["Nasion", "LPA", "RPA", "RMS(Headshape-MRI)"]):
-                fid_err_table[hdr] = [np.round(subject_data[i]['fid_err'][i_err], decimals=2) if 'fid_err' in subject_data[i].keys() else None for i in range(len(subject_data))]   
+                fid_err_table[hdr] = [
+                    (
+                        np.round(subject_data[i]["fid_err"][i_err], decimals=2)
+                        if "fid_err" in subject_data[i].keys()
+                        else None
+                    )
+                    for i in range(len(subject_data))
+                ]
         else:
             for i_err, hdr in enumerate(["Nasion", "LPA", "RPA", "RMS(Headshape-MRI)"]):
-                fid_err_table[hdr] = [np.round(subject_data[i]['fid_err'][i_err], decimals=2) if 'fid_err' in subject_data[i].keys() else None for i in range(len(subject_data))]
-        fid_err_table.index += 1 # Start indexing from 1
-        data['coreg_table'] = fid_err_table.to_html(classes="display", table_id="coreg_tbl")
+                fid_err_table[hdr] = [
+                    (
+                        np.round(subject_data[i]["fid_err"][i_err], decimals=2)
+                        if "fid_err" in subject_data[i].keys()
+                        else None
+                    )
+                    for i in range(len(subject_data))
+                ]
+        fid_err_table.index += 1  # Start indexing from 1
+        data["coreg_table"] = fid_err_table.to_html(
+            classes="display", table_id="coreg_tbl"
+        )
 
     # Create plots
     os.makedirs(f"{reportdir}/summary", exist_ok=True)
@@ -286,30 +335,42 @@ def gen_html_summary(reportdir, logsdir=None):
         data["plt_sflip"] = plot_sign_flipping_results(metrics, reportdir)
 
         flip_table = pd.DataFrame()
-        flip_table["Session ID"] = [subject_data[i]["fif_id"] for i in range(len(subject_data))]
-        flip_table["Correlation before flipping "] = np.round(metrics[:,0], decimals=3)
-        flip_table["Correlation after flipping "] = np.round(metrics[:,1:].max(axis=1), decimals=3)
-        flip_table["Correlation change (after-before) "] = np.round(flip_table["Correlation after flipping "]-flip_table["Correlation before flipping "], decimals=3)
-        flip_table.index += 1 # Start indexing from 1
-        data['signflip_table'] = flip_table.to_html(classes="display", table_id="signflip_tbl")
+        flip_table["Session ID"] = [
+            subject_data[i]["fif_id"] for i in range(len(subject_data))
+        ]
+        flip_table["Correlation before flipping "] = np.round(metrics[:, 0], decimals=3)
+        flip_table["Correlation after flipping "] = np.round(
+            metrics[:, 1:].max(axis=1), decimals=3
+        )
+        flip_table["Correlation change (after-before) "] = np.round(
+            flip_table["Correlation after flipping "]
+            - flip_table["Correlation before flipping "],
+            decimals=3,
+        )
+        flip_table.index += 1  # Start indexing from 1
+        data["signflip_table"] = flip_table.to_html(
+            classes="display", table_id="signflip_tbl"
+        )
 
     # log files
     if logsdir is None:
-        logsdir = reportdir._str.replace('src_report', 'logs')
-        
-    if os.path.exists(os.path.join(logsdir, 'batch_src.log')):
-        with open(os.path.join(logsdir, 'batch_src.log'), 'r') as log_file:
-            data['batchlog'] = log_file.read()
-    
-    g = glob(os.path.join(logsdir, '*.error.log'))    
-    if len(g)>0:
-        data['errlog'] = {}
+        logsdir = reportdir._str.replace("src_report", "logs")
+
+    if os.path.exists(os.path.join(logsdir, "batch_src.log")):
+        with open(os.path.join(logsdir, "batch_src.log"), "r") as log_file:
+            data["batchlog"] = log_file.read()
+
+    g = glob(os.path.join(logsdir, "*.error.log"))
+    if len(g) > 0:
+        data["errlog"] = {}
         for ig in sorted(g):
-            with open(ig, 'r') as log_file:
-                data['errlog'][ig.split('/')[-1].split('.error.log')[0]] = log_file.read()
-            
+            with open(ig, "r") as log_file:
+                data["errlog"][
+                    ig.split("/")[-1].split(".error.log")[0]
+                ] = log_file.read()
+
     # Create panel
-    panel_template = preproc_report.load_template('src_summary_panel')
+    panel_template = preproc_report.load_template("src_summary_panel")
     panel = panel_template.render(data=data)
 
     # List of filenames
@@ -319,12 +380,12 @@ def gen_html_summary(reportdir, logsdir=None):
         filenames += "{0}. {1}<br>".format(i + 1, filename)
 
     # Render the full page
-    page_template = preproc_report.load_template('summary_report')
+    page_template = preproc_report.load_template("summary_report")
     page = page_template.render(panel=panel, filenames=filenames)
 
     # Write the output file
-    outpath = Path(reportdir) / 'summary_report.html'
-    with open(outpath, 'w') as f:
+    outpath = Path(reportdir) / "summary_report.html"
+    with open(outpath, "w") as f:
         f.write(page)
 
     return True
@@ -369,8 +430,15 @@ def plot_config(config, reportdir):
     stage_str = "$\\bf{{{0}}}$ {1}"
 
     ax.arrow(
-        0.5, 1, 0.0, -1, fc="k", ec="k", head_width=0.045,
-        head_length=0.035, length_includes_head=True,
+        0.5,
+        1,
+        0.0,
+        -1,
+        fc="k",
+        ec="k",
+        head_width=0.045,
+        head_length=0.035,
+        length_includes_head=True,
     )
 
     for idx, stage in enumerate(stages):
@@ -441,7 +509,7 @@ def plot_sign_flipping_results(metrics, reportdir):
     output_file = reportdir / "summary/sflip.png"
     fig, ax = plt.subplots()
     for i in range(metrics.shape[-1]):
-        if i==0:
+        if i == 0:
             label = "Before flipping"
         else:
             label = f"Init {i}"
@@ -510,7 +578,7 @@ def update_config(old_config, new_config):
         else:
             for j in range(len(old_config["source_recon"])):
                 if new_stage in old_config["source_recon"][j]:
-                    old_config["source_recon"][j][new_stage] = (
-                        new_config["source_recon"][i][new_stage]
-                    )
+                    old_config["source_recon"][j][new_stage] = new_config[
+                        "source_recon"
+                    ][i][new_stage]
     return old_config

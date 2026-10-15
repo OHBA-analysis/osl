@@ -7,6 +7,7 @@
 - ``mne_epoch2raw``   -- write processed epochs back into a Raw without the
                          epoch-overlap edge artefact (``epoch_aas`` / ``epoch_obs``).
 """
+
 import copy
 import numpy as np
 
@@ -18,10 +19,12 @@ def pearson_corr(windows: np.ndarray, template: np.ndarray):
     returns: shape (N,) — correlation of each window with the template
     """
     # Normalize template
-    return np.array([np.abs(np.corrcoef(window, template)[0,1]) for window in windows])
+    return np.array([np.abs(np.corrcoef(window, template)[0, 1]) for window in windows])
 
 
-def correct_trigger(raw, event, event_id, tmin, tmax, template='mid', channel=0, hwin=30):
+def correct_trigger(
+    raw, event, event_id, tmin, tmax, template="mid", channel=0, hwin=30
+):
     """
     Correct all trigger event to **one template** using Pearson correlation.
     The aim is to prevent trigger jitter that can occur due to various factors, mainly asynchronous EEG-fMRI recording.
@@ -51,44 +54,48 @@ def correct_trigger(raw, event, event_id, tmin, tmax, template='mid', channel=0,
 
     event = event[event[:, 2] == event_id, 0]
     new_events = []
-    sfreq = raw.info['sfreq']
+    sfreq = raw.info["sfreq"]
     data = raw.get_data()[channel]
     tpmin = int(tmin * sfreq)
     tpmax = int(tmax * sfreq)
 
-    if template == 'mid':
+    if template == "mid":
         tmplt_event_tp = event[event.shape[0] // 2] - raw.first_samp
-        tmplt = data[tmplt_event_tp + tpmin:tmplt_event_tp + tpmax+1]
-    elif template == 'start':
+        tmplt = data[tmplt_event_tp + tpmin : tmplt_event_tp + tpmax + 1]
+    elif template == "start":
         try:
             tmplt_event_tp = event[0] - raw.first_samp
-            tmplt = data[tmplt_event_tp + tpmin:tmplt_event_tp + tpmax+1]
+            tmplt = data[tmplt_event_tp + tpmin : tmplt_event_tp + tpmax + 1]
         except IndexError:
             tmplt_event_tp = event[1] - raw.first_samp
-            tmplt = data[tmplt_event_tp + tpmin:tmplt_event_tp + tpmax+1]
+            tmplt = data[tmplt_event_tp + tpmin : tmplt_event_tp + tpmax + 1]
     else:
         raise ValueError(f"Template {template} not supported. Use 'mid' or 'start'.")
     best_pos_list = []
 
     for ev_tp in event:
         ev_tp -= raw.first_samp
-        win_pos_list = np.arange(ev_tp-hwin, ev_tp+hwin+1)
-        win_pos_list = win_pos_list[(win_pos_list+tpmin >= 0) & (win_pos_list+tpmax+1 < len(data))]
+        win_pos_list = np.arange(ev_tp - hwin, ev_tp + hwin + 1)
+        win_pos_list = win_pos_list[
+            (win_pos_list + tpmin >= 0) & (win_pos_list + tpmax + 1 < len(data))
+        ]
         if len(win_pos_list) == 0:
             continue
 
-        window_arr = np.stack([data[pos+tpmin:pos+tpmax+1] for pos in win_pos_list])
+        window_arr = np.stack(
+            [data[pos + tpmin : pos + tpmax + 1] for pos in win_pos_list]
+        )
         corr = pearson_corr(window_arr, tmplt)
         best_pos = win_pos_list[np.argmax(corr)]
-        best_pos_list.append(best_pos-ev_tp)
+        best_pos_list.append(best_pos - ev_tp)
 
         new_events.append([best_pos + raw.first_samp, 0, event_id])
 
     return np.array(new_events, dtype=np.int32)
 
 
-def mne_epoch2raw(epoch, raw, ndarray=None, tmin=0, overwrite='new', picks='eeg'):
-    """ Convert an mne.Epochs object to an mne.RawArray object by overwriting the raw data.
+def mne_epoch2raw(epoch, raw, ndarray=None, tmin=0, overwrite="new", picks="eeg"):
+    """Convert an mne.Epochs object to an mne.RawArray object by overwriting the raw data.
     An easier way to realize this is to 1) use mne.Epochs.get_data() to get the data in ndarray format, 2) reshape, and then 3) use mne.io.RawArray to create a new Raw object. However, this approach is dangerous if the epoch data have overlapping time windows, which is common in BCG correction, or FASTER GA correction. In this case artifact would appear at the edge of concatenated epochs.
     Instead, this function directly overwrites the data in the raw object, which can avoid the edge artifact issue. The overwrite parameter specifies the behavior when overwriting the raw data. 'new' means the epoch with a larger index will overwrite the epoch with a smaller index, while 'even' means the datapoint closer to the event onset will be retained.
     Parameters
@@ -122,33 +129,39 @@ def mne_epoch2raw(epoch, raw, ndarray=None, tmin=0, overwrite='new', picks='eeg'
     epoch = copy.deepcopy(epoch).pick(picks)
     picked_idx = [raw.ch_names.index(ch) for ch in epoch.ch_names]
 
-    if len(raw.info['bads']) > 0:
-        picked_idx = [idx for idx in picked_idx if raw.ch_names[idx] not in raw.info['bads']]
+    if len(raw.info["bads"]) > 0:
+        picked_idx = [
+            idx for idx in picked_idx if raw.ch_names[idx] not in raw.info["bads"]
+        ]
 
     # get data
     processed_data = ndarray if ndarray is not None else epoch.get_data()
 
     # check if the number of channels in the ndarray object matches the number of channels in "picks" in the raw object
-    assert processed_data.shape[1] == len(picked_idx), f"Number of channels in ndarray ({processed_data.shape[1]}) does not match number of channels in raw object ({len(picked_idx)})"
+    assert processed_data.shape[1] == len(
+        picked_idx
+    ), f"Number of channels in ndarray ({processed_data.shape[1]}) does not match number of channels in raw object ({len(picked_idx)})"
 
-    sfreq = raw.info['sfreq']
-    tmin_shift = sfreq*tmin
+    sfreq = raw.info["sfreq"]
+    tmin_shift = sfreq * tmin
 
     old_mid = -100000
-    for i, event_onset in enumerate(epoch.events[:,0]):
-        start_sample = int(event_onset+tmin_shift) - raw.first_samp
-        end_sample = start_sample+processed_data.shape[2]
+    for i, event_onset in enumerate(epoch.events[:, 0]):
+        start_sample = int(event_onset + tmin_shift) - raw.first_samp
+        end_sample = start_sample + processed_data.shape[2]
         epoch_data = processed_data[i]
-        if overwrite == 'even' or (overwrite == 'obs' and i > 10):
-            mid_sample = start_sample + processed_data.shape[2]//2 + 1
+        if overwrite == "even" or (overwrite == "obs" and i > 10):
+            mid_sample = start_sample + processed_data.shape[2] // 2 + 1
             epoch_divide = (mid_sample + old_mid) // 2 + 1
             if epoch_divide > start_sample:
-                epoch_data = epoch_data[:, epoch_divide-start_sample:]
+                epoch_data = epoch_data[:, epoch_divide - start_sample :]
                 start_sample = epoch_divide
             old_mid = mid_sample
 
         if end_sample > raw._data.shape[1] or start_sample < 0:
-            raise ValueError(f"epoch {i} exceeds raw data bound {raw._data.shape[1]}. ({start_sample}~{end_sample})")
+            raise ValueError(
+                f"epoch {i} exceeds raw data bound {raw._data.shape[1]}. ({start_sample}~{end_sample})"
+            )
 
         raw._data[picked_idx, start_sample:end_sample] = epoch_data
 

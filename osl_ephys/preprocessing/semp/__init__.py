@@ -29,6 +29,7 @@ The original ``semp`` package detected ``osl-ephys`` as an optional dep.
 That guard is gone here --- this *is* osl-ephys --- so the import path is
 unconditional and the legacy ``HAS_OSLE`` flag is no longer exported.
 """
+
 from . import utils
 
 # --- User-facing plotting ---

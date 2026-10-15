@@ -1,6 +1,4 @@
-"""Classes for loading SPM files.
-
-"""
+"""Classes for loading SPM files."""
 
 # Authors: Andrew Quinn <a.quinn@bham.ac.uk>
 
@@ -22,7 +20,7 @@ class SPMMEEG:
         self._D = D
         self.type = D["type"]
         self.nsamples = D["Nsamples"]
-        self.nchannels = len(self._D['channels'])
+        self.nchannels = len(self._D["channels"])
         self.fsample = D["Fsample"]
         self.time_onset = D["timeOnset"]
         self.channels = [Channel.from_dict(channel) for channel in D["channels"]]
@@ -42,25 +40,27 @@ class SPMMEEG:
         # in the dataset, trials relate to user specified data segmenting.
 
         # Always store trials in list
-        if self.type == 'continuous':
+        if self.type == "continuous":
             # D['trials'] is a dictionary of event information across scan
-            self.trials = [Trial(**D['trials'], sample_frequency=self.fsample)]
+            self.trials = [Trial(**D["trials"], sample_frequency=self.fsample)]
             self.events = self.trials[0].events
-        elif self.type == 'single':  # Why are epochs of type 'single'
+        elif self.type == "single":  # Why are epochs of type 'single'
             # D['trials'] is a list of dictionaries of event information per trial
-            self.trials = [Trial(**event, sample_frequency=self.fsample) for event in D['trials']]
+            self.trials = [
+                Trial(**event, sample_frequency=self.fsample) for event in D["trials"]
+            ]
             self.events = [ev for t in self.trials for ev in t.events]
         self.ntrials = len(self.trials)
 
         # Build some metadata lists - copying spm naming conventions
-        if self.type == 'single':
+        if self.type == "single":
             self.conditions = [t.label for t in self.trials]
             self.condition_values = []
             try:
                 for t in self.trials:
                     self.condition_values.append(int(_get_trial_trigger_value(t)))
             except ValueError:
-                print('Could not find an integer trigger value in trial')
+                print("Could not find an integer trigger value in trial")
                 print(t)
                 raise
             self.condlist = np.unique(self.conditions)
@@ -72,21 +72,23 @@ class SPMMEEG:
         ## Setup montage structures
         self.montage = {}
 
-        if isinstance(D['montage']['M'], dict):
+        if isinstance(D["montage"]["M"], dict):
             # We have a single montage - store in list of len-1 for consistency
-            self._montage_cache = [D['montage']['M']]
+            self._montage_cache = [D["montage"]["M"]]
         else:
             # We have a list of montage - store it
-            self._montage_cache = D['montage']['M']
+            self._montage_cache = D["montage"]["M"]
 
         # Create montage objects
         for idx in range(len(self._montage_cache)):
             self.montage[idx] = Montage(**self._montage_cache[idx])
-        self.current_montage = D['montage']['Mind']
-
+        self.current_montage = D["montage"]["Mind"]
 
         ## Setup sample indexing
-        self.time = np.linspace(0,self.nsamples/self.fsample,self.nsamples) - self.time_onset
+        self.time = (
+            np.linspace(0, self.nsamples / self.fsample, self.nsamples)
+            - self.time_onset
+        )
 
         self.index = np.ones(self.nsamples, dtype=bool)
         self.good_index = np.zeros(self.nsamples, dtype=int)
@@ -94,7 +96,7 @@ class SPMMEEG:
         self.mark_artefacts_as_bad()
         self.reindex_good_samples()
 
-        if self.type == 'continuous':
+        if self.type == "continuous":
             # only reindex continuous data - assume this is fine in already epoched data
             self.reindex_event_samples()
 
@@ -133,7 +135,7 @@ class SPMMEEG:
         self.trial_definition = TrialParameters(event_type, pre_stim, post_stim)
 
     def mark_artefacts_as_bad(self):
-        #import pdb; pdb.set_trace()
+        # import pdb; pdb.set_trace()
         artefacts = check_lowered_string([e.type for e in self.events], "artefact")
         starts = [t.samples for t in self.trials]
         starts = np.concatenate(starts)[artefacts]
@@ -157,51 +159,55 @@ class SPMMEEG:
     def reindex_event_samples(self):
         for tr in self.trials:
             tr.good_samples = self.good_index[tr.samples]
-            tr.good_end_samples = self.good_index[ np.minimum(tr.end_samples, self.nsamples - 1)]
-        #self.trials.good_samples = self.good_index[self.trials.samples]
+            tr.good_end_samples = self.good_index[
+                np.minimum(tr.end_samples, self.nsamples - 1)
+            ]
+        # self.trials.good_samples = self.good_index[self.trials.samples]
 
         # TODO: Sort out this hacky solution to excess samples.
         #  It might actually not be hacky, bad segments *may* extend past nsamples.
-        #self.trials.good_end_samples = self.good_index[
+        # self.trials.good_end_samples = self.good_index[
         #    np.minimum(self.trials.end_samples, self.nsamples - 1)
-        #]
+        # ]
 
     def print_info(self):
-        print('SPM M/EEG data object - Loaded by OSL')
-        print('Type: {0}'.format(self.type))
-        print('Transform: {0}'.format(self.transform))
-        print('{0} conditions'.format(len(self.condlist)))
-        print('{0} channels'.format(self.nchannels))
-        print('{0} samples/trial'.format(self.nsamples))
-        print('{0} trials'.format(self.ntrials))
-        print('Sampling frequency {0}Hz'.format(self.fsample))
-        print('Loaded from : {0}'.format(self.fullpath))
+        print("SPM M/EEG data object - Loaded by OSL")
+        print("Type: {0}".format(self.type))
+        print("Transform: {0}".format(self.transform))
+        print("{0} conditions".format(len(self.condlist)))
+        print("{0} channels".format(self.nchannels))
+        print("{0} samples/trial".format(self.nsamples))
+        print("{0} trials".format(self.ntrials))
+        print("Sampling frequency {0}Hz".format(self.fsample))
+        print("Loaded from : {0}".format(self.fullpath))
 
         if len(self.montage) > 0:
-            print('\nMontages available : {0}'.format(len(self.montage)))
+            print("\nMontages available : {0}".format(len(self.montage)))
             for ind, mon in self.montage.items():
-                print('\t{0} : {1}'.format(ind, mon.name))
+                print("\t{0} : {1}".format(ind, mon.name))
 
-        print("\nUse syntax 'X = D.get_data(montage_index)[channels, samples, trials]' to get data")
+        print(
+            "\nUse syntax 'X = D.get_data(montage_index)[channels, samples, trials]' to get data"
+        )
 
     def _find_dat_file(self):
         matname = self.filename
-        datname = self._D["data"]['fname']
+        datname = self._D["data"]["fname"]
 
         dat = None
         if os.path.exists(datname):
             dat = datname
         else:
-            datname2 = os.path.join(os.path.dirname(matname),
-                                    os.path.basename(datname))
+            datname2 = os.path.join(os.path.dirname(matname), os.path.basename(datname))
             print(datname2)
             if os.path.exists(datname2):
                 dat = datname2
         if dat is None:
-            raise FileNotFoundError("Associated 'dat' file not found ({0})".format(datname))
+            raise FileNotFoundError(
+                "Associated 'dat' file not found ({0})".format(datname)
+            )
         else:
-            self._D["data"]['fname'] = dat
-
+            self._D["data"]["fname"] = dat
 
     # ------------- SPM Style Helpers
 
@@ -218,11 +224,15 @@ class SPMMEEG:
 
     def indsample(self, t):
         # get index of sample given time in seconds
-        return np.argmin(np.abs(self.time-t))
+        return np.argmin(np.abs(self.time - t))
 
     def indtrial(self, cond):
         if cond not in self.condlist:
-            raise ValueError("Condition '{0}' not in dataset (available conditions = {1})".format(cond, self.condlist))
+            raise ValueError(
+                "Condition '{0}' not in dataset (available conditions = {1})".format(
+                    cond, self.condlist
+                )
+            )
         return np.where([c == cond for c in self.conditions])[0]
 
     # ------------- Properties
@@ -234,7 +244,7 @@ class SPMMEEG:
 
 def _get_trial_trigger_value(t):
     """Return value of first STI event in trial."""
-    ind = [ev.type.find('STI') for ev in t.events][0]
+    ind = [ev.type.find("STI") for ev in t.events][0]
     return t.values[ind]
 
 

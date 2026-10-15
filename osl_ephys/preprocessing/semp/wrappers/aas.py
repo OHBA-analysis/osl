@@ -21,16 +21,19 @@ def epoch_aas(dataset, userargs):
     then lack a centered window when both lengths are odd. A different
     ``pre_pad`` shifts both windows away from this default alignment.
     """
-    userargs = proc_userargs(userargs, {
-        'epoch_key': 'tr_ep',
-        'window_length': 30,   # faster defaults to 10 -- cleaner, but would notch the volume harmonics for volume trigger
-        'picks': 'eeg',
-        'overwrite': 'new',
-        'fit': False,          # if False, standard AAS is used. if True, the avg template is fitted to the data first and then subtracted. (FASTER code style)
-        'pre_pad': 0.5,        # in percentage, the padding before the first epoch. 1-pre_pad is the padding after the last epoch. (FASTER use pre_pad=0)
-    })
-    epoch_key = userargs['epoch_key']
-    window_length = userargs['window_length']
+    userargs = proc_userargs(
+        userargs,
+        {
+            "epoch_key": "tr_ep",
+            "window_length": 30,  # faster defaults to 10 -- cleaner, but would notch the volume harmonics for volume trigger
+            "picks": "eeg",
+            "overwrite": "new",
+            "fit": False,  # if False, standard AAS is used. if True, the avg template is fitted to the data first and then subtracted. (FASTER code style)
+            "pre_pad": 0.5,  # in percentage, the padding before the first epoch. 1-pre_pad is the padding after the last epoch. (FASTER use pre_pad=0)
+        },
+    )
+    epoch_key = userargs["epoch_key"]
+    window_length = userargs["window_length"]
     if isinstance(window_length, (tuple, list)):
         if len(window_length) != 2:
             raise ValueError("window_length must be an integer or (short, long).")
@@ -39,9 +42,12 @@ def epoch_aas(dataset, userargs):
     else:
         lengths = (window_length,)
 
-    if any(isinstance(length, (bool, np.bool_)) or
-           not isinstance(length, (int, np.integer)) or length < 1
-           for length in lengths):
+    if any(
+        isinstance(length, (bool, np.bool_))
+        or not isinstance(length, (int, np.integer))
+        or length < 1
+        for length in lengths
+    ):
         raise ValueError("window_length values must be positive integers.")
     lengths = tuple(int(length) for length in lengths)
     if len(lengths) == 2 and lengths[0] >= lengths[1]:
@@ -54,17 +60,17 @@ def epoch_aas(dataset, userargs):
             UserWarning,
             stacklevel=2,
         )
-    require_keys(dataset, epoch_key, 'epoch_aas')
-    picks = resolve_channel_names(
-        dataset[epoch_key].info, userargs['picks']
-    )
-    overwrite = userargs['overwrite']
-    fit = userargs['fit']
-    pre_pad = userargs['pre_pad']
+    require_keys(dataset, epoch_key, "epoch_aas")
+    picks = resolve_channel_names(dataset[epoch_key].info, userargs["picks"])
+    overwrite = userargs["overwrite"]
+    fit = userargs["fit"]
+    pre_pad = userargs["pre_pad"]
     if not 0 <= pre_pad <= 1:
         raise ValueError("pre_pad must be between 0 and 1.")
 
-    orig_data = np.asarray(dataset[epoch_key].get_data(picks=picks))  # 29+#win, #ch, len(ep)
+    orig_data = np.asarray(
+        dataset[epoch_key].get_data(picks=picks)
+    )  # 29+#win, #ch, len(ep)
     n_epochs = len(orig_data)
     long_length = lengths[-1]
     if long_length > n_epochs:
@@ -76,11 +82,12 @@ def epoch_aas(dataset, userargs):
     # sliding window over epochs (np equivalent of torch's unfold(0, w, 1)):
     # appends the window axis as the last dim -> #win, #ch, len(ep), len(win)=#ep
     spurious_data = np.lib.stride_tricks.sliding_window_view(
-        orig_data, long_length, axis=0)
+        orig_data, long_length, axis=0
+    )
 
     all_pcs = np.mean(spurious_data, axis=-1)[..., None]  # #win, #ch, len(ep), 1
 
-    pre_padding = int(pre_pad * (long_length-1))
+    pre_padding = int(pre_pad * (long_length - 1))
     post_padding = long_length - pre_padding - 1
 
     # pad the template ends by repeating the first/last window. np.repeat with
@@ -100,19 +107,23 @@ def epoch_aas(dataset, userargs):
         )
         for index in edge_indices:
             start = min(max(index - short_pre, 0), n_epochs - short_length)
-            all_pcs[index, ..., 0] = orig_data[start:start + short_length].mean(axis=0)
+            all_pcs[index, ..., 0] = orig_data[start : start + short_length].mean(
+                axis=0
+            )
 
     if fit:
         # Least-squares fit of the single template's amplitude per epoch/channel.
         # For a one-column regressor this is exactly what lstsq computed:
         # alpha = <template, data> / <template, template>.
-        tmpl = all_pcs[..., 0]                                     # 29+#win, #ch, len(ep)
+        tmpl = all_pcs[..., 0]  # 29+#win, #ch, len(ep)
         denom = np.sum(tmpl * tmpl, axis=-1, keepdims=True)
         alpha = np.sum(tmpl * orig_data, axis=-1, keepdims=True) / denom
         noise = alpha * tmpl
         cleaned = np.asarray(orig_data - noise)
     else:
-        cleaned = np.asarray(orig_data - all_pcs[..., 0])  # squeeze last dim (safe for #ch==1)
+        cleaned = np.asarray(
+            orig_data - all_pcs[..., 0]
+        )  # squeeze last dim (safe for #ch==1)
 
     pc_name = f"pc_{epoch_key}"
     noise_name = f"noise_{epoch_key}"
@@ -131,14 +142,23 @@ def epoch_aas(dataset, userargs):
             continue
         break
 
-    dataset[noise_name] = copy.deepcopy(dataset['raw'].get_data())
+    dataset[noise_name] = copy.deepcopy(dataset["raw"].get_data())
     dataset[pc_name] = all_pcs
     # Store the exact ordered names represented by the PC channel axis.  A
     # selector such as "all" is not stable enough for later alignment because
     # channel types and bad-channel state can change after this stage.
     dataset[picks_name] = picks
-    dataset['raw'] = mne_epoch2raw(dataset[epoch_key], dataset['raw'], cleaned, tmin=dataset[epoch_key].tmin, overwrite=overwrite, picks=picks)
-    dataset[noise_name] = dataset[noise_name] - dataset['raw'].get_data()
-    dataset[noise_name] = mne.io.RawArray(dataset[noise_name], dataset['raw'].info, first_samp=dataset['raw'].first_samp)
+    dataset["raw"] = mne_epoch2raw(
+        dataset[epoch_key],
+        dataset["raw"],
+        cleaned,
+        tmin=dataset[epoch_key].tmin,
+        overwrite=overwrite,
+        picks=picks,
+    )
+    dataset[noise_name] = dataset[noise_name] - dataset["raw"].get_data()
+    dataset[noise_name] = mne.io.RawArray(
+        dataset[noise_name], dataset["raw"].info, first_samp=dataset["raw"].first_samp
+    )
 
     return dataset

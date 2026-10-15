@@ -1,13 +1,10 @@
-"""Miscellaneous utility classes and functions.
-
-"""
+"""Miscellaneous utility classes and functions."""
 
 import logging
 import random
 from pathlib import Path
 
 import numpy as np
-
 
 logger = logging.getLogger(__name__)
 
@@ -61,7 +58,8 @@ def proc_userargs(userargs, default, strict=True):
         if strict and key not in default:
             raise KeyError(
                 f"Key {key!r} is not expected in userargs; "
-                f"accepted keys are {sorted(default)}.")
+                f"accepted keys are {sorted(default)}."
+            )
         out[key] = value
     return out
 
@@ -95,8 +93,8 @@ def mean_psd_in_band(psd_row, freqs, center, half_width):
     """
     mask = (freqs >= (center - half_width)) & (freqs <= (center + half_width))
     if not mask.any():
-        return psd_row[np.argmin(np.abs(freqs - center))]   # nearest bin
-    return psd_row[mask].mean()   # mean of density across bins
+        return psd_row[np.argmin(np.abs(freqs - center))]  # nearest bin
+    return psd_row[mask].mean()  # mean of density across bins
 
 
 def set_random_seed(seed=None):
@@ -111,7 +109,7 @@ def set_random_seed(seed=None):
     """
     if seed is None:
         seed = random.randint(0, 2**32 - 1)
-    
+
     logger.info(f"Setting random seed to {seed}")
 
     random.seed(seed)

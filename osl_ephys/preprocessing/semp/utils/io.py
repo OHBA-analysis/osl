@@ -22,6 +22,7 @@ def load_pkl(file_path):
         data = pickle.load(input_path)
     return data
 
+
 def save_pkl(data, file_path):
     """Save data using pickle.
 
@@ -41,8 +42,10 @@ def save_pkl(data, file_path):
 class _EEGDictMeta(type):
     """Metaclass plumbing so ``SingletonEEG(...)`` dispatches to ``.get()``.
     Internal only -- users go through ``SingletonEEG``, never this."""
+
     def __call__(cls, *args, **kwargs):
         return cls.get(*args, **kwargs)
+
 
 class SingletonEEG(metaclass=_EEGDictMeta):
     """Singleton class for loading an example EEG file once and reusing it.
@@ -76,10 +79,14 @@ class SingletonEEG(metaclass=_EEGDictMeta):
         if cls._raw is None:
             if file_path is None:
                 raise ValueError("SingletonEEG needs a file_path on first load.")
-            cls._raw = mne.io.read_raw(file_path, preload=preload)   # format sniffed by MNE
+            cls._raw = mne.io.read_raw(
+                file_path, preload=preload
+            )  # format sniffed by MNE
             cls._loaded_pth = file_path
         elif safe_reload and file_path is not None:
             if file_path != cls._loaded_pth:
-                raise ValueError(f"File path {file_path} does not match the previously loaded file path {cls._loaded_pth}. Use the same file path or None to reload the singleton.")
+                raise ValueError(
+                    f"File path {file_path} does not match the previously loaded file path {cls._loaded_pth}. Use the same file path or None to reload the singleton."
+                )
 
         return cls._raw

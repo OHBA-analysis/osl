@@ -3,7 +3,9 @@ import os
 
 # Housekeeping for logging
 import logging
+
 logger = logging.getLogger(__name__)
+
 
 def soft_import(package):
     """Try to import a package raising friendly error if not present."""
@@ -36,9 +38,8 @@ def run_package_tests():
     import pytest
 
     thisdir = os.path.dirname(os.path.realpath(__file__))
-    installdir = os.path.abspath(os.path.join(thisdir, '..'))
-    canarypth = os.path.join(installdir, 'tests', 'test_00_package_canary.py')
+    installdir = os.path.abspath(os.path.join(thisdir, ".."))
+    canarypth = os.path.join(installdir, "tests", "test_00_package_canary.py")
     print(installdir)
 
-    out = pytest.main(['-x', canarypth])
-
+    out = pytest.main(["-x", canarypth])

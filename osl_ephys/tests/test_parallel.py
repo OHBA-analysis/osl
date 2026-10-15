@@ -24,7 +24,7 @@ class TestSimpleDask(unittest.TestCase):
             return x + 5
 
         result = dask_parallel_bag(add_five, np.arange(5))
-        assert(np.all(result == np.arange(5)+5))
+        assert np.all(result == np.arange(5) + 5)
 
     def test_simple_func_multiple_inputs(selF):
         from ..utils.parallel import dask_parallel_bag
@@ -35,7 +35,7 @@ class TestSimpleDask(unittest.TestCase):
         inputs = [(a, a) for a in np.arange(5)]
 
         result = dask_parallel_bag(multiply, inputs)
-        assert(np.all(result == np.array([0, 1, 4, 9, 16])))
+        assert np.all(result == np.array([0, 1, 4, 9, 16]))
 
     def test_simple_func_with_fixed_args(self):
         from ..utils.parallel import dask_parallel_bag
@@ -43,13 +43,11 @@ class TestSimpleDask(unittest.TestCase):
         def raise_to_power(x, power):
             return x**power
 
-        result = dask_parallel_bag(raise_to_power, np.arange(5),
-                                   func_args=[2])
-        assert(np.all(result == np.array([0, 1, 4, 9, 16])))
+        result = dask_parallel_bag(raise_to_power, np.arange(5), func_args=[2])
+        assert np.all(result == np.array([0, 1, 4, 9, 16]))
 
-        result = dask_parallel_bag(raise_to_power, np.arange(5),
-                                   func_args=[4])
-        assert(np.all(result == np.array([0, 1, 16, 81, 256])))
+        result = dask_parallel_bag(raise_to_power, np.arange(5), func_args=[4])
+        assert np.all(result == np.array([0, 1, 16, 81, 256]))
 
     def test_simple_func_with_fixed_kwargs(self):
         from ..utils.parallel import dask_parallel_bag
@@ -57,26 +55,28 @@ class TestSimpleDask(unittest.TestCase):
         def raise_to_power(x, power=2):
             return x**power
 
-        func_kwargs={'power': 2}
-        result = dask_parallel_bag(raise_to_power, np.arange(5),
-                                   func_kwargs=func_kwargs)
-        assert(np.all(result == np.array([0, 1, 4, 9, 16])))
+        func_kwargs = {"power": 2}
+        result = dask_parallel_bag(
+            raise_to_power, np.arange(5), func_kwargs=func_kwargs
+        )
+        assert np.all(result == np.array([0, 1, 4, 9, 16]))
 
-        func_kwargs={'power': 4}
-        result = dask_parallel_bag(raise_to_power, np.arange(5),
-                                   func_kwargs=func_kwargs)
-        assert(np.all(result == np.array([0, 1, 16, 81, 256])))
+        func_kwargs = {"power": 4}
+        result = dask_parallel_bag(
+            raise_to_power, np.arange(5), func_kwargs=func_kwargs
+        )
+        assert np.all(result == np.array([0, 1, 16, 81, 256]))
 
     def test_simple_func_with_everything(self):
         from ..utils.parallel import dask_parallel_bag
 
         def multiply_and_raise_to_power(x, y, const, power=2):
-            return (x * y)**power + const
+            return (x * y) ** power + const
 
-        inputs = [(a, a+2) for a in np.arange(5)]
+        inputs = [(a, a + 2) for a in np.arange(5)]
 
-        func_kwargs={'power': 2}
-        result = dask_parallel_bag(multiply_and_raise_to_power, inputs,
-                                   func_args=[5],
-                                   func_kwargs=func_kwargs)
-        assert(np.all(result == np.array([5, 14, 69, 230, 581])))
+        func_kwargs = {"power": 2}
+        result = dask_parallel_bag(
+            multiply_and_raise_to_power, inputs, func_args=[5], func_kwargs=func_kwargs
+        )
+        assert np.all(result == np.array([5, 14, 69, 230, 581]))

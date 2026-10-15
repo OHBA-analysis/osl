@@ -5,38 +5,39 @@ from importlib.metadata import version
 
 # Housekeeping for logging
 import logging
+
 osl_logger = logging.getLogger(__name__)
 
 
 def _parse_condition(cond):
     """Parse strings defining conditional statements.
-    
+
     Borrowed from EMD package
     """
-    name = re.split(r'[=<>!]', cond)[0]
-    comp = cond[len(name):]
+    name = re.split(r"[=<>!]", cond)[0]
+    comp = cond[len(name) :]
 
-    if comp[:2] == '==':
+    if comp[:2] == "==":
         func = operator.eq
-    elif comp[:2] == '!=':
-        func =  operator.ne
-    elif comp[:2] == '<=':
-        func =  operator.le
-    elif comp[:2] == '>=':
-        func =  operator.ge
-    elif comp[0] == '<':
+    elif comp[:2] == "!=":
+        func = operator.ne
+    elif comp[:2] == "<=":
+        func = operator.le
+    elif comp[:2] == ">=":
+        func = operator.ge
+    elif comp[0] == "<":
         func = operator.lt
-    elif comp[0] == '>':
+    elif comp[0] == ">":
         func = operator.gt
     else:
-        print('Comparator not recognised!')
+        print("Comparator not recognised!")
 
-    val = comp.lstrip('!=<>')
+    val = comp.lstrip("!=<>")
 
     return (name, func, str(val))
 
 
-def check_version(test_statement, mode='warn'):
+def check_version(test_statement, mode="warn"):
     """Check whether the version of a package meets a specified condition.
 
     Parameters
@@ -46,7 +47,7 @@ def check_version(test_statement, mode='warn'):
         eg 'osl-ephys<1.0.0' or 'osl-ephys==0.6.dev0'
     mode : {'warn', 'assert'}
         Flag indicating whether to warn the user or raise an error if the comparison fails
-    
+
     """
     test_module, comparator, target_version = _parse_condition(test_statement)
 
@@ -57,8 +58,8 @@ def check_version(test_statement, mode='warn'):
         msg = "Package '{}' version ({}) fails specified requirement ({})"
         msg = msg.format(test_module, test_version, test_statement)
 
-        if mode == 'warn':
-                osl_logger.warning(msg)
-        elif mode == 'assert':
-                osl_logger.warning(msg)
-                raise AssertionError(msg)
+        if mode == "warn":
+            osl_logger.warning(msg)
+        elif mode == "assert":
+            osl_logger.warning(msg)
+            raise AssertionError(msg)

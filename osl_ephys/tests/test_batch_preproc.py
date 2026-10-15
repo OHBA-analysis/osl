@@ -8,6 +8,7 @@ import os
 import mne
 import numpy as np
 
+
 class TestPreprocessingChain(unittest.TestCase):
 
     @classmethod
@@ -18,12 +19,14 @@ class TestPreprocessingChain(unittest.TestCase):
         cls.bad_channels = [5, 200]
         cls.bad_segments = [(600, 750)]
 
-        cls.raw = simulate_raw_from_template(5000,
-                                             flat_channels=cls.flat_channels,
-                                             bad_channels=cls.bad_channels,
-                                             bad_segments=cls.bad_segments)
+        cls.raw = simulate_raw_from_template(
+            5000,
+            flat_channels=cls.flat_channels,
+            bad_channels=cls.bad_channels,
+            bad_segments=cls.bad_segments,
+        )
 
-        cls.fpath = tempfile.NamedTemporaryFile().name + 'raw.fif'
+        cls.fpath = tempfile.NamedTemporaryFile().name + "raw.fif"
         cls.raw.save(cls.fpath)
 
     @classmethod
@@ -46,7 +49,7 @@ class TestPreprocessingChain(unittest.TestCase):
         dataset = run_proc_chain(cfg, self.fpath)
 
         # Just testing that things run not that the outputs are sensible...
-        assert(isinstance(dataset["raw"], mne.io.fiff.raw.Raw))
+        assert isinstance(dataset["raw"], mne.io.fiff.raw.Raw)
 
 
 class TestVersions(unittest.TestCase):
@@ -66,8 +69,8 @@ class TestVersions(unittest.TestCase):
         """
         config = load_config(cfg)
 
-        config['meta']['version_assert'] = ['numpy>1.0', 'scipy>1.0']
-        config['meta']['version_warn'] = ['mne>1.0']
+        config["meta"]["version_assert"] = ["numpy>1.0", "scipy>1.0"]
+        config["meta"]["version_warn"] = ["mne>1.0"]
 
         check_config_versions(config)
 
@@ -82,17 +85,17 @@ class TestPreprocessingBatch(unittest.TestCase):
 
         # First file normal
         cls.raw = simulate_raw_from_template(5000)
-        cls.fpath = tempfile.NamedTemporaryFile().name + 'raw.fif'
+        cls.fpath = tempfile.NamedTemporaryFile().name + "raw.fif"
         cls.raw.save(cls.fpath)
         cls.infiles.append(cls.fpath)
 
         # Second file doesn't exist
-        cls.fpath = tempfile.NamedTemporaryFile().name + 'raw.fif'
+        cls.fpath = tempfile.NamedTemporaryFile().name + "raw.fif"
         cls.infiles.append(cls.fpath)
 
         # Third file normal
         cls.raw = simulate_raw_from_template(5000)
-        cls.fpath = tempfile.NamedTemporaryFile().name + 'raw.fif'
+        cls.fpath = tempfile.NamedTemporaryFile().name + "raw.fif"
         cls.raw.save(cls.fpath)
         cls.infiles.append(cls.fpath)
 
@@ -117,7 +120,7 @@ class TestPreprocessingBatch(unittest.TestCase):
         td = tempfile.TemporaryDirectory()
         goods = run_proc_batch(cfg, self.infiles, outdir=td.name)
 
-        assert(np.all(goods == np.array([1, 0, 1])))
+        assert np.all(goods == np.array([1, 0, 1]))
 
     def test_batch_mixes_existing_and_new_outputs(self):
         """Skipped and processed files must have the same return type."""
@@ -133,7 +136,7 @@ class TestPreprocessingBatch(unittest.TestCase):
 
         with tempfile.TemporaryDirectory() as outdir:
             first = run_proc_batch(cfg, [self.infiles[0]], outdir=outdir)
-            assert(np.all(first == np.array([1])))
+            assert np.all(first == np.array([1]))
 
             # The first output is skipped, while the second is newly made.
             mixed = run_proc_batch(
@@ -141,8 +144,7 @@ class TestPreprocessingBatch(unittest.TestCase):
                 [self.infiles[0], self.infiles[2]],
                 outdir=outdir,
             )
-            assert(np.all(mixed == np.array([0, 1])))
-
+            assert np.all(mixed == np.array([0, 1]))
 
     def test_dask_batch(self):
         from ..preprocessing import run_proc_batch
@@ -159,10 +161,8 @@ class TestPreprocessingBatch(unittest.TestCase):
         client = Client(n_workers=2, threads_per_worker=1)
         td = tempfile.TemporaryDirectory()
 
-        goods = run_proc_batch(cfg, self.infiles,
-                               outdir=td.name,
-                               dask_client=True)
+        goods = run_proc_batch(cfg, self.infiles, outdir=td.name, dask_client=True)
 
-        assert(np.all(goods == np.array([1, 0, 1])))
+        assert np.all(goods == np.array([1, 0, 1]))
 
         client.shutdown()

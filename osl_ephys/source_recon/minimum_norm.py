@@ -1,7 +1,5 @@
-"""Minimum norm source localization using MNE-Python.
+"""Minimum norm source localization using MNE-Python."""
 
-"""
-    
 # Authors: Chetan Gohil <chetan.gohil@psych.ox.ac.uk>
 #          Mats van Es <mats.vanes@psych.ox.ac.uk>
 #          Hongyu Qian <hongyu.qian@queens.ox.ac.uk>
@@ -53,7 +51,7 @@ def get_mne_filenames(subjects_dir, subject):
 
     filenames = {
         "inverse_operator": op.join(basedir, "op-inv.fif"),
-        "source_estimate_raw": op.join(basedir, "src-raw"), # followed by -lh/rh.stc
+        "source_estimate_raw": op.join(basedir, "src-raw"),  # followed by -lh/rh.stc
         "source_estimate_epo": op.join(basedir, "src-epo"),
     }
     return filenames
@@ -69,12 +67,12 @@ def create_inverse_operator(
     filename,
 ):
     """Creates minimum norm (MNE) inverse operator.
-    
+
     Parameters
     ----------
     fwd : mne forward model or str
         Forward model.
-    data : mne.io.Raw, mne.Epochs  
+    data : mne.io.Raw, mne.Epochs
         Preprocessed data.
     chantypes : list
         List of channel types to include.
@@ -88,9 +86,9 @@ def create_inverse_operator(
         Output filename.
     """
     log_or_print("*** RUNNING MNE SOURCE LOCALIZATION ***")
-    
+
     noise_cov = calc_noise_cov(data, rank, chantypes)
-    
+
     if isinstance(fwd, str):
         fwd = mne.read_forward_solution(fwd)
 
@@ -103,12 +101,10 @@ def create_inverse_operator(
         rank=rank,
     )
 
-    mne.minimum_norm.write_inverse_operator(
-        filename, inverse_operator, overwrite=True
-    )
+    mne.minimum_norm.write_inverse_operator(filename, inverse_operator, overwrite=True)
 
     return inverse_operator
-    
+
 
 def apply_inverse_operator_surf(
     outdir,
@@ -122,7 +118,7 @@ def apply_inverse_operator_surf(
     save=False,
 ):
     """Apply previously computed minimum norm inverse solution (surface).
-    
+
     Parameters
     ----------
     outdir : str
@@ -146,7 +142,7 @@ def apply_inverse_operator_surf(
     save : bool
         Save source estimate (default: False).
     """
-    
+
     mne_dir = op.join(outdir, subject, "mne")
     mne_files = get_mne_filenames(outdir, subject)
     coreg_files = freesurfer_utils.get_coreg_filenames(outdir, subject)
@@ -166,10 +162,10 @@ def apply_inverse_operator_surf(
 
     if method == "eloreta":
         method = "eLORETA"
-        
+
     if pick_ori == "None":
         pick_ori = None
-    
+
     log_or_print(f"*** Applying {method} surface inverse operator ***")
 
     if isinstance(data, mne.Epochs):
@@ -189,15 +185,15 @@ def apply_inverse_operator_surf(
             method=method,
             pick_ori=pick_ori,
         )
-    
+
     if morph:
         log_or_print(f"*** Morphing source estimate to {morph} ***")
-        src_from = mne.read_source_spaces(coreg_files['source_space'])
+        src_from = mne.read_source_spaces(coreg_files["source_space"])
         morph = morph_surface(outdir, subject, src_from, subject_to=morph)
-        morph.save(coreg_files['source_space-morph'], overwrite=True)
+        morph.save(coreg_files["source_space-morph"], overwrite=True)
         stc = morph.apply(stc)
-    
-    if save:     
+
+    if save:
         log_or_print("*** Saving source estimate ***")
         if isinstance(data, mne.Epochs):
             stc.save(op.join(mne_dir, "src-epo"), overwrite=True)
@@ -218,7 +214,7 @@ def apply_inverse_operator_vol(
     transform=None,
 ):
     """Apply previously computed minimum norm inverse solution (volumetric).
-    
+
     Parameters
     ----------
     outdir : str
@@ -246,7 +242,7 @@ def apply_inverse_operator_vol(
     ts : (voxels, time) array
         In native MRI space.
     """
-    
+
     mne_dir = op.join(outdir, subject, "mne")
     mne_files = get_mne_filenames(outdir, subject)
 
@@ -265,7 +261,7 @@ def apply_inverse_operator_vol(
 
     if method == "eloreta":
         method = "eLORETA"
-    
+
     log_or_print(f"*** Applying {method} volumetric inverse operator ***")
 
     if isinstance(data, mne.Epochs):
@@ -286,11 +282,11 @@ def apply_inverse_operator_vol(
 
     # Use PCA to project 3D value into maximum variance axis
     xyz_ts = stc.data
-    source_nn = inverse_operator['source_nn'][2::3]
+    source_nn = inverse_operator["source_nn"][2::3]
     del inverse_operator
 
     xyz_ts = xyz_ts - np.mean(xyz_ts, axis=-1, keepdims=True)
-    eig_vals, eig_vecs = np.linalg.eig(np.matmul(xyz_ts,xyz_ts.transpose(0,2,1)))
+    eig_vals, eig_vecs = np.linalg.eig(np.matmul(xyz_ts, xyz_ts.transpose(0, 2, 1)))
     order = np.argsort(np.abs(eig_vals), axis=-1)
     max_power_ori = eig_vecs[np.arange(len(eig_vecs)), :, order[:, -1]]
     assert max_power_ori.shape == (xyz_ts.shape[0], xyz_ts.shape[1])
@@ -298,12 +294,10 @@ def apply_inverse_operator_vol(
     signs = np.sign(np.sum(max_power_ori * source_nn, axis=1, keepdims=True))
     signs[signs == 0] = 1.0
     max_power_ori *= signs
-    ts = np.squeeze(np.matmul(np.expand_dims(max_power_ori,1),xyz_ts),axis = 1)
+    ts = np.squeeze(np.matmul(np.expand_dims(max_power_ori, 1), xyz_ts), axis=1)
 
     # Only keep good time points
-    _, times = data.get_data(
-            reject_by_annotation="omit", return_times=True, verbose=0
-        )
+    _, times = data.get_data(reject_by_annotation="omit", return_times=True, verbose=0)
     indices = data.time_as_index(times, use_rounding=True)
     ts = ts[..., indices]
 
@@ -317,11 +311,11 @@ def apply_inverse_operator_vol(
         ts -= np.mean(ts, axis=0, keepdims=True)
 
     return ts
-    
-    
+
+
 def calc_noise_cov(data, data_cov_rank, chantypes):
     """Calculate noise covariance.
-    
+
     Parameters
     ----------
     raw : mne.io.Raw
@@ -337,16 +331,18 @@ def calc_noise_cov(data, data_cov_rank, chantypes):
     # by computing a diagonal noise cov with the variances set to the mean
     # variance of each sensor type (e.g. mag, grad, eeg.)
     log_or_print("*** Calculating noise covariance ***")
-    
+
     data = data.pick(chantypes)
     if isinstance(data, mne.io.Raw):
-        data_cov = mne.compute_raw_covariance(data, method="empirical", rank=data_cov_rank)
+        data_cov = mne.compute_raw_covariance(
+            data, method="empirical", rank=data_cov_rank
+        )
     else:
         data_cov = mne.compute_covariance(data, method="empirical", rank=data_cov_rank)
-    
+
     n_channels = data_cov.data.shape[0]
     noise_cov_diag = np.zeros(n_channels)
-    
+
     for type in chantypes:
         # Indices of this channel type
         type_raw = data.copy().pick(type, exclude="bads")
@@ -381,7 +377,7 @@ def morph_surface(
     spacing=None,
 ):
     """Morph source space to another subject's surface.
-    
+
     Parameters
     ----------
     subject : str
@@ -393,25 +389,30 @@ def morph_surface(
     src_to : str, mne.SourceSpaces
         Destination source space. can be 'fsaverage' or a source space.
     """
-    
+
     # get source spacing from src_to
 
-    fsaverage_coreg_filenames = freesurfer_utils.get_coreg_filenames(subjects_dir, "fsaverage")
-    
-    if subject_to == "fsaverage" and not op.exists(fsaverage_coreg_filenames['source_space']):
+    fsaverage_coreg_filenames = freesurfer_utils.get_coreg_filenames(
+        subjects_dir, "fsaverage"
+    )
+
+    if subject_to == "fsaverage" and not op.exists(
+        fsaverage_coreg_filenames["source_space"]
+    ):
         # estimate source spacing from src_from
-        if 'spacing' not in src_from.info['command_line']:
-            src_to = freesurfer_utils.make_fsaverage_src(subjects_dir) # use default
+        if "spacing" not in src_from.info["command_line"]:
+            src_to = freesurfer_utils.make_fsaverage_src(subjects_dir)  # use default
         else:
-            spacing = int(src_from.info['command_line'].split('spacing=')[1].split(', ')[0])
+            spacing = int(
+                src_from.info["command_line"].split("spacing=")[1].split(", ")[0]
+            )
             src_to = freesurfer_utils.make_fsaverage_src(subjects_dir, spacing)
-        
+
     morph = mne.compute_source_morph(
         src_from,
         subject_from=subject,
         subject_to=subject_to,
         src_to=src_to,
         subjects_dir=subjects_dir,
-
     )
     return morph
