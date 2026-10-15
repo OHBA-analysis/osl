@@ -240,7 +240,7 @@ seven of these names; start from it:
   and the `trees/` are tiny and can stay in the package.
 - Add osl-ephys and its `osl-ephys-download-data` CLI to the "Packages that
   use these files" table in the osl-files README.
-- Test data in osl-files: pulled out into section 10, done first. Summary:
+- Test recordings in osl-files `test_data/`: section 10, done first. Summary:
   - non-identifiable: `mne.io.anonymize_info`, no sMRI (coreg tests use
     `surface/mni152` from osl-files, which also means no FSL is needed in CI),
     headshape/fiducials kept because coregistration tests need them
@@ -254,6 +254,10 @@ seven of these names; start from it:
     each dataset to a few MB; larger tutorial datasets stay on OSF
 
 ### Phase 3: One config, one runner  (todo: refactor parallel processing, remove dask; unify preproc and source recon)
+
+API proposal for discussion with Mats: issue #454 (what a batch script, the
+CLI, interactive use and custom steps look like; open questions on section
+names, manifest columns, HPC, in-memory data and `osl_func`).
 
 The unified config (D4):
 
@@ -366,6 +370,8 @@ Parallelism underneath it:
   #373 (rectified signal warning) addressed here.
 - `maxfilter`: adopt the osl-dynamics rewrite (chunking, CBU three-stage,
   split-file chains; fixes #192) behind the existing `osl_maxfilter` CLI.
+- Merge the two ICA review/apply CLI pairs into one (decision in the
+  feature inventory, section 9).
 - `glm`: keep as is; only the sails/glmtools pin changes.
 - `utils.spmio`, `utils.study`, `utils.opm`: keep; `utils.simulate` reads the
   template from osl-files.
@@ -570,7 +576,7 @@ line in its scope says "undecided".
 
 | Module | Public names | Disposition |
 | --- | --- | --- |
-| CLIs | `osl_maxfilter`, `osl_ica_label`, `osl_ica_apply`, `osl_preproc`, `osl_func`, `osl-ica-review`, `osl-ica-apply` | Keep all. `osl_preproc` gains `osl-ephys run` as the new name and stays as an alias for one release. Decide whether the two ICA review/apply pairs (ica_label vs manual_ica from #452) merge into one. |
+| CLIs | `osl_maxfilter`, `osl_ica_label`, `osl_ica_apply`, `osl_preproc`, `osl_func`, `osl-ica-review`, `osl-ica-apply` | Keep all. `osl_preproc` gains `osl-ephys run` as the new name and stays as an alias for one release. The two ICA review/apply pairs (`osl_ica_label`/`osl_ica_apply` and the SEMP `osl-ica-review`/`osl-ica-apply` from #452) are merged into one pair (decided 2026-10-15): one CLI that opens the review, one that applies, covering both the fif-based and the manual-label workflows. |
 | `preprocessing.batch` | `run_proc_chain`, `run_proc_batch`, `load_config`, `find_func`, `check_config_versions`, `get_config_from_fif`, `append_preproc_info`, `import_data`, `read_dataset`, `write_dataset`, `plot_preproc_flowchart`, `print_custom_func_info` | Keep; `run_proc_batch` becomes a wrapper over `run_batch` (phase 3), `find_func`/`load_config` become the shared registry. Config provenance in the fif (`get_config_from_fif`, `append_preproc_info`) is kept. |
 | `preprocessing.mne_wrappers` | 23 `run_mne_*` steps | Keep all. |
 | `preprocessing.osl_wrappers` | `gesd`, `detect_artefacts`, `detect_maxfilt_zeros`, `bad_segments`, `bad_channels`, `drop_bad_epochs`, `detect_bad_channels_psd`, `run_osl_read_dataset`, `run_osl_bad_segments`, `run_osl_bad_channels`, `run_osl_drop_bad_epochs`, `run_osl_zscore_present_data`, `run_osl_glm_*` (4), `run_osl_manual_ica`, `run_osl_apply_ica` | Keep all wrappers. `gesd`/`bad_segments`/`bad_channels` are Port (osl-dynamics `detect_bad_segments`/`detect_bad_channels`, same GESD, with the #444 fixes carried over); `detect_maxfilt_zeros`, `drop_bad_epochs`, `detect_bad_channels_psd`, zscore and GLM steps have no osl-dynamics equivalent and are Keep. |
@@ -624,16 +630,16 @@ Surveyed 2026-10-15 in `~/projects/ohba/canonical_hmm_networks/BIDS`
 
 ### What goes to osl-files
 
-Directory `testdata/<modality>/` in osl-files, which the registry workflow
+Directory `test_data/<modality>/` in osl-files, which the registry workflow
 registers automatically. One README per dataset: scanner, site, what was
 done to the data, and the terms it is shared under.
 
 | Dataset | Files | Target size |
 | --- | --- | --- |
-| `testdata/elekta/` | `rest-raw.fif` (fif, float32) | 5 MB: 30 s at 250 Hz, all 306 MEG + EOG/ECG/EMG + one stim channel; misc channels dropped |
-| `testdata/ctf/` | `rest-raw.fif` converted from the .ds (keeps the CTF head frame, the 28 reference channels and the 64 EEG), plus a decimated `headshape.pos` | 5 MB: 30 s at 250 Hz. A trimmed `.ds` can be added later if the `.ds` reading path needs its own test (MNE has no .ds writer, so it means a small res4/meg4 writer) |
-| `testdata/opm/` | `task-raw.fif` from one of the two OPM runs | 5 MB: 30 s at 250 Hz, all mags, 2 stim channels, events kept |
-| `testdata/eeg/` | `rest.vhdr/.vmrk/.eeg` (BrainVision via `mne.export`), electrode positions as a fif montage or the decimated localiser | 3 MB: 60 s at 250 Hz |
+| `test_data/elekta/` | `rest-raw.fif` (fif, float32) | 5 MB: 30 s at 250 Hz, all 306 MEG + EOG/ECG/EMG + one stim channel; misc channels dropped |
+| `test_data/ctf/` | `rest-raw.fif` converted from the .ds (keeps the CTF head frame, the 28 reference channels and the 64 EEG), plus a decimated `headshape.pos` | 5 MB: 30 s at 250 Hz. A trimmed `.ds` can be added later if the `.ds` reading path needs its own test (MNE has no .ds writer, so it means a small res4/meg4 writer) |
+| `test_data/opm/` | `task-raw.fif` from one of the two OPM runs | 5 MB: 30 s at 250 Hz, all mags, 2 stim channels, events kept |
+| `test_data/eeg/` | `rest.vhdr/.vmrk/.eeg` (BrainVision via `mne.export`), electrode positions as a fif montage or the decimated localiser | 3 MB: 60 s at 250 Hz |
 
 Total under 20 MB, against 28 MB of data in osl-files today. Git history is
 permanent, so each file is written once and only replaced for a real reason.
@@ -693,41 +699,49 @@ of what it wrote, which goes into the PR description.
 ### Decisions
 
 - Signal: synthetic over real geometry (decided 2026-10-15, see item 6).
-- OPM run: sub-05 first (events, headshape); sub-03 added later only if the
-  other channel naming needs its own test (working default).
-- CTF: converted fif plus the decimated `.pos`; no trimmed `.ds` for now
-  (working default).
-- Size: 20 s at 250 Hz, float32 fif, about 5-7 MB per MEG dataset, 60 s for
-  EEG; under 20 MB in total (working default, adjust once the files exist).
-- Redistribution rights per source, and the EEG source in particular: still
-  to be checked by the data owners before any push.
+- Geometry: fine to release (decided 2026-10-15). The kept headshape points
+  are a random subset, jittered by about a millimetre; fiducials, HPI coils
+  and electrode positions are exact because coregistration needs them.
+- OPM run: sub-05 only; the pre-coregistered sub-03 is not needed (decided
+  2026-10-15).
+- CTF: converted fif plus the thinned `.pos`; no trimmed `.ds`.
+- EEG: BrainVision (`.vhdr/.vmrk/.eeg`) via `mne.export` with pybv, so the
+  `.vhdr` reading path is covered (decided 2026-10-15).
+- Size: 20 s at 250 Hz, float32 fif, 60 s for EEG; about 21 MB in total.
+- Review: the audit in `make_osl_test_data/audit.py` stands in for a second
+  reviewer; the geometry is cleared for release by the data owners. Pushed
+  directly to osl-files main in one commit.
 
-### Status (2026-10-15)
-
-Built locally in `~/packages/osl-files/testdata/` (untracked, not pushed):
+### Status: done (pushed to osl-files main, 2026-10-15)
 
 | File | Size | Content |
 | --- | --- | --- |
-| `elekta/rest-raw.fif` | 6.3 MB | 20 s at 250 Hz; 204 grad, 102 mag, 2 EOG, ECG, EMG, STI101; 3 fiducials, 4 HPI, 100 headshape |
-| `ctf/rest-raw.fif` + `headshape.pos` | 7.1 MB | 20 s; 273 mag, 28 ref, 64 EEG, UPPT002; CTF compensation kept; 100-point .pos |
-| `opm/task-raw.fif` | 3.7 MB | 20 s; 192 OPM channels (QuSpin triaxial), 2 stim; 3 fiducials, 100 headshape |
-| `eeg/rest-raw.fif` | 3.7 MB | 60 s; 62 EEG with localiser positions; events as annotations |
+| `test_data/elekta/rest-raw.fif` | 6.3 MB | 20 s at 250 Hz; 204 grad, 102 mag, 2 EOG, ECG, EMG, STI101; 3 fiducials, 4 HPI, 100 headshape |
+| `test_data/ctf/rest-raw.fif` + `headshape.pos` | 7.4 MB | 20 s; 273 mag, 28 ref, 64 EEG, UPPT002; CTF compensation kept; 100-point .pos |
+| `test_data/opm/task-raw.fif` | 3.9 MB | 20 s; 192 OPM channels (QuSpin triaxial), 2 stim; 3 fiducials, 100 headshape |
+| `test_data/eeg/rest.vhdr/.vmrk/.eeg` + `rest-dig.fif` | 3.7 MB | 60 s; 62 EEG, events as markers; montage (62 electrodes + fiducials) in the dig fif |
 
-20.8 MB in total. Sanity checks pass on every file: the events are found by
-`mne.find_events`, the bad channel has 6-15 times the median channel
-standard deviation, the loudest one-second window is the injected one at
-10 s, and the blink correlates at 0.48 with the frontal channels. The EEG
-file is fif rather than BrainVision because `pybv` is not installed; export
-it when the osl-files PR is prepared if the `.vhdr` path needs its own test.
-`testdata/README.md` is generated by `tools/make_testdata/readme.py` from
-the files and the ground-truth constants; its "Terms" column is still
-"TO CONFIRM" for every dataset, which is the remaining blocker.
+21.4 MB in total; `test_data/README.md` (generated) documents the ground
+truth and the provenance. Every file passed `make_osl_test_data/audit.py`,
+which checks the header fields, the dates, the HPI epochs, the acquisition
+parameter block, every printable string in the file bytes against tokens
+from the original headers, the correlation of every channel with the
+original after a 1 Hz high-pass (max 0.10), and that no headshape point is
+an original coordinate (min 0.4 mm away). Two leaks were found and fixed on
+the way: the HPI measurement epochs (raw MEG data, about 5 MB) and the
+Neuromag acquisition parameter block (`info['acq_pars']`, scanner settings
+with patient-name fields); neither is cleared by `anonymize()`.
+
+Tests fetch these through the ported files module (phase 2) as
+`test_data/<modality>/<file>`.
 
 ### Generator scripts
 
-`osl-files/tools/make_testdata/`: `common.py` (anonymise, decimate the
-headshape, build the sphere forward model, synthesise the signal, inject
-the artefacts, write and dump) and one short script per modality that
-loads its private source, picks channels, crops, resamples and calls the
-common steps. The scripts need osl-dynamics installed (for the headshape
-decimation) and the private source path as an argument.
+`~/projects/ohba/make_osl_test_data/` (OHBA-internal, not in osl-files):
+`common.py` (anonymise, thin and jitter the headshape, build the sphere
+forward model, synthesise the signal, inject the artefacts, write and
+dump), one short script per modality that loads its private source, picks
+channels, crops and calls the common steps, `readme.py` that regenerates
+`test_data/README.md`, and `audit.py` that checks the built files against
+the originals. They need mne, numpy and pybv, and the private source paths
+as arguments.
