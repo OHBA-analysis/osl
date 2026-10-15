@@ -143,17 +143,53 @@ come after the scaffolding exists to test them.
   - pin `sails` or fix the incompatibility behind issue #449
 - `.github/workflows/`: `tests.yml` (push + PR, matrix Python 3.10-3.13,
   ubuntu + macos, `pip install -e .[dev]`, pytest), `codespell.yml`,
-  `black.yml`, `release.yml` (publish on GitHub release via PyPI trusted
-  publishing; needs the `pypi` environment and the trusted publisher set up on
-  pypi.org for osl-ephys). Delete `osl-cicd-actions.yml`.
+  `black.yml`, `release.yml`. Delete `osl-cicd-actions.yml`.
+
+  Release process (own board item). Today: ten manual steps in
+  `release_notes.md`, version strings in four files, `python setup.py sdist`
+  and `twine upload` by hand. Target, copied from osl-dynamics:
+  1. Version from the git tag via setuptools_scm. No version string anywhere
+     in the repo; `CITATION.cff` is edited at release time only.
+  2. `release.yml` as in osl-dynamics: on `release: published`, build the
+     sdist and wheel, `twine check`, upload with
+     `pypa/gh-action-pypi-publish` using trusted publishing (`id-token:
+     write`, environment `pypi`, `skip-existing: true` so a failed upload can
+     be re-run).
+  3. One-time setup: a `pypi` environment on the GitHub repo, and a trusted
+     publisher on pypi.org for the osl-ephys project (owner `OHBA-analysis`,
+     repo `osl-ephys`, workflow `release.yml`, environment `pypi`). No API
+     tokens.
+  4. README "Releases" section copied from osl-dynamics: check the latest
+     main built on RTD, create a GitHub release with tag `vX.Y.Z`, write the
+     notes, publish, check the Actions run. `release_notes.md` deleted.
+  5. Prove the workflow with a release candidate (`v3.0.0rc1`, marked
+     pre-release) before `v3.0.0`.
+
+  ReadTheDocs (own board item). Today: `.readthedocs.yaml` at the root on
+  Python 3.8 installing `requirements.txt`, docs under `doc/source`, the
+  GitHub avatar as logo, no sitemap or `llms.txt`. Target, copied from
+  osl-dynamics:
+  1. `doc/.readthedocs.yaml` (Python 3.12, `post_checkout` fetching tags so
+     setuptools_scm can version the build, `doc/requirements.txt` that
+     installs the package).
+  2. Flatten `doc/source` to `doc/`; `conf.py` copied: pydata theme, OHBA
+     logo from osl-files, autoapi with the `_templates/python` templates,
+     sphinx-gallery `tutorials` -> `tutorials_build`, sphinx-sitemap with
+     `html_baseurl`, `llms.txt` through `html_extra_path`, `github_url`,
+     `show_nav_level` 2, no section navigation, no "show source".
+  3. `index.rst` header with the OHBA and OxCIN logos from osl-files and a
+     feature list that matches v3 (no "Dask", no "HTML reports").
+  4. `install.rst` in the osl-dynamics style: conda-forge first, pip, BMRC,
+     development install, removal. The `envs/*.yml` lockfiles go.
+  5. README trimmed to description, badges, conda install, docs link,
+     Releases, citation. RTD project settings already match (default branch
+     `main`, version `latest`); only the config file path changes.
 - One-off black reformat in its own commit, listed in
   `.git-blame-ignore-revs`. Codespell config in `pyproject.toml`.
 - Licence files aligned with osl-dynamics: full Apache-2.0 text in `LICENSE`,
   a `NOTICE` file, `license`/`license-files` in `pyproject.toml`, the
   classifier. `CITATION.cff` version (currently `2.5.0.dev1+semp.2`) set only
   at release time.
-- `.readthedocs.yaml` to Python 3.12 and `doc/requirements.txt`; `html_logo`
-  from `osl-files/docs/logo` (todo: logos).
 - README: short description, badges, conda install first, "Releases" section
   copied from osl-dynamics; `release_notes.md` deleted; CONTRIBUTING trimmed
   (drop the git school, point at osl-dynamics' conventions).
