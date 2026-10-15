@@ -197,7 +197,7 @@ seven of these names; start from it:
   and the `trees/` are tiny and can stay in the package.
 - Add osl-ephys and its `osl-ephys-download-data` CLI to the "Packages that
   use these files" table in the osl-files README.
-- Test data in osl-files under `testdata/{elekta,ctf,opm,eeg}/`:
+- Test data in osl-files: pulled out into section 10, done first. Summary:
   - non-identifiable: `mne.io.anonymize_info`, no sMRI (coreg tests use
     `surface/mni152` from osl-files, which also means no FSL is needed in CI),
     headshape/fiducials kept because coregistration tests need them
@@ -559,3 +559,94 @@ line in its scope says "undecided".
 | `utils.opm` | `convert_notts`, `correct_mri` | Keep. |
 | `utils.misc`, `utils.package`, `utils.version_utils`, `utils.run_func` | `ensure_dir`, `proc_userargs`, `mean_psd_in_band`, `set_random_seed`, `soft_import`, `run_package_tests`, `check_version`, `osl_func` main | Keep; `run_package_tests` becomes the `osl-ephys-check` CLI (#425). |
 | Package data | `source_recon/files/*`, `utils/simulation_config/*`, `neuromag306_info.yml`, `trees/*.tree` | Move to osl-files (phase 2) with old-name aliases; `trees` and the yml stay in the package. |
+
+## 10. Test data for osl-files (do this first)
+
+Pulled out of phase 2 because the tests in every later phase need it, and
+because osl-files is public: nothing is pushed until the checklist below is
+met for each dataset.
+
+### Source recordings
+
+Surveyed 2026-10-15 in `~/projects/ohba/canonical_hmm_networks/BIDS`
+(private; never copied anywhere as is).
+
+| Modality | Source | Scanner, rate, length | Channels | Head geometry in file | Identifying content found |
+| --- | --- | --- | --- | --- | --- |
+| Elekta | sub-01 rest, eyes closed (403 MB fif) | VectorView, 1000 Hz, 300 s | 204 grad, 102 mag, 2 EOG, 1 ECG, 1 EMG, 19 misc, 3 stim; HPI measured | 3 fiducials, 4 HPI coils, 291 headshape points | subject id, first and last name, experimenter, free-text description with names, measurement date, sMRI alongside |
+| CTF | sub-02 rest, eyes closed (606 MB .ds + .pos) | CTF-275, 1200 Hz, 305 s | 273 mag, 28 ref, 64 EEG, 42 misc, 1 stim | 3 fiducials, 64 EEG positions; 605-point .pos headshape | `his_id`; .ds sidecar files (`.infods`, `.acq`, `.xml`) carry their own metadata; date already blanked |
+| OPM (a) | sub-03 movie run (533 MB fif) | triaxial OPM, 1200 Hz, 638 s | 174 mag (`I6 [X]` naming), 6 bad channels listed | 3 fiducials, 174 sensor points as dig | none in the header; sMRI alongside |
+| OPM (b) | sub-05 braille run (441 MB fif) | triaxial OPM, 375 Hz, 1340 s | 192 mag (`A1X` naming), 27 stim; 14766 event annotations | 3 fiducials, 4783 headshape points | none in the header; sMRI alongside |
+| EEG | sub-04 rest (BrainVision, 2500 Hz, 1097 s) + `loc.mat` | 62 EEG | 62 ch | electrode positions and head points in the localiser .mat | measurement date; 498 marker annotations incl. free-text comments; the file layout matches the LEMON dataset, whose redistribution terms must be checked |
+
+### What goes to osl-files
+
+Directory `testdata/<modality>/` in osl-files, which the registry workflow
+registers automatically. One README per dataset: scanner, site, what was
+done to the data, and the terms it is shared under.
+
+| Dataset | Files | Target size |
+| --- | --- | --- |
+| `testdata/elekta/` | `rest-raw.fif` (fif, float32) | 5 MB: 30 s at 250 Hz, all 306 MEG + EOG/ECG/EMG + one stim channel; misc channels dropped |
+| `testdata/ctf/` | `rest-raw.fif` converted from the .ds (keeps the CTF head frame, the 28 reference channels and the 64 EEG), plus a decimated `headshape.pos` | 5 MB: 30 s at 250 Hz. A trimmed `.ds` can be added later if the `.ds` reading path needs its own test (MNE has no .ds writer, so it means a small res4/meg4 writer) |
+| `testdata/opm/` | `task-raw.fif` from one of the two OPM runs | 5 MB: 30 s at 250 Hz, all mags, 2 stim channels, events kept |
+| `testdata/eeg/` | `rest.vhdr/.vmrk/.eeg` (BrainVision via `mne.export`), electrode positions as a fif montage or the decimated localiser | 3 MB: 60 s at 250 Hz |
+
+Total under 20 MB, against 28 MB of data in osl-files today. Git history is
+permanent, so each file is written once and only replaced for a real reason.
+
+Features each file must contain so the tests have something to find: a bad
+channel, a high-variance segment, ECG/EOG channels where the scanner has
+them, a stim channel with at least a few events, fiducials and a headshape
+for coregistration, HPI coil positions in the Elekta file (so the
+MaxFilter-related code paths can run without MaxFilter), the CTF reference
+channels (`ref_meg` handling), both OPM axis namings if both runs are kept.
+
+### Non-identifiability checklist (every dataset, before pushing)
+
+1. `raw.anonymize()` plus explicit clearing of `subject_info`,
+   `experimenter`, `description`, `proj_name`, `his_id`, device serials;
+   `meas_date` set to a fixed fake date, not merely shifted.
+2. Annotations: keep stimulus codes, drop free-text comments.
+3. Headshape: decimate to about 100 points and remove everything below the
+   nasion-to-ear plane (no nose or face), using the decimation already in the
+   codebase. Fiducials and HPI coils kept.
+4. No structural MRI. Coregistration tests use `surface/mni152` from
+   osl-files with `allow_mri_scaling`.
+5. CTF sidecars (`.infods`, `.acq`, `.xml`, `.hc`) are not shipped; the fif
+   conversion carries only what MNE reads.
+6. Decide the signal: (A) the real segment, cropped and decimated, which is
+   not identifying for 30 s of rest but is still the participant's data; (B)
+   the real file structure and geometry with a synthetic signal written over
+   the channels (phase-randomised surrogate of the real spectrum, or the MVAR
+   simulator in `utils.simulate`), with the bad channel, bad segment and
+   artefacts injected deliberately so the tests have ground truth. (B) is
+   the recommendation: it removes the consent question for the time series
+   and makes the tests deterministic. The Elekta set can even be fully
+   synthetic from the existing `megin_template_info.fif` plus the MNI152
+   scalp for the headshape.
+7. Redistribution rights per dataset, written in its README: who owns the
+   recording, that public sharing of a derived segment is permitted, and the
+   licence (CC0 or CC-BY for the derived file). The EEG run needs this
+   checked first because of the LEMON match. Geometry (fiducials, headshape,
+   electrode positions) is derived from the participant even under (B), so
+   this check applies to (B) too.
+8. A second person inspects the final files (`mne.io.read_raw` + `info`
+   dump, annotations, dig) before the PR to osl-files is opened.
+
+### How it is made
+
+A script per modality in `osl-files/tools/make_testdata/`, taking the
+private source path as an argument, so the files are reproducible and the
+anonymisation steps are code, not memory. The script prints the `info` dump
+of what it wrote, which goes into the PR description.
+
+### Decisions needed before building
+
+- Real segment (A) or synthetic signal (B).
+- Which OPM run (or both): sub-05 has events and a headshape; sub-03 has
+  listed bad channels and the other naming convention.
+- CTF as converted fif only, or also a trimmed `.ds`.
+- Size budget: 5 MB per dataset is the proposal.
+- Who checks the redistribution rights for each source, and the EEG source in
+  particular.
