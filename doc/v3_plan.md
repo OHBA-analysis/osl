@@ -651,16 +651,16 @@ channels (`ref_meg` handling), both OPM axis namings if both runs are kept.
    osl-files with `allow_mri_scaling`.
 5. CTF sidecars (`.infods`, `.acq`, `.xml`, `.hc`) are not shipped; the fif
    conversion carries only what MNE reads.
-6. Decide the signal: (A) the real segment, cropped and decimated, which is
-   not identifying for 30 s of rest but is still the participant's data; (B)
-   the real file structure and geometry with a synthetic signal written over
-   the channels (phase-randomised surrogate of the real spectrum, or the MVAR
-   simulator in `utils.simulate`), with the bad channel, bad segment and
-   artefacts injected deliberately so the tests have ground truth. (B) is
-   the recommendation: it removes the consent question for the time series
-   and makes the tests deterministic. The Elekta set can even be fully
-   synthetic from the existing `megin_template_info.fif` plus the MNI152
-   scalp for the headshape.
+6. Signal: decided 2026-10-15, synthetic signal over real geometry. The
+   real file structure, channel set, sensor positions, fiducials, HPI coils
+   and (decimated) headshape are kept; every data channel is overwritten
+   with simulated signal: a few dipoles projected through a sphere-model
+   forward solution computed from the real sensor geometry, plus 1/f sensor
+   noise, synthetic ECG and EOG channels with a scaled blink leaking into
+   frontal channels (so ICA has a component to find), a known bad channel,
+   a known high-variance segment and a stim channel with known event
+   times. Nothing of the participant's time series survives, and the tests
+   have ground truth for every artefact.
 7. Redistribution rights per dataset, written in its README: who owns the
    recording, that public sharing of a derived segment is permitted, and the
    licence (CC0 or CC-BY for the derived file). The EEG run needs this
@@ -677,12 +677,23 @@ private source path as an argument, so the files are reproducible and the
 anonymisation steps are code, not memory. The script prints the `info` dump
 of what it wrote, which goes into the PR description.
 
-### Decisions needed before building
+### Decisions
 
-- Real segment (A) or synthetic signal (B).
-- Which OPM run (or both): sub-05 has events and a headshape; sub-03 has
-  listed bad channels and the other naming convention.
-- CTF as converted fif only, or also a trimmed `.ds`.
-- Size budget: 5 MB per dataset is the proposal.
-- Who checks the redistribution rights for each source, and the EEG source in
-  particular.
+- Signal: synthetic over real geometry (decided 2026-10-15, see item 6).
+- OPM run: sub-05 first (events, headshape); sub-03 added later only if the
+  other channel naming needs its own test (working default).
+- CTF: converted fif plus the decimated `.pos`; no trimmed `.ds` for now
+  (working default).
+- Size: 20 s at 250 Hz, float32 fif, about 5-7 MB per MEG dataset, 60 s for
+  EEG; under 20 MB in total (working default, adjust once the files exist).
+- Redistribution rights per source, and the EEG source in particular: still
+  to be checked by the data owners before any push.
+
+### Generator scripts
+
+`osl-files/tools/make_testdata/`: `common.py` (anonymise, decimate the
+headshape, build the sphere forward model, synthesise the signal, inject
+the artefacts, write and dump) and one short script per modality that
+loads its private source, picks channels, crops, resamples and calls the
+common steps. The scripts need osl-dynamics installed (for the headshape
+decimation) and the private source path as an argument.
