@@ -45,19 +45,16 @@ D1. Relationship with osl-dynamics (the one that matters most)
   dependency set as osl-dynamics minus TensorFlow. Section 8 lists what is
   ported, module by module.
 
-  Why not depend on osl-dynamics instead: the package names say what the end
-  state should be. osl-ephys is the M/EEG package and osl-dynamics is the
-  dynamics package, so the dependency should eventually run the other way:
-  once osl-ephys v3 is on conda-forge, osl-dynamics can drop its `meeg` copy
-  and import from osl-ephys. Porting now is the first step of that; depending
-  on osl-dynamics now would entrench the wrong direction.
+  osl-dynamics stays as it is: it keeps its own `meeg` copy and does not
+  import from osl-ephys (decided 2026-10-15). Whether that changes later is
+  a separate decision for osl-dynamics; nothing in v3 assumes it. Porting
+  rather than depending keeps osl-ephys installable on its own.
 
   Consequences:
-  - Until osl-dynamics switches over, the code exists in both packages. The
-    `meeg` subpackage changed in 30 commits in the last 90 days, so the port
-    should be done from a pinned osl-dynamics commit and recorded (section 8),
-    and fixes made in one place after the port need a PR in the other until
-    the switch.
+  - The code exists in both packages. The `meeg` subpackage changed in 30
+    commits in the last 90 days, so the port is done from a pinned
+    osl-dynamics commit and recorded (section 8), and a fix made in one
+    package after the port is offered to the other as a PR.
   - Licences already match: osl-ephys has been Apache-2.0 since 2024-10-09
     (the `license='MIT'` in main's `setup.py` was stale metadata; `v3` has it
     right). Phase 1 aligns the rest with osl-dynamics: ship the full Apache
@@ -65,9 +62,8 @@ D1. Relationship with osl-dynamics (the one that matters most)
     attribution, the osl-files note), and set `license = "Apache-2.0"` with
     `license-files = ["LICENSE", "NOTICE"]` in `pyproject.toml`. Ported code
     then needs no extra attribution beyond the shared NOTICE.
-  - The tests osl-ephys writes in phase 7 become the tests osl-dynamics has
-    never had for this code, which is an argument for the switch happening
-    soon after v3.
+  - The tests osl-ephys writes in phase 7 are the first tests this code has
+    had; they can be offered to osl-dynamics too.
 
 D2. Python floor: `>=3.10` (same as osl-dynamics; drops the 3.7-3.9
     classifiers and allows `X | None` annotations). Dependencies are the
@@ -84,8 +80,9 @@ D4. Keep the YAML config API as the public face of osl-ephys, and make it
     reconstruction have separate config formats, separate `find_func`/
     `load_config` implementations and separate batch runners
     (`run_proc_batch`, `run_src_batch`). In v3 a single config can hold any
-    mix of steps (preprocessing, surface extraction, coregistration, forward
-    model, source reconstruction, parcellation, sign flipping) and one runner
+    mix of steps (preprocessing, surface extraction and coregistration,
+    forward model and source reconstruction, parcellation, sign flipping) and
+    one runner
     executes it per session. Running only the preprocessing section, or only
     the source-recon sections, is the same config with sections left out.
     It is what the workshops and the toolbox paper teach, and it is the thing
@@ -101,8 +98,8 @@ D5. Reports: replace the per-subject jinja2 pages with the osl-dynamics style
 D6. Version: the next release is v3.0.0 with a v2 to v3 migration page. v2.4.x
     stays installable for the toolbox paper and existing workshop material.
 
-D7. Which of the open PRs and stale branches are merged into `v3`
-    (section 5), and in what order.
+D7. Settled: the five PRs and three of the stale branches are merged into
+    `v3`; `viz` is the one left to port by hand or delete (section 5).
 
 D8. No feature is removed from osl-ephys unless there is a reason that is
     written down. The default disposition of every public function, class,
@@ -137,8 +134,9 @@ come after the scaffolding exists to test them.
     `morphologyEx` call in `rhino/surfaces.py`, replace with
     `scipy.ndimage`; issue #439), `open3d` soft import (issues #439, #193),
     `neurokit2`, `panel`, `h5io` (listed but never imported)
-  - keep: `sails`, `glmtools` (GLM module; `glmtools` is NOT on conda-forge,
-    see phase 9), `fslpy`, `tabulate`, `parse`, `numba`, `jinja2` (until D5)
+  - keep: `sails`, `glmtools` (GLM module; required, not an extra; `glmtools`
+    needs a conda-forge feedstock before phase 9), `fslpy`, `parse`,
+    `numba`, `jinja2` (until D5)
   - add: `osl-dynamics` (D1a) or `pooch` (D1b/c)
   - pin `sails` or fix the incompatibility behind issue #449
 - `.github/workflows/`: `tests.yml` (push + PR, matrix Python 3.10-3.13,
@@ -184,7 +182,8 @@ come after the scaffolding exists to test them.
   5. README trimmed to description, badges, conda install, docs link,
      Releases, citation. RTD project settings already match (default branch
      `main`, version `latest`); only the config file path changes.
-- One-off black reformat in its own commit, listed in
+- One-off black reformat with black's defaults (line length 88, as
+  osl-dynamics; decided 2026-10-15) in its own commit, listed in
   `.git-blame-ignore-revs`. Codespell config in `pyproject.toml`.
 - Licence files aligned with osl-dynamics: full Apache-2.0 text in `LICENSE`,
   a `NOTICE` file, `license`/`license-files` in `pyproject.toml`, the
@@ -256,8 +255,9 @@ seven of these names; start from it:
 ### Phase 3: One config, one runner  (todo: refactor parallel processing, remove dask; unify preproc and source recon)
 
 API proposal for discussion with Mats: issue #454 (what a batch script, the
-CLI, interactive use and custom steps look like; open questions on section
-names, manifest columns, HPC, in-memory data and `osl_func`).
+CLI, interactive use and custom steps look like; sections are `preproc` / `coreg` (surfaces, fiducials,
+coregistration) / `source_recon` (forward model, beamformer) /
+`parcellation` / `group`; open questions on manifest columns, HPC, in-memory data and `osl_func`).
 
 The unified config (D4):
 
@@ -266,14 +266,12 @@ preproc:
   - filter: {l_freq: 1, h_freq: 45}
   - bad_segments: {picks: mag}
   - ica_label: {picks: meg}
-surfaces:
-  - extract_surfaces: {include_nose: false}
 coreg:
+  - extract_surfaces: {include_nose: false}
   - extract_fiducials_and_headshape: {}
   - coregister: {use_nose: false, allow_mri_scaling: false}
-forward_model:
-  - forward_model: {model: Single Layer, gridstep: 8}
 source_recon:
+  - forward_model: {model: Single Layer, gridstep: 8}
   - lcmv_beamformer: {chantypes: [mag, grad], rank: {meg: 60}}
 parcellation:
   - parcellate: {parcellation_file: atlas-Glasser_nparc-52_space-MNI_res-8x8x8.nii.gz,
@@ -291,9 +289,10 @@ parcellation:
   the `Session` object from phase 4 is built from it. `utils.file_handling`'s
   glob-based input handling and `Study` become helpers for building the
   manifest, not part of the runner.
-- Section-level granularity: `surfaces` runs once per subject rather than per
-  session (the runner groups by `subject`), the other sections run per
-  session. A config with only some sections present skips the others and
+- Steps declare whether they are per subject or per session when they are
+  registered: `extract_surfaces` (in `coreg`) runs once per subject before
+  the per-session loop, grouped by the `subject` column; everything else
+  runs per session. A config with only some sections present skips the others and
   checks (via `check_up_to_date`) that the earlier outputs it needs exist.
 - Group-level steps (sign flipping template selection, `fix_sign_ambiguity`)
   run after the per-session loop as a `group` section, which also answers
@@ -330,8 +329,8 @@ Parallelism underneath it:
 - Keep and port onto the new Session: `minimum_norm` (merge PR #445 first),
   `freesurfer_utils`, `nii.py`, `extract_rhino_files`, EEG sensor moving.
 - Rewrite `source_recon/wrappers.py` so each YAML step is a thin call into the
-  new functions, registered in the phase 3 step registry under the `surfaces`,
-  `coreg`, `forward_model`, `source_recon` and `parcellation` sections; old
+  new functions, registered in the phase 3 step registry under the `coreg`,
+  `source_recon` and `parcellation` sections; old
   config keys map to new ones with warnings where cheap. Output layout
   changes, so the migration page documents old vs new paths.
 - Closes along the way: #441/#442 (transform_vtk_mesh), #409 (coreg float),
@@ -406,9 +405,11 @@ Parallelism underneath it:
 
 ### Phase 9: conda-forge and mne-installers  (todo: repackage for conda, mne-installers)
 
-- Blocker: `glmtools` has no conda-forge feedstock. Either submit one (it is a
-  pure-Python package, so a `noarch` recipe is small) or make `glm` an optional
-  extra (`osl-ephys[glm]`) so the base package can go to conda-forge now.
+- `glmtools` stays a required pip dependency (decided 2026-10-15); `glm` is
+  not made an optional extra. conda-forge requires every run dependency to be
+  on conda-forge, so the osl-ephys recipe needs a `glmtools` feedstock first:
+  a pure-Python `noarch` recipe, small, submitted to staging-recipes before
+  the osl-ephys one.
 - Recipe modelled on `osl-dynamics-feedstock/recipe/recipe.yaml`: `noarch:
   python`, entry points for the five CLIs, import tests per subpackage,
   `vtk * *osmesa*` on linux-64 so the 3D coreg plot renders headless (this is
@@ -480,7 +481,7 @@ what only the dynamics models and analyses use, plus osl-ephys-only needs):
 
 | Add for osl-ephys-only code | Used by |
 | --- | --- |
-| sails, glmtools | glm (make `glm` an optional extra if glmtools stays off conda-forge) |
+| sails, glmtools | glm (both required; glmtools gets a conda-forge feedstock in phase 9) |
 | jinja2 | until phase 5 removes the templates |
 | parse | `utils.study` |
 
@@ -526,10 +527,15 @@ Order them smallest first so conflicts stay local:
 
 None of the five has had a review yet, so each merge is also its review.
 
-The seven stale branches (`bilateral_beamformer`, `leadfields`,
-`new-sign-flip`, `semp`, `viz`, `vol-mne`, `ohba-examples`) each need an
-owner to say merge, port or delete before `v3` diverges. `new-sign-flip` is
-the one to look at before phase 4 picks a sign-flipping implementation.
+The seven stale branches, settled 2026-10-15 (D7):
+
+| Branch | State | Outcome |
+| --- | --- | --- |
+| `bilateral_beamformer`, `semp`, `vol-mne` | fully contained in the merged PRs #426, #452, #445 | nothing to do; left in place until the PRs close |
+| `leadfields` | one commit after its merged PR #290 (3D leadfield option) | merged into `v3` (32a6360) |
+| `ohba-examples` | one commit, the Oxford SSP pipeline examples | merged into `v3` (96d43e2) |
+| `new-sign-flip` | two commits by scho97, +825 lines: new sign-flipping methods in `sign_flipping.py` and `wrappers.py` | merged into `v3` (55227d7); phase 4 compares these methods with the osl-dynamics implementation before choosing |
+| `viz` | one 2022 commit against the old `osl/` package path (sensor-space plots) | not merged: it would add files under a path that no longer exists. Port `sensor_plots.py` by hand if the plots are wanted, otherwise delete the branch |
 
 ## 6. Risks
 
