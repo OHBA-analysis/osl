@@ -9,13 +9,22 @@ from mne import label as mne_label
 
 import os
 import os.path as op
-from pathlib import Path
+
+from osl_ephys import files
 
 
 def _find_package_file(filename):
-    files_dir = str(Path(__file__).parent) + "/files/"
-    if op.exists(files_dir + filename):
-        return files_dir + filename
+    """A parcellation or mask from osl-files, by its name or an old osl-ephys name."""
+    for directory in (files.parcellation.directory, files.mask.directory):
+        try:
+            return files.check_exists(filename, directory)
+        except FileNotFoundError:
+            continue
+    # Files not yet moved to osl-files are still shipped with the package
+    bundled = op.join(op.dirname(__file__), "files", filename)
+    if op.exists(bundled):
+        return bundled
+    return None
 
 
 def _find_freesurfer_file(filename):
@@ -30,7 +39,7 @@ def _find_freesurfer_file(filename):
 
 
 def find_file(filename, freesurfer=False):
-    """Look for a file within the package.
+    """Look for a file: a path, a name in osl-files, or a FreeSurfer annotation.
 
     Parameters
     ----------

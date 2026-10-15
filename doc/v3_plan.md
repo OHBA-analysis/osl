@@ -116,8 +116,11 @@ come after the scaffolding exists to test them.
 
 ### Phase 1: Packaging, tooling, CI  (todo: dependencies, codespell/black, release process)
 
-Status 2026-10-16: done on `v3` except the one-time PyPI/GitHub setup and
-the ReadTheDocs build check. 122 tests pass locally on Python 3.12.
+Status 2026-10-16: done. Tests pass on Python 3.10 and 3.13 on Ubuntu and
+macOS, black and codespell pass, the PyPI trusted publisher and the GitHub
+`pypi` environment exist, and the `v3` docs build succeeds on ReadTheDocs
+(152 Sphinx warnings, all pre-existing rst issues in docstrings and
+tutorials; cleaned up in phase 8).
 
 - `pyproject.toml` with setuptools_scm; delete `setup.py`, `setup.cfg`,
   `requirements.txt`, `Makefile`; `__version__` from `importlib.metadata`.
@@ -207,30 +210,51 @@ the ReadTheDocs build check. 122 tests pass locally on Python 3.12.
 
 ### Phase 2: Data to osl-files  (todo: test data, remove data, logos)
 
+Status 2026-10-16: `osl_ephys.files` ported (shared cache with osl-dynamics,
+`osl-ephys-download-data` CLI, `test_data` and `simulation` submodules);
+`find_file` resolves parcellations and masks through osl-files with the
+alias table and a `FutureWarning` on old names; the eleven duplicate
+parcellations and the simulation config are removed from the package; the
+Neuromag-306 template info (0.08 MB once the acquisition dump and HPI data
+were stripped, headshape thinned and jittered) and the MVAR parameters are
+in osl-files under `scanner/` and `simulation/`. Still bundled, pending the
+add-or-drop decisions in the table below: 5.4 MB in `source_recon/files/`.
+Found while porting: `fetch_file` raised "not a data file" for anything
+added to osl-files since the registry was cached (up to an hour) instead of
+refreshing the registry first; fixed in the osl-ephys copy, to be offered to
+osl-dynamics as a PR.
+
 Reference files (8.4 MB in `source_recon/files`, 6.9 MB in
 `utils/simulation_config`) move out; fetched on demand through a ported
 `osl_ephys.files` (pooch, same cache directory as osl-dynamics).
 
-Mapping to confirm (osl-files reprocessed everything onto the MNI152 grid, so
-checksums will not match and some may be intentionally different).
-`osl_dynamics/files/functions.py` already holds an old-to-new alias dict for
-seven of these names; start from it:
+Measured mapping (2026-10-16). Each bundled file was matched to osl-files by
+content: same parcel count, then the mean distance between matched parcel
+centroids in MNI mm, which survives the regridding osl-files did. Under
+2 mm is the same parcellation.
 
-| osl-ephys file | osl-files candidate |
-| --- | --- |
-| Glasser52_binary_space-MNI152NLin6_res-8x8x8 | atlas-Glasser_nparc-52_space-MNI_res-8x8x8 |
-| Glasser50_space-MNI152NLin6_res-8x8x8 | atlas-Glasser_nparc-50_space-MNI_res-8x8x8 |
-| reduced_hcp-mmp_2mm / _8mm | atlas-Glasser_nparc-52 at 2x2x2 / 8x8x8 ? |
-| giles_39_binary | atlas-Giles_nparc-39_space-MNI_res-8x8x8 (confirm against the line above) |
-| fmri_d100_parcellation_with_PCC_reduced_2mm (+ _ss5mm_ds8mm) | atlas-Giles_nparc-38 at 2x2x2 / 8x8x8 |
-| fmri_d100_parcellation_with_PCC_tighterMay15_v2_{2mm,8mm,6mm_exclusive} | atlas-Giles_nparc-39 (8 mm; osl-dynamics maps the 8mm file to it) |
-| aal_cortical_merged_8mm_stacked | atlas-AAL_nparc-78_space-MNI_res-8x8x8 |
-| dk_full / dk_cortical | atlas-DK_nparc-68 (osl-dynamics maps dk_cortical to it); dk_full unmapped |
-| Schaefer2018_100Parcels_7Networks_..._2mm_4d (+ _ds8) | atlas-Schaefer_nparc-100 at 8x8x8 (no 2 mm in osl-files) |
-| HarvOxf-sub-Schaefer100-combined-2mm_4d (+ _ds8), HarvardOxford-sub-prob-bin-2mm | not in osl-files |
-| fMRI_parcellation_ds2mm / ds8mm, WTA_fMRI_parcellation_ds2mm | not in osl-files |
-| MNI152_T1_2mm_brain / 8mm_brain | mask/MNI152_T1_2mm_brain, 8mm_brain |
-| *.xml label files | docs/parcellations in osl-files |
+| osl-ephys file | osl-files match | Distance | Disposition |
+| --- | --- | --- | --- |
+| Glasser52_binary_space-MNI152NLin6_res-8x8x8 | atlas-Glasser_nparc-52_space-MNI_res-8x8x8 | 0.0 mm | alias |
+| Glasser50_space-MNI152NLin6_res-8x8x8 | atlas-Glasser_nparc-50_space-MNI_res-8x8x8 | 0.7 mm | alias |
+| dk_cortical | atlas-DK_nparc-68_space-MNI_res-8x8x8 | 0.0 mm | alias |
+| fMRI_parcellation_ds2mm | atlas-Giles_nparc-38_space-MNI_res-2x2x2 | 0.0 mm | alias |
+| fMRI_parcellation_ds8mm, fmri_d100_parcellation_with_PCC_reduced_2mm_ss5mm_ds8mm | atlas-Giles_nparc-38_space-MNI_res-8x8x8 | 0.0 mm | alias |
+| fmri_d100_parcellation_with_PCC_tighterMay15_v2_8mm | atlas-Giles_nparc-39_space-MNI_res-8x8x8 | 0.8 mm | alias |
+| fmri_d100_parcellation_with_PCC_tighterMay15_v2_2mm | atlas-Giles_nparc-39 (only 8 mm in osl-files) | 1.3 mm | add as atlas-Giles_nparc-39_space-MNI_res-2x2x2, or alias to the 8 mm file |
+| aal_cortical_merged_8mm_stacked | atlas-AAL_nparc-78_space-MNI_res-8x8x8 | 2.8 mm | alias (osl-dynamics already maps it) |
+| MNI152_T1_2mm_brain, MNI152_T1_8mm_brain | mask/MNI152_T1_2mm_brain, 8mm_brain | 0.0 mm | alias |
+| Schaefer2018_100Parcels_7Networks_order_FSLMNI152_2mm_4d (+ _ds8) | atlas-Schaefer_nparc-100 (5 mm and 8 mm in osl-files) | 0.7 mm | ds8 aliases the 8 mm file; the 2 mm one is added as res-2x2x2 or aliased to 5 mm |
+| fmri_d100_parcellation_with_PCC_tighterMay15_v2_6mm_exclusive | atlas-Giles_nparc-39 | 3.8 mm | a 6 mm variant, only referenced by the package canary test: decide |
+| giles_39_binary | atlas-Giles_nparc-39 | 9.1 mm | a binary version, only referenced by the canary test: decide |
+| fmri_d100_parcellation_with_PCC_reduced_2mm | atlas-Giles_nparc-39 | 25.6 mm | a different 39-parcel set, only referenced by the canary test: decide |
+| WTA_fMRI_parcellation_ds2mm, _ds8mm | atlas-Giles_nparc-38 | 29 mm | winner-takes-all label versions, only referenced by the canary test: decide |
+| HarvOxf-sub-Schaefer100-combined-2mm_4d (+ _ds8) | none (114 parcels) | | used by `nii.py` and the source-recon tutorial: add as atlas-SchaeferHarvOxf_nparc-114_space-MNI_res-2x2x2 and 8x8x8 |
+| HarvardOxford-sub-prob-bin-2mm | none (21 parcels) | | used by `nii.py`: add as atlas-HarvOxfSub_nparc-21_space-MNI_res-2x2x2 |
+| dk_full | none (82 parcels) | | cortical + subcortical DK, canary test only: add as atlas-DK_nparc-82_space-MNI_res-8x8x8 or decide |
+| reduced_hcp-mmp_2mm, _8mm | none (230 parcels) | | not referenced anywhere: decide |
+| Glasser52_binary_space-MNI152NLin6_res-8x8x8_10mm | Glasser-52 at 10 mm | | not referenced anywhere: decide |
+| *.xml label files | docs/parcellations in osl-files | | labels go with their parcellation's docs entry |
 
 - Rule for the move: nothing is copied into osl-files that is already
   there. For each osl-ephys file, first check whether osl-files has the same
@@ -242,9 +266,10 @@ seven of these names; start from it:
   `MNI152_T1_<r>mm_brain.nii.gz`) with a licence file in `LICENSES/` and a
   line in `docs/parcellations`. Keep an old-name to new-name alias dict in
   `parcellation.find_file` that warns for one release.
-- `utils/simulation_config/*` (MEGIN template info fif, MVAR parameters) to
-  osl-files `scanner/` or a new `simulation/` directory. `neuromag306_info.yml`
-  and the `trees/` are tiny and can stay in the package.
+- `utils/simulation_config/*` moved: the template info to osl-files
+  `scanner/neuromag306_template_info.fif`, the MVAR parameters to
+  `simulation/neuromag306_mvar_*.npy` (done). `neuromag306_info.yml` and the
+  `trees/` are tiny and stay in the package.
 - Add osl-ephys and its `osl-ephys-download-data` CLI to the "Packages that
   use these files" table in the osl-files README.
 - Test recordings in osl-files `test_data/`: section 10, done first. Summary:

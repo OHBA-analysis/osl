@@ -4,6 +4,8 @@
 
 import os
 import mne
+
+from osl_ephys import files
 import sails
 import numpy as np
 
@@ -79,22 +81,21 @@ def simulate_raw_from_template(
         The simulated data.
 
     """
-    basedir = os.path.dirname(os.path.realpath(__file__))
-    basedir = os.path.join(basedir, "simulation_config")
-    info = mne.io.read_info(os.path.join(basedir, "megin_template_info.fif"))
+    info = mne.io.read_info(files.scanner.neuromag306_template_info)
     with info._unlock():
         info["sfreq"] = 150
 
     Y = np.zeros((306, sim_samples))
     for mod in ["mag", "grad"]:
         red_model = sails.AbstractLinearModel()
-        fname = "reduced_mvar_params_{0}.npy".format(mod)
-        red_model.parameters = np.load(os.path.join(basedir, fname))
-        fname = "reduced_mvar_residcov_{0}.npy".format(mod)
-        red_model.resid_cov = np.load(os.path.join(basedir, fname))
+        red_model.parameters = np.load(
+            files.simulation.file(f"neuromag306_mvar_params_{mod}.npy")
+        )
+        red_model.resid_cov = np.load(
+            files.simulation.file(f"neuromag306_mvar_residcov_{mod}.npy")
+        )
         red_model.delay_vect = np.arange(20)
-        fname = "reduced_mvar_pcacomp_{0}.npy".format(mod)
-        pcacomp = np.load(os.path.join(basedir, fname))
+        pcacomp = np.load(files.simulation.file(f"neuromag306_mvar_pcacomp_{mod}.npy"))
 
         Xsim = simulate_data(red_model, num_samples=sim_samples, noise=noise) * 2e-12
         Xsim = pcacomp.T.dot(Xsim[:, :, 0])[:, :, None]  # back to full space

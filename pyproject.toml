@@ -98,6 +98,7 @@ osl_preproc = "osl_ephys.preprocessing.batch:main"
 osl_func = "osl_ephys.utils.run_func:main"
 osl-ica-review = "osl_ephys.preprocessing.manual_ica.review_server:main"
 osl-ica-apply = "osl_ephys.preprocessing.manual_ica.apply:main"
+osl-ephys-download-data = "osl_ephys.files._fetch:download_data_cli"
 
 # The version number is derived automatically from git tags
 [tool.setuptools_scm]

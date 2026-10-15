@@ -40,24 +40,19 @@ class TestPackageData(unittest.TestCase):
         cls.testdir = os.path.dirname(os.path.realpath(__file__))
         cls.osldir = os.path.abspath(os.path.join(cls.testdir, ".."))
 
-    def test_simulatons_data(self):
+    def test_simulation_data(self):
+        from .. import files
 
-        template = os.path.join(
-            self.osldir, "utils", "simulation_config", "megin_template_info.fif"
-        )
-        assert os.path.exists(template)
-
+        assert os.path.exists(files.scanner.neuromag306_template_info)
         for ff in [
-            "reduced_mvar_params_mag.npy",
-            "reduced_mvar_residcov_mag.npy",
-            "reduced_mvar_pcacomp_mag.npy",
-            "reduced_mvar_params_grad.npy",
-            "reduced_mvar_residcov_grad.npy",
-            "reduced_mvar_pcacomp_grad.npy",
+            "neuromag306_mvar_params_mag.npy",
+            "neuromag306_mvar_residcov_mag.npy",
+            "neuromag306_mvar_pcacomp_mag.npy",
+            "neuromag306_mvar_params_grad.npy",
+            "neuromag306_mvar_residcov_grad.npy",
+            "neuromag306_mvar_pcacomp_grad.npy",
         ]:
-
-            template = os.path.join(self.osldir, "utils", "simulation_config", ff)
-            assert os.path.exists(template)
+            assert os.path.exists(files.simulation.file(ff))
 
     def test_channel_data(self):
 
@@ -65,22 +60,15 @@ class TestPackageData(unittest.TestCase):
         assert os.path.exists(template)
 
     def test_parcellation_data(self):
+        """Old osl-ephys names resolve to the osl-files parcellations."""
+        from ..source_recon.utils import find_file
 
-        to_check = [
-            "WTA_fMRI_parcellation_ds2mm.nii.gz",
-            "WTA_fMRI_parcellation_ds8mm.nii.gz",
+        for name in [
+            "Glasser52_binary_space-MNI152NLin6_res-8x8x8.nii.gz",
             "dk_cortical.nii.gz",
-            "dk_full.nii.gz",
-            "fMRI_parcellation_ds2mm.nii.gz",
             "fMRI_parcellation_ds8mm.nii.gz",
-            "fmri_d100_parcellation_with_PCC_reduced_2mm.nii.gz",
-            "fmri_d100_parcellation_with_PCC_reduced_2mm_ss5mm_ds8mm.nii.gz",
-            "fmri_d100_parcellation_with_PCC_tighterMay15_v2_2mm.nii.gz",
-            "fmri_d100_parcellation_with_PCC_tighterMay15_v2_6mm_exclusive.nii.gz",
-            "fmri_d100_parcellation_with_PCC_tighterMay15_v2_8mm.nii.gz",
-            "giles_39_binary.nii.gz",
-        ]
-
-        for ff in to_check:
-            template = os.path.join(self.osldir, "source_recon", "files", ff)
-            assert os.path.exists(template)
+            "aal_cortical_merged_8mm_stacked.nii.gz",
+            "MNI152_T1_8mm_brain.nii.gz",
+            "atlas-Giles_nparc-38_space-MNI_res-8x8x8.nii.gz",
+        ]:
+            assert os.path.exists(find_file(name)), name
