@@ -174,9 +174,10 @@ the ReadTheDocs build check. 122 tests pass locally on Python 3.12.
   Python 3.8 installing `requirements.txt`, docs under `doc/source`, the
   GitHub avatar as logo, no sitemap or `llms.txt`. Target, copied from
   osl-dynamics:
-  1. `doc/.readthedocs.yaml` (Python 3.12, `post_checkout` fetching tags so
-     setuptools_scm can version the build, `doc/requirements.txt` that
-     installs the package).
+  1. `.readthedocs.yaml` at the repo root (osl-dynamics keeps it in `doc/`
+     via a project setting on readthedocs.org; the root is what RTD finds by
+     default): Python 3.12, `post_checkout` fetching tags so setuptools_scm
+     can version the build, `doc/requirements.txt` that installs the package.
   2. Flatten `doc/source` to `doc/`; `conf.py` copied: pydata theme, OHBA
      logo from osl-files, autoapi with the `_templates/python` templates,
      sphinx-gallery `tutorials` -> `tutorials_build`, sphinx-sitemap with
