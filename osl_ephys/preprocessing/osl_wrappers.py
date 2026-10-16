@@ -827,7 +827,6 @@ def detect_bad_channels_psd(raw, fmin=2, fmax=80, n_fft=2000, alpha=0.05):
     return [ch for ch, is_bad in zip(good_chans, mask) if is_bad]
 
 
-# Wrapper functions
 def run_osl_read_dataset(dataset, userargs):
     """Reads ``fif``/``npy``/``yml`` files associated with a dataset.
 

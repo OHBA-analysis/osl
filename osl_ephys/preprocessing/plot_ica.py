@@ -1551,7 +1551,6 @@ def flatten_recursive(lst):
             yield item
 
 
-# TODO: OSL IMPLEMENT PLOT_ICA FOR EVOKED DATA
 def _plot_ica_sources_evoked(
     evoked,
     picks,

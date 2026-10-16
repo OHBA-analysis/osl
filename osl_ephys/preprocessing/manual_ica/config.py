@@ -12,14 +12,14 @@ is also the canonical schema.
 """
 
 DEFAULT_USERARGS = {
-    # ── ICA fit ────────────────────────────────────────────────────────────
+    # ICA fit
     "n_components": 0.999,
     "method": "fastica",
     "max_iter": "auto",
     "seed": 42,
     "l_freq": 1.0,
     "picks": "eeg",
-    # ── auto-flagging channels & thresholds ───────────────────────────────
+    # auto-flagging channels & thresholds
     "ecg_ch": None,
     "eog_ch": None,
     # Fixed CTPS threshold, matching the current MNE default.
@@ -36,14 +36,14 @@ DEFAULT_USERARGS = {
     "ga_dominance_fmin": 5.0,
     "ga_peak_window": 1.0,
     "ga_base_window": 5.0,
-    # ── plotting ───────────────────────────────────────────────────────────
+    # plotting
     "latex_mode": False,
     "seg_len": None,  # None -> 2.0 s (matches bad_segments)
     "spec_type": "linear",  # 'linear' | 'db'
     "spec_freq_max": 45.0,
     "psd_resolution": 0.05,
     "zoom_window": 20.0,
-    # ── output ─────────────────────────────────────────────────────────────
+    # output
     # IC review root. Per-subject subdirs are created under this. Safe to
     # set in batch userargs because it's the *root*, not subject-keyed. If
     # None, falls back to dataset['target_pth']/'ica', then cwd.

@@ -9,7 +9,7 @@ from pathlib import Path
 import numpy as np
 import mne
 
-# ── annotations -------------------------------------------------------------
+# annotations
 
 
 def _good_mask(raw):
@@ -31,9 +31,6 @@ def _good_mask(raw):
     return mask
 
 
-# ── channel selection ------------------------------------------------------
-
-
 def _safe_chname(name):
     """Filename-safe channel name (alnum or underscore)."""
     return "".join(c if c.isalnum() else "_" for c in str(name))
@@ -48,9 +45,6 @@ def _pick_supp_channels(raw):
             name = raw.ch_names[i]
             out.append((name, _safe_chname(name)))
     return out
-
-
-# ── scoring ----------------------------------------------------------------
 
 
 def _slice_peak_to_base(psd_row, freqs, harmonic, peak_half_width, base_half_width):
@@ -335,9 +329,6 @@ def _build_scores_list(
             )
         out.append(entry)
     return out
-
-
-# ── dataset/userargs resolution -------------------------------------------
 
 
 def _resolve_subject_and_outdir(dataset, userargs):

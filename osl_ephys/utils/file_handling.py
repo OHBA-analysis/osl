@@ -210,7 +210,6 @@ def add_subdir(file, outdir, run_id=None):
     return outdir
 
 
-# Should not be final home for this function - Needs replacing with logger
 def osl_print(s, logfile=None):
     print(s)
     if logfile is not None:

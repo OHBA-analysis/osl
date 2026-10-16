@@ -20,7 +20,7 @@ from ...utils.logger import log_or_print
 
 from .helpers import _good_mask
 
-# ── axis positions for the IC summary figure (figure-fraction coords) ──────
+# axis positions for the IC summary figure (figure-fraction coords)
 # Main figure is 12 x 5; zoom figure is 12 x 1. Inside the main:
 #   row 1 ~ 40% of fig height (topo + img/ERP)
 #   row 2 ~ 28% (spectrum + variance)
@@ -39,7 +39,7 @@ _AX_VHIST = [0.90, 0.27, 0.06, 0.22]
 _AX_TC_FULL = [0.04, 0.08, 0.92, 0.10]  # row 3: full IC timecourse
 
 
-# ── small numeric helpers ─────────────────────────────────────────────────
+# small numeric helpers
 
 
 def _nice_tick_step(span, target_n=8):
@@ -72,7 +72,7 @@ def _robust_minmax(arr, k=15.0):
     return med - k * mad, med + k * mad
 
 
-# ── SVG post-processing ───────────────────────────────────────────────────
+# SVG post-processing
 
 _SVG_ROOT_RX = re.compile(rb"<svg\b([^>]*)>")
 
@@ -103,9 +103,6 @@ def _force_svg_stretch(path):
     new_tag = b"<svg" + attrs + b' preserveAspectRatio="none">'
     path.write_bytes(data[: m.start()] + new_tag + data[m.end() :])
     return True
-
-
-# ── per-IC main SVG (12 x 5: topo + image+ERP + spec + var + full TC) ─────
 
 
 def _draw_ic_properties(
@@ -152,10 +149,10 @@ def _draw_ic_properties(
     vhist_ax = fig.add_axes(_AX_VHIST, label="vhist")
     tc_full_ax = fig.add_axes(_AX_TC_FULL, label="tc_full")
 
-    # -- 1. Topomap ---------------------------------------------------------
+    # 1. Topomap
     _plot_ica_topomap(ica, ic_idx, show=False, axes=topo_ax)
 
-    # -- 2. Fixed-length epochs of ICA sources -----------------------------
+    # 2. Fixed-length epochs of ICA sources
     # Allow caller to pass a precomputed epochs_src/good_mask (cheaper across
     # ICs); fall back to building them here.
     if epochs_src is None:
@@ -176,7 +173,7 @@ def _draw_ic_properties(
     dropped_pct = (n_total_segs - n_epochs) / n_total_segs * 100.0
     seg_idx_orig = (epochs_src.events[:, 0] - raw.first_samp) // seg_samples
 
-    # -- 3. Segment image + ERP/ERF -----------------------------------------
+    # 3. Segment image + ERP/ERF
     plot_epochs_image(
         epochs_src,
         picks=ic_idx,
@@ -208,7 +205,7 @@ def _draw_ic_properties(
     )
     erp_ax.tick_params(axis="y", labelsize=7)
 
-    # -- 4. PSD computation (Welch on GOOD samples only) -------------------
+    # 4. PSD computation (Welch on GOOD samples only)
     n_fft = int(round(sfreq / psd_resolution))
     good_ic_data = src_data[ic_idx : ic_idx + 1, good_mask]
     n_fft = min(n_fft, good_ic_data.shape[1])
@@ -230,7 +227,7 @@ def _draw_ic_properties(
             log_or_print(f"[manual_ica] PSD failed ({e}), retry n_fft={n_fft}")
     psds_mean = psds_arr.squeeze()  # (n_freqs,)
 
-    # -- 5. Single spectrum (linear by default, dB optional) ----------------
+    # 5. Single spectrum (linear by default, dB optional)
     spec_mask = freqs <= spec_freq_max
     fp, pp = freqs[spec_mask], psds_mean[spec_mask]
     if spec_type == "db":
@@ -250,7 +247,7 @@ def _draw_ic_properties(
     spec_ax.set_ylabel(spec_ylabel, fontsize=8)
     spec_ax.tick_params(labelsize=7)
 
-    # -- 6. Variance scatter + KDE histogram (separate, non-overlapping) ----
+    # 6. Variance scatter + KDE histogram (separate, non-overlapping)
     epoch_data = epochs_src.get_data()
     epoch_var = np.var(epoch_data[:, ic_idx, :], axis=1)
     var_ax.scatter(seg_idx_orig, epoch_var, alpha=0.5, facecolor=[0, 0, 0], lw=0)
@@ -278,7 +275,7 @@ def _draw_ic_properties(
     vhist_ax.set_xlabel("")
     vhist_ax.tick_params(labelsize=6)
 
-    # -- 7. Full IC timecourse (NaN-masked bad samples). Zoom is now its
+    # 7. Full IC timecourse (NaN-masked bad samples). Zoom is now its
     #       own SVG file (one per fixed time window) - see _render_ic_zoom.
     n_total = src_data.shape[1]
     total_dur = n_total / sfreq
@@ -353,9 +350,6 @@ def _plot_ic_summary(
     plt.close(fig)
 
 
-# ── per-IC topomap (square SVG used by the between_ic compare view) ───────
-
-
 def _render_ic_topo(ica, ic_idx, save_dir):
     """Save a square topomap SVG -> ``<save_dir>/topos/ic_NNN.svg``."""
     from mne.viz.topomap import _plot_ica_topomap
@@ -370,9 +364,6 @@ def _render_ic_topo(ica, ic_idx, save_dir):
         pass
     fig.savefig(str(out))
     plt.close(fig)
-
-
-# ── per-IC zoom window (12x1 with axis labels, used by single_ic view) ────
 
 
 def _render_ic_zoom(
@@ -454,9 +445,6 @@ def _render_ic_zoom(
     out_dir.mkdir(parents=True, exist_ok=True)
     fig.savefig(str(out_dir / f"ic_{ic_idx:03d}_w{window_idx:02d}.svg"))
     plt.close(fig)
-
-
-# ── "clean" (axisless, stretched) zoom strip used by the between_ic view ──
 
 
 def _render_zoom_clean(

@@ -282,9 +282,6 @@ def _save_or_show_psd(fig, save_pth):
     plt.close(fig)
 
 
-# PSD plotting
-
-
 def psd_plot(
     eeg,
     name=None,
@@ -378,9 +375,6 @@ def psd_plot(
         mne.set_log_level(old_level)
 
     return spectrum
-
-
-# Time-domain plotting helpers
 
 
 def _amplitude_yticks(seg, ylim=None, candidate_tick_counts=(7, 9, 11)):
@@ -691,9 +685,6 @@ def _save_or_show(fig, save_pth, **save_kwargs):
         plt.close(fig)
 
 
-# Time-domain plots
-
-
 def temp_plot(
     eeg,
     channel,
@@ -827,9 +818,6 @@ def temp_plot_diff(
     if ax.get_legend_handles_labels()[0]:
         ax.legend()
     _save_or_show(fig, save_pth)
-
-
-# PCA component plots
 
 
 def _plot_pc_panel(

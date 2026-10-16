@@ -648,9 +648,6 @@ def forward_model(
             )
 
 
-# Beamforming and parcellation wrappers
-
-
 def beamform(
     outdir,
     subject,
@@ -1814,9 +1811,6 @@ def minimum_norm_and_parcellate(
         )
 
 
-# Sign flipping wrappers
-
-
 def find_template_subject(
     outdir,
     subjects,
@@ -2080,9 +2074,6 @@ def fix_sign_ambiguity(
                 "metrics": metrics,
             },
         )
-
-
-# Other wrappers
 
 
 def extract_rhino_files(outdir, subject, old_outdir):

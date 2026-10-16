@@ -135,7 +135,7 @@ def manual_ica(dataset, userargs):
     subject, ica_fdr = _resolve_subject_and_outdir(dataset, userargs)
     ensure_dir(ica_fdr)
 
-    # -- fit ----------------------------------------------------------------
+    # fit
     ica = ICA(
         n_components=userargs["n_components"],
         method=userargs["method"],
@@ -148,7 +148,7 @@ def manual_ica(dataset, userargs):
     dataset["ica"] = ica
     log_or_print(f"[manual_ica] Fitted {ica.n_components_} components")
 
-    # -- ECG CTPS ----------------------------------------------------------
+    # ECG CTPS
     ecg_scores = None
     ecg_idx_auto = []
     ecg_picks = mne.pick_types(dataset["raw"].info, ecg=True)
@@ -184,7 +184,7 @@ def manual_ica(dataset, userargs):
         except Exception as e:
             log_or_print(f"[manual_ica] ECG event detection failed: {e}")
 
-    # -- EOG correlation --------------------------------------------------
+    # EOG correlation
     eog_scores_list = None
     eog_idx_auto = []
     eog_picks = mne.pick_types(dataset["raw"].info, eog=True)
@@ -209,7 +209,7 @@ def manual_ica(dataset, userargs):
         except Exception as e:
             log_or_print(f"[manual_ica] EOG correlation failed: {e}")
 
-    # -- IC timecourses + good-sample bookkeeping -------------------------
+    # IC timecourses + good-sample bookkeeping
     sources = ica.get_sources(dataset["raw"])
     src_data = sources.get_data()
     sfreq = dataset["raw"].info["sfreq"]
@@ -247,7 +247,7 @@ def manual_ica(dataset, userargs):
     ga_local_threshold = userargs["ga_local_threshold"]
     ga_dominance_threshold = userargs["ga_dominance_threshold"]
 
-    # -- residual gradient-artefact (GA) peak/base ratio --- EEG-fMRI only -
+    # residual gradient-artefact (GA) peak/base ratio --- EEG-fMRI only
     # Only computed when the caller has placed slice + TR timing into
     # `dataset` (typically by an upstream extra_func that knows the
     # acquisition is EEG-fMRI). Without these the GA score is silently

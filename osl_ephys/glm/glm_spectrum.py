@@ -394,10 +394,6 @@ class ClusterPermuteGLMSpectrum(SensorClusterPerm):
         )
 
 
-# GLM-Spectrum helper functions that take raw objects (or numpy arrays with MNE
-# dim-order), compute GLM-Spectra and return class objects containing the result
-
-
 def group_glm_spectrum_from_array(
     fl_data,
     design_config=None,
@@ -672,9 +668,6 @@ def read_glm_spectrum(infile):
     with open(infile, "rb") as outp:
         glmsp = pickle.load(outp)
     return glmsp
-
-
-# Plotting
 
 
 def plot_joint_spectrum_clusters(

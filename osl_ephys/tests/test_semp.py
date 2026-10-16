@@ -70,9 +70,6 @@ def _dataset():
     }
 
 
-# registration
-
-
 @pytest.mark.parametrize(
     "name",
     [
@@ -95,9 +92,6 @@ def test_removed_names_do_not_resolve():
     # renamed / relocated in the 2026-07 cleanup
     assert find_func("slice_ica") is None
     assert find_func("set_channel_type_raw") is None
-
-
-# epoching
 
 
 def test_create_TR_epoch_fixed_window():
@@ -266,9 +260,6 @@ def test_create_epoch_random_uses_given_key():
     assert "tr_ep" in d and "tr_ep_rand" not in d
 
 
-# fixed-spacing check
-
-
 def test_check_fixed_spacing_regular_is_ok():
     onsets = np.arange(20) * 100.0  # perfectly regular
     f = _check_fixed_spacing(onsets, sfreq=100.0)
@@ -359,9 +350,6 @@ def test_create_TR_epoch_warns_on_forgotten_trigger(capsys):
         capsys,
     )
     assert "FORGOTTEN" not in out
-
-
-# slice_reject
 
 
 def test_slice_ga_scores_need_local_peak_and_global_dominance():
@@ -523,9 +511,6 @@ def test_slice_reject_contribution_gate_is_opt_in(monkeypatch):
     assert dataset["slice_reject_scores"]["contribution_passes"][2]
 
 
-# AAS
-
-
 def test_epoch_aas_removes_a_stationary_template():
     """A perfectly repeated per-volume artefact should be almost fully removed
     by average artefact subtraction (identical epochs -> windowed mean ~ epoch)."""
@@ -602,9 +587,6 @@ def test_epoch_aas_rejects_invalid_window(window_length):
         epoch_aas(ds, {"window_length": window_length})
 
 
-# timer
-
-
 def test_timer_start_while_running_warns_not_raises():
     reg = timer_mod._TimerRegistry()
     reg.clear_history("t")
@@ -619,17 +601,11 @@ def test_timer_start_while_running_warns_not_raises():
     assert len(reg.get_history("t")) == 2
 
 
-# ensure_dir
-
-
 def test_ensure_dir_created_flag_and_idempotent(tmp_path):
     d = tmp_path / "a" / "b" / "c"
     assert ensure_dir(d) is True  # created
     assert ensure_dir(d) is False  # already exists, no raise
     assert d.is_dir()
-
-
-# metric
 
 
 def test_mean_psd_in_band_single_source_and_fallback():
@@ -641,9 +617,6 @@ def test_mean_psd_in_band_single_source_and_fallback():
     assert semp.mean_psd_in_band(row, freqs, 2.5, 1.0) == 25.0  # mean of bins 2,3
     # window narrower than the resolution -> nearest bin
     assert semp.mean_psd_in_band(row, freqs, 2.4, 0.01) == 20.0
-
-
-# vis
 
 
 def test_unpack_plot_handles_both_return_shapes():
@@ -812,9 +785,6 @@ def test_temp_plot_uses_name_as_title():
     plt.close("all")
 
 
-# amplitude ticks
-
-
 def test_amplitude_yticks_style():
     seg = np.linspace(-3e-5, 3e-5, 50)
     vals, labels, ylim, exp = _amplitude_yticks(seg)
@@ -827,9 +797,6 @@ def test_amplitude_yticks_style():
 def test_amplitude_yticks_degenerate_zero_signal():
     vals, labels, ylim, exp = _amplitude_yticks(np.zeros(10))
     assert len(vals) == len(labels) and ylim[0] < ylim[1]
-
-
-# mne_epoch2raw seam modes
 
 
 def _overlap_setup(n_ep, spacing=50, L=100, base=1000, sfreq=100.0):
@@ -912,8 +879,6 @@ def test_mne_epoch2raw_obs_switches_new_to_even_after_11():
 
 
 # OBS
-
-# proc_userargs / require_keys
 
 
 def test_proc_userargs_strict_rejects_unknown_key():

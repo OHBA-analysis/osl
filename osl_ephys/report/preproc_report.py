@@ -570,9 +570,6 @@ def load_template(tname):
     return template
 
 
-# Scan stats and figures
-
-
 def plot_flowchart(raw, savebase=None):
     """Plots preprocessing flowchart(s)
 

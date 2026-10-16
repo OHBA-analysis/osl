@@ -69,8 +69,6 @@ def run_mne_anonymous(dataset, userargs, method):
 
 # Exceptions for which we can't just naively pass args through
 
-# General wrapper functions - work on Raw and Epochs
-
 
 def run_mne_notch_filter(dataset, userargs):
     """OSL-Batch wrapper for :py:meth:`mne.io.Raw.notch_filter <mne.io.Raw.notch_filter>`.
@@ -291,9 +289,6 @@ def run_mne_interpolate_bads(dataset, userargs):
     return dataset
 
 
-# Epochs Functions
-
-
 def run_mne_drop_bad(dataset, userargs):
     """OSL-Batch wrapper for :py:meth:`mne.Epochs.drop_bad <mne.Epochs.drop_bad>`.
 
@@ -328,9 +323,6 @@ def run_mne_drop_bad(dataset, userargs):
     return dataset
 
 
-# TFR
-
-
 def run_mne_apply_baseline(dataset, userargs):
     """OSL-Batch wrapper for :py:meth:`epochs.apply_baseline <mne.Epochs.apply_baseline>`.
 
@@ -361,9 +353,6 @@ def run_mne_apply_baseline(dataset, userargs):
 
 # MNE Events and Epochs Object Methods
 #
-
-# These wrappers use MNE functions which use one or more different data types
-# and typically create a new data object in the dataset dictionary.
 
 
 def run_mne_find_events(dataset, userargs):
@@ -420,7 +409,6 @@ def run_mne_epochs(dataset, userargs):
     return dataset
 
 
-# mne.preprocessing functions
 def run_mne_annotate_amplitude(dataset, userargs):
     """OSL-Batch wrapper for :py:func:`mne.preprocessing.annotate_amplitude <mne.preprocessing.annotate_amplitude>`.
 
@@ -623,9 +611,6 @@ def run_mne_compute_current_source_density(dataset, userargs):
     return dataset
 
 
-# Time-frequency transforms
-
-
 def run_mne_tfr_multitaper(dataset, userargs):
     """OSL-Batch wrapper for :py:func:`mne.time_frequency.tfr_multitaper <mne.time_frequency.tfr_multitaper>`.
 
@@ -723,11 +708,6 @@ def run_mne_tfr_stockwell(dataset, userargs):
         dataset["power"] = out
 
     return dataset
-
-
-# OHBA/MNE ICA Tools
-#
-# Currently assuming ICA on Raw data - no Epochs support yet
 
 
 def run_mne_ica_raw(dataset, userargs):
