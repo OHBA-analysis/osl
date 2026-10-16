@@ -16,7 +16,8 @@ from tabulate import tabulate
 import inspect
 
 from . import preproc_report
-from ..source_recon import parcellation, batch
+from ..parcellation import parcellation
+from ..source_recon import batch
 
 
 def gen_html_data(
@@ -443,7 +444,7 @@ def plot_config(config, reportdir):
     for idx, stage in enumerate(stages):
         method, userargs = next(iter(stage.items()))
 
-        method = method.replace("_", "\_")
+        method = method.replace("_", r"\_")
         if method in ["input", "output"]:
             b = startbox
         else:

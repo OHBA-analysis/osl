@@ -18,7 +18,7 @@ import mne
 import numpy as np
 
 from osl_ephys.utils import processing
-from osl_ephys.source_recon.parcellation import convert_to_mne_raw, save_as_fif
+from osl_ephys.parcellation.parcellation import convert_to_mne_raw, save_as_fif
 
 logger = logging.getLogger("osl_ephys")
 
@@ -392,13 +392,13 @@ def sign_flip_mne_raw(
         written by osl-ephys store parcels as ``"misc"`` channels.
     extra_chans : str or list of str, optional
         Extra channels (e.g. ``"stim"``) to copy from the input to the output.
-        Passed to :func:`osl_ephys.source_recon.parcellation.save_as_fif`.
+        Passed to :func:`osl_ephys.parcellation.save_as_fif`.
 
     Examples
     --------
     Save the sign-flipped data to a new fif file::
 
-        from osl_ephys.source_recon import sign_flipping
+        from osl_ephys.group import sign_flipping
 
         sign_flipping.sign_flip_mne_raw(
             "lcmv-parc-raw.fif",

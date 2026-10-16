@@ -8,7 +8,9 @@ full function name is accepted too.
 
 from __future__ import annotations
 
+import importlib
 import inspect
+import warnings
 from dataclasses import dataclass
 from functools import partial
 from typing import Callable
@@ -50,6 +52,40 @@ class Step:
 
 
 _REGISTRY: dict[str, dict[str, Step]] = {section: {} for section in SECTIONS}
+
+# The modules that register steps, imported on first lookup so that the
+# subpackages can import each other freely
+STEP_MODULES = (
+    "osl_ephys.preprocessing",
+    "osl_ephys.rhino.steps",
+    "osl_ephys.source_recon.steps",
+    "osl_ephys.parcellation.steps",
+    "osl_ephys.group.steps",
+)
+_loaded = False
+
+
+def load_steps() -> None:
+    """Import every module that registers steps (once)."""
+    global _loaded
+    if not _loaded:
+        _loaded = True
+        for module in STEP_MODULES:
+            importlib.import_module(module)
+
+
+def ignored_options(userargs: dict, *names: str) -> None:
+    """Drop v2 options that no longer apply, saying so."""
+    for name in names:
+        if name in userargs:
+            warnings.warn(f"'{name}' is no longer used and was ignored.", FutureWarning)
+            userargs.pop(name)
+
+
+def renamed_option(userargs: dict, old: str, new: str) -> None:
+    """Accept a v2 option under its new name."""
+    if old in userargs:
+        userargs[new] = userargs.pop(old)
 
 
 def config_name(func_name: str) -> str:
@@ -105,6 +141,7 @@ def register_module(
 
 def registered(section: str | None = None) -> dict:
     """The registered steps of a section (or of every section), by config name."""
+    load_steps()
     if section is None:
         return {s: registered(s) for s in SECTIONS}
     return {
@@ -114,6 +151,7 @@ def registered(section: str | None = None) -> dict:
 
 def section_of(name: str) -> str | None:
     """The section a step name belongs to, or None if it is not registered."""
+    load_steps()
     for section in SECTIONS:
         if name in _REGISTRY[section]:
             return section
@@ -159,6 +197,7 @@ def find_function(
     LookupError
         If nothing provides the step.
     """
+    load_steps()
     for func in extra_funcs or []:
         if func.__name__ == name or config_name(func.__name__) == name:
             return Step(func, section, name)

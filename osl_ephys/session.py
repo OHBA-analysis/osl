@@ -12,6 +12,8 @@ from __future__ import annotations
 import json
 import os
 
+from osl_ephys import files
+
 
 class SurfaceFilenames:
     """Container for surface extraction file paths.
@@ -131,7 +133,7 @@ class Session:
 
     The pipeline functions (in :mod:`~osl_ephys.rhino`,
     :mod:`~osl_ephys.source_recon.beamforming` and
-    :mod:`~osl_ephys.source_recon.parcellation`) take a Session and read and write
+    :mod:`~osl_ephys.parcellation`) take a Session and read and write
     the files held here. Nothing is created on disk until a step writes its
     output. The output layout is::
 
@@ -167,6 +169,34 @@ class Session:
         coregistration and forward model are computed once and every session
         reads them.
     """
+
+    @classmethod
+    def from_dataset(cls, dataset: dict) -> Session:
+        """The Session of a dataset, built from its manifest row on first use.
+
+        A session with no ``smri_file`` uses the MNI152 standard brain surfaces
+        from osl-files in place of its own.
+        """
+        if "session_files" not in dataset:
+            row, paths = dataset["session"], dataset["paths"]
+            surfaces_dir = (
+                paths["surfaces_dir"]
+                if row.get("smri_file")
+                else files.mni152_surfaces.directory
+            )
+            preproc_file = paths.get("preproc_file")
+            dataset["session_files"] = cls(
+                outdir=str(paths["session_dir"].parent),
+                id=row["id"],
+                surfaces_dir=str(surfaces_dir),
+                preproc_file=str(preproc_file) if preproc_file is not None else None,
+                pos_file=row.get("pos_file"),
+                elc_file=row.get("elc_file"),
+                head_model_id=row.get("head_model_id"),
+            )
+            # The FreeSurfer subject is the manifest's subject (recon-all is per subject)
+            dataset["session_files"].subject = row.get("subject", row["id"])
+        return dataset["session_files"]
 
     def __init__(
         self,

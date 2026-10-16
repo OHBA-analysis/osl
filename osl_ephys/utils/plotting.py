@@ -13,7 +13,7 @@ from nilearn.plotting import plot_markers, plot_img_on_surf
 
 from osl_ephys import files
 from osl_ephys.utils.misc import warn_mask_file_unused
-from osl_ephys.source_recon.parcellation import parcel_vector_to_nifti, Parcellation
+from osl_ephys.parcellation.parcellation import parcel_vector_to_nifti, Parcellation
 
 _logger = logging.getLogger("osl_ephys")
 

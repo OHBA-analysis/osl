@@ -7,6 +7,8 @@ from . import maxfilter
 from . import report
 from . import rhino
 from . import source_recon
+from . import parcellation
+from . import group
 from . import glm
 
 # The version number comes from the installed package metadata, which

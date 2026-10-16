@@ -1,13 +1,10 @@
-"""Source reconstruction: coregistration, forward modelling, LCMV
-beamforming and minimum norm, parcellation and sign flipping.
+"""Source reconstruction: the LCMV beamformer on the RHINO forward model, and
+the FreeSurfer route (coregistration, forward model and minimum norm with MNE).
 
-Each stage reads and writes the files held by a
-:class:`~osl_ephys.session.Session`; the config steps are in
-:mod:`~osl_ephys.source_recon.steps`.
+Each stage reads and writes the files held by a :class:`~osl_ephys.session.Session`.
 """
 
 from .batch import *
-
 from .freesurfer import (
     setup_freesurfer,
     check_freesurfer,
@@ -15,7 +12,3 @@ from .freesurfer import (
     make_watershed_bem,
     fsaverage_source_space,
 )
-
-# The config steps register themselves on import
-from osl_ephys.pipeline import registry as _registry
-from osl_ephys.source_recon import steps

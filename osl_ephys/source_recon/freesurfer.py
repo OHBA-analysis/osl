@@ -618,3 +618,12 @@ def calc_noise_cov(data, data_cov_rank, chantypes):
     )
 
     return noise_cov
+
+
+def is_freesurfer_route(dataset: dict, userargs: dict) -> bool:
+    """Whether a step takes the FreeSurfer route: the step's own
+    ``surface_extraction_method`` option, else the run's."""
+    method = userargs.pop("surface_extraction_method", None) or dataset.get(
+        "surface_extraction_method", "fsl"
+    )
+    return method == "freesurfer"

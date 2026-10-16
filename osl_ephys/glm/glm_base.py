@@ -15,7 +15,7 @@ from nilearn.plotting import plot_glass_brain, plot_markers
 import glmtools as glm
 import nibabel as nib
 
-from ..source_recon import parcellation
+from ..parcellation import parcellation
 
 
 class GLMBaseResult:

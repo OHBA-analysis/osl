@@ -868,7 +868,8 @@ the config step names) are kept.
 
 ### Target package layout
 
-Settled 2026-10-16 after the phase 4 layout review: one subpackage per
+Settled 2026-10-16 after the phase 4 layout review and done the same day
+(commits 21f91c7, 8a15bbf and the section split): one subpackage per
 config section (`maxfilter`, `preproc`, `coreg`, `source_recon`,
 `parcellation`, `group`), each with its own `steps.py`, so a reader finds
 a step's code from the section name. `rhino/` is the coregistration
@@ -877,6 +878,13 @@ people import); the FreeSurfer route is one MNE-wrapping module that spans
 three sections, so it stays a single file. Which section a step belongs
 to is set in its `@step` decorator, not by its file: `rhino/steps.py`
 registers `forward_model` under `source_recon`.
+The step modules are imported lazily by the registry on the first lookup
+(`registry.load_steps`), so the subpackages can import each other freely.
+The shared step helpers are `Session.from_dataset`,
+`registry.ignored_options` / `renamed_option` and
+`freesurfer.is_freesurfer_route`. The FreeSurfer-route test needs MNE's
+fsaverage, which is no longer on this machine (re-fetch with
+`mne.datasets.fetch_fsaverage` before phase 7).
 
 ```
 osl_ephys/
@@ -917,17 +925,17 @@ osl_ephys/
     beamforming/       split from beamforming.py
       lcmv.py          LCMV filters, apply, lcmv_weights, leadfields, virtual electrodes
       bilateral.py     bilateral pairs
-      _lcmv.py         private data-shaping helpers (_get_filter_input_data, _get_mni_grid, _get_gridstep)
+      grid.py          the MNI grid of the forward model (_get_mni_grid, _get_source_coords_mni, _get_gridstep)
     freesurfer.py      the FreeSurfer route (recon_all, watershed BEM, coregister, forward model, minimum norm, parcellate); its steps register under coreg / source_recon / parcellation
-    steps.py           beamform, minimum_norm and the freesurfer steps
+    steps.py           beamform, minimum_norm, and recon_all / make_watershed_bem (registered under coreg)
   parcellation/        the `parcellation` section
     parcellation.py    parcellate (pca/centroid), orthogonalisation, convert_to_mne_raw, save_as_fif
     plotting.py        parcellation plots (markers, glass brain, surfaces)
     nii.py             nifti point-cloud helpers (from source_recon/nii.py)
-    steps.py           parcellate (with source_method), the _and_parcellate aliases, fix_sign_ambiguity
+    steps.py           parcellate (with source_method) and the _and_parcellate aliases
   group/               the `group` section
     sign_flipping.py   ported data/sign_flipping.py + the scho97 solvers + template selection
-    steps.py           sign_flip
+    steps.py           sign_flip, and fix_sign_ambiguity (registered under parcellation)
   report/              phase 5
     report.py          ported meeg/report.py: generate_report, TABS, CAPTIONS
     qc.py              the osl-ephys QC plots that osl-dynamics lacks
