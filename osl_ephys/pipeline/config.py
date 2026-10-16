@@ -1,0 +1,190 @@
+"""Loading and checking a pipeline config.
+
+A config is a YAML file, a YAML string or a dict with one list of steps per
+section, in the order the sections run::
+
+    preproc:
+      - filter: {l_freq: 1, h_freq: 45}
+      - bad_segments: {picks: mag}
+    coreg:
+      - extract_surfaces: {include_nose: false}
+      - coregister: {use_nose: false}
+    source_recon:
+      - forward_model: {gridstep: 8}
+      - beamform: {chantypes: [mag, grad]}
+    parcellation:
+      - parcellate: {parcellation_file: atlas-Glasser_nparc-52_space-MNI_res-8x8x8.nii.gz}
+    group:
+      - fix_sign_ambiguity: {}
+
+Any section can be left out. A ``meta`` section holds ``event_codes`` and
+version checks as before. A v2 config whose ``source_recon`` list mixes
+coregistration, source reconstruction and parcellation steps is split into
+the sections above with a warning.
+"""
+
+from __future__ import annotations
+
+import warnings
+
+import yaml
+
+from osl_ephys.pipeline import registry
+from osl_ephys.utils.version_utils import check_version
+
+SECTION_ORDER = list(registry.SECTIONS)
+
+
+def load_config(config) -> dict:
+    """Load a config and put it in the canonical form.
+
+    Parameters
+    ----------
+    config : str or dict
+        Path to a YAML file, a YAML string, or a dict.
+
+    Returns
+    -------
+    config : dict
+        One list of ``{step_name: kwargs}`` per section that is present,
+        kwargs always a dict, plus ``meta``.
+    """
+    if not isinstance(config, (str, dict)):
+        raise TypeError(f"config must be a str or dict, got {type(config)}.")
+
+    if isinstance(config, str):
+        try:
+            with open(config, "r") as f:
+                config = yaml.load(f, Loader=yaml.FullLoader)
+        except (UnicodeDecodeError, FileNotFoundError, OSError):
+            config = yaml.load(config, Loader=yaml.FullLoader)
+    config = dict(config)
+
+    meta = config.pop("meta", None) or {}
+    meta.setdefault("event_codes", None)
+    meta.setdefault("versions", None)
+
+    unknown = [key for key in config if key not in SECTION_ORDER]
+    if unknown:
+        raise KeyError(
+            f"Unknown config section(s) {unknown}; sections are {SECTION_ORDER}."
+        )
+
+    sections = {}
+    for section in SECTION_ORDER:
+        steps = config.get(section)
+        if steps in (None, "None", "null"):
+            continue
+        sections[section] = [_normalise_step(section, s) for s in steps]
+
+    if not sections:
+        raise KeyError(f"The config has no steps; sections are {SECTION_ORDER}.")
+
+    sections = _split_v2_source_recon(sections)
+
+    for name, _ in sections.get("preproc", []):
+        if name == "find_events" and meta["event_codes"] is None:
+            raise KeyError(
+                "event_codes must be given in meta if we are finding events."
+            )
+
+    return {
+        **{
+            s: [{n: kw} for n, kw in sections[s]]
+            for s in SECTION_ORDER
+            if s in sections
+        },
+        "meta": meta,
+    }
+
+
+def _normalise_step(section: str, stage) -> tuple[str, dict]:
+    """A step as ``(name, kwargs)`` with kwargs a dict."""
+    if isinstance(stage, str):
+        return stage, {}
+    if not isinstance(stage, dict) or len(stage) != 1:
+        raise ValueError(
+            f"Step '{stage}' in section '{section}' must be a dict with a single key."
+        )
+    ((name, kwargs),) = stage.items()
+    if kwargs in (None, "None", "null"):
+        kwargs = {}
+    if not isinstance(kwargs, dict):
+        raise ValueError(
+            f"The options of step '{name}' must be a dict, got {type(kwargs)}."
+        )
+    return name, dict(kwargs)
+
+
+def _split_v2_source_recon(sections: dict) -> dict:
+    """Move steps of a v2 ``source_recon`` list into the sections they belong to."""
+    steps = sections.get("source_recon", [])
+    moved = {}
+    for name, kwargs in steps:
+        section = registry.section_of(name)
+        if section is not None and section != "source_recon":
+            moved.setdefault(section, []).append((name, kwargs))
+    if not moved:
+        return sections
+    warnings.warn(
+        "The 'source_recon' section holds steps that now belong to "
+        f"{sorted(moved)}; they have been moved. Split the config into "
+        "'coreg', 'source_recon' and 'parcellation' sections.",
+        FutureWarning,
+    )
+    sections["source_recon"] = [
+        (n, kw) for n, kw in steps if registry.section_of(n) in (None, "source_recon")
+    ]
+    for section, extra in moved.items():
+        sections[section] = extra + sections.get(section, [])
+    return {s: sections[s] for s in SECTION_ORDER if s in sections and sections[s]}
+
+
+def steps(config: dict, section: str) -> list[tuple[str, dict]]:
+    """The ``(name, kwargs)`` steps of a section, empty if the section is absent."""
+    return [tuple(s.items())[0] for s in config.get(section) or []]
+
+
+def validate(
+    config: dict, extra_funcs: list | None = None, columns: set | None = None
+) -> None:
+    """Check every step exists and the manifest has what the steps need.
+
+    Parameters
+    ----------
+    config : dict
+        A loaded config.
+    extra_funcs : list of callable, optional
+        Custom functions passed by the user.
+    columns : set of str, optional
+        Columns of the session manifest; when given, a per-subject step
+        requires a ``subject`` column.
+
+    Raises
+    ------
+    LookupError
+        For a step nothing provides.
+    ValueError
+        For a per-subject step with no ``subject`` column.
+    """
+    for section in SECTION_ORDER:
+        for name, kwargs in steps(config, section):
+            target = kwargs.get("target", "raw") if section == "preproc" else "raw"
+            step = registry.find_function(name, section, extra_funcs, target=target)
+            if (
+                step.per == "subject"
+                and columns is not None
+                and "subject" not in columns
+            ):
+                raise ValueError(
+                    f"Step '{name}' runs once per subject, but the sessions have no 'subject' column."
+                )
+
+
+def check_versions(config: dict) -> None:
+    """Apply the ``version_assert`` and ``version_warn`` checks of ``meta``."""
+    meta = config.get("meta", {})
+    for spec in meta.get("version_assert") or []:
+        check_version(spec, mode="assert")
+    for spec in meta.get("version_warn") or []:
+        check_version(spec, mode="warn")

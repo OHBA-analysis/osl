@@ -1,0 +1,178 @@
+"""The step registry: which function runs for a step name in a config section.
+
+A step is registered with :func:`step` (or :func:`register_module` for a
+module of wrappers) under a section and a name. The config refers to steps by
+name without the ``run_mne_``/``run_osl_`` prefix, as it always has; the
+full function name is accepted too.
+"""
+
+from __future__ import annotations
+
+import inspect
+from dataclasses import dataclass
+from functools import partial
+from typing import Callable
+
+import mne
+
+SECTIONS = ("preproc", "coreg", "source_recon", "parcellation", "group")
+
+# Prefixes stripped from a wrapper's name to get its config name
+PREFIXES = ("run_mne_", "run_osl_", "run_")
+
+
+@dataclass(frozen=True)
+class Step:
+    """A registered step.
+
+    Parameters
+    ----------
+    func : callable
+        The function that runs the step.
+    section : str
+        The config section it belongs to.
+    name : str
+        The name the config uses.
+    per : {"session", "subject"}
+        Whether it runs once per session or once per subject (e.g. surface
+        extraction, shared by the sessions of a subject).
+    kind : {"dataset", "legacy_src"}
+        Calling convention: ``func(dataset, userargs)`` for the
+        preprocessing wrappers, or the v2 source-recon convention
+        ``func(outdir, subject, ..., **userargs)`` until phase 4 replaces it.
+    """
+
+    func: Callable
+    section: str
+    name: str
+    per: str = "session"
+    kind: str = "dataset"
+
+
+_REGISTRY: dict[str, dict[str, Step]] = {section: {} for section in SECTIONS}
+
+
+def config_name(func_name: str) -> str:
+    """The name a config uses for a wrapper, e.g. ``filter`` for ``run_mne_filter``."""
+    for prefix in PREFIXES:
+        if func_name.startswith(prefix):
+            return func_name[len(prefix) :]
+    return func_name
+
+
+def register(
+    func: Callable,
+    section: str,
+    name: str | None = None,
+    per: str = "session",
+    kind: str = "dataset",
+) -> Step:
+    """Register a function as a step; see :class:`Step` for the arguments."""
+    if section not in SECTIONS:
+        raise ValueError(f"section must be one of {SECTIONS}, got '{section}'.")
+    if per not in ("session", "subject"):
+        raise ValueError(f"per must be 'session' or 'subject', got '{per}'.")
+    name = name or config_name(func.__name__)
+    entry = Step(func, section, name, per, kind)
+    _REGISTRY[section][name] = entry
+    if func.__name__ != name:
+        _REGISTRY[section][func.__name__] = entry
+    return entry
+
+
+def step(
+    section: str, name: str | None = None, per: str = "session", kind: str = "dataset"
+):
+    """Decorator form of :func:`register`."""
+
+    def decorate(func):
+        register(func, section, name, per, kind)
+        return func
+
+    return decorate
+
+
+def register_module(
+    module, section: str, prefixes: tuple[str, ...] = ("run_mne_", "run_osl_"), **kwargs
+) -> list[Step]:
+    """Register every function of a module whose name starts with one of the prefixes."""
+    steps = []
+    for func_name, func in inspect.getmembers(module, inspect.isfunction):
+        if func_name.startswith(prefixes) and func.__module__ == module.__name__:
+            steps.append(register(func, section, **kwargs))
+    return steps
+
+
+def registered(section: str | None = None) -> dict:
+    """The registered steps of a section (or of every section), by config name."""
+    if section is None:
+        return {s: registered(s) for s in SECTIONS}
+    return {
+        name: entry for name, entry in _REGISTRY[section].items() if entry.name == name
+    }
+
+
+def section_of(name: str) -> str | None:
+    """The section a step name belongs to, or None if it is not registered."""
+    for section in SECTIONS:
+        if name in _REGISTRY[section]:
+            return section
+    return None
+
+
+_MNE_TARGETS = {
+    "raw": mne.io.Raw,
+    "epochs": mne.Epochs,
+    "power": mne.time_frequency.EpochsTFR,
+    "itc": mne.time_frequency.EpochsTFR,
+}
+
+
+def find_function(
+    name: str, section: str, extra_funcs: list | None = None, target: str = "raw"
+) -> Step:
+    """The step to run for a name in a section.
+
+    Looked up in this order: a custom function passed by the user (matched by
+    its name), a registered step of the section, and for ``preproc`` a method
+    of the MNE object named by ``target``.
+
+    Parameters
+    ----------
+    name : str
+        Step name from the config.
+    section : str
+        Config section.
+    extra_funcs : list of callable, optional
+        Custom functions passed by the user.
+    target : str, optional
+        MNE object a bare method name applies to: ``raw``, ``epochs``,
+        ``power`` or ``itc``.
+
+    Returns
+    -------
+    step : Step
+        The step, with its calling convention.
+
+    Raises
+    ------
+    LookupError
+        If nothing provides the step.
+    """
+    for func in extra_funcs or []:
+        if func.__name__ == name or config_name(func.__name__) == name:
+            return Step(func, section, name)
+
+    if name in _REGISTRY[section]:
+        return _REGISTRY[section][name]
+
+    if section == "preproc":
+        cls = _MNE_TARGETS.get(target)
+        if cls is not None and callable(getattr(cls, name, None)):
+            from osl_ephys.preprocessing.mne_wrappers import run_mne_anonymous
+
+            return Step(partial(run_mne_anonymous, method=name), section, name)
+
+    elsewhere = section_of(name)
+    hint = f" It is a '{elsewhere}' step." if elsewhere else ""
+    raise LookupError(f"No step named '{name}' in section '{section}'.{hint}")
