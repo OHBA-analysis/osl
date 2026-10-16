@@ -1,7 +1,7 @@
 # ``ensure_dir`` / ``proc_userargs`` are shared with osl-ephys core and the
 # manual_ica subpackage, so they live once in osl_ephys.utils. Re-exported here
 # for the semp wrappers' ``from ..utils import proc_userargs`` imports.
-from osl_ephys.utils import ensure_dir, proc_userargs  # noqa: F401
+from osl_ephys.utils import ensure_dir, proc_userargs
 from mne._fiff.pick import _picks_to_idx
 
 #: The implicit dataset "schema" the semp wrappers read. These keys are not on

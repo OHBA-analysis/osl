@@ -56,7 +56,7 @@ def time_embed(x: np.ndarray, n_embeddings: int) -> np.ndarray:
 
     # Perform time embedding
     X = (
-        array_ops.sliding_window_view(x=x, window_shape=te_shape[0], axis=0)
+        np.lib.stride_tricks.sliding_window_view(x=x, window_shape=te_shape[0], axis=0)
         .T[..., ::-1]
         .reshape(te_shape)
     )

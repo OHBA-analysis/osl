@@ -1,0 +1,52 @@
+"""Coregistration, forward model, beamforming and parcellation on the test
+recordings, against the MNI152 surfaces (no FSL needed)."""
+
+import mne
+import pytest
+
+from osl_ephys import files
+from osl_ephys.pipeline import run_batch
+
+CONFIG = """
+preproc:
+  - resample: {sfreq: 100}
+coreg:
+  - extract_fiducials_and_headshape: {}
+  - coregister: {use_nose: false, allow_mri_scaling: true}
+source_recon:
+  - forward_model: {model: Single Layer, gridstep: 12}
+parcellation:
+  - beamform_and_parcellate:
+      chantypes: [mag, grad]
+      rank: {meg: 60}
+      parcellation_file: atlas-Glasser_nparc-52_space-MNI_res-8x8x8.nii.gz
+      orthogonalisation: symmetric
+group:
+  - sign_flip: {n_embeddings: 5}
+"""
+
+
+@pytest.fixture(scope="module")
+def sessions():
+    return [
+        {"id": "elekta", "subject": "sub-01", "raw_file": files.test_data.elekta},
+        {"id": "elekta2", "subject": "sub-01", "raw_file": files.test_data.elekta},
+    ]
+
+
+def test_source_reconstruction_on_mni152_surfaces(sessions, tmp_path):
+    results = run_batch(CONFIG, sessions, tmp_path, n_workers=2)
+    assert {s for _, s, _, _ in results} == {"ok"}, results
+
+    for id_ in ("elekta", "elekta2"):
+        coreg = tmp_path / id_ / "coreg"
+        assert (coreg / "head_scaledmri-trans.fif").exists()
+        assert (coreg / "coreg.png").exists()
+        assert (coreg / "model-fwd.fif").exists()
+        assert (tmp_path / id_ / "src" / "filters-lcmv.h5").exists()
+        parc = mne.io.read_raw_fif(
+            tmp_path / id_ / f"{id_}_parc-raw.fif", verbose=False
+        )
+        assert len(mne.pick_types(parc.info, misc=True)) == 52
+        assert (tmp_path / id_ / f"{id_}_sflip_parc-raw.fif").exists()
+    assert (tmp_path / "qc" / "parc" / "elekta" / "psd_topo.webp").exists()

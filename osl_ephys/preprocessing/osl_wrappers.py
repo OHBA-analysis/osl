@@ -336,7 +336,7 @@ def detect_artefacts(
     if ret_mode == "bad_inds":
         return bad_inds
     elif ret_mode == "good_inds":
-        return bad_inds == False  # noqa: E712
+        return bad_inds == False
     elif ret_mode in ["zero_bads", "nan_bads"]:
         out = X.copy()
 

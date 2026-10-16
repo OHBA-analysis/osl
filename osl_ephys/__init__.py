@@ -1,11 +1,11 @@
 from importlib.metadata import PackageNotFoundError, version
 
-from . import utils  # noqa: F401
-from . import preprocessing  # noqa: F401
-from . import maxfilter  # noqa: F401
-from . import report  # noqa: F401
-from . import source_recon  # noqa: F401
-from . import glm  # noqa: F401
+from . import utils
+from . import preprocessing
+from . import maxfilter
+from . import report
+from . import source_recon
+from . import glm
 
 # The version number comes from the installed package metadata, which
 # setuptools_scm derives from the git tag

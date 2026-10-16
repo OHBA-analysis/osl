@@ -392,6 +392,24 @@ Parallelism underneath it:
 
 ### Phase 4: Source reconstruction and parcellation  (todo: match osl-dynamics)
 
+Status 2026-10-16: core landed on `v3`. `source_recon/{session,rhino,
+beamforming,parcellation,sign_flipping}.py` are the ported osl-dynamics
+modules (commit b64c6eb0), `source_recon/steps.py` registers the config
+steps on them under the v2 names (`extract_surfaces`/`compute_surfaces`
+per subject, `extract_fiducials_and_headshape` and its v2 aliases,
+`extract_polhemus_from_pos`/`_elc`, `remove_stray_headshape_points`,
+`save_mni_fiducials`, `coregister`, `forward_model`, `beamform`,
+`parcellate`, `beamform_and_parcellate`, `fix_sign_ambiguity`, and a
+`sign_flip` group step that picks the template), with v2 options that no
+longer apply ignored with a warning. A session with no `smri_file` uses the
+MNI152 surfaces. The end-to-end test runs preprocessing, coregistration,
+forward model, LCMV, parcellation and sign flipping on two sessions of the
+Elekta recording in CI. Still v2 and registered as such: `minimum_norm`,
+`minimum_norm_and_parcellate`, `make_watershed_bem`, `extract_rhino_files`.
+Left in phase 4: those four onto `Session` with the fsaverage test, the
+kept helpers from the `_v2_` modules (inventory lines), deleting the `_v2_`
+modules and `wrappers.py`, the migration notes.
+
 Detailed steps and the target layout: section 11.
 
 - Port (see the inventory above) `Session` (fixed output layout: `{outdir}/{id}/{bem,coreg,src}`),
@@ -560,7 +578,7 @@ what only the dynamics models and analyses use, plus osl-ephys-only needs):
 | numpy, scipy, matplotlib, pandas, pyyaml, packaging | everywhere |
 | mne, mne-icalabel[onnx] | preprocessing, rhino, beamforming |
 | nibabel, nilearn, fslpy, scikit-image, scikit-learn, numba | rhino, parcellation |
-| pyvista, pyvistaqt, pyside6, trame, trame-vtk, trame-vuetify | coregistration 3D plot (off-screen and interactive) |
+| pyvista, pyvistaqt, pyside6, trame, trame-vtk, trame-vuetify, ipyevents, ipywidgets | coregistration 3D plot: MNE's off-screen renderer is its notebook backend, which needs ipyevents and ipywidgets (found in phase 4) |
 | pooch | files |
 | h5io | LCMV filters file (`filters-lcmv.h5`) |
 
@@ -573,7 +591,7 @@ what only the dynamics models and analyses use, plus osl-ephys-only needs):
 | Drop from osl-dynamics' list | Reason |
 | --- | --- |
 | tensorflow, tensorflow-probability, tf-keras | models only |
-| mat73, osfclient, ipyevents, ipywidgets, nest-asyncio2, tqdm, pqdm, threadpoolctl, seaborn, h5py | dynamics data loading, notebooks, model training |
+| mat73, osfclient, nest-asyncio2, tqdm, pqdm, threadpoolctl, seaborn, h5py | dynamics data loading, model training |
 
 | Drop from osl-ephys' current list | Reason |
 | --- | --- |

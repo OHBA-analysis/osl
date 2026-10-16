@@ -95,6 +95,8 @@ def run_chain(
         "covs": covs,
         "session": session,
         "paths": paths,
+        "qc_dir": qc_dir,
+        "log_dir": log_dir,
     }
 
     if cfg.steps(config, "preproc"):
@@ -232,7 +234,8 @@ def _run_source_recon(
     if not preproc_file.exists() and "preproc_file" not in session:
         v2_file = Path(outdir) / session["id"] / f"{session['id']}_preproc-raw.fif"
         if v2_file.exists():
-            preproc_file = v2_file
+            preproc_file = paths["preproc_file"] = v2_file
+    ran_v2 = False
     v2_args = {
         "outdir": str(outdir),
         "subject": session["id"],
@@ -253,9 +256,10 @@ def _run_source_recon(
                 wanted = inspect.signature(step.func).parameters
                 kwargs = {k: v for k, v in v2_args.items() if k in wanted}
                 step.func(**kwargs, **deepcopy(userargs))
+                ran_v2 = True
             else:
                 dataset = step.func(dataset, deepcopy(userargs))
-    if qc_dir is not None and v2_args["reportdir"] is not None:
+    if ran_v2 and v2_args["reportdir"] is not None:
         from osl_ephys.report import src_report
 
         src_report.gen_html_data(

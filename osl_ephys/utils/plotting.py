@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+import logging
+
 from typing import List, Optional, Tuple, Union
 
 import numpy as np
@@ -12,6 +14,60 @@ from nilearn.plotting import plot_markers, plot_img_on_surf
 from osl_ephys import files
 from osl_ephys.utils.misc import warn_mask_file_unused
 from osl_ephys.source_recon.parcellation import parcel_vector_to_nifti, Parcellation
+
+_logger = logging.getLogger("osl_ephys")
+
+
+def close(fig: Optional[plt.Figure] = None) -> None:
+    """Close a figure.
+
+    Parameters
+    ----------
+    fig : plt.figure, optional
+        Figure to close. Defaults to all figures.
+    """
+    if fig is None:
+        fig = "all"
+    plt.close(fig)
+
+
+def create_figure(*args, **kwargs):
+    """Creates matplotlib figure and axes objects.
+
+    Parameters
+    ----------
+    fig_kwargs
+        Arguments to pass to `plt.subplots <https://matplotlib.org/stable/api\
+        /_as_gen/matplotlib.pyplot.subplots.html>`_.
+
+    Returns
+    -------
+    fig : plt.figure
+        Matplotlib figure.
+    ax : array of plt.axes
+        Array of axes (or single axis).
+    """
+    fig, ax = plt.subplots(*args, **kwargs)
+    return fig, ax
+
+
+def save(fig: plt.Figure, filename: str, tight_layout: bool = False) -> None:
+    """Save and close a figure.
+
+    Parameters
+    ----------
+    fig : plt.figure
+        Matplotlib figure object.
+    filename : str
+        Output filename.
+    tight_layout : bool, optional
+        Should we call :code:`fig.tight_layout()`?
+    """
+    _logger.info(f"Saving {filename}")
+    if tight_layout:
+        fig.tight_layout()
+    fig.savefig(filename)
+    close(fig)
 
 
 def plot_psd_topo(

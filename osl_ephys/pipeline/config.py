@@ -157,28 +157,17 @@ def validate(
     extra_funcs : list of callable, optional
         Custom functions passed by the user.
     columns : set of str, optional
-        Columns of the session manifest; when given, a per-subject step
-        requires a ``subject`` column.
+        Columns of the session manifest (reserved for checks that need them).
 
     Raises
     ------
     LookupError
         For a step nothing provides.
-    ValueError
-        For a per-subject step with no ``subject`` column.
     """
     for section in SECTION_ORDER:
         for name, kwargs in steps(config, section):
             target = kwargs.get("target", "raw") if section == "preproc" else "raw"
-            step = registry.find_function(name, section, extra_funcs, target=target)
-            if (
-                step.per == "subject"
-                and columns is not None
-                and "subject" not in columns
-            ):
-                raise ValueError(
-                    f"Step '{name}' runs once per subject, but the sessions have no 'subject' column."
-                )
+            registry.find_function(name, section, extra_funcs, target=target)
 
 
 def check_versions(config: dict) -> None:

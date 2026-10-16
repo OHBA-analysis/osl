@@ -51,7 +51,7 @@ def _check(args):
         preprocessing,
         report,
         source_recon,
-    )  # noqa: F401
+    )
     from osl_ephys.pipeline import run_chain
 
     print(

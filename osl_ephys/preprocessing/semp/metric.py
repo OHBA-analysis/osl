@@ -9,7 +9,7 @@ import matplotlib.pyplot as plt
 # subpackage). Re-exported here so semp code / configs can keep importing it
 # from semp.metric. It is NOT interchangeable with psd_band_stat below -- see
 # that function's docstring for the difference.
-from osl_ephys.utils import mean_psd_in_band  # noqa: F401
+from osl_ephys.utils import mean_psd_in_band
 
 EEG_BANDS = {
     "alpha": (8, 12),

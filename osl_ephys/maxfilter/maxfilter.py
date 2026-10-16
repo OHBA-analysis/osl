@@ -342,9 +342,7 @@ def fit_cbu_origin(infif, outbase=None, remove_nose=True):
         # Remove nosepoints
         keeps = np.where(
             np.logical_and(headshape[:, 2] < 0, headshape[:, 1] > 0) == False
-        )[
-            0
-        ]  # noqa: E712
+        )[0]
         headshape = headshape[keeps, :]
 
     # Save txt and fit origin

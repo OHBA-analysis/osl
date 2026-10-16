@@ -48,6 +48,9 @@ dependencies = [
     "fslpy",
     "glmtools",
     "h5io",
+    # MNE's off-screen 3D backend, used for the coregistration plots
+    "ipyevents",
+    "ipywidgets",
     "jinja2",
     "matplotlib",
     "mne",

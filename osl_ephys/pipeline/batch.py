@@ -168,18 +168,27 @@ def _run_group(config, sessions, outdir, extra_funcs, covs, overwrite):
         "covs": covs,
         "fig": {},
         "sessions": sessions,
+        "outdir": outdir,
     }
+    inputs = set(dataset)
     for name, userargs in cfg.steps(config, "group"):
         userargs = {**deepcopy(userargs), "run_on_group": True}
         step = registry.find_function(
             name, "group", extra_funcs, target=userargs.get("target", "raw")
         )
-        if step.section == "group" or step.kind == "dataset":
-            dataset = step.func(dataset, userargs)
-    outbase = str(outdir / "{ftype}.{fext}")
-    write_dataset(
-        dataset, outbase, "", ftype="", overwrite=overwrite, skip=["raw", "sessions"]
-    )
+        dataset = step.func(dataset, userargs)
+    # Only what the group steps produced is written, next to the sessions
+    produced = [k for k in dataset if k not in inputs and k not in ("fig", "template")]
+    if produced:
+        outbase = str(outdir / "{ftype}.{fext}")
+        write_dataset(
+            dataset,
+            outbase,
+            "",
+            ftype="",
+            overwrite=overwrite,
+            skip=[k for k in dataset if k not in produced],
+        )
 
 
 def _summary_reports(config, qc_dir, log_dir):
