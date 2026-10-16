@@ -29,7 +29,7 @@ from mpl_toolkits.axes_grid1 import make_axes_locatable
 
 from fsl import wrappers as fsl_wrappers
 
-from osl_ephys.source_recon import freesurfer_utils, nii
+from osl_ephys.source_recon import nii
 from osl_ephys.source_recon.utils import find_file
 from osl_ephys.utils.logger import log_or_print
 
@@ -1304,30 +1304,26 @@ def guess_parcellation(data, return_path=False):
         return fname
 
 
-def surf_parcellate_timeseries(subject_dir, subject, stc, method, parcellation_file):
-    """Save parcellated data as a fif file.
+def surf_parcellate_timeseries(stc, src, labels, method="pca_flip"):
+    """Parcel time courses from a surface source estimate.
 
     Parameters
     ----------
-    subject_dir : str
-        Path to subject directory.
-    subject : str
-        Subject ID.
     stc : mne.SourceEstimate
         Source estimate.
+    src : mne.SourceSpaces
+        The source space the estimate is on.
+    labels : list of mne.Label
+        The parcels, e.g. from :func:`mne.read_labels_from_annot`.
     method : str
-        Parcellation method. Can be 'pca_flip', 'max', 'mean', 'mean_flip', 'auto'
-    parcellation_file : str
-        Parcellation name.
+        How a label's vertices are combined: 'pca_flip', 'max', 'mean',
+        'mean_flip' or 'auto'.
+
+    Returns
+    -------
+    parcel_data : (n_parcels, n_times) numpy.ndarray
     """
-    fs_files = freesurfer_utils.get_freesurfer_filenames(subject_dir, subject)
-
-    labels = load_parcellation(parcellation_file, freesurfer=True, subject=subject)
-
-    src = mne.read_source_spaces(fs_files["coreg"]["source_space"])
-    parcel_data = mne.extract_label_time_course(stc, labels, src, mode=method)
-
-    return parcel_data
+    return mne.extract_label_time_course(stc, labels, src, mode=method)
 
 
 def resample_parcellation(
@@ -1766,19 +1762,23 @@ def spatial_dist_adjacency(parcellation_file, dist, verbose=False):
     return adj_mat
 
 
-def convert2source_estimate(subjects_dir, data, parc=None, reference_brain="fsaverage"):
+def convert2source_estimate(
+    src, data, parc=None, reference_brain="fsaverage", subjects_dir=None
+):
     """Convert parcellated data to a source estimate.
 
     Parameters
     ----------
-    subjects_dir : str
-        Path to subjects directory.
+    src : mne.SourceSpaces or str
+        The surface source space of the reference brain (or its file).
     data : mne.Evoked or mne.Epochs
         Data to convert.
     parc : str
         Parcellation name.
     reference_brain : str
         Reference brain. Default is 'fsaverage'.
+    subjects_dir : str, optional
+        FreeSurfer subjects directory; ``SUBJECTS_DIR`` by default.
 
     Returns
     -------
@@ -1796,11 +1796,8 @@ def convert2source_estimate(subjects_dir, data, parc=None, reference_brain="fsav
     labels = load_parcellation(parc)
     nparc = len(labels)
 
-    src = mne.read_source_spaces(
-        freesurfer_utils.get_freesurfer_filenames(
-            os.environ["SUBJECTS_DIR"], reference_brain
-        )["source_space"]
-    )
+    if isinstance(src, (str, Path)):
+        src = mne.read_source_spaces(str(src))
 
     vertices = [s["vertno"] for s in src]
     kernel = np.zeros((src[0]["nuse"], nparc))

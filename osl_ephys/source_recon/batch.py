@@ -8,7 +8,6 @@ import numpy as np
 import yaml
 import mne
 
-from . import _v2_rhino, wrappers, freesurfer_utils
 from ..report import src_report
 from ..utils import logger as osl_logger
 from ..utils import validate_outdir, find_run_id
@@ -49,38 +48,6 @@ def load_config(config):
         raise ValueError("source_recon must be included in the config.")
 
     return config
-
-
-def find_func(method, extra_funcs):
-    """Find a source reconstruction function.
-
-    Parameters
-    ----------
-    method : str
-        Function name.
-    extra_funcs : list of functions
-        Custom functions.
-
-    Returns
-    -------
-    func : function
-        Function to use.
-    """
-    func = None
-
-    # Look in custom functions
-    if extra_funcs is not None:
-        func_ind = [
-            idx if (f.__name__ == method) else -1 for idx, f in enumerate(extra_funcs)
-        ]
-        if np.max(func_ind) > -1:
-            func = extra_funcs[np.argmax(func_ind)]
-
-    # Look in osl_ephys.source_recon.wrappers
-    if func is None and hasattr(wrappers, method):
-        func = getattr(wrappers, method)
-
-    return func
 
 
 def run_src_chain(
@@ -203,4 +170,4 @@ def run_src_batch(
     return [status != "failed" for _, status, _, _ in results]
 
 
-__all__ = ["load_config", "find_func", "run_src_chain", "run_src_batch"]
+__all__ = ["load_config", "run_src_chain", "run_src_batch"]

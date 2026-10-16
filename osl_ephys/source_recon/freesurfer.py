@@ -370,8 +370,6 @@ def minimum_norm(
         Forward model; the FreeSurfer-route one by default, or pass
         ``session.fwd_model_file`` for the RHINO one.
     """
-    from osl_ephys.source_recon.minimum_norm import calc_noise_cov
-
     fs = FreeSurferFilenames(session)
     fs.root.mkdir(parents=True, exist_ok=True)
     chantypes = [chantypes] if isinstance(chantypes, str) else list(chantypes)
@@ -565,3 +563,58 @@ def parcellate(
     if isinstance(parcel_data, list):
         parcel_data = np.array(parcel_data)
     return parcel_data, [l.name for l in labels], data
+
+
+def calc_noise_cov(data, data_cov_rank, chantypes):
+    """Calculate noise covariance.
+
+    Parameters
+    ----------
+    raw : mne.io.Raw
+        Raw object.
+    data_cov_rank : int
+        Rank of the data covariance matrix.
+    chantypes : list
+        List of channel types to include.
+    """
+    # In MNE, the noise cov is normally obtained from empty room noise
+    # recordings or from a baseline period. Here (if no noise cov is passed in)
+    # we mimic what the osl_normalise_sensor_data.m function in Matlab OSL does,
+    # by computing a diagonal noise cov with the variances set to the mean
+    # variance of each sensor type (e.g. mag, grad, eeg.)
+    logger.info("*** Calculating noise covariance ***")
+
+    data = data.pick(chantypes)
+    if isinstance(data, mne.io.Raw):
+        data_cov = mne.compute_raw_covariance(
+            data, method="empirical", rank=data_cov_rank
+        )
+    else:
+        data_cov = mne.compute_covariance(data, method="empirical", rank=data_cov_rank)
+
+    n_channels = data_cov.data.shape[0]
+    noise_cov_diag = np.zeros(n_channels)
+
+    for type in chantypes:
+        # Indices of this channel type
+        type_raw = data.copy().pick(type, exclude="bads")
+        inds = []
+        for chan in type_raw.info["ch_names"]:
+            inds.append(data_cov.ch_names.index(chan))
+
+        # Mean variance of channels of this type
+        variance = np.mean(np.diag(data_cov.data)[inds])
+        noise_cov_diag[inds] = variance
+        logger.info(f"variance for chantype {type} is {variance}")
+
+    bads = [b for b in data.info["bads"] if b in data_cov.ch_names]
+
+    noise_cov = mne.Covariance(
+        noise_cov_diag,
+        data_cov.ch_names,
+        bads,
+        data.info["projs"],
+        nfree=data.n_times,
+    )
+
+    return noise_cov
