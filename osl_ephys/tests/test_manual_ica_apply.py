@@ -6,8 +6,8 @@ import mne
 import numpy as np
 import pytest
 
-from osl_ephys.preprocessing.manual_ica.apply import apply_one, main
-from osl_ephys.preprocessing.manual_ica.io import parse_bads_txt
+from osl_ephys.preproc.manual_ica.apply import apply_one, main
+from osl_ephys.preproc.manual_ica.io import parse_bads_txt
 
 
 @pytest.mark.parametrize("first_samp", [0, 37])

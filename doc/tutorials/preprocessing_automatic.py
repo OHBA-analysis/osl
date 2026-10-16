@@ -62,7 +62,7 @@ config_text = """
 # The `meta` field is currently only used for trigger information (`event_codes`), and is optional. It is used to give descriptic names to event triggers, and is used in combination with `mne.find_events`, epoching, etc. 
 # 
 # 
-# In the `preproc` field, we specify each method we want to apply to the data, in the order in which we want to apply them (i.e., the methods will be applied serially). All methods from MNE-Python can be specified here, as well as some osl-ephys methods (see `osl_wrappers <https://osl-ephys.readthedocs.io/en/latest/autoapi/osl_ephys/preprocessing/osl_wrappers/index.html>`_). For each method we specify a dictionary with the settings; if we just use all default options, specify an empty dictionary ``{}``. 
+# In the `preproc` field, we specify each method we want to apply to the data, in the order in which we want to apply them (i.e., the methods will be applied serially). All methods from MNE-Python can be specified here, as well as some osl-ephys methods (see `osl_wrappers <https://osl-ephys.readthedocs.io/en/latest/autoapi/osl_ephys/preproc/osl_wrappers/index.html>`_). For each method we specify a dictionary with the settings; if we just use all default options, specify an empty dictionary ``{}``. 
 # 
 # To recap, this is the preprocessing pipeline we used in the previous tutorial:
 
@@ -81,11 +81,11 @@ raw = raw.filter(l_freq=0.25, h_freq=100)
 raw = raw.notch_filter(freqs=(50, 100), picks='meg')
 
 # bad segments
-raw = osl_ephys.preprocessing.osl_wrappers.bad_segments(raw, picks='grad', segment_len=100)
-raw = osl_ephys.preprocessing.osl_wrappers.bad_segments(raw, picks='mag', segment_len=100)
+raw = osl_ephys.preproc.osl_wrappers.bad_segments(raw, picks='grad', segment_len=100)
+raw = osl_ephys.preproc.osl_wrappers.bad_segments(raw, picks='mag', segment_len=100)
 
-raw = osl_ephys.preprocessing.osl_wrappers.bad_channels(raw, picks='grad')
-raw = osl_ephys.preprocessing.osl_wrappers.bad_channels(raw, picks='mag')
+raw = osl_ephys.preproc.osl_wrappers.bad_channels(raw, picks='grad')
+raw = osl_ephys.preproc.osl_wrappers.bad_channels(raw, picks='mag')
 
 # ICA
 ica = mne.preprocessing.ICA(n_components=64, random_state=42)
@@ -113,9 +113,9 @@ epochs.drop_bad({"eog": 6e-4, "mag": 4e-11, "grad": 4e-10})
 # ^^^^^^^^^^^^^^^^^^
 # Let's now try to put these processing steps into a config. We gave it a head start, but try to fill in the rest before continuing.
 #
-# :Tip: Use the  `Preprocessing API documentation <https://osl-ephys.readthedocs.io/en/latest/autoapi/osl_ephys/preprocessing/index.html>`_ and `MNE API <https://mne.tools/stable/api/python_reference.html>`_ to find the correct function names and settings. In the pipeline shown above, most steps are methods on the mne ``Raw`` class. You can see the available methods using ``dir(mne.io.Raw)``, and get help info as follows: e.g. ``help(mne.io.Raw.filter)``.
+# :Tip: Use the  `Preprocessing API documentation <https://osl-ephys.readthedocs.io/en/latest/autoapi/osl_ephys/preproc/index.html>`_ and `MNE API <https://mne.tools/stable/api/python_reference.html>`_ to find the correct function names and settings. In the pipeline shown above, most steps are methods on the mne ``Raw`` class. You can see the available methods using ``dir(mne.io.Raw)``, and get help info as follows: e.g. ``help(mne.io.Raw.filter)``.
 # 
-# If a function is not a direct MNE method, check if it is an osl_wrapper (``dir(osl_ephys.preprocessing.osl_wrappers)``. Everything beginning with ``run_osl_`` can be used in the config (excluding the "run_osl_" prefix). Similarly, for an mne wrapper (``dir(osl_ephys.preprocessing.mne_wrappers)``), all functions that can be used in the config start with ``run_mne_``, but should be specified excluding the "run_mne_" prefix. You can use similar help commands to get more information on these functions (e.g., ``dir()``, ``help()``).
+# If a function is not a direct MNE method, check if it is an osl_wrapper (``dir(osl_ephys.preproc.osl_wrappers)``. Everything beginning with ``run_osl_`` can be used in the config (excluding the "run_osl_" prefix). Similarly, for an mne wrapper (``dir(osl_ephys.preproc.mne_wrappers)``), all functions that can be used in the config start with ``run_mne_``, but should be specified excluding the "run_mne_" prefix. You can use similar help commands to get more information on these functions (e.g., ``dir()``, ``help()``).
 # 
 # See how far you get. If you get stuck, find some extra tips below.
 
@@ -130,9 +130,9 @@ preproc:
 """
 
 #%%
-# :Tip: The ``bad_segments`` and ``bad_channels`` are osl_wrappers, e.g., see ``help(osl_ephys.preprocessing.osl_wrappers.bad_segments)`` for options.
+# :Tip: The ``bad_segments`` and ``bad_channels`` are osl_wrappers, e.g., see ``help(osl_ephys.preproc.osl_wrappers.bad_segments)`` for options.
 #
-# :Tip: Fitting ica and applying it to the data are mne_wrappers, as is the autoreject option. Check ``help(osl_ephys.preprocessing.mne_wrappers.ica_raw)``and ``help(osl_ephys.preprocessing.mne_wrappers.ica_autoreject)`` for the options.
+# :Tip: Fitting ica and applying it to the data are mne_wrappers, as is the autoreject option. Check ``help(osl_ephys.preproc.mne_wrappers.ica_raw)``and ``help(osl_ephys.preproc.mne_wrappers.ica_autoreject)`` for the options.
 # 
 # Below you can find the full config. that we run ``ica_autoreject``, with ``apply: true``. This means that we run the automatic IC labeling, and remove those components from the data directly. We will come back to this later to find out how to select bad components manually.
 # :note: we reduced the ``n_components`` in the ``ica_raw`` step to 20 to speed up processing.
@@ -171,10 +171,10 @@ preproc:
 # Running a config with run_proc_chain
 # ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 # 
-# Now we want to apply this preprocessing pipeline to the first file, we do this using the osl-ephys function ``osl_ephys.preprocessing.run_proc_chain(config, inputfile, ...)``. Let's first run this function, and then have a more detailed look at the in- and outputs to this funcction.
+# Now we want to apply this preprocessing pipeline to the first file, we do this using the osl-ephys function ``osl_ephys.preproc.run_proc_chain(config, inputfile, ...)``. Let's first run this function, and then have a more detailed look at the in- and outputs to this funcction.
 
 
-from osl_ephys.preprocessing import run_proc_chain
+from osl_ephys.preproc import run_proc_chain
 
 help(run_proc_chain)
 dataset = run_proc_chain(config_text, raw, subject='sub001-ses01', outdir=outdir, overwrite=True)

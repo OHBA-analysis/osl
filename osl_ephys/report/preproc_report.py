@@ -55,7 +55,7 @@ def gen_report_from_fif(infiles, outdir, ftype=None, logsdir=None, run_id=None):
     run_id : str
         Run ID.
     """
-    from ..preprocessing import read_dataset
+    from ..preproc import read_dataset
 
     # Validate input files and directory to save html file and plots to
     infiles, outnames, good_files = process_file_inputs(infiles)
@@ -586,7 +586,7 @@ def plot_flowchart(raw, savebase=None):
         Path to saved figure.
 
     """
-    from ..preprocessing import get_config_from_fif, plot_preproc_flowchart
+    from ..preproc import get_config_from_fif, plot_preproc_flowchart
 
     # Get config info from raw.info['description']
     config_list = get_config_from_fif(raw)

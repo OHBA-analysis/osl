@@ -20,7 +20,7 @@ This tutorial looks as follows:
 
 
 import osl_ephys
-from osl_ephys.preprocessing import run_proc_batch
+from osl_ephys.preproc import run_proc_batch
 import numpy as np
 import matplotlib.pyplot as plt
 import os
@@ -47,7 +47,7 @@ pprint(infiles)
 # We'll load in the config that we created in the previous tutorial, and change the ICA settings to speed up processing.
 
 
-config = osl_ephys.preprocessing.load_config(os.path.join(basedir, "config.yaml"))# load in the config
+config = osl_ephys.preproc.load_config(os.path.join(basedir, "config.yaml"))# load in the config
 config['preproc'][-4]['ica_raw']['n_components'] = 20
 config
 
@@ -103,7 +103,7 @@ if __name__ == '__main__':
     
     # write extra code here, e.g., definitions of config, files, output_dir
     
-    osl_ephys.preprocessing.run_proc_batch(config, 
+    osl_ephys.preproc.run_proc_batch(config, 
                                      infiles, 
                                      subjects=subjects_ids, 
                                      outdir=outdir, 
@@ -142,7 +142,7 @@ if __name__ == '__main__':
     subjects_ids = [f"sub{i+1:03d}-run{j+1:02d}" for i in range(16) for j in range(1)]
     config = os.path.join(basedir, "config.yaml")
     
-    osl_ephys.preprocessing.run_proc_batch(config, filenames, subjects=subjects_ids, outdir=outdir, dask_client=True)
+    osl_ephys.preproc.run_proc_batch(config, filenames, subjects=subjects_ids, outdir=outdir, dask_client=True)
 
 #%% in order to run this code, we can put it in a script and run it from the terminal.
 
@@ -173,7 +173,7 @@ if __name__ == '__main__':
     subjects_ids = [f"sub{i+1:03d}-run{j+1:02d}" for i in range(16) for j in range(1)]
     config = os.path.join(basedir, "config.yaml")
     
-    osl_ephys.preprocessing.run_proc_batch(config, filenames, subjects=subjects_ids, outdir=outdir, dask_client=True)
+    osl_ephys.preproc.run_proc_batch(config, filenames, subjects=subjects_ids, outdir=outdir, dask_client=True)
 
     """)
     

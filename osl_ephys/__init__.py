@@ -2,7 +2,7 @@ from importlib.metadata import PackageNotFoundError, version
 
 from . import utils
 from . import io
-from . import preprocessing
+from . import preproc
 from . import maxfilter
 from . import report
 from . import rhino

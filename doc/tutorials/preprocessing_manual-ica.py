@@ -146,8 +146,8 @@ from pathlib import Path
 
 import numpy as np
 
-from osl_ephys.preprocessing import run_proc_batch
-from osl_ephys.preprocessing.semp.metric import psd_band_ratio
+from osl_ephys.preproc import run_proc_batch
+from osl_ephys.preproc.semp.metric import psd_band_ratio
 
 TR_INTERVAL = 2.1
 SLICE_COUNT = 38
@@ -375,7 +375,7 @@ if RUN_FINISH:
 # rather than a frontal channel that may have been marked bad.
 
 #%%
-from osl_ephys.preprocessing.semp import psd_plot, temp_plot
+from osl_ephys.preproc.semp import psd_plot, temp_plot
 
 try:
     _ip = get_ipython()
@@ -417,7 +417,7 @@ else:
 # custom orchestration:
 
 #%%
-from osl_ephys.preprocessing.manual_ica import apply_manual_ica
+from osl_ephys.preproc.manual_ica import apply_manual_ica
 
 RUN_PYTHON_APPLY = False
 if RUN_PYTHON_APPLY:

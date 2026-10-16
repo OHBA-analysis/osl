@@ -206,7 +206,7 @@ if not pre_run:
         raw = mne.io.read_raw(sflip_parc_file) 
         
         # To get epoching info
-        dataset = osl_ephys.preprocessing.read_dataset(preproc_fif_file)
+        dataset = osl_ephys.preproc.read_dataset(preproc_fif_file)
         
         epochs = mne.Epochs(
             raw,

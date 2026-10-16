@@ -72,7 +72,7 @@ Define a python functions, and make sure it is structured as follows:
    """
 
    # supply the function to run_proc_chain / run_proc_batch
-   osl_ephys.preprocessing.run_proc_chain(config, infile, subject, outdir, extra_funcs=[custom_function])
+   osl_ephys.preproc.run_proc_chain(config, infile, subject, outdir, extra_funcs=[custom_function])
 
 The custom function should have ``dataset`` and ``userargs`` input arguments, and a ``dataset`` output argument. Any key in dataset can be manipulated in place. Alternatively, and really helpful is that when you instead add a new key osl-ephys will save it according to the name of the key.
 For example, if the data is saved as ``sub001-run01_preproc-raw.fif``, the ``rawabs`` key will be saved as ``sub001-run01_rawabs.fif`` in the corresponding directory. 
@@ -143,7 +143,7 @@ Elekta software with some explanations of settings. Furthermore, `MNE-Python als
 How can I preprocess my data using multiple cores (CPUs)?
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-When you're using ``osl_ephys.preprocessing.run_proc_batch`` you can parallelize the processing over datasets by using dask. This requires that you structure the main code of your Python file inside a ``if __name__ == '__main__':`` statement. 
+When you're using ``osl_ephys.preproc.run_proc_batch`` you can parallelize the processing over datasets by using dask. This requires that you structure the main code of your Python file inside a ``if __name__ == '__main__':`` statement. 
 We also need to start a Client and specify ``threads_per_worker=1`` and the number of cores to use (``n_workers``). Lastly, we need to specify ``dask_client=True`` in ``run_proc_batch``.
 
 .. warning::
@@ -161,7 +161,7 @@ We also need to start a Client and specify ``threads_per_worker=1`` and the numb
 
       # write extra information here, e.g., definitions of config, files, output_dir
 
-      osl_ephys.preprocessing.run_proc_batch(config, 
+      osl_ephys.preproc.run_proc_batch(config, 
          inputs=infiles, 
          subjects=subjects_ids, 
          outdir=outdir, 
@@ -173,7 +173,7 @@ There are several ways to identify artefact-related components. Commonly, compon
 These can be identified either automatically, e.g., by correlation with the ECG / EOG (when recorded), or manually, by inspecting the component topographies and timecourses. 
 We recommend a combination of the two: have a automatic first pass, and manually adapting the labels where necessary. 
 
-We provide command line functions in osl-ephys to do the manual checks and reject the components from the data post-hoc. See `ica_label <https://osl-ephys.readthedocs.io/en/latest/autoapi/osl_ephys/preprocessing/ica_label/index.html#osl_ephys.preprocessing.ica_label.main>`_
+We provide command line functions in osl-ephys to do the manual checks and reject the components from the data post-hoc. See `ica_label <https://osl-ephys.readthedocs.io/en/latest/autoapi/osl_ephys/preproc/ica_label/index.html#osl_ephys.preproc.ica_label.main>`_
 
 .. code-block:: Python
 

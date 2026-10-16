@@ -254,13 +254,13 @@ fig, ax = plot_var(raw_notch)
 #%%
 # Automated bad segment/channel detection
 # ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-# Even after filtering there can be large artefacts left in the data, for example resulting from head and eye movements, muscle twitches, and other (unknown) physiological sources. Hence, we next perform bad segment/channel detection. This can be done manually, i.e., by going through the data and manually selecting bad segments/channels (e.g., the gradiometer segment right after the start of the recording in the top left plot above). Alternatively, we can use automatic detection using osl-ephys tools (``osl_ephys.preprocessing.osl_wrappers.bad_segments``, ``osl_ephys.preprocessing.osl_wrappers.bad_channels``). These tools use a `Generalized ESD test (Rosner, 1983) <https://www.jstor.org/stable/1268549>`_ - a procedure for removing outliers in univariate data that approximately follows a normal distribution. 
+# Even after filtering there can be large artefacts left in the data, for example resulting from head and eye movements, muscle twitches, and other (unknown) physiological sources. Hence, we next perform bad segment/channel detection. This can be done manually, i.e., by going through the data and manually selecting bad segments/channels (e.g., the gradiometer segment right after the start of the recording in the top left plot above). Alternatively, we can use automatic detection using osl-ephys tools (``osl_ephys.preproc.osl_wrappers.bad_segments``, ``osl_ephys.preproc.osl_wrappers.bad_channels``). These tools use a `Generalized ESD test (Rosner, 1983) <https://www.jstor.org/stable/1268549>`_ - a procedure for removing outliers in univariate data that approximately follows a normal distribution. 
 
 #%%
 # Bad segments
 # ************
-raw_badseg = osl_ephys.preprocessing.osl_wrappers.bad_segments(raw_notch.copy(), picks='grad')
-raw_badseg = osl_ephys.preprocessing.osl_wrappers.bad_segments(raw_badseg, picks='mag')
+raw_badseg = osl_ephys.preproc.osl_wrappers.bad_segments(raw_notch.copy(), picks='grad')
+raw_badseg = osl_ephys.preproc.osl_wrappers.bad_segments(raw_badseg, picks='mag')
 fig, ax = plot_var(raw_badseg)
 
 #%%
@@ -271,8 +271,8 @@ fig, ax = plot_var(raw_badseg)
 
 #%%
 # We found that using a segment length of 100, and a significance of 0.05 does a reasonable job. Keep in mind that there is not necessarily one correct answer, and in any case we'll have to see how well these settings generalise to other datasets later. Doing these steps on multiple datasets will guide us to find the best general settings for this dataset.
-raw_badseg = osl_ephys.preprocessing.osl_wrappers.bad_segments(raw_notch.copy(), picks='grad', segment_len=100)
-raw_badseg = osl_ephys.preprocessing.osl_wrappers.bad_segments(raw_badseg, picks='mag', segment_len=100)
+raw_badseg = osl_ephys.preproc.osl_wrappers.bad_segments(raw_notch.copy(), picks='grad', segment_len=100)
+raw_badseg = osl_ephys.preproc.osl_wrappers.bad_segments(raw_badseg, picks='mag', segment_len=100)
 
 #%%
 # The variance looks a lot more equally distributed over time now. Next, let's do the bad channel detection. In the variance topography plots we can see that the variance range is small and there are no clear outliers. In other datasets there might be, so we'll build bad channel detection into our pipeline anyway.
@@ -280,8 +280,8 @@ raw_badseg = osl_ephys.preprocessing.osl_wrappers.bad_segments(raw_badseg, picks
 #%%
 # Bad channels
 # ************
-raw_badchan = osl_ephys.preprocessing.osl_wrappers.bad_channels(raw_badseg.copy(), picks='grad')
-raw_badchan = osl_ephys.preprocessing.osl_wrappers.bad_channels(raw_badchan, picks='mag')
+raw_badchan = osl_ephys.preproc.osl_wrappers.bad_channels(raw_badseg.copy(), picks='grad')
+raw_badchan = osl_ephys.preproc.osl_wrappers.bad_channels(raw_badchan, picks='mag')
 print(f"These channels were marked as bad: {raw_badchan.info['bads']}")
 fig, ax = plot_var(raw_badchan)
 
@@ -358,7 +358,7 @@ import os
 with open("plot_ica_from_terminal.py", "w") as f:
     f.write(f"""\
         import mne
-        from osl_ephys.preprocessing.plot_ica import plot_ica
+        from osl_ephys.preproc.plot_ica import plot_ica
         ica = mne.preprocessing.read_ica('{fname_ica}')
         raw = mne.io.read_raw_fif('{fname_data}', preload=True)
         fig = plot_ica(ica, raw)

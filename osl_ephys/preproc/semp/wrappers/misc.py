@@ -2,7 +2,7 @@ import numpy as np
 import mne
 
 from osl_ephys.utils.logger import log_or_print
-from osl_ephys.preprocessing.semp.utils import proc_userargs
+from osl_ephys.preproc.semp.utils import proc_userargs
 
 
 def voltage_correction(dataset, userargs):

@@ -4,7 +4,7 @@
 Usage (run from the ICA root folder, i.e. the folder containing subject dirs):
 
     osl-ica-review [port] [--host HOST]                     # console_script
-    python -m osl_ephys.preprocessing.manual_ica.review_server [port] [--host HOST]
+    python -m osl_ephys.preproc.manual_ica.review_server [port] [--host HOST]
 
 By default the server binds to ``127.0.0.1`` so only browsers on the same
 machine can hit the save endpoints. Pass ``--host 0.0.0.0`` if you really

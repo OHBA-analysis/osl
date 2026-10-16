@@ -8,8 +8,8 @@ import numpy as np
 class TestFunctionFinding(unittest.TestCase):
 
     def test_find_func_in_mne_wrapper(selF):
-        from ..preprocessing import find_func
-        from ..preprocessing import mne_wrappers as wrappers
+        from ..preproc import find_func
+        from ..preproc import mne_wrappers as wrappers
 
         # Check we're finding some common functions
         ff = find_func("notch_filter")
@@ -26,8 +26,8 @@ class TestFunctionFinding(unittest.TestCase):
 
     def test_find_func_in_mne_object(self):
         import functools
-        from ..preprocessing import find_func
-        from ..preprocessing import mne_wrappers as wrappers
+        from ..preproc import find_func
+        from ..preproc import mne_wrappers as wrappers
 
         # Make sure we have properly set up partial functions based on
         # run_mne_anonymous
@@ -51,8 +51,8 @@ class TestFunctionFinding(unittest.TestCase):
         assert ff.keywords["method"] == "savgol_filter"
 
     def test_find_func_in_osl_wrapper(self):
-        from ..preprocessing import find_func
-        from ..preprocessing.osl_wrappers import (
+        from ..preproc import find_func
+        from ..preproc.osl_wrappers import (
             run_osl_bad_segments,
             run_osl_bad_channels,
         )
@@ -65,8 +65,8 @@ class TestFunctionFinding(unittest.TestCase):
         assert ff == run_osl_bad_channels
 
     def test_find_func_from_userlist(self):
-        from ..preprocessing import find_func
-        from ..preprocessing import print_custom_func_info
+        from ..preproc import find_func
+        from ..preproc import print_custom_func_info
 
         # Check that user func is found first
         def filter(x, u):

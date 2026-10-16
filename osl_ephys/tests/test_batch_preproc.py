@@ -56,7 +56,7 @@ class TestPreprocessingChain(unittest.TestCase):
 
 class TestVersions(unittest.TestCase):
     def test_simple_chain(self):
-        from ..preprocessing import load_config, check_config_versions
+        from ..preproc import load_config, check_config_versions
 
         cfg = """
         meta:

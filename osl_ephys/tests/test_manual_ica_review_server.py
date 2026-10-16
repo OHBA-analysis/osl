@@ -8,13 +8,13 @@ from urllib.request import Request, urlopen
 
 import pytest
 
-from osl_ephys.preprocessing.manual_ica.review_server import (
+from osl_ephys.preproc.manual_ica.review_server import (
     MAX_POST_BYTES,
     _safe_relpath,
     create_server,
 )
-from osl_ephys.preprocessing.manual_ica.html import _write_review_html
-from osl_ephys.preprocessing.manual_ica.helpers import _build_scores_list
+from osl_ephys.preproc.manual_ica.html import _write_review_html
+from osl_ephys.preproc.manual_ica.helpers import _build_scores_list
 
 
 @pytest.fixture

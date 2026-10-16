@@ -16,8 +16,8 @@ import pytest
 
 mne.set_log_level("ERROR")
 
-from osl_ephys.preprocessing.batch import find_func
-from osl_ephys.preprocessing.semp.wrappers.epoching import (
+from osl_ephys.preproc.batch import find_func
+from osl_ephys.preproc.semp.wrappers.epoching import (
     create_epoch,
     create_TR_epoch,
     create_He_epoch,
@@ -26,22 +26,22 @@ from osl_ephys.preprocessing.semp.wrappers.epoching import (
     crop_by_epoch,
     _check_fixed_spacing,
 )
-from osl_ephys.preprocessing.semp.wrappers.ica import slice_reject
-from osl_ephys.preprocessing.semp.wrappers.aas import epoch_aas
-from osl_ephys.preprocessing.semp.wrappers.obs import epoch_obs
-from osl_ephys.preprocessing.semp.wrappers import timer as timer_mod
-from osl_ephys.preprocessing.semp.vis import _amplitude_yticks
-from osl_ephys.preprocessing.manual_ica.helpers import (
+from osl_ephys.preproc.semp.wrappers.ica import slice_reject
+from osl_ephys.preproc.semp.wrappers.aas import epoch_aas
+from osl_ephys.preproc.semp.wrappers.obs import epoch_obs
+from osl_ephys.preproc.semp.wrappers import timer as timer_mod
+from osl_ephys.preproc.semp.vis import _amplitude_yticks
+from osl_ephys.preproc.manual_ica.helpers import (
     _compute_slice_contribution_scores,
     _compute_slice_ga_scores,
 )
-from osl_ephys.preprocessing.semp.utils import (
+from osl_ephys.preproc.semp.utils import (
     ensure_dir,
     proc_userargs,
     require_keys,
     mne_epoch2raw,
 )
-import osl_ephys.preprocessing.semp as semp
+import osl_ephys.preproc.semp as semp
 
 # fixtures
 
@@ -83,7 +83,7 @@ def _dataset():
         "manual_ica",
         "apply_ica",
     ],
-)  # these two live in preprocessing.manual_ica
+)  # these two live in preproc.manual_ica
 def test_wrappers_resolve_by_name(name):
     assert find_func(name).__name__ == f"run_osl_{name}"
 
@@ -471,7 +471,7 @@ def test_slice_reject_requires_fitted_ica():
 
 
 def test_slice_reject_contribution_gate_is_opt_in(monkeypatch):
-    from osl_ephys.preprocessing.semp.wrappers import ica as ica_wrapper
+    from osl_ephys.preproc.semp.wrappers import ica as ica_wrapper
 
     raw = _multichan_raw()
     fitted = _fit_ica(raw)
@@ -620,7 +620,7 @@ def test_mean_psd_in_band_single_source_and_fallback():
 
 
 def test_unpack_plot_handles_both_return_shapes():
-    from osl_ephys.preprocessing.semp.vis import _unpack_plot
+    from osl_ephys.preproc.semp.vis import _unpack_plot
 
     class _Fig:  # MNE fig-only return
         axes = ["ax0", "ax1"]
@@ -636,7 +636,7 @@ def test_psd_and_temp_plot_smoke(tmp_path):
     import matplotlib
 
     matplotlib.use("Agg")
-    from osl_ephys.preprocessing.semp.vis import psd_plot, temp_plot
+    from osl_ephys.preproc.semp.vis import psd_plot, temp_plot
 
     raw = _synthetic_raw(T=20.0, sfreq=200.0)
     data = raw.get_data()
@@ -668,7 +668,7 @@ def test_psd_and_temp_plot_smoke(tmp_path):
 def test_psd_plot_concatenates_bad_segments_without_nperseg_warnings(tmp_path):
     """Bad annotations are removed before PSD, so short-span Welch warnings do not recur."""
     import warnings
-    from osl_ephys.preprocessing.semp.vis import psd_plot
+    from osl_ephys.preproc.semp.vis import psd_plot
 
     raw = mne.io.RawArray(
         np.random.RandomState(3).randn(2, 4000) * 1e-5,
@@ -699,7 +699,7 @@ def test_psd_plot_concatenates_bad_segments_without_nperseg_warnings(tmp_path):
 
 def test_psd_plot_all_keeps_eeg_eog_and_ecg(tmp_path):
     """Explicit all-channel PSD must not silently fall back to EEG only."""
-    from osl_ephys.preprocessing.semp.vis import psd_plot
+    from osl_ephys.preproc.semp.vis import psd_plot
 
     channel_names = ["Cz", "VEOG", "HEOG", "ECG"]
     raw = mne.io.RawArray(
@@ -721,7 +721,7 @@ def test_psd_plot_all_keeps_eeg_eog_and_ecg(tmp_path):
 
 def test_pcs_plot_keeps_full_mapping_when_one_channel_is_bad(tmp_path, monkeypatch):
     """Bad-channel filtering must not shift later PC rows onto wrong names."""
-    import osl_ephys.preprocessing.semp.vis as vis
+    import osl_ephys.preproc.semp.vis as vis
 
     channel_names = ["Cz", "VEOG", "ECG"]
     info = mne.create_info(channel_names, 100.0, ["eeg", "eog", "ecg"])
@@ -758,7 +758,7 @@ def test_psd_plot_db_axis_has_no_linear_amplitude_unit():
 
     matplotlib.use("Agg")
     import matplotlib.pyplot as plt
-    from osl_ephys.preprocessing.semp.vis import psd_plot
+    from osl_ephys.preproc.semp.vis import psd_plot
 
     raw = _synthetic_raw(T=10.0, sfreq=200.0)
     raw.rename_channels({"C1": "Fp1", "C2": "Fp2"})
@@ -777,7 +777,7 @@ def test_temp_plot_uses_name_as_title():
 
     matplotlib.use("Agg")
     import matplotlib.pyplot as plt
-    from osl_ephys.preprocessing.semp.vis import temp_plot
+    from osl_ephys.preproc.semp.vis import temp_plot
 
     raw = _synthetic_raw(T=2.0, sfreq=100.0)
     temp_plot(raw, 0, length=raw.n_times, name="checkerout channel")

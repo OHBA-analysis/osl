@@ -17,9 +17,9 @@ class TestModuleStructure(unittest.TestCase):
             raise Exception("Unable to import 'maxfilter'")
 
         try:
-            from .. import preprocessing
+            from .. import preproc
         except ImportError:
-            raise Exception("Unable to import 'preprocessing'")
+            raise Exception("Unable to import 'preproc'")
 
         try:
             from .. import report

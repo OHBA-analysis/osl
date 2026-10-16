@@ -65,7 +65,7 @@ def manual_ica(dataset, userargs):
 
     ``userargs`` schema
     -------------------
-    The full schema lives in ``osl_ephys.preprocessing.manual_ica.config.DEFAULT_USERARGS``;
+    The full schema lives in ``osl_ephys.preproc.manual_ica.config.DEFAULT_USERARGS``;
     it is enforced strict --- any unknown key raises a clear KeyError.
     Highlights:
 

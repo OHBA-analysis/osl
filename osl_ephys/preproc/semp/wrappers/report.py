@@ -8,7 +8,7 @@ import mne
 from osl_ephys.report.preproc_report import plot_channel_dists
 from osl_ephys.utils.logger import log_or_print
 
-from osl_ephys.preprocessing.semp.utils import (
+from osl_ephys.preproc.semp.utils import (
     ensure_dir,
     proc_userargs,
     require_keys,

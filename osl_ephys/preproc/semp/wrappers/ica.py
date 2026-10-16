@@ -1,7 +1,7 @@
 """ICA wrappers for the semp preprocessing pipeline.
 
 The interactive ``manual_ica`` review wrapper (and its HTML templates) lives in
-``osl_ephys.preprocessing.manual_ica`` so it can be used by osl-ephys users who
+``osl_ephys.preproc.manual_ica`` so it can be used by osl-ephys users who
 don't depend on semp. We re-export ``manual_ica`` here so existing semp configs
 (``{'manual_ica': {...}}``) keep working unchanged. Its companion ``apply_ica``
 (applies a saved ICA at ``dataset['target_pth']/<subject>/<subject>_ica.fif``)
@@ -41,16 +41,16 @@ round-trips through disk so a human can review between the fit and the apply.
 import numpy as np
 from osl_ephys.utils.logger import log_or_print
 
-from osl_ephys.preprocessing.manual_ica import (
+from osl_ephys.preproc.manual_ica import (
     manual_ica,
 )  # re-export; keeps semp configs working
-from osl_ephys.preprocessing.manual_ica.helpers import (
+from osl_ephys.preproc.manual_ica.helpers import (
     _compute_slice_contribution_scores,
     _compute_slice_ga_scores,
     _good_mask,
 )
 
-from osl_ephys.preprocessing.semp.utils import proc_userargs, require_keys
+from osl_ephys.preproc.semp.utils import proc_userargs, require_keys
 
 __all__ = ["slice_reject", "manual_ica"]
 

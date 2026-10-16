@@ -46,7 +46,7 @@ if __name__ == "__main__":
   subjects = [f"sub{i+1:03d}-run{j+1:02d}" for i in range(19) for j in range(6)]
   outdir = os.path.join(basedir, "processed")
 
-  osl_ephys.preprocessing.run_proc_batch(
+  osl_ephys.preproc.run_proc_batch(
     config,
     inputs,
     subjects,

@@ -73,7 +73,7 @@ def proc_userargs(userargs, default, strict=True):
 def mean_psd_in_band(psd_row, freqs, center, half_width):
     """Mean of a 1-D PSD over ``[center - half_width, center + half_width]``.
 
-    Unlike :func:`osl_ephys.preprocessing.semp.metric.psd_band_stat` (which
+    Unlike :func:`osl_ephys.preproc.semp.metric.psd_band_stat` (which
     reduces an ``mne`` ``Spectrum`` over a ``[fmin, fmax]`` band), this works
     on a plain **numpy PSD row + its frequency axis**, takes the band as a
     **centre +/- half-width**, and **falls back to the single nearest bin**

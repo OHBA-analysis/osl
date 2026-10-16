@@ -50,7 +50,7 @@ _REGISTRY: dict[str, dict[str, Step]] = {section: {} for section in SECTIONS}
 # The modules that register steps, imported on first lookup so that the
 # subpackages can import each other freely
 STEP_MODULES = (
-    "osl_ephys.preprocessing",
+    "osl_ephys.preproc",
     "osl_ephys.rhino.steps",
     "osl_ephys.source_recon.steps",
     "osl_ephys.parcellation.steps",
@@ -185,7 +185,7 @@ def find_function(
     if section == "preproc":
         cls = _MNE_TARGETS.get(target)
         if cls is not None and callable(getattr(cls, name, None)):
-            from osl_ephys.preprocessing.mne_wrappers import run_mne_anonymous
+            from osl_ephys.preproc.mne_wrappers import run_mne_anonymous
 
             return Step(partial(run_mne_anonymous, method=name), section, name)
 

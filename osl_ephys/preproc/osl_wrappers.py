@@ -443,8 +443,8 @@ def bad_segments(
     channel_threshold=0.05,
 ):
     """Set bad segments in an MNE :py:class:`Raw <mne.io.Raw>` object as defined by the Generalized ESD test
-    in :py:func:`osl_ephys.preprocessing.osl_wrappers.gesd <osl_ephys.preprocessing.osl_wrappers.gesd>`.
-    This function is typically used by calling :py:func:`run_osl_bad_segments <osl_ephys.preprocessing.osl_wrappers.run_osl_bad_segments>`.
+    in :py:func:`osl_ephys.preproc.osl_wrappers.gesd <osl_ephys.preproc.osl_wrappers.gesd>`.
+    This function is typically used by calling :py:func:`run_osl_bad_segments <osl_ephys.preproc.osl_wrappers.run_osl_bad_segments>`.
 
 
     Parameters
@@ -602,7 +602,7 @@ def bad_segments(
 
 
 def bad_channels(raw, picks, ref_meg="auto", significance_level=0.05):
-    """Set bad channels in an MNE :py:class:`Raw <mne.io.Raw>` object as defined by the Generalized ESD test in :py:func:`osl_ephys.preprocessing.osl_wrappers.gesd <osl_ephys.preprocessing.osl_wrappers.gesd>`.
+    """Set bad channels in an MNE :py:class:`Raw <mne.io.Raw>` object as defined by the Generalized ESD test in :py:func:`osl_ephys.preproc.osl_wrappers.gesd <osl_ephys.preproc.osl_wrappers.gesd>`.
 
     Parameters
     ----------
@@ -677,7 +677,7 @@ def drop_bad_epochs(
     ref_meg="auto",
     mode=None,
 ):
-    """Drop bad epochs in an MNE :py:class:`Epochs <mne.Epochs>` object as defined by the Generalized ESD test in :py:func:`osl_ephys.preprocessing.osl_wrappers.gesd <osl_ephys.preprocessing.osl_wrappers.gesd>`.
+    """Drop bad epochs in an MNE :py:class:`Epochs <mne.Epochs>` object as defined by the Generalized ESD test in :py:func:`osl_ephys.preproc.osl_wrappers.gesd <osl_ephys.preproc.osl_wrappers.gesd>`.
 
     Parameters
     ----------
@@ -930,14 +930,14 @@ def run_osl_read_dataset(dataset, userargs):
 
 
 def run_osl_bad_segments(dataset, userargs):
-    """osl-ephys Batch wrapper for :py:meth:`bad_segments <osl_ephys.preprocessing.osl_wrappers.bad_segments>`.
+    """osl-ephys Batch wrapper for :py:meth:`bad_segments <osl_ephys.preproc.osl_wrappers.bad_segments>`.
 
     Parameters
     ----------
     dataset: dict
         Dictionary containing at least an MNE object with the key ``raw``.
     userargs: dict
-        Dictionary of additional arguments to be passed to :py:meth:`bad_segments <osl_ephys.preprocessing.osl_wrappers.bad_segments>`.
+        Dictionary of additional arguments to be passed to :py:meth:`bad_segments <osl_ephys.preproc.osl_wrappers.bad_segments>`.
 
     Returns
     -------
@@ -952,14 +952,14 @@ def run_osl_bad_segments(dataset, userargs):
 
 
 def run_osl_bad_channels(dataset, userargs):
-    """osl-ephys Batch wrapper for :py:func:`bad_channels <osl_ephys.preprocessing.osl_wrappers.bad_channels>`.
+    """osl-ephys Batch wrapper for :py:func:`bad_channels <osl_ephys.preproc.osl_wrappers.bad_channels>`.
 
     Parameters
     ----------
     dataset: dict
         Dictionary containing at least an MNE object with the key ``raw``.
     userargs: dict
-        Dictionary of additional arguments to be passed to :py:meth:`bad_channels <osl_ephys.preprocessing.osl_wrappers.bad_channels>`.
+        Dictionary of additional arguments to be passed to :py:meth:`bad_channels <osl_ephys.preproc.osl_wrappers.bad_channels>`.
 
     Returns
     -------
@@ -981,14 +981,14 @@ def run_osl_bad_channels(dataset, userargs):
 
 
 def run_osl_drop_bad_epochs(dataset, userargs):
-    """osl-ephys Batch wrapper for :py:meth:`drop_bad_epochs <osl_ephys.preprocessing.osl_wrappers.drop_bad_epochs>`.
+    """osl-ephys Batch wrapper for :py:meth:`drop_bad_epochs <osl_ephys.preproc.osl_wrappers.drop_bad_epochs>`.
 
     Parameters
     ----------
     dataset: dict
         Dictionary containing at least an MNE object with the key ``raw``.
     userargs: dict
-        Dictionary of additional arguments to be passed to :py:meth:`drop_bad_epochs <osl_ephys.preprocessing.osl_wrappers.drop_bad_epochs>`.
+        Dictionary of additional arguments to be passed to :py:meth:`drop_bad_epochs <osl_ephys.preproc.osl_wrappers.drop_bad_epochs>`.
 
     Returns
     -------
@@ -1029,7 +1029,7 @@ def run_osl_zscore_present_data(dataset, userargs):
 
 
 def run_osl_glm_add_regressor(dataset, userargs):
-    """osl-ephys Batch wrapper for :py:func:`osl_ephys.preprocessing.osl_glm.add_regressor <osl_ephys.preprocessing.osl_glm.add_regressor>`.
+    """osl-ephys Batch wrapper for :py:func:`osl_ephys.preproc.osl_glm.add_regressor <osl_ephys.preproc.osl_glm.add_regressor>`.
 
     Parameters
     ----------
@@ -1082,7 +1082,7 @@ def run_osl_glm_add_regressor(dataset, userargs):
 
 
 def run_osl_glm_add_contrast(dataset, userargs):
-    """osl-ephys Batch wrapper for :py:func:`osl_ephys.preprocessing.osl_glm.add_regressor <osl_ephys.preprocessing.osl_glm.add_regressor>`.
+    """osl-ephys Batch wrapper for :py:func:`osl_ephys.preproc.osl_glm.add_regressor <osl_ephys.preproc.osl_glm.add_regressor>`.
 
     Parameters
     """
@@ -1283,7 +1283,7 @@ def run_osl_glm_permutations(dataset, userargs):
 
 def run_osl_manual_ica(dataset, userargs):
     """osl-ephys Batch wrapper for :py:func:`manual_ica
-    <osl_ephys.preprocessing.manual_ica.manual_ica>`.
+    <osl_ephys.preproc.manual_ica.manual_ica>`.
 
     Fits an ICA decomposition on ``dataset['raw']`` and writes a per-subject
     HTML review page. The wrapper does NOT apply the ICA --- use
@@ -1297,7 +1297,7 @@ def run_osl_manual_ica(dataset, userargs):
         an upstream extra_func --- passing it via userargs is rejected).
         Optional: ``target_pth``, ``slice_interval``, ``tr_interval``.
     userargs : dict
-        See ``osl_ephys.preprocessing.manual_ica.config.DEFAULT_USERARGS``
+        See ``osl_ephys.preproc.manual_ica.config.DEFAULT_USERARGS``
         for the full schema (strict --- unknown keys raise KeyError).
 
     Returns
@@ -1315,7 +1315,7 @@ def run_osl_manual_ica(dataset, userargs):
 
 def run_osl_apply_ica(dataset, userargs):
     """osl-ephys Batch wrapper for :py:func:`apply_ica
-    <osl_ephys.preprocessing.manual_ica.apply_ica>`.
+    <osl_ephys.preproc.manual_ica.apply_ica>`.
 
     Applies a saved ICA solution, excluding the components passed as
     ``bad_ics`` (the in-pipeline counterpart to ``osl-ica-apply``). Lives with
@@ -1343,7 +1343,7 @@ def run_osl_apply_ica(dataset, userargs):
 
 
 # semp (Simultaneous EEG-fMRI Preprocessing) wrappers
-# The semp wrappers live in osl_ephys.preprocessing.semp.wrappers
+# The semp wrappers live in osl_ephys.preproc.semp.wrappers
 # and take the standard ``(dataset, userargs)`` signature. We expose each one to
 # ``find_func`` as ``run_osl_<name>`` so a plain ``run_proc_batch`` config can
 # reference it by name (e.g. ``{'epoch_aas': {...}}``) without passing it via
@@ -1353,7 +1353,7 @@ def run_osl_apply_ica(dataset, userargs):
 # The semp import is deferred to *call* time (inside the stub), so osl-ephys's
 # optional heavy semp dependencies (torch, pandas, seaborn, nibabel, nilearn,
 # ...) are only imported when a semp stage actually runs --- importing
-# ``osl_ephys.preprocessing`` stays light. The wrapper names are listed
+# ``osl_ephys.preproc`` stays light. The wrapper names are listed
 # explicitly (rather than discovered by importing semp) to keep that laziness.
 _SEMP_WRAPPER_NAMES = (
     "voltage_correction",
@@ -1383,7 +1383,7 @@ def _make_semp_wrapper(name):
     def _run_osl_semp(dataset, userargs):
         import importlib
 
-        wrappers = importlib.import_module("osl_ephys.preprocessing.semp.wrappers")
+        wrappers = importlib.import_module("osl_ephys.preproc.semp.wrappers")
         func = getattr(wrappers, name)
         logger.info("osl-ephys Stage - {0} : {1}".format("raw", name))
         logger.info("userargs: {0}".format(str(userargs)))
@@ -1393,7 +1393,7 @@ def _make_semp_wrapper(name):
     _run_osl_semp.__qualname__ = _run_osl_semp.__name__
     _run_osl_semp.__doc__ = (
         "osl-ephys batch wrapper for the semp ``{0}`` preprocessing wrapper "
-        "(:py:func:`osl_ephys.preprocessing.semp.wrappers.{0}`). "
+        "(:py:func:`osl_ephys.preproc.semp.wrappers.{0}`). "
         "semp is imported lazily on first use.".format(name)
     )
     return _run_osl_semp

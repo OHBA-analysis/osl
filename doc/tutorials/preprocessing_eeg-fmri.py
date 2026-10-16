@@ -187,7 +187,7 @@ import numpy as np
 import pandas as pd
 
 import mne
-from osl_ephys.preprocessing.semp import psd_plot, temp_plot
+from osl_ephys.preproc.semp import psd_plot, temp_plot
 
 try:
     _ip = get_ipython()
@@ -352,7 +352,7 @@ print('HE_EVENT_KEY:', HE_EVENT_KEY)
 
 #%%
 from functools import partial
-from osl_ephys.preprocessing.semp.metric import psd_band_ratio
+from osl_ephys.preproc.semp.metric import psd_band_ratio
 
 def initialize(dataset, userargs):
     dataset['tr_interval'] = userargs.get('tr_interval', TR_INTERVAL)
@@ -431,7 +431,7 @@ temp_plot(rawout, channel='Pz', name='checkerout | Pz')
 #%%
 from pathlib import Path
 
-from osl_ephys.preprocessing.batch import find_func
+from osl_ephys.preproc.batch import find_func
 
 RESULTS_ROOT = SEMP_TUTORIAL_RESULTS_ROOT
 PLOT_CHANNEL = 'Pz'
@@ -747,7 +747,7 @@ print('median slice-band / beta ratio: {:.3f} -> {:.3f}'.format(
 # been applied.
 
 #%%
-from osl_ephys.preprocessing import run_proc_batch
+from osl_ephys.preproc import run_proc_batch
 
 # This is the same order used above. If you have downloaded more subjects, you can run this for a batch process
 target_pth = Path(RESULTS_ROOT) / 'checker'

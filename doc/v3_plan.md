@@ -168,9 +168,9 @@ tutorials; cleaned up in phase 8).
   2.4.dev0, `conf.py` and `CITATION.cff` say 2.4.0.
 - Quick correctness fixes to land before the rewrite so they are not lost:
   issue #446 (`set_format` undefined in `utils/logger.py:90`, `click` undefined
-  in `preprocessing/batch.py:1094`), #440 (`detect_zeros` should skip EEG
+  in `preproc/batch.py:1094`), #440 (`detect_zeros` should skip EEG
   picks), and the inline TODO/XXX notes in `utils/file_handling.py:124`,
-  `utils/spmio/spmmeeg.py:163`, `preprocessing/plot_ica.py` (five places),
+  `utils/spmio/spmmeeg.py:163`, `preproc/plot_ica.py` (five places),
   `source_recon/freesurfer_utils.py:89`, `source_recon/parcellation.py:205`,
   each either fixed or turned into a board item.
 - Dependency audit (what is actually imported):
@@ -457,7 +457,7 @@ Detailed steps and the target layout: section 11.
   plots into `qc_dir/<step>/<id>/`; `generate_report` builds one sortable table. The preproc plots
   that only osl-ephys has (flowchart, ICA components, artefact scan,
   digitisation, head movement, events, custom figures) become QC plot
-  functions in `preprocessing`. `report/templates/*.html`, `preproc_report.py`
+  functions in `preproc`. `report/templates/*.html`, `preproc_report.py`
   (1745 lines) and `src_report.py` go.
 - `osl_ica_label` keeps working from the saved fif + ICA files; its GUI
   (`plot_ica.py`) is untouched by this phase.
@@ -559,9 +559,9 @@ redundant. Phase numbers say when.
 | `meeg/parcellation.py` (`Parcellation`, `parcellate`, `parcellate_lcmv`, orthogonalisation, `save_as_fif`, `convert_to_mne_raw`, QC plots) | 1118 | `source_recon/parcellation.py` | current `parcellation.py` | 4 |
 | `data/sign_flipping.py` + the two helpers it uses from `data/processing.py` (`standardize`, `time_embed`) | 430 + 60 | `source_recon/sign_flipping.py` | current `sign_flipping.py` (compare with the `new-sign-flip` branch first) | 4 |
 | `utils/plotting.py` `plot_psd_topo` and `plot_brain_surface`, `analysis/power.py` pieces used by `parcellation.save_qc_plots` | ~300 of 2742 | `utils/plotting.py` (only the functions needed) | nothing | 4 |
-| `meeg/preproc.py` (`detect_bad_segments`, `detect_bad_channels`, GESD, `ica_label`, `ica_ecg_eog_correlation`, `decimate_headshape_points`, QC plots) | 1323 | `preprocessing/functions.py`, wrapped by `run_osl_*` steps | `osl_wrappers.gesd`, `bad_segments`, `bad_channels`, `detect_artefacts`; `ica_label` gains the mne-icalabel route (#427) | 6 |
+| `meeg/preproc.py` (`detect_bad_segments`, `detect_bad_channels`, GESD, `ica_label`, `ica_ecg_eog_correlation`, `decimate_headshape_points`, QC plots) | 1323 | `preproc/functions.py`, wrapped by `run_osl_*` steps | `osl_wrappers.gesd`, `bad_segments`, `bad_channels`, `detect_artefacts`; `ica_label` gains the mne-icalabel route (#427) | 6 |
 | `meeg/maxfilter.py` (chunking, multistage, CBU three-stage, split chains, bad-channel merging) | 1482 | `maxfilter/maxfilter.py` behind the `osl_maxfilter` CLI (osl-dynamics has no CLI; keep ours) | current `maxfilter.py` (fixes #192) | 6 |
-| `meeg/amm.py` (`apply_amm`, OPM interference rejection) | 1196 | `preprocessing/amm.py` + a `run_osl_amm` step | nothing (new capability) | 6 |
+| `meeg/amm.py` (`apply_amm`, OPM interference rejection) | 1196 | `preproc/amm.py` + a `run_osl_amm` step | nothing (new capability) | 6 |
 | `meeg/report.py` (`generate_report`, `TABS`, `CAPTIONS`) | 598 | `report/report.py` | `preproc_report.py`, `src_report.py`, `report/templates/` | 5 |
 | `pyproject.toml` structure, `.github/workflows/{release,codespell,black}.yml`, `doc/requirements.txt`, README "Releases" section, `conf.py` logo and autoapi settings | | same paths | `setup.py`, `setup.cfg`, `requirements.txt`, `Makefile`, `release_notes.md`, `osl-cicd-actions.yml` | 1 |
 | `examples/meg_preproc/` layout (config block, `process_session`, `parallel.run`) and tutorials 0-1, 0-3, 0-4, 0-5 | | `examples/` and `doc/source/tutorials/` adapted to the config API | current examples | 8 |
@@ -869,7 +869,7 @@ as arguments.
 
 Written 2026-10-16, after phases 1 and 2 landed. The package is restructured
 where the ported code makes a cleaner shape than the v2 layout; names users
-type (`osl_ephys.preprocessing`, `osl_ephys.source_recon`, `osl_ephys.glm`,
+type (`osl_ephys.preproc`, `osl_ephys.source_recon`, `osl_ephys.glm`,
 the config step names) are kept.
 
 ### Target package layout
@@ -884,7 +884,8 @@ people import); the FreeSurfer route is one MNE-wrapping module that spans
 three sections, so it stays a single file. Which section a step belongs
 to is set in its `@step` decorator, not by its file: `rhino/steps.py`
 registers `forward_model` under `source_recon`.
-The step modules are imported lazily by the registry on the first lookup
+`preprocessing/` was renamed `preproc/` on 2026-10-16 to match its config
+section. The step modules are imported lazily by the registry on the first lookup
 (`registry.load_steps`), so the subpackages can import each other freely.
 The shared step helpers are `Session.from_dataset`,
 `registry.ignored_options` / `renamed_option` and
@@ -913,7 +914,7 @@ osl_ephys/
   maxfilter/           phase 6: ported meeg/maxfilter.py
     maxfilter.py       command building, single/multistage/CBU runs, chunking
     steps.py           the `maxfilter` section: one per-session step
-  preprocessing/       phase 6: the `preproc` section
+  preproc/       phase 6: the `preproc` section
     functions.py       ported meeg/preproc.py + kept osl-ephys functions
     steps.py           every `preproc` step, registered
     amm.py             ported meeg/amm.py
@@ -950,9 +951,9 @@ osl_ephys/
   tests/
 ```
 
-Gone by the end: `preprocessing/batch.py` and `source_recon/batch.py`
+Gone by the end: `preproc/batch.py` and `source_recon/batch.py`
 (replaced by `pipeline/`; no wrappers at the old names, user 2026-10-16),
-`preprocessing/mne_wrappers.py` and `osl_wrappers.py` (merged into
+`preproc/mne_wrappers.py` and `osl_wrappers.py` (merged into
 `steps.py`, same function names), `source_recon/rhino.py`,
 `source_recon/session.py` (top-level `session.py`), `report/preproc_report.py`,
 `src_report.py` and `templates/`, `utils/parallel.py`, `utils/spmio/`,
@@ -1147,26 +1148,26 @@ Done when: a batch run of the test recordings produces a report whose
 table sorts by each metric and whose session view shows every plot the v2
 report had for the same data.
 
-### Phase 6: `preprocessing/` and `maxfilter/`
+### Phase 6: `preproc/` and `maxfilter/`
 
-1. `preprocessing/functions.py`: port `meeg/preproc.py`. Map the old
+1. `preproc/functions.py`: port `meeg/preproc.py`. Map the old
    osl-ephys functions onto it: `gesd` and `bad_segments`/`bad_channels`
    become the ported `detect_bad_segments`/`detect_bad_channels` with the
    #444 fixes carried over (compare outputs on the test data before
    switching); `detect_maxfilt_zeros`, `drop_bad_epochs`,
    `detect_bad_channels_psd` and the zscore/GLM steps stay as they are.
-2. `preprocessing/steps.py`: `mne_wrappers.py` and `osl_wrappers.py` merged,
+2. `preproc/steps.py`: `mne_wrappers.py` and `osl_wrappers.py` merged,
    every function keeping its name; new steps `ica_label` (mne-icalabel
    route, #427 multi-axis OPM), `ica_ecg_eog_correlation`,
    `decimate_headshape_points`, `amm`.
-3. `preprocessing/amm.py`: port.
-4. `preprocessing/ica/`: `plot_ica.py` (GUI) and `manual_ica/` (review
+3. `preproc/amm.py`: port.
+4. `preproc/ica/`: `plot_ica.py` (GUI) and `manual_ica/` (review
    server, label files) side by side with one `apply` function; the two
    CLI pairs become `osl-ephys ica review` and `osl-ephys ica apply`; the
    old script names are removed (D19). The browser review page is the primary tool
    and the GUI the alternative; the review server's label format is the
    one both workflows write.
-4b. `preprocessing/semp/` is outside this phase (D18, own board item): it
+4b. `preproc/semp/` is outside this phase (D18, own board item): it
    stays as merged, its `osl_pathfinder` import is raised with its author
    (suggesting the name `osl-pathfinder`), and it is excluded from the docs
    build until that dependency is settled.

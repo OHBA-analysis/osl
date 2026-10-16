@@ -16,7 +16,7 @@ from glob import glob
 from copy import deepcopy
 from time import localtime, strftime
 from matplotlib import pyplot as plt
-from osl_ephys.preprocessing.plot_ica import plot_ica
+from osl_ephys.preproc.plot_ica import plot_ica
 from osl_ephys.report import plot_bad_ica
 from osl_ephys.report.preproc_report import gen_html_page, gen_html_summary
 from osl_ephys.utils import logger as osl_logger
