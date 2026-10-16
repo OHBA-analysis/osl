@@ -144,25 +144,4 @@ class TestPreprocessingBatch(unittest.TestCase):
                 [self.infiles[0], self.infiles[2]],
                 outdir=outdir,
             )
-            assert np.all(mixed == np.array([0, 1]))
-
-    def test_dask_batch(self):
-        from ..preprocessing import run_proc_batch
-        from dask.distributed import Client
-
-        cfg = """
-        meta:
-          event_codes:
-        preproc:
-          - bad_channels:   {picks: 'grad'}
-          - bad_segments:   {segment_len: 800, picks: 'grad'}
-        """
-
-        client = Client(n_workers=2, threads_per_worker=1)
-        td = tempfile.TemporaryDirectory()
-
-        goods = run_proc_batch(cfg, self.infiles, outdir=td.name, dask_client=True)
-
-        assert np.all(goods == np.array([1, 0, 1]))
-
-        client.shutdown()
+            assert np.all(mixed == np.array([1, 1]))

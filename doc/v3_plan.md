@@ -315,6 +315,16 @@ centroids in MNI mm, which survives the regridding osl-files did. Under
 
 ### Phase 3: One config, one runner  (todo: refactor parallel processing, remove dask; unify preproc and source recon)
 
+Status 2026-10-16: core landed on `v3`. `osl_ephys.pipeline` holds the
+runner, registry, config, manifest, `run_chain`, `run_batch` and the
+`osl-ephys` command (`run`, `download-data`, `check`); the v2 entry points
+(`run_proc_chain`, `run_proc_batch`, `run_src_chain`, `run_src_batch`,
+`osl_preproc`) are wrappers that warn; dask is gone. The source-recon
+sections call the v2 wrappers until phase 4; the reports are the v2 ones
+until phase 5. Left in phase 3: `examples/parallelisation/` rewrite (done
+with the examples in phase 8), and `extract_surfaces` marked per-subject
+once phase 4 ports it.
+
 Detailed steps and the target layout: section 11.
 
 API proposal for discussion with Mats: issue #454 (what a batch script, the

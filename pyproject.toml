@@ -42,11 +42,9 @@ classifiers = [
 ]
 
 # The same set as osl-dynamics without TensorFlow and the packages only its
-# models use, plus what the GLM module needs. dask, distributed and tabulate
-# go when the batch runner and the reports are replaced.
+# models use, plus what the GLM module needs. tabulate and jinja2 go when the
+# reports are replaced.
 dependencies = [
-    "dask",
-    "distributed",
     "fslpy",
     "glmtools",
     "h5io",
@@ -96,6 +94,7 @@ osl_preproc = "osl_ephys.preprocessing.batch:main"
 osl_func = "osl_ephys.utils.run_func:main"
 osl-ica-review = "osl_ephys.preprocessing.manual_ica.review_server:main"
 osl-ica-apply = "osl_ephys.preprocessing.manual_ica.apply:main"
+osl-ephys = "osl_ephys.pipeline.cli:main"
 osl-ephys-download-data = "osl_ephys.files._fetch:download_data_cli"
 
 # The version number is derived automatically from git tags

@@ -1,6 +1,7 @@
 """Logging for osl-ephys: the package logger and a per-session log file."""
 
 import logging
+import logging.config
 import os
 import sys
 from contextlib import contextmanager
@@ -36,12 +37,12 @@ handlers:
 
 formatters:
   brief:
-    format: '{prefix} %(message)s'
+    format: '{prefix}%(message)s'
   default:
-    format: '[%(asctime)s] {prefix} %(levelname)-8s : %(message)s'
+    format: '[%(asctime)s] {prefix}%(levelname)-8s : %(message)s'
     datefmt: '%H:%M:%S'
   verbose:
-    format: '[%(asctime)s] {prefix} - %(levelname)s - osl-ephys.%(module)s:%(lineno)s : %(message)s'
+    format: '[%(asctime)s] {prefix}%(levelname)s - osl-ephys.%(module)s:%(lineno)s : %(message)s'
     datefmt: '%Y-%m-%d %H:%M:%S'
 
 disable_existing_loggers: true
@@ -66,7 +67,7 @@ def set_up(prefix="", log_file=None, level=None, console_format=None, startup=Tr
     """
     # Format config with user options
     if (len(prefix) > 0) and (console_format != "verbose"):
-        prefix = prefix + " :"
+        prefix = prefix + " : "
     new_config = default_config.format(prefix=prefix, log_file=log_file)
     # Load config to dict
     new_config = yaml.load(new_config, Loader=yaml.FullLoader)
@@ -276,18 +277,19 @@ class SessionLogger:
         sys.stderr = self
 
         # Handlers of the logging module hold the stream they were created
-        # with, so they are pointed at the log file too
-        self._old_streams = [
-            (handler, handler.setStream(self))
-            for name in _CAPTURED_LOGGERS
-            for handler in logging.getLogger(name).handlers
-            if type(handler) is logging.StreamHandler
-        ]
+        # with, so they are pointed at the log file too. The stream is swapped
+        # without flushing the old one, which may be a closed session log
+        self._old_streams = []
+        for name in _CAPTURED_LOGGERS:
+            for handler in logging.getLogger(name).handlers:
+                if type(handler) is logging.StreamHandler:
+                    self._old_streams.append((handler, handler.stream))
+                    handler.stream = self
         return self
 
     def __exit__(self, *args):
         for handler, stream in self._old_streams:
-            handler.setStream(stream)
+            handler.stream = stream
         sys.stdout = self._old_stdout
         sys.stderr = self._old_stderr
         self._log_file.close()

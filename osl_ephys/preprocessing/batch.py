@@ -3,6 +3,7 @@
 """Tools for batch preprocessing."""
 
 import argparse
+import warnings
 import matplotlib
 import matplotlib.pyplot as plt
 import os
@@ -26,7 +27,6 @@ import yaml
 from . import mne_wrappers, osl_wrappers
 from ..utils import find_run_id, validate_outdir, process_file_inputs
 from ..utils import logger as osl_logger
-from ..utils.parallel import dask_parallel_bag
 from ..utils.version_utils import check_version
 from ..utils.misc import set_random_seed
 
@@ -759,261 +759,55 @@ def run_proc_chain(
     verbose="INFO",
     mneverbose="WARNING",
 ):
-    """Run preprocessing for a single file.
+    """Run preprocessing for a single file (v2 entry point).
 
-    Parameters
-    ----------
-    config : str or dict
-        Preprocessing config.
-    infile : str
-        Path to input file.
-    subject : str
-        Subject ID. This will be the sub-directory in outdir.
-    ftype: str
-        Extension for the fif file (default ``preproc-raw``)
-    outdir : str
-        Output directory.
-    logsdir : str
-        Directory to save log files to.
-    reportdir : str
-        Directory to save report files to.
-    ret_dataset : bool
-        Should we return a dataset dict?
-    gen_report : bool
-        Should we generate a report?
-    overwrite : bool
-        Should we overwrite the output file if it already exists?
-    skip_save: list or None (default)
-        List of keys to skip writing to disk. If None, we don't skip any keys.
-    extra_funcs : list
-        User-defined functions.
-    random_seed : 'auto' (default), int or None
-        Random seed to set. If 'auto', a random seed will be generated. Random seeds are set for both Python and NumPy.
-        If None, no random seed is set.
-    verbose : str
-        Level of info to print.
-        Can be: ``'CRITICAL'``, ``'ERROR'``, ``'WARNING'``, ``'INFO'``, ``'DEBUG'`` or ``'NOTSET'``.
-    mneverbose : str
-        Level of info from MNE to print.
-        Can be: ``'CRITICAL'``, ``'ERROR'``, ``'WARNING'``, ``'INFO'``, ``'DEBUG'`` or ``'NOTSET'``.
+    Use :func:`osl_ephys.pipeline.run_chain`. This wrapper builds the
+    equivalent call; ``ftype`` and ``skip_save`` are ignored, and the output
+    goes to ``outdir/preproc/<id>_preproc-raw.fif``.
 
     Returns
     -------
     dict or bool
-        If ``ret_dataset=True``, a dict containing the preprocessed dataset with the following keys: ``raw``, ``ica``, ``epochs``, ``events``, ``event_id``.
-        An empty dict is returned if preprocessing fails. If ``ret_dataset=False``, we return a flag indicating whether preprocessing was successful.
+        The dataset dict (empty if preprocessing failed) if
+        ``ret_dataset=True``, otherwise whether preprocessing succeeded.
     """
+    from osl_ephys.pipeline import run_chain
 
-    # Get run (subject) ID
-    run_id = subject or find_run_id(infile)
-    name_base = "{run_id}_{ftype}.{fext}"
-
-    if not ret_dataset:
-        # Let's make sure we have an output directory
-        outdir = outdir or os.getcwd()
-
-    if outdir is not None:
-        # We're saving the output to disk
-
-        # Generate a report by default, this is overridden if the user passes
-        # gen_report=False
-        gen_report = True if gen_report is None else gen_report
-
-        # Create output directories if they don't exist
-        outdir = validate_outdir(outdir)
-        logsdir = validate_outdir(logsdir or outdir / "logs")
-        reportdir = validate_outdir(reportdir or outdir / "preproc_report")
-        outdir = validate_outdir(outdir / run_id)
-
-    else:
-        # We're not saving the output to disk
-
-        # Don't generate a report by default, this is overridden if the user passes
-        # something for reportdir or gen_report=True
-        gen_report = gen_report or reportdir is not None or False
-        if gen_report:
-            # Make sure we have a directory to write the report to
-            reportdir = validate_outdir(reportdir or os.getcwd() + "/preproc_report")
-
-        # Allow the user to create a log if they pass logsdir
-        if logsdir is not None:
-            logsdir = validate_outdir(logsdir)
-
-    # Create output filename
-    if outdir is not None:
-        outbase = os.path.join(outdir, name_base)
-
-    # Generate log filename
-    if logsdir is not None:
-        logbase = os.path.join(logsdir, name_base)
-        logfile = logbase.format(
-            run_id=run_id, ftype=ftype.replace("-raw", ""), fext="log"
+    warnings.warn(
+        "run_proc_chain is replaced by osl_ephys.pipeline.run_chain.", FutureWarning
+    )
+    session = {
+        "id": subject
+        or find_run_id(str(infile) if isinstance(infile, str) else infile.filenames[0])
+    }
+    session["raw_file" if isinstance(infile, str) else "raw"] = infile
+    if gen_report is None:
+        gen_report = outdir is not None or reportdir is not None
+    qc_dir = (
+        (
+            reportdir
+            or (Path(outdir) / "qc" if outdir else Path.cwd() / "preproc_report")
         )
-        mne.utils._logging.set_log_file(logfile, overwrite=overwrite)
-    else:
-        logfile = None
-
-    # Finish setting up loggers
-    osl_logger.set_up(prefix=run_id, log_file=logfile, level=verbose, startup=False)
-    mne.set_log_level(mneverbose)
-    logger = logging.getLogger(__name__)
-    now = strftime("%Y-%m-%d %H:%M:%S", localtime())
-    logger.info("{0} : Starting osl-ephys Processing".format(now))
-    logger.info("input : {0}".format(infile))
-
-    # Set random seed
-    if random_seed == "auto":
-        set_random_seed()
-    elif random_seed is None:
-        pass
-    else:
-        set_random_seed(random_seed)
-
-    # Load config before the existing-output check so skipped and processed
-    # files return the same type when group processing is enabled.
-    if not isinstance(config, dict):
-        config = load_config(config)
-
-    # Write preprocessed data to output directory
-    if outdir is not None:
-        # Check for existing outputs - should be a .fif at least
-        fifout = outbase.format(run_id=run_id, ftype=ftype, fext="fif")
-        if os.path.exists(fifout) and (overwrite is False):
-            logger.critical("Skipping preprocessing - existing output detected")
-            if config.get("group") is not None:
-                return False, None
-            return False
-
-    # MAIN BLOCK - Run the preproc chain and catch any exceptions
+        if gen_report
+        else None
+    )
     try:
-        if isinstance(infile, str):
-            raw = import_data(infile)
-        elif isinstance(infile, mne.io.fiff.raw.Raw) or isinstance(
-            infile, mne.io.curry.curry.RawCurry
-        ):
-            raw = infile
-            infile = raw.filenames[0]  # assuming only one file here
-
-        # Create a dataset dict to hold the preprocessed dataset
-        dataset = {
-            "raw": raw,
-            "events": None,
-            "epochs": None,
-            "event_id": config["meta"]["event_codes"],
-            "ica": None,
-            "fig": {},
-        }
-
-        # Do the preprocessing
-        for stage in deepcopy(config["preproc"]):
-            method, userargs = next(iter(stage.items()))
-            target = userargs.get("target", "raw")  # Raw is default
-            func = find_func(method, target=target, extra_funcs=extra_funcs)
-
-            # Actual function call
-            dataset = func(dataset, userargs)
-
-        # Add preprocessing info to dataset dict
-        dataset = append_preproc_info(dataset, config, extra_funcs)
-
-        outnames = {"raw": None}
-        if outdir is not None:
-            outnames = write_dataset(
-                dataset,
-                outbase,
-                run_id,
-                overwrite=overwrite,
-                skip=skip_save,
-                ftype=ftype,
-            )
-
-        # Generate report data
-        if gen_report:
-            # Switch to non-GUI plotting backend
-            mpl_backend = matplotlib.pyplot.get_backend()
-            matplotlib.use("Agg")
-
-            from ..report import gen_html_data, gen_html_page  # avoids circular import
-
-            logger.info("{0} : Generating Report".format(now))
-            report_data_dir = validate_outdir(
-                reportdir / Path(outnames["raw"]).stem.replace(f"_{ftype}", "")
-            )
-
-            if (
-                "fig" in dataset
-                and dataset["fig"] is not None
-                and len(dataset["fig"]) > 0
-            ):
-                custom_figures = dataset["fig"]
-            else:
-                custom_figures = None
-
-            gen_html_data(
-                dataset["raw"],
-                report_data_dir,
-                ica=dataset["ica"],
-                events=dataset["events"],
-                event_id=dataset["event_id"],
-                preproc_fif_filename=outnames["raw"],
-                logsdir=logsdir,
-                run_id=run_id,
-                custom_figures=custom_figures,
-            )
-            gen_html_page(reportdir)
-
-            # Restore plotting context
-            matplotlib.use(mpl_backend)
-
-    except Exception as e:
-        # Preprocessing failed
-
-        if "method" not in locals():
-            method = "import_data"
-            func = import_data
-
-        logger.critical("**********************")
-        logger.critical("* PROCESSING FAILED! *")
-        logger.critical("**********************")
-
-        ex_type, ex_value, ex_traceback = sys.exc_info()
-        logger.error("{0} : {1}".format(method, func))
-        logger.error(ex_type)
-        logger.error(ex_value)
-        logger.error(traceback.print_tb(ex_traceback))
-
-        with open(logfile.replace(".log", ".error.log"), "w") as f:
-            f.write("OSL-EPHYS PREPROCESSING CHAIN FAILED AT: {0}".format(now))
-            f.write("\n")
-            f.write('Processing failed during stage : "{0}"'.format(method))
-            f.write(str(ex_type))
-            f.write("\n")
-            f.write(str(ex_value))
-            f.write("\n")
-            traceback.print_tb(ex_traceback, file=f)
-
-        if ret_dataset:
-            # We return an empty dict to indicate preproc failed
-            # This ensures the function consistently returns one
-            # variable type
-            return {}
-        else:
-            if config.get("group") is not None:
-                return False, None
-            return False
-
-    now = strftime("%Y-%m-%d %H:%M:%S", localtime())
-    logger.info("{0} : Processing Complete".format(now))
-
-    if outnames["raw"] is not None:
-        logger.info("Output file is {}".format(outnames["raw"]))
-
-    if ret_dataset:
-        return dataset
-    else:
-        if config.get("group") is not None:
-            return True, outnames
-        return True
+        dataset = run_chain(
+            config,
+            session,
+            outdir=outdir,
+            qc_dir=qc_dir,
+            log_dir=logsdir,
+            extra_funcs=extra_funcs,
+            overwrite=overwrite,
+            random_seed=random_seed,
+            verbose=verbose,
+            mneverbose=mneverbose,
+        )
+    except Exception:
+        logger.exception("Preprocessing failed")
+        return {} if ret_dataset else False
+    return dataset if ret_dataset else True
 
 
 def run_proc_batch(
@@ -1035,243 +829,52 @@ def run_proc_batch(
     strictrun=False,
     dask_client=False,
 ):
-    """Run batched preprocessing.
+    """Run preprocessing for a set of files (v2 entry point).
 
-    This function will write output to disk (i.e. will not return the preprocessed
-    data).
-
-    Parameters
-    ----------
-    config : str or dict
-        Preprocessing config.
-    files : str or list or mne.Raw
-        Can be a list of Raw objects or a list of filenames (or ``.ds`` dir names if CTF data)
-        or a path to a textfile list of filenames (or ``.ds`` dir names if CTF data).
-    subjects : list of str
-        Subject directory names. These are sub-directories in outdir.
-    ftype: None or str
-        Extension of the preprocessed fif files. Default option is `_preproc-raw`.
-    outdir : str
-        Output directory.
-    logsdir : str
-        Directory to save log files to.
-    reportdir : str
-        Directory to save report files to.
-    gen_report : bool
-        Should we generate a report?
-    overwrite : bool
-        Should we overwrite the output file if it exists?
-    skip_save: list or None (default)
-        List of keys to skip writing to disk. If None, we don't skip any keys.
-    extra_funcs : list
-        User-defined functions.
-    covs : dict or pd.DataFrame
-        Covariates to use for building the GLM design
-    random_seed : 'auto' (default), int or None
-        Random seed to set. If 'auto', a random seed will be generated. Random seeds are set for both Python and NumPy.
-        If None, no random seed is set.
-    verbose : str
-        Level of info to print.
-        Can be: ``'CRITICAL'``, ``'ERROR'``, ``'WARNING'``, ``'INFO'``, ``'DEBUG'`` or ``'NOTSET'``.
-    mneverbose : str
-        Level of info from MNE to print.
-        Can be: ``'CRITICAL'``, ``'ERROR'``, ``'WARNING'``, ``'INFO'``, ``'DEBUG'`` or ``'NOTSET'``.
-    strictrun : bool
-        Should we ask for confirmation of user inputs before starting?
-    dask_client : bool
-        Indicate whether to use a previously initialised :py:class:`dask.distributed.Client <distributed.Client>` instance.
+    Use :func:`osl_ephys.pipeline.run_batch`, which runs sessions in
+    parallel with ``n_workers``. This wrapper builds the equivalent call;
+    ``ftype``, ``skip_save`` and ``strictrun`` are ignored.
 
     Returns
     -------
-    list of bool
-        Flags indicating whether preprocessing was successful for each input file.
-
-    Notes
-    -----
-    If you are using a :py:class:`dask.distributed.Client <distributed.Client>` instance, you must initialise it
-    before calling this function. For example:
-
-    >>> from dask.distributed import Client
-    >>> client = Client(threads_per_worker=1, n_workers=4)
+    flags : np.ndarray of bool
+        Whether each file was processed.
     """
+    from osl_ephys.pipeline import manifest, run_batch
 
-    if outdir is None:
-        # Use the current working directory
-        outdir = os.getcwd()
-
-    # Validate the parent outdir - later do so for each subdirectory
-    tmpoutdir = validate_outdir(outdir.split("{")[0])
-    logsdir = validate_outdir(logsdir or tmpoutdir / "logs")
-    reportdir = validate_outdir(reportdir or tmpoutdir / "preproc_report")
-
-    # Initialise Loggers
-    mne.set_log_level(mneverbose)
-    if strictrun and verbose not in ["INFO", "DEBUG"]:
-        # override logger level if strictrun requested but user won't see any info...
-        verobse = "INFO"
-    logfile = os.path.join(logsdir, "batch_preproc.log")
-    osl_logger.set_up(log_file=logfile, level=verbose, startup=False)
-
-    logger.info("Starting osl-ephys Batch Processing")
-
-    # Set random seed
-    if random_seed == "auto":
-        random_seed = set_random_seed()
-    elif random_seed is None:
-        pass
-    else:
-        set_random_seed(random_seed)
-
-    # Check through inputs and parameters
-    infiles, good_files_outnames, good_files = process_file_inputs(files)
-
-    # Specify filenames for the output data
-    if subjects is None:
-        subjects = good_files_outnames
-    else:
-        if len(subjects) != len(good_files_outnames):
-            logger.critical(
-                f"Number of subjects ({len(subjects)}) does not match "
-                f"number of good files {len(good_files_outnames)}. "
-                "Please fix the subjects list or pass subjects=None."
-            )
-
-    if strictrun and _confirm("Is this correct set of inputs?") is False:
-        logger.critical("Stopping : User indicated incorrect number of input files")
-        sys.exit(1)
-    else:
-        if strictrun:
-            logger.info("User confirms input files")
-
-    logger.info("Outputs saving to: {0}".format(outdir))
-    if strictrun and _confirm("Is this correct output directory?") is False:
-        logger.critical("Stopping : User indicated incorrect output directory")
-        sys.exit(1)
-    else:
-        if strictrun:
-            logger.info("User confirms output directory")
-
-    config = load_config(config)
-    config_str = pprint.PrettyPrinter().pformat(config)
-    logger.info("Running config\n {0}".format(config_str))
-    if strictrun and _confirm("Is this the correct config?") is False:
-        logger.critical("Stopping : User indicated incorrect preproc config")
-        sys.exit(1)
-    else:
-        if strictrun:
-            logger.info("User confirms input config")
-
-    if config["preproc"] is not None:
-        # Create partial function with fixed options
-        pool_func = partial(
-            run_proc_chain,
-            outdir=outdir,
-            ftype=ftype,
-            logsdir=logsdir,
-            reportdir=reportdir,
-            ret_dataset=False,
-            gen_report=gen_report,
-            overwrite=overwrite,
-            skip_save=skip_save,
-            extra_funcs=extra_funcs,
-            random_seed=random_seed,
+    warnings.warn(
+        "run_proc_batch is replaced by osl_ephys.pipeline.run_batch.", FutureWarning
+    )
+    if dask_client:
+        raise ValueError(
+            "dask is no longer used; pass n_workers to osl_ephys.pipeline.run_batch instead."
         )
-
-        # Loop through input files to generate arguments for run_proc_chain
-        args = []
-        for infile, subject in zip(infiles, subjects):
-            args.append((config, infile, subject))
-
-        # Actually run the processes
-        if dask_client:
-            proc_flags = dask_parallel_bag(pool_func, args)
-        else:
-            proc_flags = [pool_func(*aa) for aa in args]
-
-        if isinstance(proc_flags[0], tuple):
-            group_inputs = [flag[1] for flag in proc_flags]
-            proc_flags = [flag[0] for flag in proc_flags]
-
-        osl_logger.set_up(log_file=logfile, level=verbose, startup=False)
-        logger.info(
-            "Processed {0}/{1} files successfully".format(
-                np.sum(proc_flags), len(proc_flags)
-            )
-        )
-
-        # Generate a report
-        if gen_report and len(infiles) > 0:
-            from ..report import preproc_report  # avoids circular import
-
-            preproc_report.gen_html_page(reportdir)
-
-    else:
-        group_inputs = [{"raw": infile} for infile in infiles]
-        proc_flags = [os.path.exists(sub) for sub in infiles]
-
-        osl_logger.set_up(log_file=logfile, level=verbose, startup=False)
-        logger.info("No preprocessing steps specified. Skipping preprocessing.")
-
-    # start group processing
-    custom_figures = None
-    if config["group"] is not None:
-        logger.info("Starting Group Processing")
-        logger.info(
-            "Valid input files {0}/{1}".format(np.sum(proc_flags), len(proc_flags))
-        )
-        dataset = {}
-        skip_save = []
-        for key in group_inputs[0]:
-            dataset[key] = [group_inputs[i][key] for i in range(len(group_inputs))]
-            skip_save.append(key)
-
-        if covs is not None:
-            dataset["covs"] = covs
-        dataset["fig"] = {}
-
-        for stage in deepcopy(config["group"]):
-            method, userargs = next(iter(stage.items()))
-            # make sure the function always knows it's a group processing
-            userargs["run_on_group"] = True
-            target = userargs.get("target", "raw")  # Raw is default
-            # skip.append(stage if userargs.get("skip_save") is True else None) # skip saving this stage to disk
-            func = find_func(method, target=target, extra_funcs=extra_funcs)
-
-            # Actual function call
-            dataset = func(dataset, userargs)
-        outbase = os.path.join(outdir, "{ftype}.{fext}")
-        outnames = write_dataset(
-            dataset, outbase, "", ftype="", overwrite=overwrite, skip=skip_save
-        )
-        custom_figures = dataset.get("fig", None)
-
-    # rerun the summary report
-    if gen_report:
-        from ..report import preproc_report  # avoids circular import
-
-        if preproc_report.gen_html_summary(
-            reportdir, logsdir, custom_figures=custom_figures
-        ):
-            logger.info("******************************" + "*" * len(str(reportdir)))
-            logger.info(f"* REMEMBER TO CHECK REPORT: {reportdir} *")
-            logger.info("******************************" + "*" * len(str(reportdir)))
-
-    # Return flags
-    return proc_flags
+    infiles, _, _ = process_file_inputs(files)
+    sessions = manifest.from_v2(infiles, subjects)
+    results = run_batch(
+        config,
+        sessions,
+        outdir or os.getcwd(),
+        n_workers=1,
+        log_dir=logsdir,
+        qc_dir=reportdir if gen_report else False,
+        extra_funcs=extra_funcs,
+        covs=covs,
+        overwrite=overwrite,
+        random_seed=random_seed,
+        verbose=verbose,
+        mneverbose=mneverbose,
+    )
+    return np.array([status != "failed" for _, status, _, _ in results])
 
 
 def main(argv=None):
-    """Main function for command line interface.
-
-    Parameters
-    ----------
-    argv : list
-        Command line arguments.
-    """
+    """The ``osl_preproc`` command (v2); use ``osl-ephys run``."""
     if argv is None:
         argv = sys.argv[1:]
-
-    parser = argparse.ArgumentParser(description="Batch preprocess some fif files.")
+    parser = argparse.ArgumentParser(
+        description="Batch preprocess some fif files (use 'osl-ephys run')."
+    )
     parser.add_argument("config", type=str, help="yaml defining preproc")
     parser.add_argument(
         "files",
@@ -1297,29 +900,22 @@ def main(argv=None):
         "--overwrite",
         action="store_true",
         default=False,
-        help="Overwrite previous output files if they're in the way",
+        help="Overwrite previous output files",
     )
     parser.add_argument(
         "--verbose",
         type=str,
         default="INFO",
-        help="Set the logging level for osl-ephys functions",
+        help="Logging level for osl-ephys functions",
     )
     parser.add_argument(
         "--mneverbose",
         type=str,
         default="WARNING",
-        help="Set the logging level for MNE functions",
+        help="Logging level for MNE functions",
     )
-    parser.add_argument(
-        "--strictrun",
-        action="store_true",
-        help="Will ask the user for confirmation before starting",
-    )
-
-    parser.usage = parser.format_help()
+    parser.add_argument("--strictrun", action="store_true", help="Ignored")
     args = parser.parse_args(argv)
-
     run_proc_batch(**vars(args))
 
 
