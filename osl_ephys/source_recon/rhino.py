@@ -3939,3 +3939,95 @@ def fsleyes_overlay(background_img, overlay_img):
         background_img, overlay_img
     )
     system_call(cmd)
+
+
+def delete_headshape_points(
+    session: Session | None = None, headshape_file: str | None = None
+) -> None:
+    """Interactively delete headshape points.
+
+    Shows the headshape points in a 3D figure. Click a point to delete it,
+    press ``w`` to write the remaining points back to the file, ``q`` to
+    close the figure.
+
+    Parameters
+    ----------
+    session : Session, optional
+        Files of the session; the points come from
+        ``session.coreg.head_headshape_file``.
+    headshape_file : str, optional
+        A headshape text file instead, a (3, n_points) array in mm.
+    """
+    import sys
+
+    if session is not None:
+        headshape_file = session.coreg.head_headshape_file
+    if headshape_file is None:
+        raise ValueError("Pass a session or a headshape file.")
+    points = np.loadtxt(headshape_file)
+    x, y, z = (list(points[i]) for i in range(3))
+    print(
+        f"{len(x)} headshape points. Click a point to delete it, press w to save, q to close."
+    )
+    sys.stdout.flush()
+
+    fig = plt.figure()
+    ax = plt.axes(projection="3d")
+
+    def draw():
+        ax.scatter(x, y, z, color="red", marker="o", s=8, alpha=0.7, picker=5)
+        plt.draw()
+
+    def on_click(event):
+        i = event.ind[0]
+        print(f"Deleted {x[i]:.1f}, {y[i]:.1f}, {z[i]:.1f}")
+        for coords in (x, y, z):
+            coords.pop(i)
+        ax.cla()
+        draw()
+
+    def on_press(event):
+        if event.key == "w":
+            np.savetxt(headshape_file, np.array([x, y, z]))
+            print(f"{len(x)} points saved to {headshape_file}")
+        elif event.key == "q":
+            plt.close(fig)
+
+    draw()
+    fig.canvas.mpl_connect("pick_event", on_click)
+    fig.canvas.mpl_connect("key_press_event", on_press)
+    plt.show()
+
+
+def rescale_sensor_positions(
+    fif_file: str, xscale: float = 1, yscale: float = 1, zscale: float = 1
+) -> None:
+    """Rescale the sensor positions of a fif file, for EEG montages that do
+    not fit the head. The file is overwritten and the scaling recorded in
+    its description, so it is applied once.
+
+    Parameters
+    ----------
+    fif_file : str
+        Preprocessed fif file.
+    xscale, yscale, zscale : float, optional
+        Scale factors along each axis.
+    """
+    raw = mne.io.read_raw_fif(fif_file, preload=True, verbose=False)
+    if (
+        raw.info["description"]
+        and "rescale_sensor_positions" in raw.info["description"]
+    ):
+        raise ValueError(
+            f"The sensor positions in {fif_file} have been rescaled already."
+        )
+    montage = raw.get_montage()
+    for d in montage.dig:
+        d["r"] = d["r"] * np.array([xscale, yscale, zscale])
+    raw.set_montage(montage)
+    with raw.info._unlock():
+        raw.info["description"] = (
+            (raw.info["description"] or "")
+            + f"\nrescale_sensor_positions: xscale={xscale}, yscale={yscale}, zscale={zscale}"
+        )
+    raw.save(fif_file, overwrite=True, verbose=False)
