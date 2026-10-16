@@ -158,6 +158,19 @@ def remove_stray_headshape_points(dataset, userargs):
 
 
 @step("coreg")
+def rescale_sensor_positions(dataset, userargs):
+    """Rescale the sensor positions of the preprocessed file (EEG montages
+    that do not fit the head). Option: ``rescale``, the ``[x, y, z]`` scale
+    factors.
+    """
+    xscale, yscale, zscale = userargs.get("rescale", [1, 1, 1])
+    rhino.rescale_sensor_positions(
+        session_files(dataset).preproc_file, xscale, yscale, zscale
+    )
+    return dataset
+
+
+@step("coreg")
 def save_mni_fiducials(dataset, userargs):
     """Use fiducials given in MNI coordinates for the coregistration.
 
@@ -392,23 +405,58 @@ def _template_cov(parc_file, n_embeddings, standardize):
     )
 
 
+_SOLVERS = {
+    "spectral": sign_flipping.find_flips_spectral,
+    "belief_propagation": sign_flipping.find_flips_belief_propagation,
+    "sdp": sign_flipping.find_flips_sdp,
+}
+
+
+def _flip_file(
+    parc_file, template_cov, out, n_embeddings, standardize, method, options
+):
+    """Flip the parcel signs of one file to match the template covariance.
+
+    ``method`` is ``coordinate_ascent`` (the default search) or one of the
+    solvers in ``_SOLVERS``, with that solver's options.
+    """
+    if method in (None, "coordinate_ascent", "random"):
+        sign_flipping.sign_flip_mne_raw(
+            str(parc_file), template_cov, str(out), n_embeddings, standardize
+        )
+        return
+    if method not in _SOLVERS:
+        raise ValueError(
+            f"method must be 'coordinate_ascent' or one of {sorted(_SOLVERS)}."
+        )
+    raw = mne.io.read_raw_fif(str(parc_file), preload=True, verbose=False)
+    picks = mne.pick_types(raw.info, misc=True)
+    cov = sign_flipping.calc_cov(raw.get_data(picks).T, n_embeddings, standardize)
+    flips, metrics = _SOLVERS[method](cov, template_cov, n_embeddings, **options)
+    logger.info(f"Template correlation {metrics[0]:.3f} -> {metrics[1]:.3f} ({method})")
+    raw._data[picks] *= np.asarray(flips)[:, None]
+    raw.save(str(out), overwrite=True, verbose=False)
+
+
 @step("parcellation")
 def fix_sign_ambiguity(dataset, userargs):
     """Flip the parcel signs of this session to match a template session.
 
     Options: ``template`` (the id of the template session), ``n_embeddings``,
-    ``standardize``. Writes ``<id>_sflip_parc-raw.fif``.
+    ``standardize``, ``method`` (``coordinate_ascent``, ``spectral``,
+    ``belief_propagation`` or ``sdp``, plus that solver's options). Writes
+    ``<id>_sflip_parc-raw.fif``.
     """
-    _ignored(userargs, "n_init", "n_iter", "max_flips", "method", "refine", "n_refine")
-    n_embeddings = userargs.get("n_embeddings", 15)
-    standardize = userargs.get("standardize", True)
-    cov = _template_cov(
-        _parc_file(dataset, userargs["template"]), n_embeddings, standardize
-    )
+    _ignored(userargs, "n_init", "n_iter", "max_flips")
+    n_embeddings = userargs.pop("n_embeddings", 15)
+    standardize = userargs.pop("standardize", True)
+    method = userargs.pop("method", "coordinate_ascent")
+    template = userargs.pop("template")
+    cov = _template_cov(_parc_file(dataset, template), n_embeddings, standardize)
     id_ = dataset["session"]["id"]
     out = _parc_file(dataset, id_).with_name(f"{id_}_sflip_parc-raw.fif")
-    sign_flipping.sign_flip_mne_raw(
-        str(_parc_file(dataset, id_)), cov, str(out), n_embeddings, standardize
+    _flip_file(
+        _parc_file(dataset, id_), cov, out, n_embeddings, standardize, method, userargs
     )
     return dataset
 
@@ -419,11 +467,14 @@ def sign_flip(dataset, userargs):
 
     The template is the session whose embedded covariance correlates best
     with the others' on average (or ``template`` if given). Options:
-    ``n_embeddings``, ``standardize``, ``template``.
+    ``n_embeddings``, ``standardize``, ``template``, ``method`` (as for
+    ``fix_sign_ambiguity``).
     """
     userargs.pop("run_on_group", None)
-    n_embeddings = userargs.get("n_embeddings", 15)
-    standardize = userargs.get("standardize", True)
+    n_embeddings = userargs.pop("n_embeddings", 15)
+    standardize = userargs.pop("standardize", True)
+    method = userargs.pop("method", "coordinate_ascent")
+    template = userargs.pop("template", None)
     sessions = dataset["sessions"]
     outdir = Path(dataset["outdir"])
     parc_files = {
@@ -434,7 +485,6 @@ def sign_flip(dataset, userargs):
         for id_, f in parc_files.items()
         if f.exists()
     }
-    template = userargs.get("template")
     if template is None:
         scores = {
             a: np.mean(
@@ -453,7 +503,7 @@ def sign_flip(dataset, userargs):
     for id_, f in parc_files.items():
         if id_ in covs:
             out = f.with_name(f"{id_}_sflip_parc-raw.fif")
-            sign_flipping.sign_flip_mne_raw(
-                str(f), covs[template], str(out), n_embeddings, standardize
+            _flip_file(
+                f, covs[template], out, n_embeddings, standardize, method, userargs
             )
     return dataset

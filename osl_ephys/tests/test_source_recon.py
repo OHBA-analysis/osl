@@ -22,7 +22,7 @@ parcellation:
       parcellation_file: atlas-Glasser_nparc-52_space-MNI_res-8x8x8.nii.gz
       orthogonalisation: symmetric
 group:
-  - sign_flip: {n_embeddings: 5}
+  - sign_flip: {n_embeddings: 5, method: spectral}
 """
 
 
