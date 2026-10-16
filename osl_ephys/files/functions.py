@@ -17,6 +17,18 @@ OLD_FILENAMES = {
     "fmri_d100_parcellation_with_3PCC_ips_reduced_2mm_ss5mm_ds8mm_adj.nii.gz": "atlas-Giles_nparc-42_space-MNI_res-8x8x8.nii.gz",
     "aal_cortical_merged_8mm_stacked.nii.gz": "atlas-AAL_nparc-78_space-MNI_res-8x8x8.nii.gz",
     "Schaefer2018_100Parcels_7Networks_order_FSLMNI152_2mm_4d_ds8.nii.gz": "atlas-Schaefer_nparc-100_space-MNI_res-8x8x8.nii.gz",
+    "Schaefer2018_100Parcels_7Networks_order_FSLMNI152_2mm_4d.nii.gz": "atlas-Schaefer_nparc-100_space-MNI_res-2x2x2.nii.gz",
+    "fmri_d100_parcellation_with_PCC_tighterMay15_v2_2mm.nii.gz": "atlas-Giles_nparc-39_space-MNI_res-2x2x2.nii.gz",
+    "HarvOxf-sub-Schaefer100-combined-2mm_4d.nii.gz": "atlas-SchaeferHarvOxf_nparc-114_space-MNI_res-2x2x2.nii.gz",
+    "HarvOxf-sub-Schaefer100-combined-2mm_4d_ds8.nii.gz": "atlas-SchaeferHarvOxf_nparc-114_space-MNI_res-8x8x8.nii.gz",
+    "HarvardOxford-sub-prob-bin-2mm.nii.gz": "atlas-HarvOxfSub_nparc-21_space-MNI_res-2x2x2.nii.gz",
+    # Kept under their original names in osl-files, for older analyses
+    "dk_full.nii.gz": "legacy/dk_full.nii.gz",
+    "giles_39_binary.nii.gz": "legacy/giles_39_binary.nii.gz",
+    "fmri_d100_parcellation_with_PCC_tighterMay15_v2_6mm_exclusive.nii.gz": "legacy/fmri_d100_parcellation_with_PCC_tighterMay15_v2_6mm_exclusive.nii.gz",
+    "fmri_d100_parcellation_with_PCC_reduced_2mm.nii.gz": "legacy/fmri_d100_parcellation_with_PCC_reduced_2mm.nii.gz",
+    "WTA_fMRI_parcellation_ds2mm.nii.gz": "legacy/WTA_fMRI_parcellation_ds2mm.nii.gz",
+    "WTA_fMRI_parcellation_ds8mm.nii.gz": "legacy/WTA_fMRI_parcellation_ds8mm.nii.gz",
 }
 
 

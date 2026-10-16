@@ -217,8 +217,10 @@ alias table and a `FutureWarning` on old names; the eleven duplicate
 parcellations and the simulation config are removed from the package; the
 Neuromag-306 template info (0.08 MB once the acquisition dump and HPI data
 were stripped, headshape thinned and jittered) and the MVAR parameters are
-in osl-files under `scanner/` and `simulation/`. Still bundled, pending the
-add-or-drop decisions in the table below: 5.4 MB in `source_recon/files/`.
+in osl-files under `scanner/` and `simulation/`. All bundled data is gone from the package (`source_recon/files/` removed,
+3.3 MB of package left): five files added to osl-files under the naming
+convention, six kept under their original names in `parcellation/legacy/`,
+three dropped with the reason in the table below and the inventory.
 Found while porting: `fetch_file` raised "not a data file" for anything
 added to osl-files since the registry was cached (up to an hour) instead of
 refreshing the registry first; fixed in the osl-ephys copy, to be offered to
@@ -241,19 +243,15 @@ centroids in MNI mm, which survives the regridding osl-files did. Under
 | fMRI_parcellation_ds2mm | atlas-Giles_nparc-38_space-MNI_res-2x2x2 | 0.0 mm | alias |
 | fMRI_parcellation_ds8mm, fmri_d100_parcellation_with_PCC_reduced_2mm_ss5mm_ds8mm | atlas-Giles_nparc-38_space-MNI_res-8x8x8 | 0.0 mm | alias |
 | fmri_d100_parcellation_with_PCC_tighterMay15_v2_8mm | atlas-Giles_nparc-39_space-MNI_res-8x8x8 | 0.8 mm | alias |
-| fmri_d100_parcellation_with_PCC_tighterMay15_v2_2mm | atlas-Giles_nparc-39 (only 8 mm in osl-files) | 1.3 mm | add as atlas-Giles_nparc-39_space-MNI_res-2x2x2, or alias to the 8 mm file |
+| fmri_d100_parcellation_with_PCC_tighterMay15_v2_2mm | atlas-Giles_nparc-39 (only 8 mm in osl-files) | 1.3 mm | added as atlas-Giles_nparc-39_space-MNI_res-2x2x2 |
 | aal_cortical_merged_8mm_stacked | atlas-AAL_nparc-78_space-MNI_res-8x8x8 | 2.8 mm | alias (osl-dynamics already maps it) |
 | MNI152_T1_2mm_brain, MNI152_T1_8mm_brain | mask/MNI152_T1_2mm_brain, 8mm_brain | 0.0 mm | alias |
-| Schaefer2018_100Parcels_7Networks_order_FSLMNI152_2mm_4d (+ _ds8) | atlas-Schaefer_nparc-100 (5 mm and 8 mm in osl-files) | 0.7 mm | ds8 aliases the 8 mm file; the 2 mm one is added as res-2x2x2 or aliased to 5 mm |
-| fmri_d100_parcellation_with_PCC_tighterMay15_v2_6mm_exclusive | atlas-Giles_nparc-39 | 3.8 mm | a 6 mm variant, only referenced by the package canary test: decide |
-| giles_39_binary | atlas-Giles_nparc-39 | 9.1 mm | a binary version, only referenced by the canary test: decide |
-| fmri_d100_parcellation_with_PCC_reduced_2mm | atlas-Giles_nparc-39 | 25.6 mm | a different 39-parcel set, only referenced by the canary test: decide |
-| WTA_fMRI_parcellation_ds2mm, _ds8mm | atlas-Giles_nparc-38 | 29 mm | winner-takes-all label versions, only referenced by the canary test: decide |
-| HarvOxf-sub-Schaefer100-combined-2mm_4d (+ _ds8) | none (114 parcels) | | used by `nii.py` and the source-recon tutorial: add as atlas-SchaeferHarvOxf_nparc-114_space-MNI_res-2x2x2 and 8x8x8 |
-| HarvardOxford-sub-prob-bin-2mm | none (21 parcels) | | used by `nii.py`: add as atlas-HarvOxfSub_nparc-21_space-MNI_res-2x2x2 |
-| dk_full | none (82 parcels) | | cortical + subcortical DK, canary test only: add as atlas-DK_nparc-82_space-MNI_res-8x8x8 or decide |
-| reduced_hcp-mmp_2mm, _8mm | none (230 parcels) | | not referenced anywhere: decide |
-| Glasser52_binary_space-MNI152NLin6_res-8x8x8_10mm | Glasser-52 at 10 mm | | not referenced anywhere: decide |
+| Schaefer2018_100Parcels_7Networks_order_FSLMNI152_2mm_4d (+ _ds8) | atlas-Schaefer_nparc-100 | 0.7 mm | ds8 aliases the 8 mm file; the 2 mm one added as res-2x2x2 |
+| fmri_d100_parcellation_with_PCC_tighterMay15_v2_6mm_exclusive, giles_39_binary, fmri_d100_parcellation_with_PCC_reduced_2mm, WTA_fMRI_parcellation_ds2mm, WTA_fMRI_parcellation_ds8mm, dk_full | variants with no maintained counterpart | | kept under their original names in osl-files `parcellation/legacy/` (decided 2026-10-16: no data is lost); aliases point there |
+| HarvOxf-sub-Schaefer100-combined-2mm_4d (+ _ds8) | none (114 parcels) | | added as atlas-SchaeferHarvOxf_nparc-114_space-MNI_res-2x2x2 and 8x8x8, with a docs entry and the Harvard-Oxford licence note |
+| HarvardOxford-sub-prob-bin-2mm | none (21 parcels) | | added as atlas-HarvOxfSub_nparc-21_space-MNI_res-2x2x2 |
+| reduced_hcp-mmp_2mm, _8mm | none (230 parcels) | | dropped (decided 2026-10-16): referenced nowhere in the code, docs or examples; the maintained Glasser files cover the atlas |
+| Glasser52_binary_space-MNI152NLin6_res-8x8x8_10mm | Glasser-52 at 10 mm | | dropped (decided 2026-10-16): referenced nowhere; the 8 mm and 2 mm files are in osl-files |
 | *.xml label files | docs/parcellations in osl-files | | labels go with their parcellation's docs entry |
 
 - Rule for the move: nothing is copied into osl-files that is already
@@ -646,7 +644,7 @@ line in its scope says "undecided".
 | `utils.spmio` | `SPMMEEG`, `Data`, `Channel`, `Montage`, `Trial`, `Event`, helpers | Keep. |
 | `utils.opm` | `convert_notts`, `correct_mri` | Keep. |
 | `utils.misc`, `utils.package`, `utils.version_utils`, `utils.run_func` | `ensure_dir`, `proc_userargs`, `mean_psd_in_band`, `set_random_seed`, `soft_import`, `run_package_tests`, `check_version`, `osl_func` main | Keep; `run_package_tests` becomes the `osl-ephys-check` CLI (#425). |
-| Package data | `source_recon/files/*`, `utils/simulation_config/*`, `neuromag306_info.yml`, `trees/*.tree` | Move to osl-files (phase 2) with old-name aliases; `trees` and the yml stay in the package. |
+| Package data | `source_recon/files/*`, `utils/simulation_config/*`, `neuromag306_info.yml`, `trees/*.tree` | Moved to osl-files (phase 2, done) with old-name aliases; `trees` and the yml stay in the package. Drop: `reduced_hcp-mmp_2mm/8mm` (230-parcel HCP-MMP variant) and `Glasser52_binary_space-MNI152NLin6_res-8x8x8_10mm`, because nothing in the code, docs or examples referenced them and the maintained Glasser files cover the atlas. Everything else is in osl-files, the unmaintained variants under `parcellation/legacy/` with their original names. |
 
 ## 10. Test data for osl-files (do this first)
 

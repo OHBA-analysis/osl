@@ -223,7 +223,7 @@ print("Dimensions of reconstructed timeseries in MNI space is (dipoles x all_tpt
 # Let's take a look at the positions of the centres of each parcel in the parcellation.
 
 
-parcellation_fname = 'HarvOxf-sub-Schaefer100-combined-2mm_4d_ds8.nii.gz'
+parcellation_fname = 'atlas-SchaeferHarvOxf_nparc-114_space-MNI_res-8x8x8.nii.gz'
 
 # plot centre of mass for each parcel
 p = parcellation.plot_parcellation(parcellation_fname)

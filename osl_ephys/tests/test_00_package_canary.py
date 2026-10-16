@@ -70,5 +70,7 @@ class TestPackageData(unittest.TestCase):
             "aal_cortical_merged_8mm_stacked.nii.gz",
             "MNI152_T1_8mm_brain.nii.gz",
             "atlas-Giles_nparc-38_space-MNI_res-8x8x8.nii.gz",
+            "HarvOxf-sub-Schaefer100-combined-2mm_4d_ds8.nii.gz",
+            "dk_full.nii.gz",
         ]:
             assert os.path.exists(find_file(name)), name

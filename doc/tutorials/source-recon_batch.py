@@ -163,7 +163,7 @@ if not pre_run:
         freq_range: [3, 20]
         chantypes: [mag, grad]
         rank: {meg: 55}
-        parcellation_file: HarvOxf-sub-Schaefer100-combined-2mm_4d_ds8.nii.gz
+        parcellation_file: atlas-SchaeferHarvOxf_nparc-114_space-MNI_res-8x8x8.nii.gz
         method: spatial_basis
         orthogonalisation: None
     """
@@ -539,7 +539,7 @@ volume_num = np.abs(epochs_times-tpt).argmin() # finds index of nearest epoch ti
 
 # The parcellation niftii file needs to be the same as was used to do the parcellation, 
 # although it does not need to be at the same spatial resolution as the one used there.
-parcellation_file = 'HarvOxf-sub-Schaefer100-combined-2mm_4d.nii.gz'
+parcellation_file = 'atlas-SchaeferHarvOxf_nparc-114_space-MNI_res-2x2x2.nii.gz'
 mask_file = "MNI152_T1_2mm_brain.nii.gz"
 
 cope_map = group_model.copes[group_contrast_ind, :, volume_num]

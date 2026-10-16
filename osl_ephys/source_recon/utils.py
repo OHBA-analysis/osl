@@ -20,10 +20,6 @@ def _find_package_file(filename):
             return files.check_exists(filename, directory)
         except FileNotFoundError:
             continue
-    # Files not yet moved to osl-files are still shipped with the package
-    bundled = op.join(op.dirname(__file__), "files", filename)
-    if op.exists(bundled):
-        return bundled
     return None
 
 
