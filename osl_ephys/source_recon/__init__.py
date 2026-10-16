@@ -4,7 +4,6 @@ the FreeSurfer route (coregistration, forward model and minimum norm with MNE).
 Each stage reads and writes the files held by a :class:`~osl_ephys.session.Session`.
 """
 
-from .batch import *
 from .freesurfer import (
     setup_freesurfer,
     check_freesurfer,

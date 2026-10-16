@@ -60,17 +60,16 @@ class TestPackageData(unittest.TestCase):
         assert os.path.exists(template)
 
     def test_parcellation_data(self):
-        """Old osl-ephys names resolve to the osl-files parcellations."""
+        """The parcellations and masks used by the tutorials are in osl-files."""
         from ..files.functions import find_file
 
         for name in [
-            "Glasser52_binary_space-MNI152NLin6_res-8x8x8.nii.gz",
-            "dk_cortical.nii.gz",
-            "fMRI_parcellation_ds8mm.nii.gz",
-            "aal_cortical_merged_8mm_stacked.nii.gz",
-            "MNI152_T1_8mm_brain.nii.gz",
+            "atlas-Glasser_nparc-52_space-MNI_res-8x8x8.nii.gz",
+            "atlas-DK_nparc-68_space-MNI_res-8x8x8.nii.gz",
             "atlas-Giles_nparc-38_space-MNI_res-8x8x8.nii.gz",
-            "HarvOxf-sub-Schaefer100-combined-2mm_4d_ds8.nii.gz",
-            "dk_full.nii.gz",
+            "atlas-AAL_nparc-78_space-MNI_res-8x8x8.nii.gz",
+            "MNI152_T1_8mm_brain.nii.gz",
+            "atlas-SchaeferHarvOxf_nparc-114_space-MNI_res-8x8x8.nii.gz",
+            "legacy/dk_full.nii.gz",
         ]:
             assert os.path.exists(find_file(name)), name

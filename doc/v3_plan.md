@@ -112,8 +112,8 @@ D9-D18, answered 2026-10-16 (details in section 11):
         runner on one node, no job-array option.
     D12 Session IDs come from an explicit `id` column, the raw filename stem
         as the fallback.
-    D13 One `osl-ephys` command with subcommands; the old script names stay as
-        aliases for one release.
+    D13 One `osl-ephys` command with subcommands; the old script names go
+        (see D19).
     D14 Sign flipping: port the osl-dynamics method and test it; no
         benchmark against the `new-sign-flip` methods or an existing dataset.
     D15 FreeSurfer route kept and tested with a fast setting: MNE's
@@ -127,6 +127,12 @@ D9-D18, answered 2026-10-16 (details in section 11):
     D18 SEMP is dealt with separately from the phases (own board item); its
         `osl_pathfinder` dependency is raised with its author, with the
         suggestion to rename it `osl-pathfinder` like the other OSL repos.
+    D19 (2026-10-16) No backwards compatibility with v2: no re-export shims
+        at old import paths, no wrappers for the v2 entry points
+        (`run_proc_chain` etc. are gone), no old script names, no step-name
+        aliases, no renamed- or ignored-option handling, no `FutureWarning`
+        for old data file names (the osl-files names are the only names).
+        The v3 docs carry a migration page instead (phase 8).
     Also: the browser review page is the primary ICA review tool, the
     matplotlib GUI stays as an alternative; GLM config steps kept; FSL tests
     skipped in CI (no self-hosted runner); all eleven tutorials kept; no
@@ -247,8 +253,8 @@ tutorials; cleaned up in phase 8).
 
 Status 2026-10-16: `osl_ephys.files` ported (shared cache with osl-dynamics,
 `osl-ephys-download-data` CLI, `test_data` and `simulation` submodules);
-`find_file` resolves parcellations and masks through osl-files with the
-alias table and a `FutureWarning` on old names; the eleven duplicate
+`find_file` resolves parcellations and masks through osl-files (the alias
+table for old names was removed under D19); the eleven duplicate
 parcellations and the simulation config are removed from the package; the
 Neuromag-306 template info (0.08 MB once the acquisition dump and HPI data
 were stripped, headshape thinned and jittered) and the MVAR parameters are
@@ -296,8 +302,8 @@ centroids in MNI mm, which survives the regridding osl-files did. Under
   added, and they are renamed to the osl-files convention
   (`atlas-<Name>_nparc-<N>_space-MNI_res-<r>x<r>x<r>.nii.gz`, masks as
   `MNI152_T1_<r>mm_brain.nii.gz`) with a licence file in `LICENSES/` and a
-  line in `docs/parcellations`. Keep an old-name to new-name alias dict in
-  `parcellation.find_file` that warns for one release.
+  line in `docs/parcellations`. The old-name to new-name table lives only
+  in the migration page (D19); the content matches are in section 2.
 - `utils/simulation_config/*` moved: the template info to osl-files
   `scanner/neuromag306_template_info.fif`, the MVAR parameters to
   `simulation/neuromag306_mvar_*.npy` (done). `neuromag306_info.yml` and the
@@ -379,7 +385,7 @@ parcellation:
   `run_src_batch` remain for one release as thin wrappers that build the
   equivalent config and warn.
 - `osl_preproc` CLI becomes `osl-ephys run config.yml manifest.csv outdir`
-  (the old name kept as an alias for one release).
+  (the old name removed, D19).
 
 Parallelism underneath it:
 
@@ -399,9 +405,9 @@ Parallelism underneath it:
 Status 2026-10-16: core landed on `v3`. `source_recon/{session,rhino,
 beamforming,parcellation,sign_flipping}.py` are the ported osl-dynamics
 modules (commit b64c6eb0), `source_recon/steps.py` registers the config
-steps on them under the v2 names (`extract_surfaces`/`compute_surfaces`
-per subject, `extract_fiducials_and_headshape` and its v2 aliases,
-`extract_polhemus_from_pos`/`_elc`, `remove_stray_headshape_points`,
+steps on them (`extract_surfaces` per subject,
+`extract_fiducials_and_headshape` and its `_from_pos`/`_from_elc`
+variants, `remove_stray_headshape_points`,
 `save_mni_fiducials`, `coregister`, `forward_model`, `beamform`,
 `parcellate`, `beamform_and_parcellate`, `fix_sign_ambiguity`, and a
 `sign_flip` group step that picks the template), with v2 options that no
@@ -488,7 +494,7 @@ Detailed steps and the target layout: section 11.
   failure isolation and summary, parcellation maths (orthogonalisation,
   parcel weights), sign flipping on synthetic data, coreg + forward + LCMV +
   parcellate end to end on MNI152 surfaces, report generation, every CLI's
-  `--help`, and the data fetch alias table.
+  `--help`.
 - FSL-dependent code (`extract_surfaces`, FNIRT) marked `fsl` and skipped
   unless `FSLDIR` is set. MaxFilter can only be tested at the command-building
   level.
@@ -689,7 +695,7 @@ line in its scope says "undecided".
 
 | Module | Public names | Disposition |
 | --- | --- | --- |
-| CLIs | `osl_maxfilter`, `osl_ica_label`, `osl_ica_apply`, `osl_preproc`, `osl_func`, `osl-ica-review`, `osl-ica-apply` | Keep all. `osl_preproc` gains `osl-ephys run` as the new name and stays as an alias for one release. The two ICA review/apply pairs (`osl_ica_label`/`osl_ica_apply` and the SEMP `osl-ica-review`/`osl-ica-apply` from #452) are merged into one pair (decided 2026-10-15): one CLI that opens the review, one that applies, covering both the fif-based and the manual-label workflows. |
+| CLIs | `osl_maxfilter`, `osl_ica_label`, `osl_ica_apply`, `osl_preproc`, `osl_func`, `osl-ica-review`, `osl-ica-apply` | Every command survives as an `osl-ephys` subcommand; the old script names are removed as each subcommand lands (D19; `osl_preproc` and `osl_func` removed 2026-10-16). The two ICA review/apply pairs (`osl_ica_label`/`osl_ica_apply` and the SEMP `osl-ica-review`/`osl-ica-apply` from #452) are merged into one pair (decided 2026-10-15): one CLI that opens the review, one that applies, covering both the fif-based and the manual-label workflows. |
 | `preprocessing.batch` | `run_proc_chain`, `run_proc_batch`, `load_config`, `find_func`, `check_config_versions`, `get_config_from_fif`, `append_preproc_info`, `import_data`, `read_dataset`, `write_dataset`, `plot_preproc_flowchart`, `print_custom_func_info` | Keep; `run_proc_batch` becomes a wrapper over `run_batch` (phase 3), `find_func`/`load_config` become the shared registry. Config provenance in the fif (`get_config_from_fif`, `append_preproc_info`) is kept. |
 | `preprocessing.mne_wrappers` | 23 `run_mne_*` steps | Keep all. |
 | `preprocessing.osl_wrappers` | `gesd`, `detect_artefacts`, `detect_maxfilt_zeros`, `bad_segments`, `bad_channels`, `drop_bad_epochs`, `detect_bad_channels_psd`, `run_osl_read_dataset`, `run_osl_bad_segments`, `run_osl_bad_channels`, `run_osl_drop_bad_epochs`, `run_osl_zscore_present_data`, `run_osl_glm_*` (4), `run_osl_manual_ica`, `run_osl_apply_ica` | Keep all wrappers. `gesd`/`bad_segments`/`bad_channels` are Port (osl-dynamics `detect_bad_segments`/`detect_bad_channels`, same GESD, with the #444 fixes carried over); `detect_maxfilt_zeros`, `drop_bad_epochs`, `detect_bad_channels_psd`, zscore and GLM steps have no osl-dynamics equivalent and are Keep. |
@@ -700,7 +706,7 @@ line in its scope says "undecided".
 | `report.preproc_report` | `gen_report_from_fif`, `gen_html_*`, `plot_flowchart`, `plot_rawdata`, `plot_channel_time_series`, `plot_sensors`, `plot_channel_dists`, `plot_spectra`, `plot_freqbands`, `plot_digitisation_2d`, `plot_headmovement`, `plot_eog_summary`, `plot_ecg_summary`, `plot_bad_ica`, `plot_summary_bad_segs`, `plot_summary_bad_chans`, `plot_artefact_scan`, `print_scan_summary`, `plot_events`, `plot_custom_figures` | Every `plot_*` is Keep (becomes a QC plot in the new report). `gen_html_*` and the per-subject pages are Drop: replaced by the table report, which shows the same plots per selected session. `gen_report_from_fif` is Keep as the entry point that regenerates QC plots from a saved fif. |
 | `report.src_report` | `gen_html_*`, `plot_config`, `plot_parcellation`, `plot_sign_flipping_results`, `add_to_data`, `update_config` | `plot_*` Keep as QC plots; `gen_html_*`/`add_to_data`/`update_config` Drop (replaced by `summary.json` per step and the table report). |
 | `source_recon.batch` | `run_src_chain`, `run_src_batch`, `load_config`, `find_func` | Keep `run_src_chain`/`run_src_batch` as warning wrappers over the pipeline and `load_config` (read by the v2 report until phase 5); `find_func` replaced by the registry. Done. |
-| `source_recon.wrappers` | all 19 config step names | Kept as step names in `steps.py` (done): `extract_polhemus_from_info`/`extract_fiducials_from_fif` = `extract_fiducials_and_headshape`, `extract_polhemus_from_pos`/`_elc`, `remove_stray_headshape_points`, `save_mni_fiducials`, `compute_surfaces` = `extract_surfaces` (per subject), `make_watershed_bem`, `coregister`, `forward_model`, `beamform`, `minimum_norm`, `parcellate` (with `source_method`), `beamform_and_parcellate`/`minimum_norm_and_parcellate` (aliases), `fix_sign_ambiguity`, and `sign_flip` as the group step. `find_template_subject` is the template choice inside `sign_flip`. `rescale_sensor_positions` kept (`rhino.rescale_sensor_positions` and the step; `examples/eeg` uses it). `extract_rhino_files`: dropped, it migrated pre-2.x derivatives into the v2 layout and report. |
+| `source_recon.wrappers` | all 19 config step names | Kept as steps (done; the v2 aliases removed under D19): `extract_fiducials_and_headshape` (was `extract_polhemus_from_info`/`extract_fiducials_from_fif`) and `_from_pos`/`_from_elc`, `remove_stray_headshape_points`, `save_mni_fiducials`, `extract_surfaces` (was `compute_surfaces`, per subject), `make_watershed_bem`, `coregister`, `forward_model`, `beamform`, `minimum_norm`, `parcellate` (with `source_method`), `beamform_and_parcellate`/`minimum_norm_and_parcellate` (combined steps), `fix_sign_ambiguity`, and `sign_flip` as the group step. `find_template_subject` is the template choice inside `sign_flip`. `rescale_sensor_positions` kept (`rhino.rescale_sensor_positions` and the step; `examples/eeg` uses it). `extract_rhino_files`: dropped, it migrated pre-2.x derivatives into the v2 layout and report. |
 | `source_recon.rhino.coreg` | `coreg`, `coreg_metrics`, `coreg_display`, `bem_display`, `apply_head2mni_xform`, `get_coreg_filenames` | Ported: `coregister_head_and_mri`, `coreg_error`/`coreg_rms` (+ `coreg.json`), `plot_coregistration`, `CoregFilenames`. `bem_display` is covered by the BEM check in `forward_model` and `repair_bem_surfaces`; `apply_head2mni_xform` by the MNI grid the forward model is built on (`_get_source_coords_mni`). Done. |
 | `source_recon.rhino.surfaces` | `compute_surfaces`, `surfaces_display`, `plot_surfaces`, `check_if_already_computed`, `get_surfaces_filenames` | Ported: `extract_surfaces`, `plot_surfaces`, `SurfaceFilenames`, `check_up_to_date`; `surfaces_display` = `fsleyes` on the surface files. Done. |
 | `source_recon.rhino.forward_model` | `forward_model`, `make_fwd_solution`, `setup_volume_source_space` | Ported (`forward_model` on the MNI grid). Done. |
@@ -712,7 +718,7 @@ line in its scope says "undecided".
 | `source_recon.freesurfer_utils` | `setup_freesurfer`, `check_freesurfer`, `recon_all`, `make_watershed_bem`, `make_fsaverage_src`, filename helpers | Kept in `freesurfer.py` (`fsaverage_source_space`, `fetch_fsaverage` added). Done. |
 | `source_recon.parcellation` | `load_parcellation`, `load_parcellation_description`, `guess_parcellation`, `vol_parcellate_timeseries`, `surf_parcellate_timeseries`, `resample_parcellation`, `local_orthogonalise`, `symmetric_orthogonalise`, `parcel_centers`, `plot_parcellation`, `plot_psd`, `plot_correlation`, `convert2niftii`, `convert2mne_raw`, `convert2mne_epochs`, `spatial_dist_adjacency`, `parcel_vector_to_voxel_grid`, `convert2source_estimate`, `plot_source_topo`, `assign_voxels_to_binary_parcellation` | Ported: `Parcellation`, `parcellate` (= `vol_parcellate_timeseries`), `parcellate_lcmv`, `_symmetric_orthogonalisation`, `convert_to_mne_raw` (= `convert2mne_raw`), `parcel_vector_to_nifti` (= `convert2niftii`), `plot_parcellation`, `plot_psds`, `save_qc_plots`. Kept from v2 in the same module: `load_parcellation`, `load_parcellation_description`, `guess_parcellation`, `surf_parcellate_timeseries` (on an explicit source space and labels), `resample_parcellation`, `local_orthogonalise`, `parcel_centers`, `plot_psd`, `plot_correlation`, `convert2niftii`, `convert2mne_epochs`, `spatial_dist_adjacency`, `convert2source_estimate` (on an explicit source space), `plot_source_topo`, `assign_voxels_to_binary_parcellation`. Done. |
 | `source_recon.sign_flipping` | `find_flips`, `find_template_subject`, `load_covariances`, `covariance_matrix_correlation`, `randomly_flip`, `apply_flips_to_covariance`, `apply_flips`, `time_embed`, `std_data`, and from the `new-sign-flip` branch `find_flips_spectral`, `find_flips_belief_propagation`, `find_flips_sdp` | Ported: `calc_cov`, `calc_corr`, `find_flips` (coordinate ascent), `sign_flip`, `sign_flip_mne_raw`, `apply_flips_to_cov`; `time_embed`/`standardize` in `utils.processing`. Kept from the branch in the same module: the three solvers with `covariance_matrix_correlation` and `apply_flips_to_covariance` (D14: they import and run; the `method` option of `fix_sign_ambiguity` and `sign_flip` selects them). `load_covariances` and `randomly_flip` were internals of the v2 loop; `find_template_subject` is the template choice in the `sign_flip` group step. Done. |
-| `source_recon.nii`, `source_recon.utils` | `convert_4dparc_to_3d`, `convert_3dparc_to_4d`, `spatially_downsample`, `append_4d_parcellation`, `find_file` | Keep (`find_file` becomes the osl-files lookup with the alias table). |
+| `source_recon.nii`, `source_recon.utils` | `convert_4dparc_to_3d`, `convert_3dparc_to_4d`, `spatially_downsample`, `append_4d_parcellation`, `find_file` | Keep (`find_file` becomes the osl-files lookup). |
 | `utils.file_handling`, `utils.study` | `process_file_inputs`, `find_run_id`, `validate_outdir`, `get_rawdir`, `add_subdir`, `sanitise_filepath`, `osl_print`, `Study` | Keep; they build the session manifest. |
 | `utils.logger` | `set_up`, `set_level`, `get_level`, `log_or_print` | Port (`MEEGSessionLogger`, `set_logging_level`); `log_or_print` kept as a thin shim since wrappers call it everywhere. |
 | `utils.parallel` | `dask_parallel_bag` | Drop: replaced by the multiprocessing runner (D3). |
@@ -961,7 +967,7 @@ No re-export shims at the old import paths (user, 2026-10-16): v3 is a
 clean break for imports.
 
 One command, `osl-ephys`, with subcommands, replaces the seven scripts;
-the old names stay as aliases for one release:
+the old names are removed as each subcommand lands (D19):
 
 | v3 command | Replaces |
 | --- | --- |
@@ -1156,8 +1162,8 @@ report had for the same data.
 3. `preprocessing/amm.py`: port.
 4. `preprocessing/ica/`: `plot_ica.py` (GUI) and `manual_ica/` (review
    server, label files) side by side with one `apply` function; the two
-   CLI pairs become `osl-ephys ica review` and `osl-ephys ica apply`, with
-   the old names as aliases. The browser review page is the primary tool
+   CLI pairs become `osl-ephys ica review` and `osl-ephys ica apply`; the
+   old script names are removed (D19). The browser review page is the primary tool
    and the GUI the alternative; the review server's label format is the
    one both workflows write.
 4b. `preprocessing/semp/` is outside this phase (D18, own board item): it

@@ -45,7 +45,7 @@ def load_manifest(sessions) -> list[dict]:
     sessions : list of dict, str, or list of str
         The sessions. A string is the path of a CSV file with a header row;
         a list of strings is a list of raw files whose ids are derived from
-        the file names (the v2 convention).
+        the file names.
 
     Returns
     -------
@@ -76,29 +76,6 @@ def load_manifest(sessions) -> list[dict]:
     if duplicates:
         raise ValueError(f"Session ids must be unique; duplicated: {duplicates}.")
     return rows
-
-
-def from_v2(
-    files, subjects=None, smri_files=None, preproc_files=None, epoch_files=None
-) -> list[dict]:
-    """A manifest from the arguments of ``run_proc_batch`` / ``run_src_batch``."""
-    n = len(files) if files is not None else len(subjects)
-    rows = []
-    for i in range(n):
-        row = {}
-        if subjects is not None:
-            row["id"] = subjects[i]
-        if files is not None:
-            row["raw_file"] = str(files[i])
-        for key, values in (
-            ("smri_file", smri_files),
-            ("preproc_file", preproc_files),
-            ("epoch_file", epoch_files),
-        ):
-            if values is not None and values[i] is not None:
-                row[key] = str(values[i])
-        rows.append(row)
-    return load_manifest(rows)
 
 
 def columns(sessions: list[dict]) -> set:

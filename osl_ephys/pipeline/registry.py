@@ -10,7 +10,6 @@ from __future__ import annotations
 
 import importlib
 import inspect
-import warnings
 from dataclasses import dataclass
 from functools import partial
 from typing import Callable
@@ -38,17 +37,12 @@ class Step:
     per : {"session", "subject"}
         Whether it runs once per session or once per subject (e.g. surface
         extraction, shared by the sessions of a subject).
-    kind : {"dataset", "legacy_src"}
-        Calling convention: ``func(dataset, userargs)`` for the
-        preprocessing wrappers, or the v2 source-recon convention
-        ``func(outdir, subject, ..., **userargs)`` until phase 4 replaces it.
     """
 
     func: Callable
     section: str
     name: str
     per: str = "session"
-    kind: str = "dataset"
 
 
 _REGISTRY: dict[str, dict[str, Step]] = {section: {} for section in SECTIONS}
@@ -74,20 +68,6 @@ def load_steps() -> None:
             importlib.import_module(module)
 
 
-def ignored_options(userargs: dict, *names: str) -> None:
-    """Drop v2 options that no longer apply, saying so."""
-    for name in names:
-        if name in userargs:
-            warnings.warn(f"'{name}' is no longer used and was ignored.", FutureWarning)
-            userargs.pop(name)
-
-
-def renamed_option(userargs: dict, old: str, new: str) -> None:
-    """Accept a v2 option under its new name."""
-    if old in userargs:
-        userargs[new] = userargs.pop(old)
-
-
 def config_name(func_name: str) -> str:
     """The name a config uses for a wrapper, e.g. ``filter`` for ``run_mne_filter``."""
     for prefix in PREFIXES:
@@ -101,7 +81,6 @@ def register(
     section: str,
     name: str | None = None,
     per: str = "session",
-    kind: str = "dataset",
 ) -> Step:
     """Register a function as a step; see :class:`Step` for the arguments."""
     if section not in SECTIONS:
@@ -109,20 +88,18 @@ def register(
     if per not in ("session", "subject"):
         raise ValueError(f"per must be 'session' or 'subject', got '{per}'.")
     name = name or config_name(func.__name__)
-    entry = Step(func, section, name, per, kind)
+    entry = Step(func, section, name, per)
     _REGISTRY[section][name] = entry
     if func.__name__ != name:
         _REGISTRY[section][func.__name__] = entry
     return entry
 
 
-def step(
-    section: str, name: str | None = None, per: str = "session", kind: str = "dataset"
-):
+def step(section: str, name: str | None = None, per: str = "session"):
     """Decorator form of :func:`register`."""
 
     def decorate(func):
-        register(func, section, name, per, kind)
+        register(func, section, name, per)
         return func
 
     return decorate

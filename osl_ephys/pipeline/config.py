@@ -18,14 +18,11 @@ section, in the order the sections run::
       - fix_sign_ambiguity: {}
 
 Any section can be left out. A ``meta`` section holds ``event_codes`` and
-version checks as before. A v2 config whose ``source_recon`` list mixes
-coregistration, source reconstruction and parcellation steps is split into
-the sections above with a warning.
+version checks.
 """
 
 from __future__ import annotations
 
-import warnings
 
 from packaging.version import Version
 import re
@@ -86,8 +83,6 @@ def load_config(config) -> dict:
     if not sections:
         raise KeyError(f"The config has no steps; sections are {SECTION_ORDER}.")
 
-    sections = _split_v2_source_recon(sections)
-
     for name, _ in sections.get("preproc", []):
         if name == "find_events" and meta["event_codes"] is None:
             raise KeyError(
@@ -120,30 +115,6 @@ def _normalise_step(section: str, stage) -> tuple[str, dict]:
             f"The options of step '{name}' must be a dict, got {type(kwargs)}."
         )
     return name, dict(kwargs)
-
-
-def _split_v2_source_recon(sections: dict) -> dict:
-    """Move steps of a v2 ``source_recon`` list into the sections they belong to."""
-    steps = sections.get("source_recon", [])
-    moved = {}
-    for name, kwargs in steps:
-        section = registry.section_of(name)
-        if section is not None and section != "source_recon":
-            moved.setdefault(section, []).append((name, kwargs))
-    if not moved:
-        return sections
-    warnings.warn(
-        "The 'source_recon' section holds steps that now belong to "
-        f"{sorted(moved)}; they have been moved. Split the config into "
-        "'coreg', 'source_recon' and 'parcellation' sections.",
-        FutureWarning,
-    )
-    sections["source_recon"] = [
-        (n, kw) for n, kw in steps if registry.section_of(n) in (None, "source_recon")
-    ]
-    for section, extra in moved.items():
-        sections[section] = extra + sections.get(section, [])
-    return {s: sections[s] for s in SECTION_ORDER if s in sections and sections[s]}
 
 
 def steps(config: dict, section: str) -> list[tuple[str, dict]]:

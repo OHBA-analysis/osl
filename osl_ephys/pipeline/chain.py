@@ -187,7 +187,7 @@ def _run_preproc(config, dataset, qc_dir, extra_funcs, overwrite):
 
 
 def _preproc_report(dataset, qc_dir, outnames):
-    """The per-session preprocessing QC, with the v2 report until phase 5."""
+    """The per-session preprocessing QC, with the old report until phase 5."""
     import matplotlib
 
     from osl_ephys.report import gen_html_data, gen_html_page
@@ -223,59 +223,9 @@ def _run_source_recon(
     extra_funcs,
     surface_extraction_method,
 ):
-    """The coregistration, source reconstruction and parcellation sections.
-
-    Until phase 4 these call the v2 wrappers, which take the v2 arguments
-    and write under ``outdir/<id>/``.
-    """
-    import inspect
-
-    session, paths = dataset["session"], dataset["paths"]
-    preproc_file = paths["preproc_file"]
-    if not preproc_file.exists() and "preproc_file" not in session:
-        v2_file = Path(outdir) / session["id"] / f"{session['id']}_preproc-raw.fif"
-        if v2_file.exists():
-            preproc_file = paths["preproc_file"] = v2_file
-    ran_v2 = False
-    v2_args = {
-        "outdir": str(outdir),
-        "subject": session["id"],
-        "surface_extraction_method": surface_extraction_method,
-        "preproc_file": (
-            str(preproc_file) if preproc_file.exists() else session.get("preproc_file")
-        ),
-        "smri_file": session.get("smri_file"),
-        "epoch_file": session.get("epoch_file"),
-        "reportdir": str(Path(qc_dir) / "src") if qc_dir is not None else None,
-        "logsdir": str(log_dir) if log_dir is not None else None,
-    }
+    """The coregistration, source reconstruction and parcellation sections."""
     for section in sections:
         for name, userargs in cfg.steps(config, section):
             step = registry.find_function(name, section, extra_funcs)
             logger.info(f"Running {name}")
-            if step.kind == "legacy_src":
-                wanted = inspect.signature(step.func).parameters
-                kwargs = {k: v for k, v in v2_args.items() if k in wanted}
-                step.func(**kwargs, **deepcopy(userargs))
-                ran_v2 = True
-            else:
-                dataset = step.func(dataset, deepcopy(userargs))
-    if ran_v2 and v2_args["reportdir"] is not None:
-        from osl_ephys.report import src_report
-
-        src_report.gen_html_data(
-            _v2_source_recon_config(config),
-            str(outdir),
-            session["id"],
-            v2_args["reportdir"],
-            extra_funcs=extra_funcs,
-        )
-        src_report.gen_html_page(v2_args["reportdir"])
-
-
-def _v2_source_recon_config(config):
-    """The source-recon sections as the single list the v2 report reads."""
-    steps = []
-    for section in ("coreg", "source_recon", "parcellation"):
-        steps += config.get(section) or []
-    return {"source_recon": steps}
+            dataset = step.func(dataset, deepcopy(userargs))

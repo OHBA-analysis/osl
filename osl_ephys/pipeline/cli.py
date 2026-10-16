@@ -140,8 +140,3 @@ def main(argv=None) -> int:
 
 if __name__ == "__main__":
     sys.exit(main())
-
-
-def main_func(argv=None) -> int:
-    """The ``osl_func`` command (v2 name of ``osl-ephys func``)."""
-    return main(["func", *(sys.argv[1:] if argv is None else argv)])

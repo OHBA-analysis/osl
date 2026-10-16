@@ -1,3 +1,5 @@
+import yaml
+
 """Reporting tool for source reconstruction."""
 
 # Mats van Es <mats.vanes@psych.ox.ac.uk>
@@ -17,7 +19,6 @@ import inspect
 
 from . import preproc_report
 from ..parcellation import parcellation
-from ..source_recon import batch
 
 
 def gen_html_data(
@@ -563,7 +564,7 @@ def update_config(old_config, new_config):
         Merge/updated config.
     """
     if not isinstance(old_config, dict):
-        old_config = batch.load_config(old_config)
+        old_config = yaml.safe_load(old_config)
     old_stages = []
     for stage in old_config["source_recon"]:
         for k, v in stage.items():

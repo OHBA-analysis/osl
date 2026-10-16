@@ -10,7 +10,7 @@ from osl_ephys.parcellation import parcellation, plotting
 from osl_ephys.source_recon import freesurfer
 from osl_ephys.source_recon.beamforming import grid
 from osl_ephys.source_recon.steps import beamform, minimum_norm
-from osl_ephys.pipeline.registry import step, ignored_options, renamed_option
+from osl_ephys.pipeline.registry import step
 from osl_ephys.session import Session
 
 logger = logging.getLogger("osl_ephys")
@@ -32,15 +32,6 @@ def parcellate(dataset, userargs):
     (fsaverage). Minimum-norm options: ``inverse_method``, ``lambda2``,
     ``pick_ori``.
     """
-    renamed_option(userargs, "freq_range", "frequency_range")
-    ignored_options(
-        userargs,
-        "source_space",
-        "spatial_resolution",
-        "voxel_trans",
-        "neighbour_distance",
-        "reference_brain",
-    )
     session = Session.from_dataset(dataset)
     source_method = str(userargs.pop("source_method", "lcmv")).lower()
     extra_chans = userargs.pop("extra_chans", "stim")
@@ -105,7 +96,6 @@ _BEAMFORM_OPTIONS = (
     "pick_ori",
     "reduce_rank",
     "frequency_range",
-    "freq_range",
     "use_bilateral_pairs",
     "bilateral_tol",
     "bilateral_tol_midline",
@@ -120,13 +110,12 @@ _MINIMUM_NORM_OPTIONS = (
     "depth",
     "loose",
     "frequency_range",
-    "freq_range",
 )
 
 
 @step("parcellation")
 def beamform_and_parcellate(dataset, userargs):
-    """v2 name: ``beamform`` then ``parcellate`` with the options of both."""
+    """``beamform`` then ``parcellate``, with the options of both."""
     beam_args = {k: userargs.pop(k) for k in list(userargs) if k in _BEAMFORM_OPTIONS}
     dataset = beamform(dataset, beam_args)
     return parcellate(dataset, {**userargs, "source_method": "lcmv"})
@@ -134,8 +123,7 @@ def beamform_and_parcellate(dataset, userargs):
 
 @step("parcellation")
 def minimum_norm_and_parcellate(dataset, userargs):
-    """v2 name: ``minimum_norm`` then ``parcellate`` with ``source_method: minimum_norm``."""
-    renamed_option(userargs, "source_method", "inverse_method")
+    """``minimum_norm`` then ``parcellate``, with the options of both."""
     mn_args = {k: userargs.pop(k) for k in list(userargs) if k in _MINIMUM_NORM_OPTIONS}
     if mn_args:
         dataset = minimum_norm(dataset, mn_args)

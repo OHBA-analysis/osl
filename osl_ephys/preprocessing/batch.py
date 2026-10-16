@@ -2,21 +2,13 @@
 
 """Tools for batch preprocessing."""
 
-import argparse
-import warnings
-import matplotlib
 import matplotlib.pyplot as plt
 import os
-import sys
-import pprint
-import traceback
 import re
 import logging
 import pickle
 from pathlib import Path
-from copy import deepcopy
 from functools import partial, wraps
-from time import localtime, strftime
 from datetime import datetime
 import inspect
 
@@ -25,10 +17,7 @@ import numpy as np
 import yaml
 
 from . import mne_wrappers, osl_wrappers
-from ..io import find_run_id, validate_outdir, process_file_inputs
-from ..utils import logger as osl_logger
 from ..pipeline.config import check_version
-from ..utils.misc import set_random_seed
 
 logger = logging.getLogger(__name__)
 
@@ -740,184 +729,3 @@ def plot_preproc_flowchart(
         fig.show()
 
     return fig, ax
-
-
-def run_proc_chain(
-    config,
-    infile,
-    subject=None,
-    ftype="preproc-raw",
-    outdir=None,
-    logsdir=None,
-    reportdir=None,
-    ret_dataset=True,
-    gen_report=None,
-    overwrite=False,
-    skip_save=None,
-    extra_funcs=None,
-    random_seed="auto",
-    verbose="INFO",
-    mneverbose="WARNING",
-):
-    """Run preprocessing for a single file (v2 entry point).
-
-    Use :func:`osl_ephys.pipeline.run_chain`. This wrapper builds the
-    equivalent call; ``ftype`` and ``skip_save`` are ignored, and the output
-    goes to ``outdir/preproc/<id>_preproc-raw.fif``.
-
-    Returns
-    -------
-    dict or bool
-        The dataset dict (empty if preprocessing failed) if
-        ``ret_dataset=True``, otherwise whether preprocessing succeeded.
-    """
-    from osl_ephys.pipeline import run_chain
-
-    warnings.warn(
-        "run_proc_chain is replaced by osl_ephys.pipeline.run_chain.", FutureWarning
-    )
-    session = {
-        "id": subject
-        or find_run_id(str(infile) if isinstance(infile, str) else infile.filenames[0])
-    }
-    session["raw_file" if isinstance(infile, str) else "raw"] = infile
-    if gen_report is None:
-        gen_report = outdir is not None or reportdir is not None
-    qc_dir = (
-        (
-            reportdir
-            or (Path(outdir) / "qc" if outdir else Path.cwd() / "preproc_report")
-        )
-        if gen_report
-        else None
-    )
-    try:
-        dataset = run_chain(
-            config,
-            session,
-            outdir=outdir,
-            qc_dir=qc_dir,
-            log_dir=logsdir,
-            extra_funcs=extra_funcs,
-            overwrite=overwrite,
-            random_seed=random_seed,
-            verbose=verbose,
-            mneverbose=mneverbose,
-        )
-    except Exception:
-        logger.exception("Preprocessing failed")
-        return {} if ret_dataset else False
-    return dataset if ret_dataset else True
-
-
-def run_proc_batch(
-    config,
-    files,
-    subjects=None,
-    ftype="preproc-raw",
-    outdir=None,
-    logsdir=None,
-    reportdir=None,
-    gen_report=True,
-    overwrite=False,
-    skip_save=None,
-    extra_funcs=None,
-    covs=None,
-    random_seed="auto",
-    verbose="INFO",
-    mneverbose="WARNING",
-    strictrun=False,
-    dask_client=False,
-):
-    """Run preprocessing for a set of files (v2 entry point).
-
-    Use :func:`osl_ephys.pipeline.run_batch`, which runs sessions in
-    parallel with ``n_workers``. This wrapper builds the equivalent call;
-    ``ftype``, ``skip_save`` and ``strictrun`` are ignored.
-
-    Returns
-    -------
-    flags : np.ndarray of bool
-        Whether each file was processed.
-    """
-    from osl_ephys.pipeline import manifest, run_batch
-
-    warnings.warn(
-        "run_proc_batch is replaced by osl_ephys.pipeline.run_batch.", FutureWarning
-    )
-    if dask_client:
-        raise ValueError(
-            "dask is no longer used; pass n_workers to osl_ephys.pipeline.run_batch instead."
-        )
-    infiles, _, _ = process_file_inputs(files)
-    sessions = manifest.from_v2(infiles, subjects)
-    results = run_batch(
-        config,
-        sessions,
-        outdir or os.getcwd(),
-        n_workers=1,
-        log_dir=logsdir,
-        qc_dir=reportdir if gen_report else False,
-        extra_funcs=extra_funcs,
-        covs=covs,
-        overwrite=overwrite,
-        random_seed=random_seed,
-        verbose=verbose,
-        mneverbose=mneverbose,
-    )
-    return np.array([status != "failed" for _, status, _, _ in results])
-
-
-def main(argv=None):
-    """The ``osl_preproc`` command (v2); use ``osl-ephys run``."""
-    if argv is None:
-        argv = sys.argv[1:]
-    parser = argparse.ArgumentParser(
-        description="Batch preprocess some fif files (use 'osl-ephys run')."
-    )
-    parser.add_argument("config", type=str, help="yaml defining preproc")
-    parser.add_argument(
-        "files",
-        type=str,
-        help="plain text file containing full paths to files to be processed",
-    )
-    parser.add_argument(
-        "--outdir",
-        type=str,
-        default=None,
-        help="Path to output directory to save data in",
-    )
-    parser.add_argument(
-        "--logsdir", type=str, default=None, help="Path to logs directory"
-    )
-    parser.add_argument(
-        "--reportdir", type=str, default=None, help="Path to report directory"
-    )
-    parser.add_argument(
-        "--gen_report", type=bool, default=True, help="Should we generate a report?"
-    )
-    parser.add_argument(
-        "--overwrite",
-        action="store_true",
-        default=False,
-        help="Overwrite previous output files",
-    )
-    parser.add_argument(
-        "--verbose",
-        type=str,
-        default="INFO",
-        help="Logging level for osl-ephys functions",
-    )
-    parser.add_argument(
-        "--mneverbose",
-        type=str,
-        default="WARNING",
-        help="Logging level for MNE functions",
-    )
-    parser.add_argument("--strictrun", action="store_true", help="Ignored")
-    args = parser.parse_args(argv)
-    run_proc_batch(**vars(args))
-
-
-if __name__ == "__main__":
-    main()

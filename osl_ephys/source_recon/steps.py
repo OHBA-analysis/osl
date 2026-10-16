@@ -6,7 +6,7 @@ from __future__ import annotations
 import logging
 
 from osl_ephys.source_recon import beamforming, freesurfer
-from osl_ephys.pipeline.registry import step, ignored_options, renamed_option
+from osl_ephys.pipeline.registry import step
 from osl_ephys.session import Session
 
 logger = logging.getLogger("osl_ephys")
@@ -30,7 +30,6 @@ def recon_all(dataset, userargs):
 @step("coreg", per="subject")
 def make_watershed_bem(dataset, userargs):
     """FreeSurfer's watershed BEM surfaces for the subject (needs FreeSurfer)."""
-    ignored_options(userargs, "overwrite")
     freesurfer.make_watershed_bem(Session.from_dataset(dataset), **userargs)
     return dataset
 
@@ -40,12 +39,10 @@ def minimum_norm(dataset, userargs):
     """Minimum-norm inverse operator from the forward model.
 
     Options: ``chantypes``, ``rank``, ``depth``, ``loose``,
-    ``frequency_range`` (v2 ``freq_range``). The RHINO route uses the
+    ``frequency_range``. The RHINO route uses the
     volumetric forward model, the FreeSurfer route the surface one.
     ``lambda2`` and ``pick_ori`` belong to the parcellation step.
     """
-    renamed_option(userargs, "freq_range", "frequency_range")
-    ignored_options(userargs, "lambda2", "pick_ori")
     session = Session.from_dataset(dataset)
     fwd_file = (
         None
@@ -61,12 +58,8 @@ def beamform(dataset, userargs):
     """LCMV beamformer filters, saved with the session.
 
     Options: ``chantypes``, ``rank``, ``pick_ori``, ``reduce_rank``,
-    ``frequency_range`` (v2 ``freq_range``), ``use_bilateral_pairs``,
+    ``frequency_range``, ``use_bilateral_pairs``,
     ``bilateral_tol``, ``bilateral_tol_midline``.
     """
-    renamed_option(userargs, "freq_range", "frequency_range")
-    ignored_options(
-        userargs, "weight_norm", "reg", "dipole_patches_file", "group_patches"
-    )
     beamforming.lcmv_beamformer(Session.from_dataset(dataset), **userargs)
     return dataset

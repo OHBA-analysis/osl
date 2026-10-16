@@ -73,13 +73,6 @@ from .wrappers import (
     end_timer,
 )
 
-# run_proc_batch / run_proc_chain are osl-ephys's own runners; re-exported here
-# so existing `from ...semp import run_proc_batch` keeps working (see module
-# docstring -- semp wrappers resolve by name, no shim needed).
-from osl_ephys.preprocessing import run_proc_batch, run_proc_chain
-
 __all__ = [
     "utils",
-    "run_proc_batch",
-    "run_proc_chain",
 ]

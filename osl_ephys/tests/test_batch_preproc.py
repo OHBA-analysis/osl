@@ -6,7 +6,6 @@ import tempfile
 import os
 
 import mne
-import numpy as np
 
 
 class TestPreprocessingChain(unittest.TestCase):
@@ -34,7 +33,7 @@ class TestPreprocessingChain(unittest.TestCase):
         os.remove(cls.fpath)
 
     def test_simple_chain(self):
-        from ..preprocessing import run_proc_chain
+        from ..pipeline import run_chain
 
         cfg = """
         meta:
@@ -46,7 +45,10 @@ class TestPreprocessingChain(unittest.TestCase):
           - bad_segments:   {segment_len: 800, picks: 'grad'}
         """
 
-        dataset = run_proc_chain(cfg, self.fpath)
+        with tempfile.TemporaryDirectory() as outdir:
+            dataset = run_chain(
+                cfg, {"id": "sub-01", "raw_file": self.fpath}, outdir=outdir
+            )
 
         # Just testing that things run not that the outputs are sensible...
         assert isinstance(dataset["raw"], mne.io.fiff.raw.Raw)
@@ -106,7 +108,7 @@ class TestPreprocessingBatch(unittest.TestCase):
                 os.remove(fpath)
 
     def test_simple_batch(self):
-        from ..preprocessing import run_proc_batch
+        from ..pipeline import run_batch
 
         cfg = """
         meta:
@@ -116,15 +118,15 @@ class TestPreprocessingBatch(unittest.TestCase):
           - bad_segments:   {segment_len: 800, picks: 'grad'}
         """
 
-        # Normal run
-        td = tempfile.TemporaryDirectory()
-        goods = run_proc_batch(cfg, self.infiles, outdir=td.name)
-
-        assert np.all(goods == np.array([1, 0, 1]))
+        # The second file does not exist
+        with tempfile.TemporaryDirectory() as outdir:
+            results = run_batch(cfg, self.infiles, outdir, qc_dir=False)
+        goods = [status != "failed" for _, status, _, _ in results]
+        assert goods == [True, False, True]
 
     def test_batch_mixes_existing_and_new_outputs(self):
         """Skipped and processed files must have the same return type."""
-        from ..preprocessing import run_proc_batch
+        from ..pipeline import run_batch
 
         cfg = """
         meta:
@@ -135,13 +137,11 @@ class TestPreprocessingBatch(unittest.TestCase):
         """
 
         with tempfile.TemporaryDirectory() as outdir:
-            first = run_proc_batch(cfg, [self.infiles[0]], outdir=outdir)
-            assert np.all(first == np.array([1]))
+            first = run_batch(cfg, [self.infiles[0]], outdir, qc_dir=False)
+            assert [s for _, s, _, _ in first] != ["failed"]
 
             # The first output is skipped, while the second is newly made.
-            mixed = run_proc_batch(
-                cfg,
-                [self.infiles[0], self.infiles[2]],
-                outdir=outdir,
+            mixed = run_batch(
+                cfg, [self.infiles[0], self.infiles[2]], outdir, qc_dir=False
             )
-            assert np.all(mixed == np.array([1, 1]))
+            assert [s != "failed" for _, s, _, _ in mixed] == [True, True]

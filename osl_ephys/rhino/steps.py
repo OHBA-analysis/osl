@@ -13,14 +13,13 @@ import numpy as np
 
 from osl_ephys import files, rhino
 from osl_ephys.source_recon import freesurfer
-from osl_ephys.pipeline.registry import step, ignored_options, renamed_option
+from osl_ephys.pipeline.registry import step
 from osl_ephys.session import Session
 
 logger = logging.getLogger("osl_ephys")
 
 
 @step("coreg", per="subject")
-@step("coreg", name="compute_surfaces", per="subject")
 def extract_surfaces(dataset, userargs):
     """Extract the head surfaces from the subject's structural MRI with FSL.
 
@@ -28,7 +27,6 @@ def extract_surfaces(dataset, userargs):
     ``nonlinear_registration``. Skipped for a session with no ``smri_file``,
     which uses the MNI152 surfaces.
     """
-    ignored_options(userargs, "cleanup_files", "recompute_surfaces", "use_qform")
     row = dataset["session"]
     if not row.get("smri_file"):
         logger.info(f"{row['id']} has no structural MRI; the MNI152 surfaces are used.")
@@ -40,15 +38,12 @@ def extract_surfaces(dataset, userargs):
 
 
 @step("coreg")
-@step("coreg", name="extract_polhemus_from_info")
-@step("coreg", name="extract_fiducials_from_fif")
 def extract_fiducials_and_headshape(dataset, userargs):
     """Fiducials and headshape points from the preprocessed file's digitisation.
 
     Options: ``include_eeg_as_headshape``, ``include_hpi_as_headshape``,
     ``include_extra_as_headshape``.
     """
-    ignored_options(userargs, "rescale")
     rhino.extract_fiducials_and_headshape_from_fif(
         Session.from_dataset(dataset), **userargs
     )
@@ -56,14 +51,14 @@ def extract_fiducials_and_headshape(dataset, userargs):
 
 
 @step("coreg")
-def extract_polhemus_from_pos(dataset, userargs):
+def extract_fiducials_and_headshape_from_pos(dataset, userargs):
     """Fiducials and headshape points from the session's ``pos_file``."""
     rhino.extract_fiducials_and_headshape_from_pos(Session.from_dataset(dataset))
     return dataset
 
 
 @step("coreg")
-def extract_polhemus_from_elc(dataset, userargs):
+def extract_fiducials_and_headshape_from_elc(dataset, userargs):
     """Fiducials and headshape points from the session's ``elc_file``. Option: ``remove_nose``."""
     rhino.extract_fiducials_and_headshape_from_elc(
         Session.from_dataset(dataset), **userargs
@@ -108,13 +103,11 @@ def coregister(dataset, userargs):
     """Coregister the head (sensors and headshape) with the MRI.
 
     RHINO route options: ``use_headshape``, ``use_nose``,
-    ``allow_mri_scaling`` (v2 ``allow_smri_scaling``), ``n_init``,
+    ``allow_mri_scaling``, ``n_init``,
     ``plot_type``, ``already_coregistered`` (just save the files RHINO
     needs). FreeSurfer route options: ``allow_mri_scaling``, ``n_init``,
     ``fit_fiducials``, ``fit_icp``.
     """
-    renamed_option(userargs, "allow_smri_scaling", "allow_mri_scaling")
-    ignored_options(userargs, "use_dev_ctf_t")
     session = Session.from_dataset(dataset)
     if freesurfer.is_freesurfer_route(dataset, userargs):
         for name in ("use_headshape", "use_nose", "plot_type", "already_coregistered"):
@@ -140,8 +133,7 @@ def forward_model(dataset, userargs):
 
     RHINO route (volumetric grid): ``model``, ``gridstep``, ``mindist``,
     ``exclude``, ``eeg``, ``meg``. FreeSurfer route, or
-    ``source_space: surface``: ``source_space``, ``spacing`` (v2
-    ``gridstep``), ``model``, ``conductivity``, ``ico``, ``mindist``,
+    ``source_space: surface``: ``source_space``, ``spacing``, ``model``, ``conductivity``, ``ico``, ``mindist``,
     ``eeg``.
     """
     if freesurfer.is_freesurfer_route(dataset, userargs) or userargs.get(
@@ -150,7 +142,6 @@ def forward_model(dataset, userargs):
         "surface",
         "surf",
     ):
-        renamed_option(userargs, "gridstep", "spacing")
         userargs.pop("meg", None)
         userargs.pop("exclude", None)
         freesurfer.forward_model(Session.from_dataset(dataset), **userargs)

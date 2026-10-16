@@ -12,7 +12,6 @@ import matplotlib
 from nilearn.plotting import plot_markers, plot_img_on_surf
 
 from osl_ephys import files
-from osl_ephys.utils.misc import warn_mask_file_unused
 from osl_ephys.parcellation.parcellation import parcel_vector_to_nifti, Parcellation
 
 _logger = logging.getLogger("osl_ephys")
@@ -204,7 +203,6 @@ def plot_brain_surface(
     remove_subcortical_voxels: bool = False,
     filename: Optional[str] = None,
     show_plot: Optional[bool] = None,
-    mask_file: Optional[str] = None,
 ):
     """Plot a 2D heat map on the surface of the brain.
 
@@ -270,7 +268,6 @@ def plot_brain_surface(
     ax : plt.axes
         Matplotlib axis object. Only returned if :code:`filename` is None.
     """
-    warn_mask_file_unused(mask_file)
     if vmin is None:
         vmin = np.min(values)
     if vmax is None:

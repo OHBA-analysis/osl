@@ -11,8 +11,7 @@ import mne
 import numpy as np
 
 from osl_ephys.group import sign_flipping
-from osl_ephys.pipeline.registry import step, ignored_options, renamed_option
-from osl_ephys.session import Session
+from osl_ephys.pipeline.registry import step
 
 logger = logging.getLogger("osl_ephys")
 
@@ -72,7 +71,6 @@ def fix_sign_ambiguity(dataset, userargs):
     ``belief_propagation`` or ``sdp``, plus that solver's options). Writes
     ``<id>_sflip_parc-raw.fif``.
     """
-    ignored_options(userargs, "n_init", "n_iter", "max_flips")
     n_embeddings = userargs.pop("n_embeddings", 15)
     standardize = userargs.pop("standardize", True)
     method = userargs.pop("method", "coordinate_ascent")

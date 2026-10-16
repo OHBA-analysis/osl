@@ -18,7 +18,7 @@ from osl_ephys.utils.logger import log_or_print
 from osl_ephys.parcellation.parcellation import (
     guess_parcellation,
     parcel_centers,
-    parcel_vector_to_voxel_grid,
+    parcel_vector_to_nifti,
 )
 
 
@@ -284,7 +284,7 @@ def plot_source_topo(
         fig, axis = plt.subplots()
 
     # Fill parcel values into a 3D voxel grid
-    data_map = parcel_vector_to_voxel_grid(mask_file, parcellation_file, data_map)
+    data_map = parcel_vector_to_nifti(data_map, parcellation_file).get_fdata()
     data_map = data_map[..., np.newaxis]
     mask = nib.load(mask_file)
     nii = nib.Nifti1Image(data_map, mask.affine, mask.header)
