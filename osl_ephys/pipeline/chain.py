@@ -11,7 +11,7 @@ import mne
 from osl_ephys.pipeline import config as cfg
 from osl_ephys.pipeline import manifest, registry
 from osl_ephys.utils import logger as osl_logger
-from osl_ephys.utils.file_handling import find_run_id
+from osl_ephys.io.file_handling import find_run_id
 from osl_ephys.utils.misc import set_random_seed
 
 logger = logging.getLogger("osl_ephys")

@@ -22,7 +22,7 @@ import csv
 from collections import OrderedDict
 from pathlib import Path
 
-from osl_ephys.utils.file_handling import find_run_id
+from osl_ephys.io.file_handling import find_run_id
 
 COLUMNS = (
     "id",

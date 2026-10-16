@@ -1,6 +1,7 @@
 from importlib.metadata import PackageNotFoundError, version
 
 from . import utils
+from . import io
 from . import preprocessing
 from . import maxfilter
 from . import report

@@ -273,7 +273,7 @@ Utilities
 
 How do I use the Study class for finding my data?
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-The `Study <https://osl-ephys.readthedocs.io/en/latest/autoapi/osl_ephys/utils/study/index.html#osl_ephys.utils.study.Study>`_ class enables finding data paths with multiple wild cars, and selecting those that satisfy a specific wild card.
+The `Study <https://osl-ephys.readthedocs.io/en/latest/autoapi/osl_ephys/io/study/index.html#osl_ephys.io.study.Study>`_ class enables finding data paths with multiple wild cars, and selecting those that satisfy a specific wild card.
 
 For example 
 
@@ -281,7 +281,7 @@ For example
 
    import osl_ephys
 
-   study = osl_ephys.utils.Study('/path/to/sub{subject_id}-run{run_id}_preproc-raw.fif')
+   study = osl_ephys.io.Study('/path/to/sub{subject_id}-run{run_id}_preproc-raw.fif')
 
    all_files = study.get()
    subject1_files = study.get(subject_id=1)

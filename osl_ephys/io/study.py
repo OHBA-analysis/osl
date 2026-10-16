@@ -83,7 +83,7 @@ class Study:
         ]
 
         # Replace braces with wildcards
-        self.globdir = re.sub("\{.*?\}", "*", studydir)
+        self.globdir = re.sub(r"\{.*?\}", "*", studydir)
 
         self.match_files = sorted(glob.glob(self.globdir))
         print("found {} files".format(len(self.match_files)))

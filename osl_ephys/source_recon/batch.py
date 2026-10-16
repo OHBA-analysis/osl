@@ -10,7 +10,7 @@ import mne
 
 from ..report import src_report
 from ..utils import logger as osl_logger
-from ..utils import validate_outdir, find_run_id
+from ..io import validate_outdir, find_run_id
 from ..utils.misc import set_random_seed
 
 import logging

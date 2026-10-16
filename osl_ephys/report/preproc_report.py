@@ -30,7 +30,7 @@ try:
 except ImportError:
     from scipy.ndimage.filters import uniform_filter1d
 
-from ..utils import process_file_inputs, validate_outdir
+from ..io import process_file_inputs, validate_outdir
 from ..utils.logger import log_or_print
 from ..source_recon.parcellation import plot_source_topo
 

@@ -7,7 +7,7 @@ import ast
 import argparse
 import tempfile
 import numpy as np
-from ..utils import validate_outdir, add_subdir, process_file_inputs
+from ..io import validate_outdir, add_subdir, process_file_inputs
 
 parser = argparse.ArgumentParser(description="Batch run Maxfilter on some fif files.")
 parser.add_argument(

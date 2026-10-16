@@ -891,7 +891,6 @@ osl_ephys/
     chain.py           run_chain: one session through the config
     batch.py           run_batch: manifest x config over the runner, then the group section and the report
     cli.py             the `osl-ephys` command: run, download-data, check, func, ica, maxfilter
-    compat.py          the v2 entry points (run_proc_chain, run_proc_batch, run_src_chain, run_src_batch) as FutureWarning wrappers
   io/                  readers and file-finding helpers
     spm/               spmio (SPMMEEG)
     opm.py             OPM file conversion
@@ -938,13 +937,14 @@ osl_ephys/
 ```
 
 Gone by the end: `preprocessing/batch.py` and `source_recon/batch.py`
-(replaced by `pipeline/` and `pipeline/compat.py`),
+(replaced by `pipeline/`; no wrappers at the old names, user 2026-10-16),
 `preprocessing/mne_wrappers.py` and `osl_wrappers.py` (merged into
 `steps.py`, same function names), `source_recon/rhino.py`,
 `source_recon/session.py` (top-level `session.py`), `report/preproc_report.py`,
 `src_report.py` and `templates/`, `utils/parallel.py`, `utils/spmio/`,
 `utils/opm.py`, `utils/study.py` and `utils/file_handling.py` (moved to
-`io/`). Already gone (2026-10-16): the per-subpackage README.md files
+`io/`, done 2026-10-16; `opm.py` lost a dead `if False:` block of
+unfinished plotting code). Already gone (2026-10-16): the per-subpackage README.md files
 (docstrings now), `utils/package.py`, `utils/version_utils.py`
 (`pipeline.config.check_version`), `utils/run_func.py`
 (`osl-ephys func`), `utils/create_neuromag306_info.py`.

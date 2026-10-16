@@ -70,10 +70,10 @@ class TestFileInputs(unittest.TestCase):
         assert len(fnames) == 8
 
     def test_process_file_inputs(self):
-        from .. import utils
+        from .. import io
 
         # Tests with 'correct' file inputs
-        infiles, outnames, goods = utils.process_file_inputs(self.file_inputs)
+        infiles, outnames, goods = io.process_file_inputs(self.file_inputs)
 
         # infiles should be same as input file list
         self.assertListEqual(infiles, self.file_inputs)
@@ -86,10 +86,10 @@ class TestFileInputs(unittest.TestCase):
         assert np.sum(goods) == len(self.fnames)
 
     def test_process_file_inputs_with_missing(self):
-        from .. import utils
+        from .. import io
 
         # Tests with 'correct' file inputs
-        infiles, outnames, goods = utils.process_file_inputs(self.file_inputs_test)
+        infiles, outnames, goods = io.process_file_inputs(self.file_inputs_test)
 
         # infiles should be same as input file list
         self.assertListEqual(infiles, self.file_inputs_test)
@@ -102,36 +102,36 @@ class TestFileInputs(unittest.TestCase):
         assert np.sum(goods) == len(self.fnames_test) - 4
 
     def test_process_file_inputs_with_regular_expression(self):
-        from .. import utils
+        from .. import io
 
         # Tests with regular expression for all subjects
         reg = os.path.join(self.test_dir, "sub-*_task-*_meg-raw.fif")
-        infiles, outnames, goods = utils.process_file_inputs(reg)
+        infiles, outnames, goods = io.process_file_inputs(reg)
         assert len(infiles) == 8
 
         # Tests with regular expression for all subjects 'read' dataset
         reg = os.path.join(self.test_dir, "sub-*_task-read_meg-raw.fif")
-        infiles, outnames, goods = utils.process_file_inputs(reg)
+        infiles, outnames, goods = io.process_file_inputs(reg)
         assert len(infiles) == 3
 
         # Tests with regular expression for subb-006
         reg = os.path.join(self.test_dir, "sub-006_task-*_meg-raw.fif")
-        infiles, outnames, goods = utils.process_file_inputs(reg)
+        infiles, outnames, goods = io.process_file_inputs(reg)
         assert len(infiles) == 2
 
     def test_process_file_inputs_with_single_path(self):
-        from .. import utils
+        from .. import io
 
         # BROKEN - we only touched a these files so they don't throw a
         # UnicodeDecodeError and trigger glob, need to touch or make a fake
         # binary file?
 
         # Single input that does exist
-        infiles, outnames, goods = utils.process_file_inputs(self.file_inputs_test[2])
+        infiles, outnames, goods = io.process_file_inputs(self.file_inputs_test[2])
         # assert(np.sum(goods) == 1)
 
         # Single input that does not exist
-        infiles, outnames, goods = utils.process_file_inputs(self.file_inputs_test[10])
+        infiles, outnames, goods = io.process_file_inputs(self.file_inputs_test[10])
         # assert(np.sum(goods) == 0)
 
 
@@ -190,7 +190,7 @@ class TestStudyClass(unittest.TestCase):
         shutil.rmtree(cls.test_dir)
 
     def test_simple_study(self):
-        from ..utils import Study
+        from ..io import Study
 
         fbase = os.path.join(self.test_dir, "{subj}_task-{task}_meg-{preproc}.fif")
 
