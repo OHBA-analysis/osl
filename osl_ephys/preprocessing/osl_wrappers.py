@@ -18,7 +18,6 @@ import glmtools
 from ..glm import (
     glm_epochs,
     glm_spectrum,
-    glm_irasa,
     group_glm_epochs,
     group_glm_spectrum,
     MaxStatPermuteGLMSpectrum,
@@ -1177,7 +1176,7 @@ def run_osl_glm_fit(dataset, userargs):
         else:
             dataset[name] = glm_epochs(dataset["design_config"], dataset[target])
 
-    elif method in ["spectrum", "glm_spectrum", "irasa", "glm_irasa"]:
+    elif method in ["spectrum", "glm_spectrum"]:
         if run_on_group:
             dataset[name] = group_glm_spectrum(
                 dataset[target],
@@ -1205,22 +1204,13 @@ def run_osl_glm_fit(dataset, userargs):
             else:
                 reg_unitmax = userargs["covs"][reg_unitmax]
 
-            if method in ["spectrum", "glm_spectrum"]:
-                dataset[name] = glm_spectrum(
-                    dataset[target],
-                    reg_unitmax=reg_unitmax,
-                    reg_ztrans=reg_ztrans,
-                    reg_categorical=reg_categorical,
-                    **userargs,
-                )
-            else:
-                dataset[name] = glm_irasa(
-                    dataset[target],
-                    reg_unitmax=reg_unitmax,
-                    reg_ztrans=reg_ztrans,
-                    reg_categorical=reg_categorical,
-                    **userargs,
-                )
+            dataset[name] = glm_spectrum(
+                dataset[target],
+                reg_unitmax=reg_unitmax,
+                reg_ztrans=reg_ztrans,
+                reg_categorical=reg_categorical,
+                **userargs,
+            )
 
     if plot_summary:
         dataset["fig"][name + "design_summary"] = dataset[name].design.plot_summary(

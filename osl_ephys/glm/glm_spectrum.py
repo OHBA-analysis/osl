@@ -3,8 +3,6 @@ from copy import deepcopy
 from pathlib import Path
 from itertools import compress
 
-import inspect
-import warnings
 import mne
 import numpy as np
 import matplotlib.pyplot as plt
@@ -14,7 +12,6 @@ from scipy import signal, stats
 
 import glmtools as glm
 from sails.stft import glm_periodogram
-from sails.stft import glm_irasa as sails_glm_irasa
 
 from .glm_base import (
     GLMBaseResult,
@@ -659,178 +656,6 @@ def glm_spectrum(
         return SensorGLMSpectrum(glmsp, XX.info)
     else:
         return glmsp
-
-
-def glm_irasa(
-    XX,
-    method="modified",
-    resample_factors=None,
-    aperiodic_average="median",
-    reg_categorical=None,
-    reg_ztrans=None,
-    reg_unitmax=None,
-    contrasts=None,
-    fit_intercept=True,
-    standardise_data=False,
-    window_type="hann",
-    nperseg=None,
-    noverlap=None,
-    nfft=None,
-    detrend="constant",
-    return_onesided=True,
-    scaling="density",
-    mode="psd",
-    fmin=None,
-    fmax=None,
-    axis=-1,
-    fs=1,
-    verbose="WARNING",
-    **kwargs,
-):
-    """Compute a GLM-IRASA from a MNE-Python Raw data object.
-
-    Parameters
-    ----------
-    XX : {MNE Raw object, or data array}
-        Data to compute GLM-Spectrum from
-    method : str
-        IRASA method, passed to sails when the installed version supports it
-        (sails 1.13 has a single method and ignores this)
-    **kwargs
-        Further arguments passed to :py:func:`sails.stft.glm_irasa`, e.g.
-        ``spectrum_method`` in sails 1.13
-    standardise_data : bool
-        Flag indicating whether to z-transform input data (Default value = False)
-    reg_categorical : dict or None
-        Dictionary of covariate time series to be added as binary regessors. (Default value = None)
-    reg_ztrans : dict or None
-        Dictionary of covariate time series to be added as z-standardised regessors. (Default value = None)
-    reg_unitmax : dict or None
-        Dictionary of confound time series to be added as positive-valued unitmax regessors. (Default value = None)
-    contrasts : dict or None
-        Dictionary of contrasts to be computed in the model.
-        (Default value = None, will add a simple contrast for each regressor)
-    fit_intercept : bool
-        Specifies whether a constant valued 'intercept' regressor is included in the model. (Default value = True)'
-
-    method : {'original', 'modified'}
-        whether to compute the original implementation of IRASA or the modified update
-        (default is 'modified')
-    resample_factors : {None, array_like}
-        array of resampling factors to average across or None, in which a set
-        of factors are automatically computed (default is None).
-    aperiodic_average : {'mean', 'median', 'median_bias', 'min'}
-        method for averaging across irregularly resampled spectra to estimate
-        the aperiodic component (default is 'median').'
-
-    nperseg : int
-        Length of each segment. Defaults to None, but if window is str or
-        tuple, is set to 256, and if window is array_like, is set to the
-        length of the window.
-    noverlap : int
-        Number of samples that successive sliding windows should overlap.
-    window_type : str or tuple or array_like, optional
-        Desired window to use. If `window` is a string or tuple, it is
-        passed to `scipy.signal.windows.get_window` to generate the
-        window values, which are DFT-even by default. See `scipy.signal.windows`
-        for a list of windows and required parameters.
-        If `window` is array_like it will be used directly as the window and its
-        length must be nperseg. Defaults to a Hann window.
-    detrend : str or function or `False`, optional
-        Specifies how to detrend each segment. If `detrend` is a
-        string, it is passed as the `type` argument to the `detrend`
-        function. If it is a function, it takes a segment and returns a
-        detrended segment. If `detrend` is `False`, no detrending is
-        done. Defaults to 'constant'.'
-
-    nfft : int
-        Length of the FFT to use (Default value = 256)
-    axis : int
-        Axis of input array along which the computation is performed. (Default value = -1)
-    return_onesided : bool, optional
-        If `True`, return a one-sided spectrum for real data. If
-        `False` return a two-sided spectrum. Defaults to `True`, but for
-        complex data, a two-sided spectrum is always returned.
-    mode : {'psd', 'magnitude', 'angle', 'phase', 'complex'}
-        Which type of spectrum to return (Default value = 'psd')
-    scaling : { 'density', 'spectrum' }
-        Selects between computing the power spectral density ('density')
-        where `Pxx` has units of V**2/Hz and computing the power
-        spectrum ('spectrum') where `Pxx` has units of V**2, if `x`
-        is measured in V and `fs` is measured in Hz. Defaults to
-        'density'
-    fs : float
-        Sampling rate of the data
-    fmin : {float, None}
-        Smallest frequency in desired range (left hand boundary)
-    fmax : {float, None}
-        Largest frequency in desired range (right hand boundary)'
-
-    verbose : {None, 'DEBUG', 'INFO', 'WARNING', 'CRITICAL'}
-        String indicating the level of detail to be printed to the screen during computation.'
-
-    Returns
-    -------
-    :py:class:`SensorGLMSpectrum <osl_ephys.glm.glm_spectrum.SensorGLMSpectrum>`
-        SensorGLMSpectrum instance containing the fitted GLM-Spectrum.
-
-    References
-    ----------
-    .. [1] Quinn, A. J., Atkinson, L., Gohil, C., Kohl, O., Pitt, J., Zich, C., Nobre,
-       A. C., & Woolrich, M. W. (2022). The GLM-Spectrum: A multilevel framework
-       for spectrum analysis with covariate and confound modelling. Cold Spring
-       Harbor Laboratory. https://doi.org/10.1101/2022.11.14.516449
-
-    """
-    if isinstance(XX, mne.io.base.BaseRaw):
-        fs = XX.info["sfreq"]
-        nperseg = int(np.floor(fs)) if nperseg is None else nperseg
-        YY = XX.get_data()
-        axis = 1
-    else:
-        YY = XX
-
-    if standardise_data:
-        YY = stats.zscore(YY, axis=axis)
-
-    # sails dropped the IRASA `method` argument in 1.13; older versions need it
-    if "method" in inspect.signature(sails_glm_irasa).parameters:
-        kwargs["method"] = method
-    elif method != "modified":
-        warnings.warn(
-            f"method='{method}' is ignored by the installed sails, which has one IRASA method"
-        )
-
-    # sails.sftf.config freqvals isn't right when frange is trimmed!
-    aper, osc = sails_glm_irasa(
-        YY,
-        axis=axis,
-        resample_factors=resample_factors,
-        aperiodic_average=aperiodic_average,
-        reg_categorical=reg_categorical,
-        reg_ztrans=reg_ztrans,
-        reg_unitmax=reg_unitmax,
-        contrasts=contrasts,
-        fit_intercept=fit_intercept,
-        window_type=window_type,
-        fs=fs,
-        nperseg=nperseg,
-        noverlap=noverlap,
-        nfft=nfft,
-        detrend=detrend,
-        return_onesided=return_onesided,
-        scaling=scaling,
-        mode=mode,
-        fmin=fmin,
-        fmax=fmax,
-        verbose=verbose,
-        **kwargs,
-    )
-
-    if isinstance(XX, mne.io.base.BaseRaw):
-        return SensorGLMSpectrum(aper, XX.info), SensorGLMSpectrum(osc, XX.info)
-    else:
-        return aper, osc
 
 
 def read_glm_spectrum(infile):

@@ -144,11 +144,10 @@ tutorials; cleaned up in phase 8).
     needs a conda-forge feedstock before phase 9), `fslpy`, `parse`,
     `numba`, `jinja2` (until D5)
   - add: `osl-dynamics` (D1a) or `pooch` (D1b/c)
-  - `sails<1.8`: `glm_irasa` in sails 1.8 to 1.13 raises inside sails itself
-    (its own code warns "not fully operational"); 1.7.0 is the last version
-    where it works, and `glm_periodogram` works on all of them. Raise with
-    Andrew; lift the pin when sails fixes it. osl-ephys' `glm_irasa` already
-    tolerates the removed `method` argument (#449).
+  - `sails` unpinned. Its `glm_irasa` raises inside sails itself from 1.8 to
+    1.13, so osl-ephys' `glm_irasa` wrapper is dropped rather than pinning
+    sails to 1.7 (decided 2026-10-16; the user does not expect a sails fix).
+    `glm_periodogram` works on every version.
 - `.github/workflows/`: `tests.yml` (push + PR, matrix Python 3.10-3.13,
   ubuntu + macos, `pip install -e .[dev]`, pytest), `codespell.yml`,
   `black.yml`, `release.yml`. Delete `osl-cicd-actions.yml`.
@@ -223,8 +222,7 @@ convention, six kept under their original names in `parcellation/legacy/`,
 three dropped with the reason in the table below and the inventory.
 Found while porting: `fetch_file` raised "not a data file" for anything
 added to osl-files since the registry was cached (up to an hour) instead of
-refreshing the registry first; fixed in the osl-ephys copy, to be offered to
-osl-dynamics as a PR.
+refreshing the registry first; fixed in the osl-ephys copy.
 
 Reference files (8.4 MB in `source_recon/files`, 6.9 MB in
 `utils/simulation_config`) move out; fetched on demand through a ported
@@ -566,7 +564,7 @@ The seven stale branches, settled 2026-10-15 (D7):
 | `leadfields` | one commit after its merged PR #290 (3D leadfield option) | merged into `v3` (32a6360) |
 | `ohba-examples` | one commit, the Oxford SSP pipeline examples | merged into `v3` (96d43e2) |
 | `new-sign-flip` | two commits by scho97, +825 lines: new sign-flipping methods in `sign_flipping.py` and `wrappers.py` | merged into `v3` (55227d7); phase 4 compares these methods with the osl-dynamics implementation before choosing |
-| `viz` | one 2022 commit against the old `osl/` package path (sensor-space plots) | not merged: it would add files under a path that no longer exists. Port `sensor_plots.py` by hand if the plots are wanted, otherwise delete the branch |
+| `viz` | one 2022 commit against the old `osl/` package path (sensor-space plots) | deleted 2026-10-16 (user's decision); nothing ported |
 
 ## 6. Risks
 
@@ -620,7 +618,7 @@ line in its scope says "undecided".
 | `preprocessing.ica_label`, `plot_ica`, `manual_ica.*` | `ica_label`, `apply`, `plot_ica`, `osl_MNEBrowseFigure`, `manual_ica`, `apply_ica`, review server | Keep (GUI and manual workflow; nothing in osl-dynamics). Add the mne-icalabel automatic route from osl-dynamics as a new wrapper. |
 | `preprocessing.semp.*` | AAS/OBS/SSP epoching, metrics, plots, tracer | Keep (merged from #452); scope of maintenance to be agreed with its author. |
 | `maxfilter` | `run_maxfilter`, `run_multistage_maxfilter`, `run_cbu_3stage_maxfilter`, `run_maxfilter_batch`, `quick_load_dig`, `fit_cbu_origin`, `main` | Port (osl-dynamics `run_maxfilter` covers standard, multistage, CBU 3-stage, chunking, split chains) behind the same CLI; `run_maxfilter_batch` keeps its file-list interface. |
-| `glm.*` | `glm_spectrum`, `glm_irasa`, `glm_epochs`, group variants, permutation classes, readers, all `plot_*` | Keep all (osl-dynamics has no sensor GLM). |
+| `glm.*` | `glm_spectrum`, `glm_epochs`, group variants, permutation classes, readers, all `plot_*` | Keep all (osl-dynamics has no sensor GLM). Drop `glm_irasa` and the `irasa` option of `run_osl_glm_fit` (decided 2026-10-16): it was a thin wrapper around `sails.stft.glm_irasa`, which raises inside sails itself from 1.8 onwards and is unmaintained; keeping it meant pinning sails to 1.7. |
 | `report.preproc_report` | `gen_report_from_fif`, `gen_html_*`, `plot_flowchart`, `plot_rawdata`, `plot_channel_time_series`, `plot_sensors`, `plot_channel_dists`, `plot_spectra`, `plot_freqbands`, `plot_digitisation_2d`, `plot_headmovement`, `plot_eog_summary`, `plot_ecg_summary`, `plot_bad_ica`, `plot_summary_bad_segs`, `plot_summary_bad_chans`, `plot_artefact_scan`, `print_scan_summary`, `plot_events`, `plot_custom_figures` | Every `plot_*` is Keep (becomes a QC plot in the new report). `gen_html_*` and the per-subject pages are Drop: replaced by the table report, which shows the same plots per selected session. `gen_report_from_fif` is Keep as the entry point that regenerates QC plots from a saved fif. |
 | `report.src_report` | `gen_html_*`, `plot_config`, `plot_parcellation`, `plot_sign_flipping_results`, `add_to_data`, `update_config` | `plot_*` Keep as QC plots; `gen_html_*`/`add_to_data`/`update_config` Drop (replaced by `summary.json` per step and the table report). |
 | `source_recon.batch` | `run_src_chain`, `run_src_batch`, `load_config`, `find_func` | Keep as wrappers over the phase 3 runner/registry. |

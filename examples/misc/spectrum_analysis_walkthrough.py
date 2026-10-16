@@ -11,15 +11,6 @@ spec = osl_ephys.glm.glm_spectrum(raw)
 spec.plot_joint_spectrum(freqs=(1, 10, 17), base=0.5, title='testing123')
 
 #%%
-aper, osc = osl_ephys.glm.glm_irasa(raw, mode='magnitude')
-plt.figure()
-ax = plt.subplot(121)
-aper.plot_joint_spectrum(freqs=(1, 10, 17), base=0.5,ax=ax)
-ax = plt.subplot(122)
-osc.plot_joint_spectrum(freqs=(1, 10, 17), base=0.5,ax=ax)
-
-
-#%%
 alpha = raw.copy().filter(l_freq=7, h_freq=13)
 covs = {'alpha': np.abs(signal.hilbert(alpha.get_data()[raw.ch_names.index('MEG1711'), :]))}
 
@@ -30,21 +21,6 @@ ax = plt.subplot(121)
 spec.plot_joint_spectrum(0, freqs=(1, 10, 17), base=0.5,ax=ax)
 ax = plt.subplot(122)
 spec.plot_joint_spectrum(1, freqs=(1, 10, 17), base=0.5,ax=ax)
-
-
-
-
-aper, osc = osl_ephys.glm.glm_irasa(raw, reg_ztrans=covs)
-
-plt.figure()
-ax = plt.subplot(221)
-aper.plot_joint_spectrum(0, freqs=(1, 10, 17), base=0.5,ax=ax)
-ax = plt.subplot(222)
-aper.plot_joint_spectrum(1, freqs=(1, 10, 17), base=0.5,ax=ax)
-ax = plt.subplot(223)
-osc.plot_joint_spectrum(0, freqs=(1, 10, 17), base=0.5,ax=ax)
-ax = plt.subplot(224)
-osc.plot_joint_spectrum(1, freqs=(1, 10, 17), base=0.5,ax=ax)
 
 
 

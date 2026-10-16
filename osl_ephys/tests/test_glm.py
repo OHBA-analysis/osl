@@ -36,8 +36,3 @@ class TestGLMSpectrum(unittest.TestCase):
         from ..glm import glm_spectrum
 
         spec = glm_spectrum(self.raw)
-
-    def test_glm_irasa(self):
-        from ..glm import glm_irasa
-
-        aper, osc = glm_irasa(self.raw)

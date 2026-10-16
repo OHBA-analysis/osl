@@ -66,9 +66,7 @@ dependencies = [
     "pyvista",
     "pyvistaqt",
     "pyyaml",
-    # glm_irasa in sails 1.8 and later raises inside sails itself ("not fully
-    # operational"); 1.7 is the last version where it works
-    "sails<1.8",
+    "sails",
     "scikit-image",
     "scikit-learn",
     "scipy",
