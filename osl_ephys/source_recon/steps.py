@@ -1,7 +1,7 @@
 """The coreg, source_recon, parcellation and group steps of a config.
 
 Each step takes the dataset dict of a session and its options, builds the
-:class:`~osl_ephys.source_recon.session.Session` that holds the session's
+:class:`~osl_ephys.session.Session` that holds the session's
 files, and calls the function that does the work. The v2 step names are
 kept; v2 options that no longer apply are ignored with a warning.
 """
@@ -17,14 +17,14 @@ import numpy as np
 
 from osl_ephys import files
 from osl_ephys.pipeline.registry import step
+from osl_ephys import rhino
 from osl_ephys.source_recon import (
     beamforming,
     freesurfer,
     parcellation,
-    rhino,
     sign_flipping,
 )
-from osl_ephys.source_recon.session import Session
+from osl_ephys.session import Session
 
 logger = logging.getLogger("osl_ephys")
 

@@ -23,9 +23,9 @@ from mne.minimum_norm.inverse import (
 )
 from mne.utils import logger as mne_logger, warn
 
-from osl_ephys.source_recon.session import Session, check_up_to_date
+from osl_ephys.session import Session, check_up_to_date
 
-from osl_ephys.source_recon import rhino
+from osl_ephys.rhino import forward as rhino_forward
 
 
 def lcmv_beamformer(
@@ -550,10 +550,10 @@ def _forward_model_at_coords(
     inside : np.ndarray
         (n,) whether each coordinate is inside the inner skull.
     """
-    src = rhino._mni_source_space(session, coords_mni)
-    info, head_mri_t = rhino._read_head_model(session)
+    src = rhino_forward._mni_source_space(session, coords_mni)
+    info, head_mri_t = rhino_forward._read_head_model(session)
     try:
-        fwd = rhino._make_fwd_solution(
+        fwd = rhino_forward._make_fwd_solution(
             info,
             head_mri_t,
             src=src,
@@ -1537,7 +1537,7 @@ def _get_mni_grid(session: Session, fwd: mne.Forward) -> np.ndarray:
         (n_voxels, 3) MNI coordinates (in mm) of each voxel of the grid. The
         dipoles of the forward model are at coords[fwd["src"][0]["vertno"]].
     """
-    coords = rhino._mni_grid_coords(session.mni_grid_file)
+    coords = rhino_forward._mni_grid_coords(session.mni_grid_file)
     if len(coords) != len(fwd["src"][0]["rr"]):
         raise ValueError(
             f"{session.mni_grid_file} does not match {session.fwd_model_file}. "

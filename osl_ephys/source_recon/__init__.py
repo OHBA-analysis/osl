@@ -2,12 +2,12 @@
 beamforming and minimum norm, parcellation and sign flipping.
 
 Each stage reads and writes the files held by a
-:class:`~osl_ephys.source_recon.session.Session`; the config steps are in
+:class:`~osl_ephys.session.Session`; the config steps are in
 :mod:`~osl_ephys.source_recon.steps`.
 """
 
 from .batch import *
-from .rhino import setup_fsl, check_fsl, fsleyes, fsleyes_overlay
+
 from .freesurfer import (
     setup_freesurfer,
     check_freesurfer,

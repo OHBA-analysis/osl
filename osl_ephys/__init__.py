@@ -4,6 +4,7 @@ from . import utils
 from . import preprocessing
 from . import maxfilter
 from . import report
+from . import rhino
 from . import source_recon
 from . import glm
 

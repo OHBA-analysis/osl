@@ -77,7 +77,7 @@ def _check(args):
 
 def _func(args):
     """Call a function of the package from the command line, e.g.
-    ``osl-ephys func osl_ephys.source_recon.rhino.setup_fsl /opt/fsl``.
+    ``osl-ephys func osl_ephys.rhino.setup_fsl /opt/fsl``.
     Arguments are strings, except None, True and False."""
     module = __import__(args.function.split(".")[0])
     func = module

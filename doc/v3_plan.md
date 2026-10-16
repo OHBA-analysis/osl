@@ -949,9 +949,8 @@ Gone by the end: `preprocessing/batch.py` and `source_recon/batch.py`
 (`pipeline.config.check_version`), `utils/run_func.py`
 (`osl-ephys func`), `utils/create_neuromag306_info.py`.
 
-`source_recon.rhino`, `source_recon.parcellation` and
-`source_recon.sign_flipping` stay importable as thin re-export modules
-for one release with a FutureWarning (v2 user code imports them).
+No re-export shims at the old import paths (user, 2026-10-16): v3 is a
+clean break for imports.
 
 One command, `osl-ephys`, with subcommands, replaces the seven scripts;
 the old names stay as aliases for one release:
@@ -1175,6 +1174,8 @@ test recordings, and the ICA review round-trips a label file through both
 the GUI's save path and the server's.
 
 ### Phase 7: tests
+
+Flaky: `test_batch_preproc.py::TestPreprocessingBatch::test_batch_mixes_existing_and_new_outputs` failed once in a full run on 2026-10-16 and passed on rerun; find the order or timing dependence.
 
 Tests are written in each phase above; this phase is the top-up and the
 CI shape.

@@ -15,7 +15,7 @@ from nilearn import plotting as nilearn_plotting
 
 from osl_ephys import files
 from osl_ephys.utils import misc
-from osl_ephys.source_recon.session import Session, check_up_to_date
+from osl_ephys.session import Session, check_up_to_date
 
 from osl_ephys.source_recon import beamforming as source_recon
 import os

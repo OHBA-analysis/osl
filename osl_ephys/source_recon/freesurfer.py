@@ -22,7 +22,7 @@ from pathlib import Path
 import mne
 import numpy as np
 
-from osl_ephys.source_recon.session import Session, save_params
+from osl_ephys.session import Session, save_params
 
 logger = logging.getLogger("osl_ephys")
 

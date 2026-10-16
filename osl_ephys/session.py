@@ -129,7 +129,7 @@ class CoregFilenames:
 class Session:
     """The files of one M/EEG session in the source reconstruction pipeline.
 
-    The pipeline functions (in :mod:`~osl_ephys.source_recon.rhino`,
+    The pipeline functions (in :mod:`~osl_ephys.rhino`,
     :mod:`~osl_ephys.source_recon.beamforming` and
     :mod:`~osl_ephys.source_recon.parcellation`) take a Session and read and write
     the files held here. Nothing is created on disk until a step writes its
