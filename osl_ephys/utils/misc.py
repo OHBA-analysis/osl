@@ -4,6 +4,10 @@ import logging
 import random
 from pathlib import Path
 
+import warnings
+
+from typing import Optional, Tuple
+
 import numpy as np
 
 logger = logging.getLogger(__name__)
@@ -115,3 +119,110 @@ def set_random_seed(seed=None):
     random.seed(seed)
     np.random.seed(seed)
     return seed
+
+
+def system_call(cmd: str, verbose: bool = True) -> None:
+    """Run a shell command.
+
+    Parameters
+    ----------
+    cmd : str
+        Command to execute.
+    verbose : bool, optional
+        Print the command before executing.
+    """
+    if verbose:
+        print(cmd)
+    os.system(cmd)
+
+
+def top_eig(M: np.ndarray, k: int) -> Tuple[np.ndarray, np.ndarray]:
+    """Compute the top-k eigenvalues and eigenvectors of a symmetric matrix.
+
+    This function uses either :code:`scipy.sparse.linalg.eigsh`
+    (for large matrices and a smaller number of eigenvectors)
+    or :code:`numpy.linalg.eigh` (for smaller matrices or full
+    eigendecomposition).
+
+    Parameters
+    ----------
+    M : np.ndarray
+        Symmetric matrix of shape (n, n).
+    k : int
+        Number of top eigenvalues/eigenvectors to compute.
+
+    Returns
+    -------
+    vals : np.ndarray
+        Top-k eigenvalues. Shape is (k,).
+    vecs : np.ndarray
+        Corresponding eigenvectors as columns. Shape is (n, k).
+    """
+    n = M.shape[0]
+    vals = None
+    if n > 300 and k < n // 2:
+        from scipy.sparse.linalg import eigsh, ArpackNoConvergence
+
+        try:
+            vals, vecs = eigsh(M, k=k, which="LM")
+            idx = np.argsort(-vals)
+            vals, vecs = vals[idx], vecs[:, idx]
+        except (RuntimeError, ArpackNoConvergence):
+            vals = None
+    if vals is None:
+        vals, vecs = np.linalg.eigh(M)
+        if k < n:
+            vals, vecs = vals[-k:], vecs[:, -k:]
+
+    # Make the largest element of each eigenvector positive.
+    # This is to make the result reproducible.
+    largest = np.argmax(np.abs(vecs), axis=0)
+    vecs = vecs * np.sign(vecs[largest, np.arange(vecs.shape[1])])
+    return vals, vecs
+
+
+def override_dict_defaults(
+    default_dict: dict, override_dict: Optional[dict] = None
+) -> dict:
+    """Helper function to update default dictionary values with user values.
+
+    Parameters
+    ----------
+    default_dict : dict
+        Dictionary of default values.
+    override_dict : dict, optional
+        Dictionary of user values.
+
+    Returns
+    -------
+    new_dict : dict
+        default_dict with values replaced by user values.
+    """
+    if override_dict is None:
+        override_dict = {}
+    return {**default_dict, **override_dict}
+
+
+def warn_mask_file_unused(mask_file: Optional[str], stacklevel: int = 3) -> None:
+    """Warn that the deprecated :code:`mask_file` argument was passed.
+
+    Since v3.7.0 brain maps are plotted on the voxel grid of the parcellation
+    file, so :code:`mask_file` is ignored. The argument will be removed in
+    v3.8.0.
+
+    Parameters
+    ----------
+    mask_file : str, optional
+        Value passed by the user. Nothing happens if this is :code:`None`.
+    stacklevel : int, optional
+        Stack level of the user's call, see :func:`warnings.warn`.
+    """
+    if mask_file is None:
+        return
+    warnings.warn(
+        "mask_file is no longer used and will be removed in v3.8.0. Brain maps "
+        "are plotted on the voxel grid of the parcellation file, so the "
+        "mask_file argument can be removed.",
+        FutureWarning,
+        stacklevel=stacklevel,
+    )

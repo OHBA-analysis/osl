@@ -35,7 +35,7 @@ logging.getLogger("numba").setLevel(logging.WARNING)
 
 from fsl import wrappers as fsl_wrappers
 
-from osl_ephys.source_recon.beamforming import transform_recon_timeseries
+from osl_ephys.source_recon._v2_beamforming import transform_recon_timeseries
 from osl_ephys.utils.logger import log_or_print
 from osl_ephys.utils import soft_import
 
@@ -1244,7 +1244,7 @@ def extract_rhino_files(
         Should we generate a report?
     """
     # Avoid circular imports
-    from osl_ephys.source_recon.rhino import plot_surfaces, coreg_display
+    from osl_ephys.source_recon._v2_rhino import plot_surfaces, coreg_display
     from osl_ephys.report import src_report
 
     # Validation

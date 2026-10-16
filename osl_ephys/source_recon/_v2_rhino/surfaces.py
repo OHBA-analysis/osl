@@ -14,7 +14,7 @@ from sklearn.mixture import GaussianMixture
 from mne.transforms import write_trans, Transform
 from fsl import wrappers as fsl_wrappers
 
-import osl_ephys.source_recon.rhino.utils as rhino_utils
+import osl_ephys.source_recon._v2_rhino.utils as rhino_utils
 from osl_ephys.utils.logger import log_or_print
 
 

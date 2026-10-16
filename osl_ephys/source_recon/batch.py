@@ -8,7 +8,7 @@ import numpy as np
 import yaml
 import mne
 
-from . import rhino, wrappers, freesurfer_utils
+from . import _v2_rhino as rhino, wrappers, freesurfer_utils
 from ..report import src_report
 from ..utils import logger as osl_logger
 from ..utils import validate_outdir, find_run_id

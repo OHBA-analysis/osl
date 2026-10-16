@@ -32,7 +32,7 @@ except ImportError:
 
 from ..utils import process_file_inputs, validate_outdir
 from ..utils.logger import log_or_print
-from ..source_recon.parcellation import plot_source_topo
+from ..source_recon._v2_parcellation import plot_source_topo
 
 # Report generation
 mne.viz.set_browser_backend("matplotlib")

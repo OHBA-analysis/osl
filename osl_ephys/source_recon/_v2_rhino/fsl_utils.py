@@ -5,7 +5,7 @@ import os.path as op
 
 import nibabel as nib
 
-import osl_ephys.source_recon.rhino.utils as rhino_utils
+import osl_ephys.source_recon._v2_rhino.utils as rhino_utils
 
 
 def setup_fsl(directory):

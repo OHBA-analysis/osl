@@ -9,7 +9,7 @@ import mne
 import numpy as np
 
 from .glm_base import GLMBaseResult, GroupGLMBaseResult, SensorClusterPerm
-from ..source_recon import parcellation
+from ..source_recon import _v2_parcellation as parcellation
 
 
 class GLMEpochsResult(GLMBaseResult):

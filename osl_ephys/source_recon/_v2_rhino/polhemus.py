@@ -10,9 +10,9 @@ import mne
 from mne.io import read_info
 from mne.io.constants import FIFF
 
-import osl_ephys.source_recon.rhino.utils as rhino_utils
-from osl_ephys.source_recon.rhino.coreg import get_coreg_filenames
-from osl_ephys.source_recon.rhino.surfaces import get_surfaces_filenames
+import osl_ephys.source_recon._v2_rhino.utils as rhino_utils
+from osl_ephys.source_recon._v2_rhino.coreg import get_coreg_filenames
+from osl_ephys.source_recon._v2_rhino.surfaces import get_surfaces_filenames
 from osl_ephys.utils.logger import log_or_print
 
 

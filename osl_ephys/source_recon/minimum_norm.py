@@ -15,7 +15,7 @@ from mne import (
 from . import freesurfer_utils
 from ..utils.logger import log_or_print
 
-from osl_ephys.source_recon.rhino import utils as rhino_utils
+from osl_ephys.source_recon._v2_rhino import utils as rhino_utils
 
 import logging
 

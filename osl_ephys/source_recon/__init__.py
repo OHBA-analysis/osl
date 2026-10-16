@@ -1,5 +1,5 @@
 from .batch import *  # noqa: F401, F403
-from .rhino.fsl_utils import setup_fsl, check_fsl  # noqa: F401, F403
+from ._v2_rhino.fsl_utils import setup_fsl, check_fsl  # noqa: F401, F403
 from .freesurfer_utils import (
     setup_freesurfer,
     check_freesurfer,

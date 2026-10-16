@@ -16,7 +16,7 @@ from tabulate import tabulate
 import inspect
 
 from . import preproc_report
-from ..source_recon import parcellation, batch
+from ..source_recon import _v2_parcellation as parcellation, batch
 
 
 def gen_html_data(

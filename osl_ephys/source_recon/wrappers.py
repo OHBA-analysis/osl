@@ -14,10 +14,10 @@ from mne.io import read_info
 import numpy as np
 
 from . import (
-    rhino,
-    beamforming,
-    parcellation,
-    sign_flipping,
+    _v2_rhino as rhino,
+    _v2_beamforming as beamforming,
+    _v2_parcellation as parcellation,
+    _v2_sign_flipping as sign_flipping,
     minimum_norm as osle_minimum_norm,
     freesurfer_utils,
 )

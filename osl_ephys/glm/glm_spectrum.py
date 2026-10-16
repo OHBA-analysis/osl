@@ -19,7 +19,7 @@ from .glm_base import (
     SensorClusterPerm,
     SensorMaxStatPerm,
 )
-from ..source_recon import parcellation
+from ..source_recon import _v2_parcellation as parcellation
 
 import nibabel as nib
 from nilearn.plotting import plot_glass_brain, plot_markers

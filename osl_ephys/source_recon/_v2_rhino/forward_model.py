@@ -25,8 +25,8 @@ except ImportError:
         _complete_vol_src,
     )
 
-import osl_ephys.source_recon.rhino.utils as rhino_utils
-from osl_ephys.source_recon.rhino import get_coreg_filenames
+import osl_ephys.source_recon._v2_rhino.utils as rhino_utils
+from osl_ephys.source_recon._v2_rhino import get_coreg_filenames
 from osl_ephys.utils.logger import log_or_print
 
 
