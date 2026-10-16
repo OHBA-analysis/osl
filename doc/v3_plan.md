@@ -868,49 +868,90 @@ the config step names) are kept.
 
 ### Target package layout
 
+Settled 2026-10-16 after the phase 4 layout review: one subpackage per
+config section (`maxfilter`, `preproc`, `coreg`, `source_recon`,
+`parcellation`, `group`), each with its own `steps.py`, so a reader finds
+a step's code from the section name. `rhino/` is the coregistration
+toolbox and sits at the top level (it is OSL's own method and the thing
+people import); the FreeSurfer route is one MNE-wrapping module that spans
+three sections, so it stays a single file. Which section a step belongs
+to is set in its `@step` decorator, not by its file: `rhino/steps.py`
+registers `forward_model` under `source_recon`.
+
 ```
 osl_ephys/
   __init__.py          version; re-exports run_batch, run_chain, Session
-  files/               (done) data from osl-files
-  pipeline/            NEW, phase 3: the config API and the runner
-    config.py          load_config, validate, section order, old-format conversion
+  session.py           ported meeg/session.py (Session, SurfaceFilenames, CoregFilenames, check_up_to_date, save_params); shared by rhino, source_recon, parcellation, group
+  files/               (done) data from osl-files, neuromag306_info.yml, trees/
+  pipeline/            (done) the config API and the runner
+    config.py          load_config, validate, section order, old-format conversion, check_version
     registry.py        step registry: @step(section, per="session"|"subject"), find_function
-    manifest.py        the session manifest: list of dicts or CSV, column checks, grouping by subject
-    runner.py          ported meeg/parallel.py: run(), log(), warning(), summary.csv, worker recycling
-    chain.py           run_chain: one session through the config, returns the dataset dict
+    manifest.py        the session manifest and the output layout
+    runner.py          the parallel runner: per-session logs, summary.csv
+    chain.py           run_chain: one session through the config
     batch.py           run_batch: manifest x config over the runner, then the group section and the report
-    cli.py             the `osl-ephys` command: run, download-data, check, ica
-  preprocessing/       phase 6
-    functions.py       ported meeg/preproc.py (GESD, bad segments/channels, ica_label, QC plots) + kept osl-ephys functions
-    steps.py           every `preproc` step: the run_mne_* and run_osl_* wrappers, registered
-    amm.py             ported meeg/amm.py (OPM interference rejection)
+    cli.py             the `osl-ephys` command: run, download-data, check, func, ica, maxfilter
+    compat.py          the v2 entry points (run_proc_chain, run_proc_batch, run_src_chain, run_src_batch) as FutureWarning wrappers
+  io/                  readers and file-finding helpers
+    spm/               spmio (SPMMEEG)
+    opm.py             OPM file conversion
+    study.py           Study (glob-based file matching)
+    file_handling.py   kept helpers
+  maxfilter/           phase 6: ported meeg/maxfilter.py
+    maxfilter.py       command building, single/multistage/CBU runs, chunking
+    steps.py           the `maxfilter` section: one per-session step
+  preprocessing/       phase 6: the `preproc` section
+    functions.py       ported meeg/preproc.py + kept osl-ephys functions
+    steps.py           every `preproc` step, registered
+    amm.py             ported meeg/amm.py
     ica/               plot_ica GUI, the manual-ICA review server, one apply function
     semp/              from #452
-  maxfilter/           phase 6: ported meeg/maxfilter.py behind the existing CLI
-  source_recon/        phase 4
-    session.py         ported meeg/session.py (Session, SurfaceFilenames, CoregFilenames, check_up_to_date, save_params)
-    rhino.py           ported meeg/rhino.py: surfaces, fiducials and headshape, coregistration, forward model, QC plots
-    beamforming.py     ported meeg/source_recon.py (LCMV, bilateral pairs, virtual electrodes) + kept helpers
-    minimum_norm.py    kept
-    parcellation.py    ported meeg/parcellation.py + kept extras (surface parcellation, adjacency, nifti tools)
-    sign_flipping.py   ported data/sign_flipping.py (+ time_embed, standardize) + kept template selection
-    freesurfer.py      kept freesurfer_utils
-    nii.py             kept
-    steps.py           every `coreg`, `source_recon`, `parcellation`, `group` step, registered
+  rhino/               the `coreg` section (RHINO route), split from source_recon/rhino.py
+    surfaces.py        extract_surfaces, plot_surfaces, repair_bem_surfaces, surfaces_display
+    headshape.py       fiducials and headshape points from fif/pos/elc, stray-point removal, delete_headshape_points, rescale_sensor_positions
+    coregistration.py  coregister_head_and_mri, coreg_error/coreg_rms, plot_coregistration
+    forward.py         forward_model on the MNI grid, the BEM check
+    fsl.py             setup_fsl, check_fsl, fsleyes, fsleyes_overlay, FLIRT helpers
+    _geometry.py       private geometry, transforms, meshes, renderer helpers
+    steps.py           the `coreg` steps and `forward_model` (registered under `source_recon`)
+  source_recon/        the `source_recon` section
+    beamforming/       split from beamforming.py
+      lcmv.py          LCMV filters, apply, lcmv_weights, leadfields, virtual electrodes
+      bilateral.py     bilateral pairs
+      _lcmv.py         private data-shaping helpers (_get_filter_input_data, _get_mni_grid, _get_gridstep)
+    freesurfer.py      the FreeSurfer route (recon_all, watershed BEM, coregister, forward model, minimum norm, parcellate); its steps register under coreg / source_recon / parcellation
+    steps.py           beamform, minimum_norm and the freesurfer steps
+  parcellation/        the `parcellation` section
+    parcellation.py    parcellate (pca/centroid), orthogonalisation, convert_to_mne_raw, save_as_fif
+    plotting.py        parcellation plots (markers, glass brain, surfaces)
+    nii.py             nifti point-cloud helpers (from source_recon/nii.py)
+    steps.py           parcellate (with source_method), the _and_parcellate aliases, fix_sign_ambiguity
+  group/               the `group` section
+    sign_flipping.py   ported data/sign_flipping.py + the scho97 solvers + template selection
+    steps.py           sign_flip
   report/              phase 5
     report.py          ported meeg/report.py: generate_report, TABS, CAPTIONS
-    qc.py              the osl-ephys QC plots that osl-dynamics lacks (flowchart, artefact scan, digitisation, head movement, events, custom figures)
+    qc.py              the osl-ephys QC plots that osl-dynamics lacks
   glm/                 kept as is
-  utils/               logger.py (ported MEEGSessionLogger), file_handling.py and study.py (manifest helpers), simulate.py, opm.py, spmio/, misc.py
+  utils/               logger.py, plotting.py, processing.py, spectral.py, topoplots.py, misc.py, simulate.py
   tests/
 ```
 
 Gone by the end: `preprocessing/batch.py` and `source_recon/batch.py`
-(replaced by `pipeline/`), `preprocessing/mne_wrappers.py` and
-`osl_wrappers.py` (merged into `steps.py`, same function names),
-`source_recon/wrappers.py` (becomes `steps.py`), the `rhino/` package (one
-module), `report/preproc_report.py`, `src_report.py` and `templates/`,
-`utils/parallel.py`.
+(replaced by `pipeline/` and `pipeline/compat.py`),
+`preprocessing/mne_wrappers.py` and `osl_wrappers.py` (merged into
+`steps.py`, same function names), `source_recon/rhino.py`,
+`source_recon/session.py` (top-level `session.py`), `report/preproc_report.py`,
+`src_report.py` and `templates/`, `utils/parallel.py`, `utils/spmio/`,
+`utils/opm.py`, `utils/study.py` and `utils/file_handling.py` (moved to
+`io/`). Already gone (2026-10-16): the per-subpackage README.md files
+(docstrings now), `utils/package.py`, `utils/version_utils.py`
+(`pipeline.config.check_version`), `utils/run_func.py`
+(`osl-ephys func`), `utils/create_neuromag306_info.py`.
+
+`source_recon.rhino`, `source_recon.parcellation` and
+`source_recon.sign_flipping` stay importable as thin re-export modules
+for one release with a FutureWarning (v2 user code imports them).
 
 One command, `osl-ephys`, with subcommands, replaces the seven scripts;
 the old names stay as aliases for one release:
@@ -921,7 +962,7 @@ the old names stay as aliases for one release:
 | `osl-ephys download-data` | (new) |
 | `osl-ephys check` | `utils.package.run_package_tests` |
 | `osl-ephys ica review`, `osl-ephys ica apply` | `osl_ica_label`/`osl_ica_apply` and `osl-ica-review`/`osl-ica-apply` (merged, decision 2026-10-15) |
-| `osl-ephys maxfilter` | `osl_maxfilter` |
+| `osl-ephys maxfilter files.txt outdir --tsss ...` | `osl_maxfilter`; builds a one-section config (`maxfilter:`) and runs it, so it is the same code path as `osl-ephys run` |
 | `osl-ephys func` | `osl_func` |
 
 ### Phase 3: `pipeline/`: one config, one runner
@@ -1116,9 +1157,16 @@ report had for the same data.
    stays as merged, its `osl_pathfinder` import is raised with its author
    (suggesting the name `osl-pathfinder`), and it is excluded from the docs
    build until that dependency is settled.
-5. `maxfilter/`: port `meeg/maxfilter.py`; `run_maxfilter_batch` keeps the
-   file-list interface and the `osl_maxfilter` CLI; tests at the
-   command-building level (no MaxFilter licence in CI).
+5. `maxfilter/`: port `meeg/maxfilter.py`. Maxfilter becomes a config
+   section (decided 2026-10-16): `maxfilter: [{maxfilter: {scanner: Neo,
+   mode: multistage, tsss: true, headpos: true, movecomp: true}}]`, a
+   per-session step on `raw_file` writing `outdir/maxfilter/<id>_tsss.fif`
+   (the ported keyword options map one-to-one onto the step options), and
+   the `preproc` section reads that file when the section ran. A config
+   with only a `maxfilter` section is the licensed-machine use. The
+   `osl-ephys maxfilter` subcommand (and the `osl_maxfilter` alias) keeps
+   the file-list-plus-flags interface by building that one-section config.
+   Tests at the command-building level (no MaxFilter licence in CI).
 6. `glm/`: unchanged.
 7. Issues folded in: #373 (warn when filtering rectified signals), #440 done.
 

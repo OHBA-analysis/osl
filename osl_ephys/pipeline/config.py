@@ -32,11 +32,11 @@ import re
 import operator
 from importlib.metadata import version
 import logging
-
-logger = logging.getLogger(__name__)
 import yaml
 
 from osl_ephys.pipeline import registry
+
+logger = logging.getLogger(__name__)
 
 SECTION_ORDER = list(registry.SECTIONS)
 
