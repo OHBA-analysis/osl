@@ -56,12 +56,12 @@ class TestPackageData(unittest.TestCase):
 
     def test_channel_data(self):
 
-        template = os.path.join(self.osldir, "utils", "neuromag306_info.yml")
+        template = os.path.join(self.osldir, "files", "neuromag306_info.yml")
         assert os.path.exists(template)
 
     def test_parcellation_data(self):
         """Old osl-ephys names resolve to the osl-files parcellations."""
-        from ..source_recon.utils import find_file
+        from ..files.functions import find_file
 
         for name in [
             "Glasser52_binary_space-MNI152NLin6_res-8x8x8.nii.gz",

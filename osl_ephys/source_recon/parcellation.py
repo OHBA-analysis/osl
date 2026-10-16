@@ -30,7 +30,7 @@ from mpl_toolkits.axes_grid1 import make_axes_locatable
 from fsl import wrappers as fsl_wrappers
 
 from osl_ephys.source_recon import nii
-from osl_ephys.source_recon.utils import find_file
+from osl_ephys.files.functions import find_file
 from osl_ephys.utils.logger import log_or_print
 
 _logger = logging.getLogger("osl-ephys")

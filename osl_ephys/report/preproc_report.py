@@ -811,7 +811,7 @@ def plot_sensors(raw, savebase=None):
     # plot channel types separately for neuromag306 (3 coils in same location)
     if 3012 in np.unique([i["coil_type"] for i in raw.info["chs"]]):
         with open(
-            str(Path(__file__).parent.parent) + "/utils/neuromag306_info.yml", "r"
+            str(Path(__file__).parent.parent) + "/files/neuromag306_info.yml", "r"
         ) as f:
             channels = yaml.safe_load(f)
         if 3024 in np.unique([i["coil_type"] for i in raw.info["chs"]]):

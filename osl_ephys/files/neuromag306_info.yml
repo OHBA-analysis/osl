@@ -1,3 +1,5 @@
+# Neuromag-306 channel info: names, types, positions and orientations of the
+# 306 MEG channels, used by the preprocessing QC plots.
 all:
 - MEG0111
 - MEG0112

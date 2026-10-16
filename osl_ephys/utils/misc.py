@@ -4,6 +4,7 @@ import logging
 import random
 from pathlib import Path
 
+import importlib
 import os
 import warnings
 
@@ -227,3 +228,16 @@ def warn_mask_file_unused(mask_file: Optional[str], stacklevel: int = 3) -> None
         FutureWarning,
         stacklevel=stacklevel,
     )
+
+
+def soft_import(package):
+    """Try to import a package raising friendly error if not present."""
+    try:
+        module = importlib.import_module(package)
+    except (ImportError, ModuleNotFoundError):
+        msg = f"Package '{package}' is required for this "
+        msg += "function to run but cannot be imported. "
+        msg += "Please install it into your python environment to continue."
+        raise ModuleNotFoundError(msg)
+
+    return module

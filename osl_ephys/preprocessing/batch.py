@@ -27,7 +27,7 @@ import yaml
 from . import mne_wrappers, osl_wrappers
 from ..utils import find_run_id, validate_outdir, process_file_inputs
 from ..utils import logger as osl_logger
-from ..utils.version_utils import check_version
+from ..pipeline.config import check_version
 from ..utils.misc import set_random_seed
 
 logger = logging.getLogger(__name__)

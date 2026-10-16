@@ -75,6 +75,19 @@ def _check(args):
     return 0
 
 
+def _func(args):
+    """Call a function of the package from the command line, e.g.
+    ``osl-ephys func osl_ephys.source_recon.rhino.setup_fsl /opt/fsl``.
+    Arguments are strings, except None, True and False."""
+    module = __import__(args.function.split(".")[0])
+    func = module
+    for name in args.function.split(".")[1:]:
+        func = getattr(func, name)
+    literals = {"None": None, "True": True, "False": False}
+    func(*[literals.get(a, a) for a in args.arguments])
+    return 0
+
+
 def main(argv=None) -> int:
     parser = argparse.ArgumentParser(
         prog="osl-ephys", description="OHBA Software Library for M/EEG analysis."
@@ -127,3 +140,8 @@ def main(argv=None) -> int:
 
 if __name__ == "__main__":
     sys.exit(main())
+
+
+def main_func(argv=None) -> int:
+    """The ``osl_func`` command (v2 name of ``osl-ephys func``)."""
+    return main(["func", *(sys.argv[1:] if argv is None else argv)])

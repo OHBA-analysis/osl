@@ -1,4 +1,10 @@
-import os
+"""Source reconstruction: coregistration, forward modelling, LCMV
+beamforming and minimum norm, parcellation and sign flipping.
+
+Each stage reads and writes the files held by a
+:class:`~osl_ephys.source_recon.session.Session`; the config steps are in
+:mod:`~osl_ephys.source_recon.steps`.
+"""
 
 from .batch import *
 from .rhino import setup_fsl, check_fsl, fsleyes, fsleyes_overlay
@@ -9,9 +15,6 @@ from .freesurfer import (
     make_watershed_bem,
     fsaverage_source_space,
 )
-
-with open(os.path.join(os.path.dirname(__file__), "README.md"), "r") as f:
-    __doc__ = f.read()
 
 # The config steps register themselves on import
 from osl_ephys.pipeline import registry as _registry

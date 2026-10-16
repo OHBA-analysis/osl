@@ -227,6 +227,10 @@ tutorials; cleaned up in phase 8).
 - One-off black reformat with black's defaults (line length 88, as
   osl-dynamics; decided 2026-10-15) in its own commit, listed in
   `.git-blame-ignore-revs`. Codespell config in `pyproject.toml`.
+- An `AUTHORS` file at the repository root listing the contributors (the
+  module headers no longer carry author lists; `git shortlog -sn` is the
+  starting point), referenced from `NOTICE` and `CITATION.cff`. Added
+  2026-10-16, not yet done.
 - Licence files aligned with osl-dynamics: full Apache-2.0 text in `LICENSE`,
   a `NOTICE` file, `license`/`license-files` in `pyproject.toml`, the
   classifier. `CITATION.cff` version (currently `2.5.0.dev1+semp.2`) set only
