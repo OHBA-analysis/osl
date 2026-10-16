@@ -62,7 +62,8 @@ source_recon:
   - forward_model: {model: Single Layer, gridstep: 12}
   - minimum_norm: {chantypes: [mag, grad], rank: {meg: 60}}
 parcellation:
-  - minimum_norm_and_parcellate:
+  - parcellate:
+      source_method: minimum_norm
       parcellation_file: atlas-Glasser_nparc-52_space-MNI_res-8x8x8.nii.gz
       orthogonalisation: symmetric
 """

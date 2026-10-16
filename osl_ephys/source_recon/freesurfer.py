@@ -515,10 +515,7 @@ def apply_inverse_vol(
         reject_by_annotation="omit", return_times=True, verbose=False
     )
     ts = ts[:, np.isin(stc.times, times)]
-    coords = (
-        inverse_operator["src"][0]["rr"][inverse_operator["src"][0]["vertno"]] * 1e3
-    )
-    return ts, coords
+    return ts
 
 
 def parcellate(

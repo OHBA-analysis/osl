@@ -257,53 +257,20 @@ def beamform(dataset, userargs):
 
 @step("parcellation")
 def parcellate(dataset, userargs):
-    """Parcel time courses from the LCMV filters, saved as ``<id>_parc-raw.fif``.
+    """Parcel time courses from the source estimate, saved as ``<id>_parc-raw.fif``.
 
-    Options: ``parcellation_file``, ``orthogonalisation``, ``extra_chans``
-    (channels copied from the preprocessed data, ``stim`` by default),
-    ``qc`` (save the QC plots, on by default).
+    Options: ``parcellation_file``, ``orthogonalisation`` (``symmetric`` or
+    none), ``extra_chans`` (channels copied from the preprocessed data,
+    ``stim`` by default), ``qc`` (save the QC plots, on by default), and
+    ``source_method``: ``lcmv`` (default) uses the beamformer filters from
+    the ``beamform`` step; ``minimum_norm`` applies the inverse operator
+    from the ``minimum_norm`` step, volumetric on the RHINO route or on the
+    surface on the FreeSurfer route, where ``parcellation_file`` is a
+    FreeSurfer annotation (e.g. ``aparc``), ``method`` combines a label's
+    vertices and ``morph`` is the subject whose annotation is used
+    (fsaverage). Minimum-norm options: ``inverse_method``, ``lambda2``,
+    ``pick_ori``.
     """
-    _ignored(
-        userargs,
-        "method",
-        "source_space",
-        "surface_extraction_method",
-        "source_method",
-        "spatial_resolution",
-        "reference_brain",
-        "voxel_trans",
-        "neighbour_distance",
-    )
-    session = session_files(dataset)
-    extra_chans = userargs.pop("extra_chans", "stim")
-    qc = userargs.pop("qc", True)
-    parcel_data = parcellation.parcellate_lcmv(session, **userargs)
-    raw = mne.io.read_raw_fif(session.preproc_file, preload=True, verbose=False)
-    parc_file = dataset["paths"]["parc_file"]
-    parc_file.parent.mkdir(parents=True, exist_ok=True)
-    parcellation.save_as_fif(parcel_data, raw, str(parc_file), extra_chans=extra_chans)
-    if qc and dataset.get("qc_dir") is not None:
-        parcellation.save_qc_plots(
-            dataset["qc_dir"],
-            session.id,
-            str(parc_file),
-            userargs["parcellation_file"],
-        )
-    return dataset
-
-
-@step("parcellation")
-def minimum_norm_and_parcellate(dataset, userargs):
-    """Parcel time courses from the minimum-norm estimate, saved as ``<id>_parc-raw.fif``.
-
-    FreeSurfer route: a surface estimate morphed to ``morph`` (fsaverage)
-    and parcellated with a FreeSurfer annotation (``parcellation_file``,
-    e.g. ``aparc``; ``method`` combines a label's vertices). RHINO route: a
-    volumetric estimate parcellated with a volumetric parcellation.
-    Options: ``inverse_method`` (v2 ``source_method``), ``lambda2``,
-    ``pick_ori``, ``orthogonalisation``, ``extra_chans``.
-    """
-    _renamed(userargs, "source_method", "inverse_method")
     _renamed(userargs, "freq_range", "frequency_range")
     _ignored(
         userargs,
@@ -314,66 +281,102 @@ def minimum_norm_and_parcellate(dataset, userargs):
         "reference_brain",
     )
     session = session_files(dataset)
+    source_method = str(userargs.pop("source_method", "lcmv")).lower()
     extra_chans = userargs.pop("extra_chans", "stim")
+    qc = userargs.pop("qc", True)
     orthogonalisation = userargs.pop("orthogonalisation", None)
     parcellation_file = userargs.pop("parcellation_file")
-    if _freesurfer_route(dataset, userargs):
-        parcel_data, names, data = freesurfer.parcellate(
-            session, parcellation_file, **userargs
-        )
-    else:
-        userargs.pop("method", None)
-        userargs.pop("morph", None)
-        ts, coords = freesurfer.apply_inverse_vol(
-            session,
-            method=userargs.pop("inverse_method", "MNE"),
-            lambda2=userargs.pop("lambda2", 1.0 / 9),
-        )
-        parcel_data = parcellation.parcellate(
-            ts,
-            coords,
-            parcellation_file,
-            method="spatial_basis",
-            orthogonalisation=None,
+
+    if source_method == "lcmv":
+        for name in ("method", "morph", "inverse_method", "lambda2", "pick_ori"):
+            userargs.pop(name, None)
+        parcel_data = parcellation.parcellate_lcmv(
+            session, parcellation_file, orthogonalisation=orthogonalisation, **userargs
         )
         names = None
         data = mne.io.read_raw_fif(session.preproc_file, preload=True, verbose=False)
-    if orthogonalisation == "symmetric":
-        parcel_data = parcellation._symmetric_orthogonalisation(parcel_data)
-    elif orthogonalisation not in (None, "none", "None"):
-        raise NotImplementedError(f"orthogonalisation '{orthogonalisation}'")
+    elif source_method in ("minimum_norm", "mne"):
+        if _freesurfer_route(dataset, userargs):
+            parcel_data, names, data = freesurfer.parcellate(
+                session, parcellation_file, **userargs
+            )
+        else:
+            userargs.pop("method", None)
+            userargs.pop("morph", None)
+            ts = freesurfer.apply_inverse_vol(
+                session,
+                method=userargs.pop("inverse_method", "MNE"),
+                lambda2=userargs.pop("lambda2", 1.0 / 9),
+            )
+            # The dipoles are those of the RHINO forward model, on the MNI grid
+            fwd = mne.read_forward_solution(session.fwd_model_file, verbose=False)
+            coords = beamforming._get_source_coords_mni(session, fwd)
+            parcel_data = parcellation.parcellate(
+                ts, coords, parcellation_file, method="pca", orthogonalisation=None
+            )
+            names = None
+            data = mne.io.read_raw_fif(
+                session.preproc_file, preload=True, verbose=False
+            )
+        if orthogonalisation == "symmetric":
+            parcel_data = parcellation._symmetric_orthogonalisation(parcel_data)
+        elif orthogonalisation not in (None, "none", "None"):
+            raise NotImplementedError(f"orthogonalisation '{orthogonalisation}'")
+    else:
+        raise ValueError("source_method must be 'lcmv' or 'minimum_norm'.")
+
     parc_file = dataset["paths"]["parc_file"]
     parc_file.parent.mkdir(parents=True, exist_ok=True)
     parc_raw = parcellation.convert_to_mne_raw(
         parcel_data, data, ch_names=names, extra_chans=extra_chans
     )
     parc_raw.save(str(parc_file), overwrite=True, verbose=False)
+    if qc and dataset.get("qc_dir") is not None and source_method == "lcmv":
+        parcellation.save_qc_plots(
+            dataset["qc_dir"], session.id, str(parc_file), parcellation_file
+        )
     return dataset
+
+
+_BEAMFORM_OPTIONS = (
+    "chantypes",
+    "rank",
+    "pick_ori",
+    "reduce_rank",
+    "frequency_range",
+    "freq_range",
+    "use_bilateral_pairs",
+    "bilateral_tol",
+    "bilateral_tol_midline",
+    "weight_norm",
+    "reg",
+)
+_MINIMUM_NORM_OPTIONS = (
+    "chantypes",
+    "rank",
+    "depth",
+    "loose",
+    "frequency_range",
+    "freq_range",
+)
 
 
 @step("parcellation")
 def beamform_and_parcellate(dataset, userargs):
-    """``beamform`` then ``parcellate`` with the options of both."""
-    beam_args = {
-        k: userargs.pop(k)
-        for k in list(userargs)
-        if k
-        in (
-            "chantypes",
-            "rank",
-            "pick_ori",
-            "reduce_rank",
-            "frequency_range",
-            "freq_range",
-            "use_bilateral_pairs",
-            "bilateral_tol",
-            "bilateral_tol_midline",
-            "weight_norm",
-            "reg",
-        )
-    }
+    """v2 name: ``beamform`` then ``parcellate`` with the options of both."""
+    beam_args = {k: userargs.pop(k) for k in list(userargs) if k in _BEAMFORM_OPTIONS}
     dataset = beamform(dataset, beam_args)
-    return parcellate(dataset, userargs)
+    return parcellate(dataset, {**userargs, "source_method": "lcmv"})
+
+
+@step("parcellation")
+def minimum_norm_and_parcellate(dataset, userargs):
+    """v2 name: ``minimum_norm`` then ``parcellate`` with ``source_method: minimum_norm``."""
+    _renamed(userargs, "source_method", "inverse_method")
+    mn_args = {k: userargs.pop(k) for k in list(userargs) if k in _MINIMUM_NORM_OPTIONS}
+    if mn_args:
+        dataset = minimum_norm(dataset, mn_args)
+    return parcellate(dataset, {**userargs, "source_method": "minimum_norm"})
 
 
 def _parc_file(dataset: dict, id_: str) -> Path:

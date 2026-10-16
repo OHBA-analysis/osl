@@ -27,7 +27,7 @@ source_recon:
   - forward_model: {spacing: oct5, ico: 3}
   - minimum_norm: {chantypes: [mag, grad], rank: {meg: 60}}
 parcellation:
-  - minimum_norm_and_parcellate: {parcellation_file: aparc, method: mean_flip}
+  - parcellate: {source_method: minimum_norm, parcellation_file: aparc, method: mean_flip}
 """
 
 
