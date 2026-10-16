@@ -97,6 +97,7 @@ def run_chain(
         "paths": paths,
         "qc_dir": qc_dir,
         "log_dir": log_dir,
+        "surface_extraction_method": surface_extraction_method,
     }
 
     if cfg.steps(config, "preproc"):

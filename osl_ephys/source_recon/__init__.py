@@ -19,10 +19,4 @@ with open(os.path.join(os.path.dirname(__file__), "README.md"), "r") as f:
 from osl_ephys.pipeline import registry as _registry
 from osl_ephys.source_recon import steps
 
-for _section, _name in (
-    ("coreg", "make_watershed_bem"),
-    ("coreg", "extract_rhino_files"),
-    ("source_recon", "minimum_norm"),
-    ("parcellation", "minimum_norm_and_parcellate"),
-):
-    _registry.register(getattr(wrappers, _name), _section, kind="legacy_src")
+_registry.register(wrappers.extract_rhino_files, "coreg", kind="legacy_src")

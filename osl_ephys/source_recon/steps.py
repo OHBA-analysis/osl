@@ -17,7 +17,13 @@ import numpy as np
 
 from osl_ephys import files
 from osl_ephys.pipeline.registry import step
-from osl_ephys.source_recon import beamforming, parcellation, rhino, sign_flipping
+from osl_ephys.source_recon import (
+    beamforming,
+    freesurfer,
+    parcellation,
+    rhino,
+    sign_flipping,
+)
 from osl_ephys.source_recon.session import Session
 
 logger = logging.getLogger("osl_ephys")
@@ -46,6 +52,8 @@ def session_files(dataset: dict) -> Session:
             elc_file=row.get("elc_file"),
             head_model_id=row.get("head_model_id"),
         )
+        # The FreeSurfer subject is the manifest's subject (recon-all is per subject)
+        dataset["session_files"].subject = row.get("subject", row["id"])
     return dataset["session_files"]
 
 
@@ -60,6 +68,38 @@ def _ignored(userargs: dict, *names: str) -> None:
 def _renamed(userargs: dict, old: str, new: str) -> None:
     if old in userargs:
         userargs[new] = userargs.pop(old)
+
+
+def _freesurfer_route(dataset: dict, userargs: dict) -> bool:
+    """Whether a step takes the FreeSurfer route: the step's own
+    ``surface_extraction_method`` option, else the run's."""
+    method = userargs.pop("surface_extraction_method", None) or dataset.get(
+        "surface_extraction_method", "fsl"
+    )
+    return method == "freesurfer"
+
+
+@step("coreg", per="subject")
+def recon_all(dataset, userargs):
+    """FreeSurfer's ``recon-all`` on the subject's structural MRI (needs FreeSurfer).
+
+    A session with no ``smri_file`` gets MNE's fsaverage instead.
+    """
+    row = dataset["session"]
+    if not row.get("smri_file"):
+        logger.info(f"{row['id']} has no structural MRI; fsaverage is used.")
+        freesurfer.fetch_fsaverage(session_files(dataset))
+        return dataset
+    freesurfer.recon_all(session_files(dataset), str(row["smri_file"]))
+    return dataset
+
+
+@step("coreg", per="subject")
+def make_watershed_bem(dataset, userargs):
+    """FreeSurfer's watershed BEM surfaces for the subject (needs FreeSurfer)."""
+    _ignored(userargs, "overwrite")
+    freesurfer.make_watershed_bem(session_files(dataset), **userargs)
+    return dataset
 
 
 @step("coreg", per="subject")
@@ -133,13 +173,22 @@ def save_mni_fiducials(dataset, userargs):
 def coregister(dataset, userargs):
     """Coregister the head (sensors and headshape) with the MRI.
 
-    Options: ``use_headshape``, ``use_nose``, ``allow_mri_scaling`` (v2
-    ``allow_smri_scaling``), ``n_init``, ``plot_type``,
-    ``already_coregistered`` (just save the files RHINO needs).
+    RHINO route options: ``use_headshape``, ``use_nose``,
+    ``allow_mri_scaling`` (v2 ``allow_smri_scaling``), ``n_init``,
+    ``plot_type``, ``already_coregistered`` (just save the files RHINO
+    needs). FreeSurfer route options: ``allow_mri_scaling``, ``n_init``,
+    ``fit_fiducials``, ``fit_icp``.
     """
     _renamed(userargs, "allow_smri_scaling", "allow_mri_scaling")
-    _ignored(userargs, "use_dev_ctf_t", "surface_extraction_method")
+    _ignored(userargs, "use_dev_ctf_t")
     session = session_files(dataset)
+    if _freesurfer_route(dataset, userargs):
+        for name in ("use_headshape", "use_nose", "plot_type", "already_coregistered"):
+            userargs.pop(name, None)
+        if userargs.get("n_init") is None:
+            userargs["n_init"] = 20
+        freesurfer.coregister(session, **userargs)
+        return dataset
     if userargs.pop("already_coregistered", False):
         rhino.save_coregistration_files(session)
         return dataset
@@ -153,13 +202,42 @@ def coregister(dataset, userargs):
 
 @step("source_recon")
 def forward_model(dataset, userargs):
-    """Forward model on a volumetric grid. Options: ``model``, ``gridstep``, ``mindist``, ``exclude``, ``eeg``, ``meg``."""
-    _ignored(userargs, "surface_extraction_method")
-    if userargs.pop("source_space", "volumetric") != "volumetric":
-        raise NotImplementedError(
-            "Surface source spaces go through the minimum_norm step."
-        )
+    """Forward model.
+
+    RHINO route (volumetric grid): ``model``, ``gridstep``, ``mindist``,
+    ``exclude``, ``eeg``, ``meg``. FreeSurfer route, or
+    ``source_space: surface``: ``source_space``, ``spacing`` (v2
+    ``gridstep``), ``model``, ``conductivity``, ``ico``, ``mindist``,
+    ``eeg``.
+    """
+    if _freesurfer_route(dataset, userargs) or userargs.get("source_space") in (
+        "surface",
+        "surf",
+    ):
+        _renamed(userargs, "gridstep", "spacing")
+        userargs.pop("meg", None)
+        userargs.pop("exclude", None)
+        freesurfer.forward_model(session_files(dataset), **userargs)
+        return dataset
+    userargs.pop("source_space", None)
     rhino.forward_model(session_files(dataset), **userargs)
+    return dataset
+
+
+@step("source_recon")
+def minimum_norm(dataset, userargs):
+    """Minimum-norm inverse operator from the forward model.
+
+    Options: ``chantypes``, ``rank``, ``depth``, ``loose``,
+    ``frequency_range`` (v2 ``freq_range``). The RHINO route uses the
+    volumetric forward model, the FreeSurfer route the surface one.
+    ``lambda2`` and ``pick_ori`` belong to the parcellation step.
+    """
+    _renamed(userargs, "freq_range", "frequency_range")
+    _ignored(userargs, "lambda2", "pick_ori")
+    session = session_files(dataset)
+    fwd_file = None if _freesurfer_route(dataset, userargs) else session.fwd_model_file
+    freesurfer.minimum_norm(session, fwd_file=fwd_file, **userargs)
     return dataset
 
 
@@ -211,6 +289,65 @@ def parcellate(dataset, userargs):
             str(parc_file),
             userargs["parcellation_file"],
         )
+    return dataset
+
+
+@step("parcellation")
+def minimum_norm_and_parcellate(dataset, userargs):
+    """Parcel time courses from the minimum-norm estimate, saved as ``<id>_parc-raw.fif``.
+
+    FreeSurfer route: a surface estimate morphed to ``morph`` (fsaverage)
+    and parcellated with a FreeSurfer annotation (``parcellation_file``,
+    e.g. ``aparc``; ``method`` combines a label's vertices). RHINO route: a
+    volumetric estimate parcellated with a volumetric parcellation.
+    Options: ``inverse_method`` (v2 ``source_method``), ``lambda2``,
+    ``pick_ori``, ``orthogonalisation``, ``extra_chans``.
+    """
+    _renamed(userargs, "source_method", "inverse_method")
+    _renamed(userargs, "freq_range", "frequency_range")
+    _ignored(
+        userargs,
+        "source_space",
+        "spatial_resolution",
+        "voxel_trans",
+        "neighbour_distance",
+        "reference_brain",
+    )
+    session = session_files(dataset)
+    extra_chans = userargs.pop("extra_chans", "stim")
+    orthogonalisation = userargs.pop("orthogonalisation", None)
+    parcellation_file = userargs.pop("parcellation_file")
+    if _freesurfer_route(dataset, userargs):
+        parcel_data, names, data = freesurfer.parcellate(
+            session, parcellation_file, **userargs
+        )
+    else:
+        userargs.pop("method", None)
+        userargs.pop("morph", None)
+        ts, coords = freesurfer.apply_inverse_vol(
+            session,
+            method=userargs.pop("inverse_method", "MNE"),
+            lambda2=userargs.pop("lambda2", 1.0 / 9),
+        )
+        parcel_data = parcellation.parcellate(
+            ts,
+            coords,
+            parcellation_file,
+            method="spatial_basis",
+            orthogonalisation=None,
+        )
+        names = None
+        data = mne.io.read_raw_fif(session.preproc_file, preload=True, verbose=False)
+    if orthogonalisation == "symmetric":
+        parcel_data = parcellation._symmetric_orthogonalisation(parcel_data)
+    elif orthogonalisation not in (None, "none", "None"):
+        raise NotImplementedError(f"orthogonalisation '{orthogonalisation}'")
+    parc_file = dataset["paths"]["parc_file"]
+    parc_file.parent.mkdir(parents=True, exist_ok=True)
+    parc_raw = parcellation.convert_to_mne_raw(
+        parcel_data, data, ch_names=names, extra_chans=extra_chans
+    )
+    parc_raw.save(str(parc_file), overwrite=True, verbose=False)
     return dataset
 
 

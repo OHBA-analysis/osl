@@ -50,3 +50,31 @@ def test_source_reconstruction_on_mni152_surfaces(sessions, tmp_path):
         assert len(mne.pick_types(parc.info, misc=True)) == 52
         assert (tmp_path / id_ / f"{id_}_sflip_parc-raw.fif").exists()
     assert (tmp_path / "qc" / "parc" / "elekta" / "psd_topo.webp").exists()
+
+
+MINIMUM_NORM_CONFIG = """
+preproc:
+  - resample: {sfreq: 100}
+coreg:
+  - extract_fiducials_and_headshape: {}
+  - coregister: {use_nose: false, allow_mri_scaling: true}
+source_recon:
+  - forward_model: {model: Single Layer, gridstep: 12}
+  - minimum_norm: {chantypes: [mag, grad], rank: {meg: 60}}
+parcellation:
+  - minimum_norm_and_parcellate:
+      parcellation_file: atlas-Glasser_nparc-52_space-MNI_res-8x8x8.nii.gz
+      orthogonalisation: symmetric
+"""
+
+
+def test_volumetric_minimum_norm_on_mni152_surfaces(sessions, tmp_path):
+    results = run_batch(
+        MINIMUM_NORM_CONFIG, sessions[:1], tmp_path, n_workers=1, qc_dir=False
+    )
+    assert results[0][1] == "ok", results
+    assert (tmp_path / "elekta" / "freesurfer" / "op-inv.fif").exists()
+    parc = mne.io.read_raw_fif(
+        tmp_path / "elekta" / "elekta_parc-raw.fif", verbose=False
+    )
+    assert len(mne.pick_types(parc.info, misc=True)) == 52

@@ -1758,3 +1758,80 @@ def _plot_bilateral_pairs(
         plt.show()
     else:
         plt.close(fig)
+
+
+def lcmv_weights(session: Session) -> tuple[np.ndarray, np.ndarray]:
+    """The LCMV weights of a session, on the MNI grid.
+
+    Parameters
+    ----------
+    session : Session
+        Files of the session; the filters come from ``session.filters_file``.
+
+    Returns
+    -------
+    weights : (n_dipoles, n_channels) numpy.ndarray
+        Beamformer weights, applied to whitened data when the filters whiten.
+    coords : (n_dipoles, 3) numpy.ndarray
+        MNI coordinates (mm) of the dipoles.
+    """
+    filters = mne.beamformer.read_beamformer(session.filters_file)
+    weights = filters["weights"]
+    if filters.get("whitener") is not None:
+        weights = weights @ filters["whitener"]
+    fwd = mne.read_forward_solution(session.fwd_model_file, verbose=False)
+    return weights, _get_source_coords_mni(session, fwd)
+
+
+def leadfields(
+    session: Session, orientation: str | None = None
+) -> tuple[np.ndarray, np.ndarray]:
+    """The leadfields of a session's forward model, on the MNI grid.
+
+    Parameters
+    ----------
+    session : Session
+        Files of the session; the forward model comes from
+        ``session.fwd_model_file``.
+    orientation : str, optional
+        How the three dipole orientations are reduced to one: ``'l2-norm'``
+        (the norm across x, y, z), ``'max-dim'`` (the largest of the three),
+        ``'max-power'`` (projected onto the orientation of maximum power), or
+        None for no reduction.
+
+    Returns
+    -------
+    leadfields : (n_channels, n_dipoles) or (n_channels, n_dipoles, 3) numpy.ndarray
+        Leadfields, or (n_channels, 3, n_dipoles) flattened to
+        (n_channels * 3, n_dipoles) when not reduced.
+    coords : (n_dipoles, 3) numpy.ndarray
+        MNI coordinates (mm) of the dipoles.
+    """
+    fwd = mne.read_forward_solution(session.fwd_model_file, verbose=False)
+    L = fwd["sol"]["data"]
+    L = L.reshape((L.shape[0], -1, 3))
+    if orientation == "l2-norm":
+        out = np.linalg.norm(L, axis=-1)
+    elif orientation == "max-dim":
+        L_max, L_min = np.max(L, axis=-1), np.min(L, axis=-1)
+        L_max[abs(L_min) > L_max] = L_min[abs(L_min) > L_max]
+        out = L_max
+    elif orientation == "max-power":
+        # The eigenvector with the smallest eigenvalue of L^T L
+        LT_L = np.matmul(L.transpose(1, 2, 0), L.transpose((1, 0, 2)))
+        eig_vals, eig_vecs = np.linalg.eig(LT_L)
+        order = np.argsort(np.abs(eig_vals), axis=-1)
+        max_power_ori = eig_vecs[np.arange(len(eig_vecs)), :, order[:, 0]]
+        signs = np.sign(
+            np.sum(max_power_ori * fwd["source_nn"][2::3], axis=1, keepdims=True)
+        )
+        signs[signs == 0] = 1.0
+        max_power_ori *= signs
+        out = np.sum(L * max_power_ori[None, ...], axis=-1)
+    elif orientation is None:
+        out = np.transpose(L, (0, 2, 1)).reshape(-1, L.shape[1])
+    else:
+        raise ValueError(
+            "orientation must be 'l2-norm', 'max-dim', 'max-power' or None."
+        )
+    return out, _get_source_coords_mni(session, fwd)
