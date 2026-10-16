@@ -283,6 +283,8 @@ centroids in MNI mm, which survives the regridding osl-files did. Under
 
 ### Phase 3: One config, one runner  (todo: refactor parallel processing, remove dask; unify preproc and source recon)
 
+Detailed steps and the target layout: section 11.
+
 API proposal for discussion with Mats: issue #454 (what a batch script, the
 CLI, interactive use and custom steps look like; sections are `preproc` / `coreg` (surfaces, fiducials,
 coregistration) / `source_recon` (forward model, beamformer) /
@@ -348,6 +350,8 @@ Parallelism underneath it:
 
 ### Phase 4: Source reconstruction and parcellation  (todo: match osl-dynamics)
 
+Detailed steps and the target layout: section 11.
+
 - Port (see the inventory above) `Session` (fixed output layout: `{outdir}/{id}/{bem,coreg,src}`),
   `check_up_to_date`, `save_params` JSON next to each output, the consolidated
   `rhino` API (surfaces, fiducials from fif/pos/elc, coregistration, forward
@@ -377,6 +381,8 @@ Parallelism underneath it:
 
 ### Phase 5: Reporting  (todo: update reporting)
 
+Detailed steps and the target layout: section 11.
+
 - Port `osl_dynamics.meeg.report`: each step writes `summary.json` and WebP
   plots into `qc_dir/<step>/<id>/`; `generate_report` builds one sortable table. The preproc plots
   that only osl-ephys has (flowchart, ICA components, artefact scan,
@@ -389,6 +395,8 @@ Parallelism underneath it:
   #212, #134, #170, #251 are triaged: implement in the new report or close.
 
 ### Phase 6: Preprocessing cleanup
+
+Detailed steps and the target layout: section 11.
 
 - Merge PR #444 (GESD) and fix #440 (maxfilt zeros fallback) before touching
   `osl_wrappers.py`, so the fixes are not lost in the rewrite.
@@ -405,6 +413,8 @@ Parallelism underneath it:
   template from osl-files.
 
 ### Phase 7: Tests and GitHub Actions  (todo: tests)
+
+Detailed steps and the target layout: section 11.
 
 - Session-scoped fixtures that fetch the osl-files test data once per CI run
   (cache `~/.cache/osl-files` with `actions/cache`).
@@ -423,6 +433,8 @@ Parallelism underneath it:
 
 ### Phase 8: Examples and docs  (todo: update examples)
 
+Detailed steps and the target layout: section 11.
+
 - `examples/{elekta,ctf,eeg,opm,parallelisation}` rewritten against the v3
   API, mirroring the osl-dynamics `meg_preproc` script layout (config block at
   the top, `process_session`, `parallel.run`). `examples/toolbox-paper` and
@@ -433,6 +445,8 @@ Parallelism underneath it:
   page, `llms.txt`, FAQ refresh; issues #352, #361, #386.
 
 ### Phase 9: conda-forge and mne-installers  (todo: repackage for conda, mne-installers)
+
+Detailed steps and the target layout: section 11.
 
 - `glmtools` stays a required pip dependency (decided 2026-10-15); `glm` is
   not made an optional extra. conda-forge requires every run dependency to be
@@ -451,6 +465,8 @@ Parallelism underneath it:
   against theirs before opening the PR.
 
 ### Phase 10: Release v3.0.0
+
+Detailed steps and the target layout: section 11.
 
 - Changelog from the project board; migration page (config key renames,
   output layout, dask removal, dropped parcellation names, dropped
@@ -780,3 +796,302 @@ channels, crops and calls the common steps, `readme.py` that regenerates
 `test_data/README.md`, and `audit.py` that checks the built files against
 the originals. They need mne, numpy and pybv, and the private source paths
 as arguments.
+
+## 11. Detailed plans for phases 3 to 10
+
+Written 2026-10-16, after phases 1 and 2 landed. The package is restructured
+where the ported code makes a cleaner shape than the v2 layout; names users
+type (`osl_ephys.preprocessing`, `osl_ephys.source_recon`, `osl_ephys.glm`,
+the config step names) are kept.
+
+### Target package layout
+
+```
+osl_ephys/
+  __init__.py          version; re-exports run_batch, run_chain, Session
+  files/               (done) data from osl-files
+  pipeline/            NEW, phase 3: the config API and the runner
+    config.py          load_config, validate, section order, old-format conversion
+    registry.py        step registry: @step(section, per="session"|"subject"), find_function
+    manifest.py        the session manifest: list of dicts or CSV, column checks, grouping by subject
+    runner.py          ported meeg/parallel.py: run(), log(), warning(), summary.csv, worker recycling
+    chain.py           run_chain: one session through the config, returns the dataset dict
+    batch.py           run_batch: manifest x config over the runner, then the group section and the report
+    cli.py             the `osl-ephys` command: run, download-data, check, ica
+  preprocessing/       phase 6
+    functions.py       ported meeg/preproc.py (GESD, bad segments/channels, ica_label, QC plots) + kept osl-ephys functions
+    steps.py           every `preproc` step: the run_mne_* and run_osl_* wrappers, registered
+    amm.py             ported meeg/amm.py (OPM interference rejection)
+    ica/               plot_ica GUI, the manual-ICA review server, one apply function
+    semp/              from #452
+  maxfilter/           phase 6: ported meeg/maxfilter.py behind the existing CLI
+  source_recon/        phase 4
+    session.py         ported meeg/session.py (Session, SurfaceFilenames, CoregFilenames, check_up_to_date, save_params)
+    rhino.py           ported meeg/rhino.py: surfaces, fiducials and headshape, coregistration, forward model, QC plots
+    beamforming.py     ported meeg/source_recon.py (LCMV, bilateral pairs, virtual electrodes) + kept helpers
+    minimum_norm.py    kept
+    parcellation.py    ported meeg/parcellation.py + kept extras (surface parcellation, adjacency, nifti tools)
+    sign_flipping.py   ported data/sign_flipping.py (+ time_embed, standardize) + kept template selection
+    freesurfer.py      kept freesurfer_utils
+    nii.py             kept
+    steps.py           every `coreg`, `source_recon`, `parcellation`, `group` step, registered
+  report/              phase 5
+    report.py          ported meeg/report.py: generate_report, TABS, CAPTIONS
+    qc.py              the osl-ephys QC plots that osl-dynamics lacks (flowchart, artefact scan, digitisation, head movement, events, custom figures)
+  glm/                 kept as is
+  utils/               logger.py (ported MEEGSessionLogger), file_handling.py and study.py (manifest helpers), simulate.py, opm.py, spmio/, misc.py
+  tests/
+```
+
+Gone by the end: `preprocessing/batch.py` and `source_recon/batch.py`
+(replaced by `pipeline/`), `preprocessing/mne_wrappers.py` and
+`osl_wrappers.py` (merged into `steps.py`, same function names),
+`source_recon/wrappers.py` (becomes `steps.py`), the `rhino/` package (one
+module), `report/preproc_report.py`, `src_report.py` and `templates/`,
+`utils/parallel.py`.
+
+One command, `osl-ephys`, with subcommands, replaces the seven scripts;
+the old names stay as aliases for one release:
+
+| v3 command | Replaces |
+| --- | --- |
+| `osl-ephys run config.yml sessions.csv outdir` | `osl_preproc`, and `run_src_batch` scripts |
+| `osl-ephys download-data` | (new) |
+| `osl-ephys check` | `utils.package.run_package_tests` |
+| `osl-ephys ica review`, `osl-ephys ica apply` | `osl_ica_label`/`osl_ica_apply` and `osl-ica-review`/`osl-ica-apply` (merged, decision 2026-10-15) |
+| `osl-ephys maxfilter` | `osl_maxfilter` |
+| `osl-ephys func` | `osl_func` |
+
+### Phase 3: `pipeline/`: one config, one runner
+
+Goal: `run_batch(config, sessions, outdir, n_workers)` runs any mix of
+sections over a manifest with the osl-dynamics runner underneath; the
+existing `preproc:` configs run unchanged. API as proposed in #454.
+
+Steps, in order, each a commit on `v3` with tests:
+
+1. `utils/logger.py`: port `MEEGSessionLogger` and `set_logging_level`;
+   keep `log_or_print` as a shim that writes through the session logger when
+   one is active and through the module logger otherwise (the wrappers call
+   it everywhere).
+2. `pipeline/runner.py`: port `meeg/parallel.py` as is, with the report
+   hook made a callback argument rather than an import of `report` (the
+   report module is replaced in phase 5). Test: a function that sleeps,
+   one that raises, one that warns; check `summary.csv`, the `.log.err`
+   rename, and that other items finish.
+3. `pipeline/registry.py`: `@step(section, per="session")` decorator that
+   records a function under its config name (`filter` for `run_mne_filter`,
+   as `find_func` does today, both names accepted) and whether it runs per
+   session or per subject; `find_function(name, section, extra_funcs)` with
+   the same custom-function rules as today (`extra_funcs` list, module-level
+   functions). Register the existing preprocessing wrappers under `preproc`
+   by decorating them in place (no behaviour change).
+4. `pipeline/config.py`: `load_config` (path, YAML string or dict, as today),
+   section order `preproc, coreg, source_recon, parcellation, group`,
+   validation (unknown section, unknown step, step in the wrong section,
+   per-subject step with no `subject` column), and conversion of a v2
+   `source_recon:` list into the three sections with a warning.
+5. `pipeline/manifest.py`: `Manifest` from a list of dicts, a CSV or the
+   old `(files, subjects, smri_files)` arguments; required columns per
+   section (`raw_file` for `preproc`, `smri_file` for `extract_surfaces`,
+   `preproc_file` or the standard location for everything after); derived
+   paths follow the osl-dynamics layout (`derivatives/preproc/<id>_preproc-raw.fif`,
+   `<id>/{bem,coreg,src}`, `surfaces/<subject>`). `utils.file_handling`
+   and `Study` become ways to build one.
+6. `pipeline/chain.py`: `run_chain(config, session, outdir, ...)` runs the
+   sections in order for one session on a dataset dict (`raw`, `events`,
+   `ica`, `epochs`, `session`), writing each section's output where the
+   manifest says. Today's `run_proc_chain` body moves here; the
+   source-recon sections call the existing `source_recon.wrappers` until
+   phase 4 replaces them.
+7. `pipeline/batch.py`: `run_batch`: per-subject steps first (grouped by
+   `subject`), then the per-session loop through the runner, then `group`
+   steps, then the report callback. `run_proc_batch` and `run_src_batch`
+   stay as wrappers that build the equivalent call and warn; `dask_client`
+   raises with the message to use `n_workers`.
+8. `pipeline/cli.py`: `osl-ephys run`, `download-data`, `check`; `osl_preproc`
+   aliases `run`. `argparse` with subcommands.
+9. Remove `dask` and `distributed` from the dependencies and `utils/parallel.py`;
+   `test_parallel.py` becomes the runner test; `examples/parallelisation/`
+   rewritten.
+
+Done when: the four test recordings run through a `preproc:` config in
+parallel with `n_workers=2`, a failing session is reported and the others
+finish, and the old batch calls still work with a warning.
+
+Risks: `run_proc_chain` is 250 lines of accumulated special cases (report
+generation, epoching, ICA, file naming); move it whole first, split it
+after the tests cover it.
+
+### Phase 4: `source_recon/` on the osl-dynamics design
+
+Goal: the ported rhino, beamformer, parcellation and sign flipping behind
+the same config step names, on the `Session` file layout.
+
+1. `session.py`: port as is. The manifest (phase 3) builds a `Session` per
+   row; `head_model_id` comes from the `subject` column when surfaces are
+   shared.
+2. `rhino.py`: port `meeg/rhino.py` whole (3860 lines; it already is one
+   module). Keep from the old `rhino/` package what it lacks, as public
+   functions in the same module or in `utils`: `delete_headshape_points`
+   (interactive), `plot_polhemus_points`, `save_mni_fiducials`,
+   `rescale_sensor_positions`, the fsleyes helpers, `extract_rhino_files`,
+   `recon_timeseries2niftii`/`timeseries2nii`, `get_vol_info_from_nii`.
+   Each of the 35 old `rhino/utils.py` names gets its inventory line here.
+3. `beamforming.py`: port `meeg/source_recon.py`; `filters-lcmv.h5` is the
+   filter file. Keep `get_recon_timeseries`, `transform_recon_timeseries`,
+   `get_lcmv_weights`, `get_leadfields` (from the `leadfields` branch),
+   `plot_dipole_locations`, `voxel_timeseries` on top of the ported
+   filters. The #426 bilateral implementation merged into `v3` is replaced
+   by the ported one; its QC plot and tests are kept where they add
+   something.
+4. `parcellation.py`: port the osl-dynamics module; keep
+   `surf_parcellate_timeseries`, `convert2source_estimate`,
+   `convert2mne_epochs`, `local_orthogonalise`, `resample_parcellation`,
+   `spatial_dist_adjacency`, `plot_correlation`, `plot_source_topo`,
+   `guess_parcellation`, `load_parcellation_description`,
+   `assign_voxels_to_binary_parcellation`.
+5. `sign_flipping.py`: port `data/sign_flipping.py` plus `time_embed` and
+   `standardize`; compare with the `new-sign-flip` methods now in `v3`
+   (825 lines from scho97): keep whichever the comparison on the test data
+   and one real dataset favours, both if they differ in purpose, and record
+   it in the inventory.
+6. `minimum_norm.py` and `freesurfer.py`: onto `Session` (file names from
+   `CoregFilenames`), otherwise unchanged.
+7. `steps.py`: every v2 config step name (`extract_fiducials_from_fif`,
+   `compute_surfaces`, `coregister`, `forward_model`, `beamform`,
+   `parcellate`, `beamform_and_parcellate`, `minimum_norm`, ...) as a thin
+   registered step over the new functions; `compute_surfaces` registered
+   `per="subject"`. Old keyword names map to new ones with a warning where
+   they differ.
+8. Delete the `rhino/` package, the old `beamforming.py` and
+   `wrappers.py`, `coreg.html` becomes an option of `plot_coregistration`.
+9. Migration page: old to new output paths, with a note that old
+   derivatives directories are not read by v3.
+
+Done when: coregistration, forward model, LCMV and parcellation run on the
+Elekta, CTF and OPM test recordings against the MNI152 surfaces in CI
+(no FSL), the EEG recording runs through coregistration with
+`allow_mri_scaling`, and a FSL-marked test runs `extract_surfaces` on a
+machine that has FSL.
+
+Risks: the largest phase; the FreeSurfer route has no test data (no
+surface files in osl-files), so it is kept working by inspection and a
+skipped test until a small FreeSurfer example exists.
+
+### Phase 5: `report/` in the table style
+
+Goal: one `qc/report.html` across sessions, built from what each step
+saved, replacing the per-subject jinja2 pages.
+
+1. `report/report.py`: port `generate_report`, `TABS`, `CAPTIONS`; extend
+   `TABS` with the preprocessing plots osl-ephys has. Each tab lists the
+   WebP files a step saves under `qc/<step>/<id>/`.
+2. `report/qc.py`: the osl-ephys plots that osl-dynamics lacks, as
+   functions that take the dataset and write WebP files plus a
+   `summary.json` of numbers: flowchart, raw data, channel time series,
+   sensors, channel distributions, spectra, frequency bands, digitisation,
+   head movement, EOG/ECG summaries, bad ICA components, bad segments and
+   channels summaries, artefact scan, events, custom figures (every `plot_*`
+   in the inventory).
+3. `save_qc_plots` in each domain (preprocessing, coregistration,
+   parcellation) calls those; the per-session dict of numbers goes into the
+   table.
+4. `gen_report_from_fif` stays as the way to regenerate a session's QC from
+   a saved fif and its sidecars.
+5. Delete `preproc_report.py`, `src_report.py`, `templates/`, `jinja2` and
+   `tabulate` from the dependencies.
+6. The `osl_ica_label` workflow (phase 6) reads what it needs from the saved
+   fif and ICA files, not from report data.
+
+Done when: a batch run of the test recordings produces a report whose
+table sorts by each metric and whose session view shows every plot the v2
+report had for the same data.
+
+### Phase 6: `preprocessing/` and `maxfilter/`
+
+1. `preprocessing/functions.py`: port `meeg/preproc.py`. Map the old
+   osl-ephys functions onto it: `gesd` and `bad_segments`/`bad_channels`
+   become the ported `detect_bad_segments`/`detect_bad_channels` with the
+   #444 fixes carried over (compare outputs on the test data before
+   switching); `detect_maxfilt_zeros`, `drop_bad_epochs`,
+   `detect_bad_channels_psd` and the zscore/GLM steps stay as they are.
+2. `preprocessing/steps.py`: `mne_wrappers.py` and `osl_wrappers.py` merged,
+   every function keeping its name; new steps `ica_label` (mne-icalabel
+   route, #427 multi-axis OPM), `ica_ecg_eog_correlation`,
+   `decimate_headshape_points`, `amm`.
+3. `preprocessing/amm.py`: port.
+4. `preprocessing/ica/`: `plot_ica.py` (GUI) and `manual_ica/` (review
+   server, label files) side by side with one `apply` function; the two
+   CLI pairs become `osl-ephys ica review` and `osl-ephys ica apply`, with
+   the old names as aliases. The review server's label format is the one
+   both workflows write.
+5. `maxfilter/`: port `meeg/maxfilter.py`; `run_maxfilter_batch` keeps the
+   file-list interface and the `osl_maxfilter` CLI; tests at the
+   command-building level (no MaxFilter licence in CI).
+6. `glm/`: unchanged.
+7. Issues folded in: #373 (warn when filtering rectified signals), #440 done.
+
+Done when: the preprocessing section of the config runs every step on the
+test recordings, and the ICA review round-trips a label file through both
+the GUI's save path and the server's.
+
+### Phase 7: tests
+
+Tests are written in each phase above; this phase is the top-up and the
+CI shape.
+
+1. `tests/conftest.py`: session-scoped fixtures for each test recording
+   (fetched once; `OSL_DATA` cached between CI runs with `actions/cache`),
+   a temporary derivatives directory, and a two-session manifest.
+2. Coverage targets by module: config loading and validation, every
+   registered step on the matching modality, chain and batch with
+   `n_workers=2`, runner failure isolation, parcellation maths
+   (orthogonalisation, parcel weights) against known inputs, sign flipping
+   on synthetic data with a known flip vector, the coreg-to-parcellation
+   path on MNI152 surfaces, report generation, every CLI `--help`, the
+   alias table.
+3. `pytest.mark.fsl` and `pytest.mark.freesurfer`, skipped unless
+   `FSLDIR`/`FREESURFER_HOME` are set; a scheduled workflow on a self-hosted
+   or larger runner can run them later.
+4. `osl-ephys check` (#425): imports every subpackage, prints versions,
+   fetches one test file, runs a 10-second preprocessing chain.
+
+### Phase 8: examples and docs
+
+1. `examples/`: one directory per scanner (`elekta`, `ctf`, `opm`, `eeg`)
+   with the v3 scripts in the osl-dynamics `meg_preproc` shape (config at
+   the top, manifest, `run_batch`), plus `parallelisation/` removed (the
+   runner is the default) and `misc/` pruned to what still runs.
+   `toolbox-paper/` and `oxford/` frozen with a v2.4 note.
+2. Tutorials: the preprocessing, coregistration and source-recon tutorials
+   rewritten on the v3 API; the short ones run on the osl-files test
+   recordings so the gallery can execute them again; the long ones stay on
+   OSF data and are not executed in the docs build.
+3. The 152 Sphinx warnings: docstring rst fixes module by module.
+4. `install.rst` conda-first (done), `documentation.rst` and `faq.rst`
+   refreshed, a `migration.rst` page (config sections, output layout,
+   removed `dask_client`, renamed parcellation files, `coreg.html`, the
+   dropped `glm_irasa`), `llms.txt` kept current.
+5. README quick example in the osl-dynamics style.
+
+### Phase 9: conda-forge and mne-installers
+
+1. A `glmtools` recipe to conda-forge `staging-recipes` (pure Python,
+   `noarch`); the user or a team member as maintainer. Blocks the rest.
+2. `osl-ephys` recipe modelled on `osl-dynamics-feedstock`: `noarch`,
+   the `osl-ephys` entry point, import tests per subpackage, `vtk *osmesa*`
+   on linux-64 for headless coregistration plots; verify
+   `plot_coregistration` with `PYVISTA_OFF_SCREEN` in the recipe test.
+3. mne-installers PR adding `osl-ephys` (and osl-dynamics) after checking
+   the installer's pinned MNE/Qt stack resolves with ours.
+
+### Phase 10: release v3.0.0
+
+1. Changelog from the board and the inventory's drop lines.
+2. `v3.0.0rc1` as a GitHub pre-release: proves the release workflow and
+   gives a week of testing on PyPI.
+3. Delete `doc/v3_plan.md`, moving anything still useful into the
+   migration page.
+4. `v3.0.0` release; merge PR #453; close the five v2 PRs with a pointer;
+   conda-forge bump; revisit the 48 open issues (board item).
