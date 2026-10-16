@@ -101,6 +101,38 @@ D6. Version: the next release is v3.0.0 with a v2 to v3 migration page. v2.4.x
 D7. Settled: the five PRs and three of the stale branches are merged into
     `v3`; `viz` is the one left to port by hand or delete (section 5).
 
+D9-D18, answered 2026-10-16 (details in section 11):
+    D9  `run_batch` keeps `overwrite`, `random_seed`, `verbose`, `extra_funcs`,
+        `covs` (per-session covariates for the GLM steps); `logsdir`/`reportdir`
+        become `log_dir`/`qc_dir` (`qc_dir=None`: no report); `strictrun`,
+        `ftype` and `skip_save` go.
+    D10 Output layout is the osl-dynamics one (`outdir/preproc/<id>_preproc-raw.fif`,
+        `outdir/<id>/{coreg,src}`), so derivatives are interchangeable.
+    D11 Batches run interactively on a many-core machine: the multiprocessing
+        runner on one node, no job-array option.
+    D12 Session IDs come from an explicit `id` column, the raw filename stem
+        as the fallback.
+    D13 One `osl-ephys` command with subcommands; the old script names stay as
+        aliases for one release.
+    D14 Sign flipping: port the osl-dynamics method and test it; no
+        benchmark against the `new-sign-flip` methods or an existing dataset.
+    D15 FreeSurfer route kept and tested with a fast setting: MNE's
+        `fsaverage` (surfaces and BEM included, no FreeSurfer binaries) in
+        place of `recon_all`.
+    D16 Epoched source reconstruction (`epoch_files`) kept.
+    D17 Report: the table carries bad time %, bad channels, ICA components
+        rejected, coregistration error, MNI registration score, empty parcels,
+        plus head movement and EOG/ECG summary numbers; the v2 standalone
+        subject pages are dropped.
+    D18 SEMP is dealt with separately from the phases (own board item); its
+        `osl_pathfinder` dependency is raised with its author, with the
+        suggestion to rename it `osl-pathfinder` like the other OSL repos.
+    Also: the browser review page is the primary ICA review tool, the
+    matplotlib GUI stays as an alternative; GLM config steps kept; FSL tests
+    skipped in CI (no self-hosted runner); all eleven tutorials kept; no
+    workshop deadline; glmtools will not be put on conda-forge by us; v3 is
+    the only line from here (no v2.4.x branch).
+
 D8. No feature is removed from osl-ephys unless there is a reason that is
     written down. The default disposition of every public function, class,
     wrapper, CLI and config option is "keep": either unchanged, or with a
@@ -448,11 +480,9 @@ Detailed steps and the target layout: section 11.
 
 Detailed steps and the target layout: section 11.
 
-- `glmtools` stays a required pip dependency (decided 2026-10-15); `glm` is
-  not made an optional extra. conda-forge requires every run dependency to be
-  on conda-forge, so the osl-ephys recipe needs a `glmtools` feedstock first:
-  a pure-Python `noarch` recipe, small, submitted to staging-recipes before
-  the osl-ephys one.
+- `glmtools` stays a required pip dependency (decided 2026-10-15) and we will
+  not submit a conda-forge recipe for it (2026-10-16): the conda package
+  omits it and the GLM module imports it lazily, see section 11.
 - Recipe modelled on `osl-dynamics-feedstock/recipe/recipe.yaml`: `noarch:
   python`, entry points for the five CLIs, import tests per subpackage,
   `vtk * *osmesa*` on linux-64 so the 3D coreg plot renders headless (this is
@@ -904,13 +934,17 @@ Steps, in order, each a commit on `v3` with tests:
    manifest says. Today's `run_proc_chain` body moves here; the
    source-recon sections call the existing `source_recon.wrappers` until
    phase 4 replaces them.
-7. `pipeline/batch.py`: `run_batch`: per-subject steps first (grouped by
-   `subject`), then the per-session loop through the runner, then `group`
-   steps, then the report callback. `run_proc_batch` and `run_src_batch`
-   stay as wrappers that build the equivalent call and warn; `dask_client`
-   raises with the message to use `n_workers`.
-8. `pipeline/cli.py`: `osl-ephys run`, `download-data`, `check`; `osl_preproc`
-   aliases `run`. `argparse` with subcommands.
+7. `pipeline/batch.py`: `run_batch(config, sessions, outdir, n_workers=1,
+   log_dir=None, qc_dir=None, overwrite=False, random_seed="auto",
+   verbose="INFO", extra_funcs=None, covs=None)`: per-subject steps first
+   (grouped by `subject`), then the per-session loop through the runner,
+   then `group` steps, then the report callback. `run_proc_batch` and
+   `run_src_batch` stay as wrappers that build the equivalent call and
+   warn; `dask_client` raises with the message to use `n_workers`;
+   `strictrun`, `ftype` and `skip_save` are gone (D9). No job-array mode:
+   batches run interactively on a many-core machine (D11).
+8. `pipeline/cli.py`: `osl-ephys run`, `download-data`, `check` (D13);
+   `osl_preproc` aliases `run`. `argparse` with subcommands.
 9. Remove `dask` and `distributed` from the dependencies and `utils/parallel.py`;
    `test_parallel.py` becomes the runner test; `examples/parallelisation/`
    rewritten.
@@ -952,12 +986,17 @@ the same config step names, on the `Session` file layout.
    `guess_parcellation`, `load_parcellation_description`,
    `assign_voxels_to_binary_parcellation`.
 5. `sign_flipping.py`: port `data/sign_flipping.py` plus `time_embed` and
-   `standardize`; compare with the `new-sign-flip` methods now in `v3`
-   (825 lines from scho97): keep whichever the comparison on the test data
-   and one real dataset favours, both if they differ in purpose, and record
-   it in the inventory.
+   `standardize` and test it on synthetic data with a known flip vector
+   (D14: no benchmark). The `new-sign-flip` methods merged from scho97 are
+   kept as additional functions if they import and run on the test data,
+   otherwise dropped with the reason in the inventory.
 6. `minimum_norm.py` and `freesurfer.py`: onto `Session` (file names from
-   `CoregFilenames`), otherwise unchanged.
+   `CoregFilenames`), otherwise unchanged. Tested with MNE's `fsaverage`
+   (`mne.datasets.fetch_fsaverage`, which ships the surfaces, BEM and
+   `aparc` annotation, so no FreeSurfer binaries are needed): coregister
+   the Elekta test recording to fsaverage, surface forward model, minimum
+   norm, surface parcellation (D15). `recon_all` and `make_watershed_bem`
+   are tested at the command-building level only.
 7. `steps.py`: every v2 config step name (`extract_fiducials_from_fif`,
    `compute_surfaces`, `coregister`, `forward_model`, `beamform`,
    `parcellate`, `beamform_and_parcellate`, `minimum_norm`, ...) as a thin
@@ -996,12 +1035,26 @@ saved, replacing the per-subject jinja2 pages.
    in the inventory).
 3. `save_qc_plots` in each domain (preprocessing, coregistration,
    parcellation) calls those; the per-session dict of numbers goes into the
-   table.
-4. `gen_report_from_fif` stays as the way to regenerate a session's QC from
+   table: percentage of time marked bad, bad channel count, ICA components
+   rejected, head movement summary (from the MaxFilter head position when
+   available), EOG and ECG event counts, coregistration error, MNI
+   registration score, empty parcels (D17).
+4. Image format, as osl-dynamics does it: QC plots are written straight to
+   WebP by matplotlib (`savefig(path.webp, dpi=100, bbox_inches="tight",
+   pil_kwargs={"quality": 80})`, about 1000 pixels wide, the width the
+   report shows them at, several times smaller than PNG); plots that live
+   with the derivatives (coregistration, surfaces, MNI registration) stay
+   PNG there and are converted to WebP when the report copies them into the
+   QC directory (Pillow, quality 80, in a thread pool, skipped when the copy
+   is newer than the source, written to a temporary name and moved into
+   place). A `report.save_figure(fig, path)` helper holds the savefig
+   settings so every QC plot in osl-ephys uses the same ones; the pyvista
+   coregistration screenshots go through Pillow the same way.
+5. `gen_report_from_fif` stays as the way to regenerate a session's QC from
    a saved fif and its sidecars.
-5. Delete `preproc_report.py`, `src_report.py`, `templates/`, `jinja2` and
+6. Delete `preproc_report.py`, `src_report.py`, `templates/`, `jinja2` and
    `tabulate` from the dependencies.
-6. The `osl_ica_label` workflow (phase 6) reads what it needs from the saved
+7. The `osl_ica_label` workflow (phase 6) reads what it needs from the saved
    fif and ICA files, not from report data.
 
 Done when: a batch run of the test recordings produces a report whose
@@ -1024,8 +1077,13 @@ report had for the same data.
 4. `preprocessing/ica/`: `plot_ica.py` (GUI) and `manual_ica/` (review
    server, label files) side by side with one `apply` function; the two
    CLI pairs become `osl-ephys ica review` and `osl-ephys ica apply`, with
-   the old names as aliases. The review server's label format is the one
-   both workflows write.
+   the old names as aliases. The browser review page is the primary tool
+   and the GUI the alternative; the review server's label format is the
+   one both workflows write.
+4b. `preprocessing/semp/` is outside this phase (D18, own board item): it
+   stays as merged, its `osl_pathfinder` import is raised with its author
+   (suggesting the name `osl-pathfinder`), and it is excluded from the docs
+   build until that dependency is settled.
 5. `maxfilter/`: port `meeg/maxfilter.py`; `run_maxfilter_batch` keeps the
    file-list interface and the `osl_maxfilter` CLI; tests at the
    command-building level (no MaxFilter licence in CI).
@@ -1077,8 +1135,14 @@ CI shape.
 
 ### Phase 9: conda-forge and mne-installers
 
-1. A `glmtools` recipe to conda-forge `staging-recipes` (pure Python,
-   `noarch`); the user or a team member as maintainer. Blocks the rest.
+1. glmtools: we will not submit a conda-forge recipe ourselves (decided
+   2026-10-16), and conda-forge needs every run dependency on conda-forge.
+   So the conda recipe omits glmtools, `osl_ephys.glm` imports glmtools
+   lazily (inside the functions that use it, with a clear error naming
+   `pip install glmtools`), and the install page says the GLM module needs
+   that extra pip install in a conda environment. The pip package keeps
+   glmtools as a required dependency. If glmtools ever reaches conda-forge,
+   the recipe adds it.
 2. `osl-ephys` recipe modelled on `osl-dynamics-feedstock`: `noarch`,
    the `osl-ephys` entry point, import tests per subpackage, `vtk *osmesa*`
    on linux-64 for headless coregistration plots; verify
@@ -1094,4 +1158,5 @@ CI shape.
 3. Delete `doc/v3_plan.md`, moving anything still useful into the
    migration page.
 4. `v3.0.0` release; merge PR #453; close the five v2 PRs with a pointer;
-   conda-forge bump; revisit the 48 open issues (board item).
+   conda-forge bump; revisit the 48 open issues (board item). No v2.4.x
+   maintenance branch: v3 is the only line from here.
