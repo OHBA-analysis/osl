@@ -1,8 +1,5 @@
 """Forward modelling in RHINO."""
 
-# Authors: Mark Woolrich <mark.woolrich@ohba.ox.ac.uk>
-#          Chetan Gohil <chetan.gohil@psych.ox.ac.uk>
-
 import os
 import os.path as op
 from copy import deepcopy
@@ -164,7 +161,6 @@ def make_fwd_solution(
     if src[0]["coord_frame"] != FIFF.FIFFV_COORD_MRI:
         raise RuntimeError("src is not in MRI coordinates")
 
-    # --------------------------------------------
     # Setup main MNE call to make_forward_solution
 
     # The forward model is done in head space
@@ -194,7 +190,6 @@ def make_fwd_solution(
     info_fif_file = filenames["info_fif_file"]
     info = read_info(info_fif_file)
 
-    # -------------
     # Main MNE call
 
     fwd = make_forward_solution(
@@ -295,7 +290,6 @@ def setup_volume_source_space(
     #
     # To be continued... ?
 
-    # ---------------------------------------------------------------------------------------------------------------
     # Move the surfaces to where MNE expects to find them for the forward modelling, see make_bem_model in mne/bem.py
 
     # First make sure bem directory exists
@@ -334,7 +328,6 @@ def setup_volume_source_space(
         overwrite=True,
     )
 
-    # ------------------------------------------------
     # Setup main MNE call to _make_volume_source_space
 
     pos = float(int(gridstep))
@@ -347,7 +340,6 @@ def setup_volume_source_space(
     surf = deepcopy(surf)
     surf["rr"] *= 1e-3  # must be in metres for MNE call
 
-    # -------------
     # Main MNE call
 
     sp = _make_volume_source_space(
@@ -362,7 +354,6 @@ def setup_volume_source_space(
     )
     sp[0]["type"] = "vol"
 
-    # ----------------------
     # Save and return result
 
     sp = _complete_vol_src(sp, subject)

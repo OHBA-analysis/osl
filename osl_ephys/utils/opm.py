@@ -1,7 +1,5 @@
 """Utility function for handling OPM data."""
 
-# Authors: Mark Woolrich <mark.woolrich@ohba.ox.ac.uk>
-
 import os.path
 from shutil import copyfile
 import nibabel as nib
@@ -20,9 +18,6 @@ except ImportError:
 
 import pandas as pd
 import scipy
-
-# -------------------------------------------------------------
-# %% Get sensor locations and orientations from tsv file
 
 
 def convert_notts(notts_opm_mat_file, smri_file, tsv_file, fif_file, smri_fixed_file):
@@ -84,8 +79,7 @@ def convert_notts(notts_opm_mat_file, smri_file, tsv_file, fif_file, smri_fixed_
     sensor_locs = apply_trans(overall_xform_trans, sensor_locs.T * 1000).T / 1000
     sensor_oris = apply_trans(overall_xform_trans, sensor_oris.T * 1000).T / 1000
 
-    # -------------------------------------------------------------
-    # %% Create fif file from mat file and chan_info
+    # Create fif file from mat file and chan_info
 
     Fs = scipy.io.loadmat(notts_opm_mat_file)["fs"][0, 0]  # Hz
 
@@ -111,8 +105,7 @@ def convert_notts(notts_opm_mat_file, smri_file, tsv_file, fif_file, smri_fixed_
 
     info["dev_head_t"] = Transform("meg", "head", np.identity(4))
 
-    # -------------------------------------------------------------
-    # %% Set sensor locs and oris in info
+    # Set sensor locs and oris in info
 
     def _cartesian_to_affine(loc, ori):
 
@@ -265,9 +258,6 @@ def correct_mri(smri_file, smri_fixed_file):
     return sform_std
 
 
-# -------------------------------------------------------------
-# %% Debug and plotting code for checking sensor locs and oris
-
 if False:
 
     from mne.io.pick import pick_types
@@ -358,8 +348,6 @@ if False:
     meg_rrs = meg_rrs * 1000
     meg_sensor_locs = meg_sensor_locs * 1000
     meg_sensor_oris = meg_sensor_oris * 1000
-
-    #################
 
     import matplotlib.pyplot as plt
 

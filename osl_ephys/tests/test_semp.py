@@ -43,7 +43,7 @@ from osl_ephys.preprocessing.semp.utils import (
 )
 import osl_ephys.preprocessing.semp as semp
 
-# ------------------------------------------------------------------ fixtures --
+# fixtures
 
 
 def _synthetic_raw(T=30.0, sfreq=100.0):
@@ -70,7 +70,7 @@ def _dataset():
     }
 
 
-# --------------------------------------------------------------- registration -
+# registration
 
 
 @pytest.mark.parametrize(
@@ -97,7 +97,7 @@ def test_removed_names_do_not_resolve():
     assert find_func("set_channel_type_raw") is None
 
 
-# ---------------------------------------------------------------- epoching ----
+# epoching
 
 
 def test_create_TR_epoch_fixed_window():
@@ -266,7 +266,7 @@ def test_create_epoch_random_uses_given_key():
     assert "tr_ep" in d and "tr_ep_rand" not in d
 
 
-# ------------------------------------------------------ fixed-spacing check ---
+# fixed-spacing check
 
 
 def test_check_fixed_spacing_regular_is_ok():
@@ -361,7 +361,7 @@ def test_create_TR_epoch_warns_on_forgotten_trigger(capsys):
     assert "FORGOTTEN" not in out
 
 
-# ---------------------------------------------------------------- slice_reject -
+# slice_reject
 
 
 def test_slice_ga_scores_need_local_peak_and_global_dominance():
@@ -523,7 +523,7 @@ def test_slice_reject_contribution_gate_is_opt_in(monkeypatch):
     assert dataset["slice_reject_scores"]["contribution_passes"][2]
 
 
-# --------------------------------------------------------------------- AAS ----
+# AAS
 
 
 def test_epoch_aas_removes_a_stationary_template():
@@ -602,7 +602,7 @@ def test_epoch_aas_rejects_invalid_window(window_length):
         epoch_aas(ds, {"window_length": window_length})
 
 
-# -------------------------------------------------------------------- timer ---
+# timer
 
 
 def test_timer_start_while_running_warns_not_raises():
@@ -619,7 +619,7 @@ def test_timer_start_while_running_warns_not_raises():
     assert len(reg.get_history("t")) == 2
 
 
-# ---------------------------------------------------------------- ensure_dir --
+# ensure_dir
 
 
 def test_ensure_dir_created_flag_and_idempotent(tmp_path):
@@ -629,7 +629,7 @@ def test_ensure_dir_created_flag_and_idempotent(tmp_path):
     assert d.is_dir()
 
 
-# ------------------------------------------------------------------- metric ---
+# metric
 
 
 def test_mean_psd_in_band_single_source_and_fallback():
@@ -643,7 +643,7 @@ def test_mean_psd_in_band_single_source_and_fallback():
     assert semp.mean_psd_in_band(row, freqs, 2.4, 0.01) == 20.0
 
 
-# ---------------------------------------------------------------------- vis ----
+# vis
 
 
 def test_unpack_plot_handles_both_return_shapes():
@@ -812,7 +812,7 @@ def test_temp_plot_uses_name_as_title():
     plt.close("all")
 
 
-# ------------------------------------------------------------- amplitude ticks -
+# amplitude ticks
 
 
 def test_amplitude_yticks_style():
@@ -829,7 +829,7 @@ def test_amplitude_yticks_degenerate_zero_signal():
     assert len(vals) == len(labels) and ylim[0] < ylim[1]
 
 
-# ------------------------------------------------- mne_epoch2raw seam modes ---
+# mne_epoch2raw seam modes
 
 
 def _overlap_setup(n_ep, spacing=50, L=100, base=1000, sfreq=100.0):
@@ -911,9 +911,9 @@ def test_mne_epoch2raw_obs_switches_new_to_even_after_11():
     assert dn[700] == 13.0
 
 
-# --------------------------------------------------------------------- OBS ----
+# OBS
 
-# ----------------------------------------------- proc_userargs / require_keys -
+# proc_userargs / require_keys
 
 
 def test_proc_userargs_strict_rejects_unknown_key():

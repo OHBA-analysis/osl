@@ -1,8 +1,5 @@
 """Wrappers for Freesurfer."""
 
-# Authors: Mats van Es <mats.vanes@psych.ox.ac.uk>
-#          Chetan Gohil <chetan.gohil@psych.ox.ac.uk>
-
 import os
 import os.path as op
 import shutil

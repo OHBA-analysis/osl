@@ -1,8 +1,5 @@
 """Functions for fixing the dipole sign ambiguity of beamformed data."""
 
-# Authors: Chetan Gohil <chetan.gohil@psych.ox.ac.uk>
-#          SungJun Cho <sungjun.cho@ndcn.ox.ac.uk>
-
 import os.path as op
 
 import mne

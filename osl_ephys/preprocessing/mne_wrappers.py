@@ -21,10 +21,6 @@ specified in the userargs to apply the method to `dataset['epochs']` instead of
 `dataset['raw']`.
 """
 
-# Authors: Andrew Quinn <a.quinn@bham.ac.uk>
-#          Chetan Gohil <chetan.gohil@psych.ox.ac.uk>
-#          Mats van Es <mats.vanes@psych.ox.ac.uk>
-
 import mne
 import numpy as np
 
@@ -33,7 +29,6 @@ import logging
 
 logger = logging.getLogger(__name__)
 
-# --------------------------------------------------------------
 # MNE Raw/Epochs Object Methods
 #
 
@@ -72,7 +67,6 @@ def run_mne_anonymous(dataset, userargs, method):
     return dataset
 
 
-# --------------------------------------------------------------
 # Exceptions for which we can't just naively pass args through
 
 # General wrapper functions - work on Raw and Epochs
@@ -365,7 +359,6 @@ def run_mne_apply_baseline(dataset, userargs):
     return dataset
 
 
-# --------------------------------------------------------------
 # MNE Events and Epochs Object Methods
 #
 
@@ -427,7 +420,6 @@ def run_mne_epochs(dataset, userargs):
     return dataset
 
 
-# --------------------------------------------------------------
 # mne.preprocessing functions
 def run_mne_annotate_amplitude(dataset, userargs):
     """OSL-Batch wrapper for :py:func:`mne.preprocessing.annotate_amplitude <mne.preprocessing.annotate_amplitude>`.
@@ -733,7 +725,6 @@ def run_mne_tfr_stockwell(dataset, userargs):
     return dataset
 
 
-# --------------------------------------------------------------
 # OHBA/MNE ICA Tools
 #
 # Currently assuming ICA on Raw data - no Epochs support yet

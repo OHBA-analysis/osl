@@ -1,9 +1,5 @@
 """Wrappers for MNE functions to perform preprocessing."""
 
-# Authors: Andrew Quinn <a.quinn@bham.ac.uk>
-#          Chetan Gohil <chetan.gohil@psych.ox.ac.uk>
-#          Mats van Es <mats.vanes@psych.ox.ac.uk>
-
 import logging
 import mne
 import numpy as np
@@ -28,7 +24,6 @@ from ..glm.glm_base import SensorMaxStatPerm, SensorClusterPerm
 logger = logging.getLogger(__name__)
 
 
-# --------------------------------------------------------------
 # osl-ephys preprocessing functions
 #
 
@@ -1010,9 +1005,6 @@ def run_osl_drop_bad_epochs(dataset, userargs):
     return dataset
 
 
-# %% GLM wrappers
-
-
 def run_osl_zscore_present_data(dataset, userargs):
     """
     z-scoring parametric regressors, without NaNs
@@ -1351,9 +1343,7 @@ def run_osl_apply_ica(dataset, userargs):
     return apply_ica(dataset, userargs)
 
 
-# -----------------------------------------------------------------------------
 # semp (Simultaneous EEG-fMRI Preprocessing) wrappers
-# -----------------------------------------------------------------------------
 # The semp wrappers live in osl_ephys.preprocessing.semp.wrappers
 # and take the standard ``(dataset, userargs)`` signature. We expose each one to
 # ``find_func`` as ``run_osl_<name>`` so a plain ``run_proc_batch`` config can

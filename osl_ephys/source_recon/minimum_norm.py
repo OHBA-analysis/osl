@@ -1,10 +1,5 @@
 """Minimum norm source localization using MNE-Python."""
 
-# Authors: Chetan Gohil <chetan.gohil@psych.ox.ac.uk>
-#          Mats van Es <mats.vanes@psych.ox.ac.uk>
-#          Hongyu Qian <hongyu.qian@queens.ox.ac.uk>
-
-
 import os
 import os.path as op
 

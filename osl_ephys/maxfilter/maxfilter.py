@@ -1,9 +1,5 @@
 """Maxfiltering."""
 
-# Authors: Andrew Quinn <a.quinn@bham.ac.uk>
-#          Mats van Es <mats.vanes@psych.ox.ac.uk>
-#          Chetan Gohil <chetan.gohil@psych.ox.ac.uk>
-
 import os
 import mne
 import sys
@@ -139,9 +135,6 @@ parser.add_argument(
     action="store_true",
     help="Don't actually run anything, just print commands that would have been run",
 )
-
-
-# ----------------------------------------------------------
 
 
 def _add_headpos(cmd, args, outfif):
@@ -406,7 +399,6 @@ def run_maxfilter(infif, outfif, args, logfile_tag=""):
 
     basecmd = "{maxpath} -f {infif} -o {outfif}"
 
-    # --------------
     # Format Maxfilter options
 
     if ("tsss" in args) and args["tsss"]:
@@ -457,7 +449,6 @@ def run_maxfilter(infif, outfif, args, logfile_tag=""):
         stdlog=stdlog, errlog=errlog
     )
 
-    # --------------
     # Run Maxfilter
 
     if args["dryrun"]:
@@ -471,9 +462,6 @@ def run_maxfilter(infif, outfif, args, logfile_tag=""):
         os.system("bash -c '{}'".format(cmd))
 
     return outfif, stdlog
-
-
-# -------------------------------------------------
 
 
 def run_multistage_maxfilter(infif, outbase, args):
@@ -514,7 +502,6 @@ def run_multistage_maxfilter(infif, outbase, args):
     https://imaging.mrc-cbu.cam.ac.uk/meg/maxbugs
     """
 
-    # --------------------------------------
     # Stage 1 - Find Bad Channels
 
     outfif = outbase.format("autobad_.fif")
@@ -561,7 +548,6 @@ def run_multistage_maxfilter(infif, outbase, args):
     else:
         bads = None
 
-    # --------------------------------------
     # Stage 2 - Signal Space Separation
 
     outfif = outbase.format(".fif")
@@ -599,7 +585,6 @@ def run_multistage_maxfilter(infif, outbase, args):
 
     outfif, outlog = run_maxfilter(infif, outfif, stage2_args)
 
-    # --------------------------------------
     # Stage 3 - Translate to reference file
     if ("trans" in args) and args["trans"] is not None:
 
@@ -663,11 +648,9 @@ def run_cbu_3stage_maxfilter(infif, outbase, args):
     https://imaging.mrc-cbu.cam.ac.uk/meg/maxbugs
     """
 
-    # --------------------------------------
     # Stage 0 - Fit Origin without nose
     origin = fit_cbu_origin(infif, outbase, remove_nose=True)
 
-    # --------------------------------------
     # Stage 1 - Find Bad Channels
 
     outfif = outbase.format("autobad_.fif")
@@ -720,7 +703,6 @@ def run_cbu_3stage_maxfilter(infif, outbase, args):
     else:
         bads = None
 
-    # --------------------------------------
     # Stage 2 - Signal Space Separation
 
     outfif = outbase.format(".fif")
@@ -766,7 +748,6 @@ def run_cbu_3stage_maxfilter(infif, outbase, args):
 
     outfif, outlog = run_maxfilter(infif, outfif, stage2_args)
 
-    # --------------------------------------
     # Stage 3 - Translate to default
 
     infif = outfif  # input is output from previous stage
@@ -791,9 +772,6 @@ def run_cbu_3stage_maxfilter(infif, outbase, args):
             stage3_args[key] = args[key]
 
     outfif, outlog = run_maxfilter(infif, outfif, stage3_args)
-
-
-# -------------------------------------------------
 
 
 def run_maxfilter_batch(files, outdir, args=None):
@@ -861,11 +839,8 @@ def run_maxfilter_batch(files, outdir, args=None):
             args["outdir"] = validate_outdir(args["outdir"])
         print("Outputs saving to: {0}\n\n".format(args["outdir"]))
 
-    # -------------------------------------------------
-
     for idx, fif in enumerate(infifs):
 
-        # --------------
         # Format input and output files and run some checks
         print("Processing run {0}/{1} : {2}".format(idx + 1, len(infifs), fif))
 
@@ -909,9 +884,6 @@ def run_maxfilter_batch(files, outdir, args=None):
     print("\nProcessing complete. OHBA-and-out.\n")
 
 
-# -------------------------------------------------
-
-
 def main(argv=None):
     if argv is None:
         argv = sys.argv[1:]
@@ -919,7 +891,6 @@ def main(argv=None):
     run_maxfilter_batch(argv[0], argv[1], argv[2:])
 
 
-# ----------------------------------------------------------
 # Main user function
 
 if __name__ == "__main__":

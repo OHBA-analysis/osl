@@ -4,11 +4,6 @@ This module contains the functions callable using a 'source_recon'
 section of a config.
 """
 
-# Authors: Chetan Gohil <chetan.gohil@psych.ox.ac.uk>
-#          Mats van Es <mats.vanes@psych.ox.ac.uk>
-#          SungJun Cho <sungjun.cho@ndcn.ox.ac.uk>
-
-
 import os
 import pickle
 from pathlib import Path
@@ -30,7 +25,6 @@ from ..report import src_report
 from ..report.preproc_report import plot_freqbands
 from ..utils.logger import log_or_print
 
-# --------------
 # RHINO wrappers
 
 
@@ -654,7 +648,6 @@ def forward_model(
             )
 
 
-# -------------------------------------
 # Beamforming and parcellation wrappers
 
 
@@ -1821,7 +1814,6 @@ def minimum_norm_and_parcellate(
         )
 
 
-# ----------------------
 # Sign flipping wrappers
 
 
@@ -2090,7 +2082,6 @@ def fix_sign_ambiguity(
         )
 
 
-# --------------
 # Other wrappers
 
 

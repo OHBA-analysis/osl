@@ -1,10 +1,5 @@
 """RHINO utilities."""
 
-# Authors: Mark Woolrich <mark.woolrich@ohba.ox.ac.uk>
-#          Chetan Gohil <chetan.gohil@psych.ox.ac.uk>
-#          Rob Seymour <rob.seymour@psych.ox.ac.uk>
-#          Mats van Es <mats.vanes@psych.ox.ac.uk>
-
 import os
 import os.path as op
 import subprocess
@@ -1026,7 +1021,6 @@ def recon_timeseries2niftii(
     if len(recon_timeseries.shape) == 1:
         recon_timeseries = np.reshape(recon_timeseries, [recon_timeseries.shape[0], 1])
 
-    # ------------------------------------------------------------------------------------------------
     # Convert the recon_timeseries to the standard space brain dipole grid at the specified resolution
 
     recon_ts_out, reference_brain_fname, recon_coords_out, recon_indices = (
@@ -1039,7 +1033,6 @@ def recon_timeseries2niftii(
         )
     )
 
-    # ----------------------------------
     # Output recon_ts_out as niftii file
 
     out_nii_fname = timeseries2nii(
@@ -1275,7 +1268,6 @@ def extract_rhino_files(
             continue
         subjects_to_copy.append(subject_name)
 
-    # --------
     # Surfaces
 
     files = [
@@ -1339,7 +1331,6 @@ def extract_rhino_files(
             },
         )
 
-    # --------------
     # Coregistration
 
     files = [
@@ -1427,7 +1418,6 @@ def extract_rhino_files(
             },
         )
 
-    # ------
     # Report
 
     if gen_report:

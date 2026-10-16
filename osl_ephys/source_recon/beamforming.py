@@ -1,8 +1,5 @@
 """Beamforming."""
 
-# Authors: Mark Woolrich <mark.woolrich@ohba.ox.ac.uk>
-#          Chetan Gohil <chetan.gohil@psych.ox.ac.uk>
-
 import os
 import os.path as op
 
@@ -547,7 +544,6 @@ def transform_recon_timeseries(
     surfaces_filenames = rhino_files["surf"]
     coreg_filenames = rhino_files["coreg"]
 
-    # -------------------------------------------------------------------------------------
     # Get hold of coords of points reconstructed to
     #
     # Note, MNE forward model is done in head space in metres
@@ -556,7 +552,6 @@ def transform_recon_timeseries(
     vs = fwd["src"][src_index]
     recon_coords_head = vs["rr"][vs["vertno"]] * 1000  # in mm
 
-    # ----------------------------
     if spatial_resolution is None:
         # Estimate gridstep from forward model
         rr = fwd["src"][src_index]["rr"]
@@ -632,7 +627,6 @@ def transform_recon_timeseries(
     else:
         ValueError("Invalid out_space, should be mni or mri or scaledmri")
 
-    # ---------------------------------------------------------------------
     # Get coordinates from reference brain at resolution spatial_resolution
 
     # Create std brain of the required resolution
@@ -647,7 +641,6 @@ def transform_recon_timeseries(
 
     coords_out, vals = rhino_utils.niimask2mmpointcloud(reference_brain_resampled)
 
-    # --------------------------------------------------------------
     # For each mni_coords_out find nearest coord in recon_coords_out
 
     recon_timeseries_out = np.zeros(
@@ -767,7 +760,6 @@ def get_leadfields(
     """
     rhino_files = rhino_utils.get_rhino_filenames(subjects_dir, subject)
 
-    # ------------------------
     # Leadfields in head space
 
     # Load the leadfields
@@ -1656,7 +1648,6 @@ def _compute_beamformer(
             )
         del Gk_s
 
-    # --------------------------------
     # 1. Reduce rank of the lead field
 
     if reduce_rank:
@@ -1670,7 +1661,6 @@ def _compute_beamformer(
         bf_denom = np.matmul(bf_numer, Gk)  # (nsources x nsensors x norient)
         return bf_numer, bf_denom
 
-    # ----------------------------------------------------------
     # 2. Reorient lead field in direction of max power or normal
 
     if pick_ori == "max-power" or pick_ori == "max-power-pre-weight-norm":
@@ -1792,7 +1782,6 @@ def _compute_beamformer(
 
     else:
 
-        # ----------------------------------------------------------------------
         # 3. Compute numerator and denominator of beamformer formula (unit-gain)
 
         bf_numer, bf_denom = _compute_bf_terms(Gk, Cm_inv)
@@ -1802,7 +1791,6 @@ def _compute_beamformer(
 
         del Gk  # lead field has been adjusted and should not be used anymore
 
-        # ----------------------------------------------------------------------
         # 4. Invert the denominator
 
         # Here W is W_ug, i.e.: G.T @ Cm_inv / (G.T @ Cm_inv @ G)
@@ -1815,7 +1803,6 @@ def _compute_beamformer(
 
         del bf_denom_inv, sk
 
-    # ----------------------------------------------------------------
     # 5. Re-scale filter weights according to the selected weight_norm
 
     # Weight normalization is done by computing, for each source:

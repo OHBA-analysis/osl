@@ -1,10 +1,5 @@
 """source recon utilities."""
 
-# Authors: Mark Woolrich <mark.woolrich@ohba.ox.ac.uk>
-#          Chetan Gohil <chetan.gohil@psych.ox.ac.uk>
-#          Rob Seymour <rob.seymour@psych.ox.ac.uk>
-#          Mats van Es <mats.vanes@psych.ox.ac.uk>
-
 from mne import label as mne_label
 
 import os

@@ -1,8 +1,5 @@
 """Batch processing for source reconstruction."""
 
-# Authors: Chetan Gohil <chetan.gohil@psych.ox.ac.uk>
-#          Mats van Es <mats.vanes@psych.ox.ac.uk>
-
 import os
 import sys
 import traceback

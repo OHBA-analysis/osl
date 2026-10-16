@@ -1,9 +1,5 @@
 """Functions to handle parcellation."""
 
-# Authors: Mark Woolrich <mark.woolrich@ohba.ox.ac.uk>
-#          Chetan Gohil <chetan.gohil@psych.ox.ac.uk>
-#          Mats van Es <mats.vanes@psych.ox.ac.uk>
-
 import os
 import os.path as op
 from pathlib import Path

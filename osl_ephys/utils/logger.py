@@ -3,17 +3,12 @@
 Heavily inspired by logging in OSL.
 """
 
-# Authors: Andrew Quinn <a.quinn@bham.ac.uk>
-#          Chetan Gohil <chetan.gohil@psych.ox.ac.uk>
-
 import yaml
 import logging
 
 # Initialise logging for this sub-module
 osl_logger = logging.getLogger("osl_ephys")
 osl_logger.setLevel(logging.WARNING)
-
-# %% ------------------------------------------------------------
 
 
 default_config = """

@@ -23,9 +23,7 @@ import mne
 import numpy as np
 from scipy.signal import welch
 
-# ---------------------------------------------------------------------------
 # Shared plotting configuration
-# ---------------------------------------------------------------------------
 
 # MNE accepts these channel-type names in ``pick`` and ``create_info``.  The
 # set is used only to recognise an ndarray's requested channel type; Raw input
@@ -77,9 +75,7 @@ _RC = {
 _DEFAULT_EVENT_COLORS = ("r", "g", "m", "c", "y", "k", "#7f7f7f")
 
 
-# ---------------------------------------------------------------------------
 # Generic figure and input helpers
-# ---------------------------------------------------------------------------
 
 
 def _unpack_plot(plot_out):
@@ -286,9 +282,7 @@ def _save_or_show_psd(fig, save_pth):
     plt.close(fig)
 
 
-# ---------------------------------------------------------------------------
 # PSD plotting
-# ---------------------------------------------------------------------------
 
 
 def psd_plot(
@@ -386,9 +380,7 @@ def psd_plot(
     return spectrum
 
 
-# ---------------------------------------------------------------------------
 # Time-domain plotting helpers
-# ---------------------------------------------------------------------------
 
 
 def _amplitude_yticks(seg, ylim=None, candidate_tick_counts=(7, 9, 11)):
@@ -699,9 +691,7 @@ def _save_or_show(fig, save_pth, **save_kwargs):
         plt.close(fig)
 
 
-# ---------------------------------------------------------------------------
 # Time-domain plots
-# ---------------------------------------------------------------------------
 
 
 def temp_plot(
@@ -839,9 +829,7 @@ def temp_plot_diff(
     _save_or_show(fig, save_pth)
 
 
-# ---------------------------------------------------------------------------
 # PCA component plots
-# ---------------------------------------------------------------------------
 
 
 def _plot_pc_panel(

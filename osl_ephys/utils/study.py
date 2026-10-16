@@ -1,4 +1,3 @@
-# Authors:
 # Andrew Quinn <a.quinn@bham.ac.uk>
 # Mats van Es <mats.vanes@psych.ox.ac.uk>
 

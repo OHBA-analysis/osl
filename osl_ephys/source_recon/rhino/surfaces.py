@@ -1,9 +1,5 @@
 """Calculation of surfaces in RHINO."""
 
-# Authors: Mark Woolrich <mark.woolrich@ohba.ox.ac.uk>
-#          Chetan Gohil <chetan.gohil@psych.ox.ac.uk>
-#          Mats van Es <mats.vanes@psych.ox.ac.uk>
-
 import os.path as op
 import warnings
 from pathlib import Path
@@ -221,7 +217,6 @@ def compute_surfaces(
     log_or_print("From the cmd line:")
     log_or_print("fsleyes {} {}".format(filenames["smri_file"], filenames["std_brain"]))
 
-    # ------------------------------------------------------------------------
     # 1) Transform sMRI to be aligned with the MNI axes so that BET works well
 
     img = nib.load(filenames["smri_file"])
@@ -266,7 +261,6 @@ def compute_surfaces(
             )
         )
 
-    # -------------------------------------------------------
     # 2) Use BET to skull strip sMRI so that flirt works well
 
     # Check sMRI doesn't contain nans (this can cause segmentation faults with FSL's bet)
@@ -291,7 +285,6 @@ def compute_surfaces(
     )
     fsl_wrappers.bet(flirt_smri_mniaxes_file, flirt_smri_mniaxes_bet_file)
 
-    # ---------------------------------------------------------
     # 3) Use flirt to register skull stripped sMRI to MNI space
 
     log_or_print("Running FLIRT...")
@@ -336,7 +329,6 @@ def compute_surfaces(
         out=flirt_smri_mni_file,
     )
 
-    # --------------------------
     # 4) Use BET/BETSURF to get:
     # a) The scalp surface (excluding nose), this gives the sMRI-derived headshape points in native sMRI space, which can be used in the headshape points registration later.
     # b) The scalp surface (outer skin), inner skull and brain surface, these can be used for forward modelling later. Note that due to the unusual naming conventions used by BET:
@@ -352,7 +344,6 @@ def compute_surfaces(
     flirt_smri_mni_bet_file = op.join(filenames["basedir"], "flirt")
     fsl_wrappers.bet(flirt_smri_mni_file, flirt_smri_mni_bet_file, A=True)
 
-    # ----------------------------------------------------------------
     # 5) Refine scalp outline, adding nose to scalp surface (optional)
 
     log_or_print("Refining scalp surface...")
@@ -529,7 +520,6 @@ def compute_surfaces(
         out=filenames["bet_outskin_plus_nose_mesh_file"],
     )
 
-    # ----------------------------------------------
     # 6) Output the transform from sMRI space to MNI
 
     flirt_mni2mri = np.loadtxt(mni2mri_flirt_xform_file)
@@ -539,7 +529,6 @@ def compute_surfaces(
     mni_mri_t = Transform("mni_tal", "mri", xform_mni2mri)
     write_trans(filenames["mni_mri_t_file"], mni_mri_t, overwrite=True)
 
-    # ----------------------------------------
     # 7) Output surfaces in sMRI(native) space
 
     # Transform betsurf output mask/mesh output from MNI to sMRI space
@@ -550,7 +539,6 @@ def compute_surfaces(
         filenames["smri_file"],
     )
 
-    # -------------------------------------------
     # Write a file to indicate RHINO has been run
 
     with open(filenames["completed"], "w") as file:
@@ -558,7 +546,6 @@ def compute_surfaces(
         file.write(f"MRI file: {filenames['smri_file']}\n")
         file.write(f"Include nose: {include_nose}\n")
 
-    # --------
     # Clean up
 
     if cleanup_files:

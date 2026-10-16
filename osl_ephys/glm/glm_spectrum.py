@@ -24,7 +24,6 @@ from ..source_recon import parcellation
 import nibabel as nib
 from nilearn.plotting import plot_glass_brain, plot_markers
 
-# --------------------------------------------------------------------------------------------------
 # GLM-Spectrum classes designed to work with GLM-Spectra computed from  MNE format sensor space data
 
 
@@ -395,7 +394,6 @@ class ClusterPermuteGLMSpectrum(SensorClusterPerm):
         )
 
 
-# ------------------------------------------------------------------------------
 # GLM-Spectrum helper functions that take raw objects (or numpy arrays with MNE
 # dim-order), compute GLM-Spectra and return class objects containing the result
 
@@ -676,7 +674,6 @@ def read_glm_spectrum(infile):
     return glmsp
 
 
-# --------
 # Plotting
 
 

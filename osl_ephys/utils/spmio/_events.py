@@ -99,9 +99,6 @@ class Trial:
         return self._set_event_property("trial_start", values)
 
 
-# %% -------------------------------------------------------------
-
-
 class Event:
     def __init__(self, type_, value, duration, time, offset):
         self.type = type_
@@ -147,6 +144,3 @@ class Event:
             f"time={self.time}, "
             f"offset={self.offset})"
         )
-
-
-# %% -------------------------------------------------------------

@@ -3,8 +3,6 @@
 import numpy as np
 from ._spmmeeg_utils import empty_to_none
 
-# %% -------------------------------------------------------------
-
 KNOWN_DTYPEIDS = {16: np.dtype("<f4")}  # FLOAT32-LE
 
 
@@ -57,8 +55,6 @@ class Data:
         )
 
 
-# %% ---------------------------------------------------------------
-
 chan_types = {
     "EOG": ["VEOG", "HEOG"],
     "ECG": ["EKG"],
@@ -107,9 +103,6 @@ class Channel:
             f"y={self.y}, "
             f"units='{self.units}')"
         )
-
-
-# %% -------------------------------------------------------------
 
 
 class Montage:

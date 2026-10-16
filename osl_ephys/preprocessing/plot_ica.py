@@ -1,6 +1,5 @@
 """Plotting functions for ICA."""
 
-# Authors: Mats van Es <mats.vanes@psych.ox.ac.uk>
 import logging
 import warnings
 import numpy as np

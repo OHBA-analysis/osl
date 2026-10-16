@@ -2,10 +2,6 @@
 
 """Tools for batch preprocessing."""
 
-# Authors: Andrew Quinn <a.quinn@bham.ac.uk>
-#          Chetan Gohil <chetan.gohil@psych.ox.ac.uk>
-#          Mats van Es  <mats.vanes@psych.ox.ac.uk>
-
 import argparse
 import matplotlib
 import matplotlib.pyplot as plt
@@ -37,7 +33,6 @@ from ..utils.misc import set_random_seed
 logger = logging.getLogger(__name__)
 
 
-# --------------------------------------------------------------
 # Decorators
 
 
@@ -69,7 +64,6 @@ def print_custom_func_info(func):
     return wrapper
 
 
-# --------------------------------------------------------------
 # Data importers
 
 
@@ -177,7 +171,6 @@ def import_data(infile, preload=True):
     return raw
 
 
-# --------------------------------------------------------------
 # Batch processing utilities
 
 
@@ -755,7 +748,6 @@ def plot_preproc_flowchart(
     return fig, ax
 
 
-# --------------------------------------------------------------
 # Batch processing
 
 
@@ -1277,7 +1269,6 @@ def run_proc_batch(
     return proc_flags
 
 
-# ----------------------------------------------------------
 # Main CLI user function
 
 

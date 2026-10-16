@@ -1,9 +1,5 @@
 """Reporting tool for preprocessing."""
 
-# Authors: Andrew Quinn <a.quinn@bham.ac.uk>
-#          Chetan Gohil <chetan.gohil@psych.ox.ac.uk>
-#          Mats van Es <mats.vanes@psych.ox.ac.uk>
-
 import os
 import mne
 import sys
@@ -38,7 +34,6 @@ from ..utils import process_file_inputs, validate_outdir
 from ..utils.logger import log_or_print
 from ..source_recon.parcellation import plot_source_topo
 
-# ----------------------------------------------------------------------------------
 # Report generation
 mne.viz.set_browser_backend("matplotlib")
 
@@ -575,7 +570,6 @@ def load_template(tname):
     return template
 
 
-# ----------------------------------------------------------------------------------
 # Scan stats and figures
 
 

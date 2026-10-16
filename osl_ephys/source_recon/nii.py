@@ -42,8 +42,6 @@ nii.spatially_downsample(parcel4d_fname, parcel4d_ds_fname, mni_file, spatial_re
 fslmaths /Users/woolrich/osl/osl/source_recon/parcellation/files/HarvOxf-sub-Schaefer100-combined-2mm_4d.nii.gz -Tmaxn /Users/woolrich/osl/osl/source_recon/parcellation/files/HarvOxf-sub-Schaefer100-combined-2mm.nii.gz
 """
 
-# Authors: Mark Woolrich <mark.woolrich@ohba.ox.ac.uk>
-
 import os
 import os.path as op
 import nibabel as nib

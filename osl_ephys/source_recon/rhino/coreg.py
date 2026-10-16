@@ -1,9 +1,5 @@
 """Registration of Headshapes Including Nose in osl-ephys (RHINO)."""
 
-# Authors: Mark Woolrich <mark.woolrich@ohba.ox.ac.uk>
-#          Chetan Gohil <chetan.gohil@psych.ox.ac.uk>
-#          Mats van Es  <mats.vanes@psych.ox.ac.uk>
-
 import warnings
 import os.path as op
 from pathlib import Path
@@ -149,7 +145,6 @@ def coreg(
     filenames = get_coreg_filenames(subjects_dir, subject)
     surfaces_filenames = get_surfaces_filenames(subjects_dir, subject)
 
-    # -------------------------------------------------------------------------------------------------------------------
     # Copy fif_file to new file for modification, and (optionally) changes dev_head_t to equal dev_ctf_t in fif file info
 
     if "raw.fif" in fif_file:
@@ -248,7 +243,6 @@ def coreg(
         else:
             outskin_mesh_file = filenames["bet_outskin_mesh_file"]
 
-        # ---------------------------------------------------------------------------------------------------------
         # 1) Map location of fiducials in MNI standard space brain to native sMRI space. These are then used as the
         #    location of the sMRI-derived fiducials in native sMRI space.
 
@@ -285,7 +279,6 @@ def coreg(
         smri_lpa_native = rhino_utils.xform_points(mni_mri_t["trans"], mni_lpa_mni)
         smri_rpa_native = rhino_utils.xform_points(mni_mri_t["trans"], mni_rpa_mni)
 
-        # ---------------------------------------------------------------------------------------------------------
         # 2a) We have polhemus-derived fids in polhemus space and sMRI-derived fids in native sMRI space. Use these
         #     to estimate the affine xform from native sMRI space to polhemus (head) space.
         #
@@ -323,7 +316,6 @@ def coreg(
             )
         )
 
-        # ---------------------------------------------------------------------------------------------------
         # 3) Apply scaling from xform_native2scalednative to sMRI, and to stuff derived from sMRI, including:
         #    - sMRI
         #    - sMRI-derived surfaces
@@ -375,7 +367,6 @@ def coreg(
         smri_lpa_scalednative = rhino_utils.xform_points(xform, mni_lpa_mni)
         smri_rpa_scalednative = rhino_utils.xform_points(xform, mni_rpa_mni)
 
-        # -----------------------------------------------------------------------
         # 4) Now we can transform sMRI-derived headshape pnts into polhemus space
 
         # Get native (mri) voxel index to scaled native (mri) transform
@@ -396,7 +387,6 @@ def coreg(
             xform_scalednative2polhemus, smri_headshape_scalednative
         )
 
-        # ---------------------------------------------------------------------------------------------------
         # 5) We have the polhemus-derived headshape points in polhemus space and the sMRI-derived headshape
         #    (scalp surface) in native sMRI space. We use these to estimate the affine xform from native sMRI
         #    space using the ICP algorithm initilaised using the xform estimate in step 2.
@@ -438,7 +428,6 @@ def coreg(
             xform_scalednative2polhemus_refined, smri_lpa_scalednative
         )
 
-        # ---------------
         # Save coreg info
 
         # Save xforms in MNE format in mm
@@ -480,7 +469,6 @@ def coreg(
         np.savetxt(filenames["smri_lpa_file"], smri_lpa_polhemus)
         np.savetxt(filenames["coreg_error_file"], err)
 
-    # ---------------------------------------------------------------------------------------------
     # Create sMRI-derived freesurfer meshes in native/mri space in mm, for use by forward modelling
 
     nativeindex_scalednative_t = np.copy(xform_nativeindex2scalednative)
@@ -713,7 +701,6 @@ def coreg_display(
             src = None
             display_dipoles = False
 
-    # ------------
     # Setup xforms
 
     info = read_info(info_fif_file)
@@ -737,7 +724,6 @@ def coreg_display(
         combine_transforms(dev_head_t, head_scaledmri_t, "meg", "mri")
     )
 
-    # -------------------------------
     # Setup fids and headshape points
 
     if display_fiducials:
@@ -814,7 +800,6 @@ def coreg_display(
                 head_trans["trans"], polhemus_headshape_polhemus
             )
 
-    # -----------------
     # Setup MEG sensors
 
     if display_sensors or display_sensor_oris:
@@ -871,7 +856,6 @@ def coreg_display(
         meg_sensor_locs = meg_sensor_locs * 1000
         meg_sensor_oris = meg_sensor_oris * 1000
 
-    # ----------------------------
     # Setup vol source grid points
 
     if display_dipoles:
@@ -898,7 +882,6 @@ def coreg_display(
         if midline_points is not None:
             midline_points = src_pnts[midline_points, :]
 
-    # --------
     # Do plots
     with warnings.catch_warnings():
         warnings.simplefilter("ignore")
@@ -1166,10 +1149,8 @@ def coreg_display(
             # Save or show
             rhino_utils.save_or_show_renderer(renderer, filename)
 
-        # --------------------------
         elif plot_type == "scatter":
 
-            # -------------------
             # Setup scalp surface
 
             if display_outskin:
@@ -1189,7 +1170,6 @@ def coreg_display(
                     mri_trans["trans"], smri_headshape_native
                 )
 
-            # -------------------------
             # Setup inner skull surface
 
             if display_inskull:
@@ -1207,8 +1187,6 @@ def coreg_display(
                 inner_skull_meg = rhino_utils.xform_points(
                     mri_trans["trans"], inner_skull_native
                 )
-
-            # -------------------
 
             plt.figure()
             ax = plt.axes(projection="3d")

@@ -1,7 +1,5 @@
 """Classes for loading SPM files."""
 
-# Authors: Andrew Quinn <a.quinn@bham.ac.uk>
-
 from dataclasses import dataclass
 
 import os
@@ -209,7 +207,7 @@ class SPMMEEG:
         else:
             self._D["data"]["fname"] = dat
 
-    # ------------- SPM Style Helpers
+    # SPM Style Helpers
 
     @property
     def size(self):
@@ -235,7 +233,7 @@ class SPMMEEG:
             )
         return np.where([c == cond for c in self.conditions])[0]
 
-    # ------------- Properties
+    # Properties
 
     @property
     def n_good_samples(self):

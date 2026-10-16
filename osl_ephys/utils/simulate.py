@@ -1,7 +1,5 @@
 """Utility functions for simulating data."""
 
-# Authors: Andrew Quinn <a.quinn@bham.ac.uk>
-
 import os
 import mne
 

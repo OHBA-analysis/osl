@@ -5,8 +5,6 @@ Works with command line arguments or as a function call.
 
 """
 
-# Authors: Mats van Es <mats.vanes@psych.ox.ac.uk>
-
 import sys
 import os
 import mne

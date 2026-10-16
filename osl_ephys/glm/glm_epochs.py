@@ -286,9 +286,6 @@ class GroupGLMEpochs(GroupGLMBaseResult):
             self.data = dd
 
 
-# %% ------------------------------------------------------
-
-
 def glm_epochs(config, epochs):
     """Compute a GLM-Epochs from an MNE-Python Epochs object.
 
@@ -371,9 +368,6 @@ def group_glm_epochs(
         tmin=glmep.tmin,
         times=glmep.times,
     )
-
-
-# %% ------------------------------------------------------
 
 
 def read_mne_epochs(X, picks=None):
