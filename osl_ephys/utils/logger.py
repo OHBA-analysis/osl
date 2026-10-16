@@ -1,10 +1,12 @@
-"""Logging module for OSL
+"""Logging for osl-ephys: the package logger and a per-session log file."""
 
-Heavily inspired by logging in OSL.
-"""
+import logging
+import os
+import sys
+from contextlib import contextmanager
+from datetime import datetime
 
 import yaml
-import logging
 
 # Initialise logging for this sub-module
 osl_logger = logging.getLogger("osl_ephys")
@@ -176,3 +178,116 @@ def log_or_print(msg, warning=False):
         osl_logger.info(msg)
     else:
         print(msg)
+
+
+@contextmanager
+def set_logging_level(logger, level):
+    """Temporarily change the logging level of a logger.
+
+    Parameters
+    ----------
+    logger : logging.Logger
+        Logger to change.
+    level : int
+        Logging level to set (e.g. ``logging.WARNING``).
+    """
+    current_level = logger.getEffectiveLevel()
+    try:
+        logger.setLevel(level)
+        yield
+    finally:
+        logger.setLevel(current_level)
+
+
+# Loggers whose console handlers are pointed at the session log file while a
+# session is being processed
+_CAPTURED_LOGGERS = ("", "osl_ephys", "mne")
+
+
+class SessionLogger:
+    """Redirects all stdout/stderr to a per-session log file.
+
+    Progress messages can be printed to screen using the ``log`` method.
+
+    Parameters
+    ----------
+    session : str
+        Session identifier used as a prefix in log messages.
+    log_dir : str
+        Directory to write log files to.
+
+    Examples
+    --------
+    >>> with SessionLogger("sub-01_task-rest", log_dir="logs") as logger:
+    ...     logger.log("Filtering...")
+    ...     raw.resample(250)  # verbose output goes to the log file only
+    ...     logger.log("Done.")
+
+    Screen output::
+
+        [09:21:15 sub-01_task-rest] Filtering...
+        [09:21:16 sub-01_task-rest] Done.
+    """
+
+    def __init__(self, session, log_dir):
+        self.session = session
+        self.log_dir = log_dir
+        self.warnings = []
+
+    def _write_line(self, stream, msg):
+        """Write a line to a stream (the screen) and the log file."""
+        line = f"[{datetime.now().strftime('%H:%M:%S')} {self.session}] {msg}\n"
+        stream.write(line)
+        stream.flush()
+        self._log_file.write(line)
+        self._log_file.flush()
+
+    def log(self, msg):
+        """Print a progress message to screen (and log file)."""
+        self._write_line(sys.__stdout__, msg)
+
+    def warning(self, msg):
+        """Print a warning message to screen (and log file).
+
+        Warnings are kept in ``self.warnings``. They are for a session that
+        finishes without everything it was meant to produce.
+        """
+        self.warnings.append(msg)
+        self._write_line(sys.__stderr__, f"WARNING: {msg}")
+
+    def error(self, msg):
+        """Print an error message to screen (and log file)."""
+        self._write_line(sys.__stderr__, f"ERROR: {msg}")
+
+    def write(self, text):
+        if text:
+            self._log_file.write(text)
+            self._log_file.flush()
+
+    def flush(self):
+        self._log_file.flush()
+
+    def __enter__(self):
+        os.makedirs(self.log_dir, exist_ok=True)
+        self._log_file = open(os.path.join(self.log_dir, f"{self.session}.log"), "w")
+        self._old_stdout = sys.stdout
+        self._old_stderr = sys.stderr
+        sys.stdout = self
+        sys.stderr = self
+
+        # Handlers of the logging module hold the stream they were created
+        # with, so they are pointed at the log file too
+        self._old_streams = [
+            (handler, handler.setStream(self))
+            for name in _CAPTURED_LOGGERS
+            for handler in logging.getLogger(name).handlers
+            if type(handler) is logging.StreamHandler
+        ]
+        return self
+
+    def __exit__(self, *args):
+        for handler, stream in self._old_streams:
+            handler.setStream(stream)
+        sys.stdout = self._old_stdout
+        sys.stderr = self._old_stderr
+        self._log_file.close()
