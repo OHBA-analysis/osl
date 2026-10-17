@@ -1355,8 +1355,13 @@ b. (done 2026-10-17) `.github/workflows/conda.yml`: on a published release,
    dependencies are built once), upload the new packages, then install
    osl-ephys from the channel on Linux and macOS and run `osl-ephys check`.
    Needs the `ANACONDA_API_TOKEN` secret (an organisation token with API
-   write and upload scopes). First end-to-end test: run it by hand on v3
-   with `3.0.0.dev1`, then delete that build from the channel.
+   write and upload scopes). A development tag (`v*.dev*`) also runs it.
+   Passed end to end on 2026-10-17 with `v3.0.0.dev7` (run 39068904695):
+   the metapackage for five platforms, installs on Linux (Python 3.13) and
+   macOS (3.14) with `osl-ephys check` passing. The development builds
+   (osl-ephys 3.0.0.dev4 to dev7, osl-ephys-base 3.0.0.dev7) are still on
+   the channel and should be deleted there before the release; the git
+   tags are gone.
 c. (done 2026-10-17) The install page and README use the channel.
 
 The earlier conda-forge plan, not pursued (kept for reference):
