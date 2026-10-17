@@ -59,6 +59,7 @@ outputs:
         - nilearn
         - numba
         - numpy
+        - osl-pathfinder
         - packaging
         - pandas
         - parse

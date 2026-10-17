@@ -127,6 +127,15 @@ D9-D18, answered 2026-10-16 (details in section 11):
     D18 SEMP is dealt with separately from the phases (own board item); its
         `osl_pathfinder` dependency is raised with its author, with the
         suggestion to rename it `osl-pathfinder` like the other OSL repos.
+        Done 2026-10-17: osl-pathfinder 1.0.0 is on PyPI (Apache-2.0) and is
+        a dependency of osl-ephys (pyproject and the channel recipe); the
+        SEMP package imports and its tests pass. Left for the SEMP item:
+        its two tutorials on the v2 API and its docstring warnings.
+        osl-signflip (SungJun Cho, the upstream of the ported sign-flipping
+        solvers, MIT) is to become a dependency too (user, 2026-10-17): it
+        has no release yet (no tag, not on PyPI), so once it is released
+        the `sign_flip`/`fix_sign_ambiguity` steps call it and the copied
+        solvers in `group/sign_flipping.py` go.
     D20 (2026-10-17) The conda package is distributed from an OHBA channel on
         anaconda.org, not from conda-forge: conda-forge cannot carry glmtools
         (no package) or sails (1.5.18 there, without the GLM periodogram),
@@ -247,7 +256,7 @@ tutorials; cleaned up in phase 8).
 - One-off black reformat with black's defaults (line length 88, as
   osl-dynamics; decided 2026-10-15) in its own commit, listed in
   `.git-blame-ignore-revs`. Codespell config in `pyproject.toml`.
-- An `AUTHORS` file at the repository root listing the contributors (the
+- (done 2026-10-17) An `AUTHORS` file at the repository root listing the contributors (the
   module headers no longer carry author lists; `git shortlog -sn` is the
   starting point), referenced from `NOTICE` and `CITATION.cff`. Added
   2026-10-16, not yet done.

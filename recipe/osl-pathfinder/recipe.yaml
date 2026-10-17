@@ -1,0 +1,43 @@
+# osl-pathfinder (https://pypi.org/project/osl-pathfinder), the file mapping
+# of the simultaneous EEG-fMRI preprocessing, is not on conda-forge; this
+# builds it for the OHBA channel from the PyPI sdist.
+schema_version: 1
+
+context:
+  version: "1.0.0"
+
+package:
+  name: osl-pathfinder
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/o/osl-pathfinder/osl_pathfinder-${{ version }}.tar.gz
+  sha256: 0e2f4c65a17eac0e38883d7ccb2bff31e946c0fa6e3d67f53f1cec6f6b19c6b6
+
+build:
+  number: 0
+  noarch: python
+  script: python -m pip install . -vv --no-deps --no-build-isolation
+
+requirements:
+  host:
+    - python 3.10.*
+    - pip
+    - setuptools >=77
+    - wheel
+  run:
+    - python >=3.10
+    - numpy >=1.20
+    - parse >=1.19
+
+tests:
+  - python:
+      imports:
+        - osl_pathfinder
+      pip_check: true
+
+about:
+  homepage: https://github.com/OHBA-analysis/osl-pathfinder
+  license: Apache-2.0
+  license_file: LICENSE
+  summary: A two-way mapping between ids, fields and file paths for neuroimaging datasets

@@ -58,6 +58,8 @@ dependencies = [
     "nilearn",
     "numba",
     "numpy",
+    # The file mapping of the simultaneous EEG-fMRI preprocessing (semp)
+    "osl-pathfinder",
     "packaging",
     "pandas",
     "parse",
