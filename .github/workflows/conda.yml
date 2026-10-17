@@ -83,14 +83,14 @@ jobs:
       - uses: conda-incubator/setup-miniconda@v3
         with:
           miniforge-version: latest
-          activate-environment: osle
-          channels: ${{ env.CHANNEL }},conda-forge
-          channel-priority: strict
+          activate-environment: ""
 
+      # The environment is created the way the install page says, so the
+      # solver picks the Python every dependency has a build for
       - name: Install from the channel
         shell: bash -l {0}
         run: |
-          mamba install -y "osl-ephys==$OSL_EPHYS_VERSION"
+          mamba create -y -n osle -c "$CHANNEL" -c conda-forge "osl-ephys==$OSL_EPHYS_VERSION"
         env:
           OSL_EPHYS_VERSION: ${{ needs.build.outputs.version }}
 
@@ -99,4 +99,7 @@ jobs:
         env:
           MPLBACKEND: Agg
           PYVISTA_OFF_SCREEN: "true"
-        run: osl-ephys check
+        run: |
+          conda activate osle
+          python -c "import sys; print(sys.version)"
+          osl-ephys check
