@@ -67,12 +67,9 @@ requirements:
     - trame
     - trame-vtk
     - trame-vuetify
-    - if: linux and x86_64
-      then:
-        # software (off-screen) rendering, so that the 3D coregistration
-        # plot works on machines without a display. This is the only
-        # platform with OSMesa VTK builds
-        - vtk * *osmesa*
+    # A noarch package cannot depend on the software-rendering VTK build
+    # (vtk *osmesa*, Linux only) that headless servers need for the 3D
+    # coregistration plot; the install page tells those users to add it
 
 tests:
   - python:

@@ -60,7 +60,11 @@ The above can be run on the login nodes (:code:`clusterX.bmrc.ox.ac.uk`). On :co
 
     unset https_proxy http_proxy no_proxy HTTPS_PROXY HTTP_PROXY NO_PROXY
 
-On the OHBA workstations (hbaws) the same :code:`mamba create` command works once Miniforge is installed. On a headless server, set :code:`PYVISTA_OFF_SCREEN=true` so the 3D coregistration plots render without a display.
+On the OHBA workstations (hbaws) the same :code:`mamba create` command works once Miniforge is installed. On a headless Linux server, install the software-rendering build of VTK into the environment so the 3D coregistration plots render without a display, and set :code:`PYVISTA_OFF_SCREEN=true`:
+
+.. code::
+
+    mamba install -n osle -c conda-forge "vtk=*=*osmesa*"
 
 Install the latest development code (optional)
 ----------------------------------------------
