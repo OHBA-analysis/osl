@@ -1434,6 +1434,8 @@ package exists.
    gives a week of testing on PyPI.
 3. Delete `doc/v3_plan.md`, moving anything still useful into the
    release notes.
-4. `v3.0.0` release; merge PR #453; close the five v2 PRs with a pointer;
+4. `v3.0.0` release; squash-merge PR #453 (user, 2026-10-17), which makes
+   `.git-blame-ignore-revs` dead (its only entry is the v3 black reformat),
+   so delete it in the same merge; close the five v2 PRs with a pointer;
    revisit the 48 open issues (board item). No v2.4.x
    maintenance branch: v3 is the only line from here.
