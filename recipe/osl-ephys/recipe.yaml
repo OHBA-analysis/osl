@@ -1,16 +1,20 @@
-# The conda recipe of osl-ephys, built by .github/workflows/conda.yml from
+# The conda recipes of osl-ephys, built by .github/workflows/conda.yml from
 # the repository at a release tag and uploaded to the OHBA channel on
 # anaconda.org (rattler-build format). The version comes from the
 # OSL_EPHYS_VERSION environment variable, set by the workflow from the tag.
 # glmtools and sails (and anamnesis, which glmtools needs) are not on
 # conda-forge; their recipes next to this one put them on the channel.
+# Two outputs, as in the osl-dynamics recipe: osl-ephys-base is the code,
+# noarch; osl-ephys is a metapackage built per platform that adds what
+# differs by platform (the software-rendering VTK on Linux x86-64, so the
+# 3D coregistration plot works on headless servers).
 schema_version: 1
 
 context:
   version: ${{ env.get("OSL_EPHYS_VERSION", default="0.0.0") }}
   python_min: "3.10"
 
-package:
+recipe:
   name: osl-ephys
   version: ${{ version }}
 
@@ -19,87 +23,105 @@ source:
 
 build:
   number: 0
-  noarch: python
-  python:
-    entry_points:
-      - osl-ephys = osl_ephys.pipeline.cli:main
-      - osl-ephys-download-data = osl_ephys.files._fetch:download_data_cli
-  script:
-    env:
-      SETUPTOOLS_SCM_PRETEND_VERSION: ${{ version }}
-    content: python -m pip install . -vv --no-deps --no-build-isolation
 
-requirements:
-  host:
-    - python ${{ python_min }}.*
-    - pip
-    - setuptools >=77
-    - setuptools_scm >=8
-    - wheel
-  run:
-    - python >=${{ python_min }}
-    - fslpy
-    - glmtools
-    - h5io
-    - ipyevents
-    - ipywidgets
-    - matplotlib-base
-    - mne-base
-    - mne-icalabel
-    - onnxruntime
-    - nibabel
-    - nilearn
-    - numba
-    - numpy
-    - packaging
-    - pandas
-    - parse
-    - pillow
-    - pooch
-    - pyside6
-    - pyvista
-    - pyvistaqt
-    - pyyaml
-    - sails
-    - scikit-image
-    - scikit-learn
-    - scipy
-    - trame
-    - trame-vtk
-    - trame-vuetify
-    # A noarch package cannot depend on the software-rendering VTK build
-    # (vtk *osmesa*, Linux only) that headless servers need for the 3D
-    # coregistration plot; the install page tells those users to add it
+outputs:
+  - package:
+      name: osl-ephys-base
+    build:
+      noarch: python
+      python:
+        entry_points:
+          - osl-ephys = osl_ephys.pipeline.cli:main
+          - osl-ephys-download-data = osl_ephys.files._fetch:download_data_cli
+      script:
+        env:
+          SETUPTOOLS_SCM_PRETEND_VERSION: ${{ version }}
+        content: python -m pip install . -vv --no-deps --no-build-isolation
+    requirements:
+      host:
+        - python ${{ python_min }}.*
+        - pip
+        - setuptools >=77
+        - setuptools_scm >=8
+        - wheel
+      run:
+        - python >=${{ python_min }}
+        - fslpy
+        - glmtools
+        - h5io
+        - ipyevents
+        - ipywidgets
+        - matplotlib-base
+        - mne-base
+        - mne-icalabel
+        - onnxruntime
+        - nibabel
+        - nilearn
+        - numba
+        - numpy
+        - packaging
+        - pandas
+        - parse
+        - pillow
+        - pooch
+        - pyside6
+        - pyvista
+        - pyvistaqt
+        - pyyaml
+        - sails
+        - scikit-image
+        - scikit-learn
+        - scipy
+        - trame
+        - trame-vtk
+        - trame-vuetify
+    tests:
+      - python:
+          imports:
+            - osl_ephys
+            - osl_ephys.files
+            - osl_ephys.glm
+            - osl_ephys.group
+            - osl_ephys.io
+            - osl_ephys.maxfilter
+            - osl_ephys.parcellation
+            - osl_ephys.pipeline
+            - osl_ephys.preproc
+            - osl_ephys.report
+            - osl_ephys.rhino
+            - osl_ephys.source_recon
+            - osl_ephys.utils
+          pip_check: true
+          # noarch, so check the oldest and the newest supported Python
+          python_version:
+            - ${{ python_min }}.*
+            - "*"
+      - script:
+          - osl-ephys --help
+          - osl-ephys-download-data --help
+          # The 3D coregistration plot renders off screen
+          - python -c "import pyvista; pyvista.OFF_SCREEN = True; from osl_ephys.rhino import plot_coregistration"
+        requirements:
+          run:
+            - python ${{ python_min }}.*
 
-tests:
-  - python:
-      imports:
-        - osl_ephys
-        - osl_ephys.files
-        - osl_ephys.glm
-        - osl_ephys.group
-        - osl_ephys.io
-        - osl_ephys.maxfilter
-        - osl_ephys.parcellation
-        - osl_ephys.pipeline
-        - osl_ephys.preproc
-        - osl_ephys.report
-        - osl_ephys.rhino
-        - osl_ephys.source_recon
-        - osl_ephys.utils
-      pip_check: true
-      # noarch, so check the oldest and the newest supported Python
-      python_version:
-        - ${{ python_min }}.*
-        - "*"
-  - script:
-      - osl-ephys --help
-      - osl-ephys-download-data --help
-      # The 3D coregistration plot renders off screen
-      - python -c "import pyvista; pyvista.OFF_SCREEN = True; from osl_ephys.rhino import plot_coregistration"
+  # The package users install: the base, plus what differs by platform
+  - package:
+      name: osl-ephys
     requirements:
       run:
-        - python ${{ python_min }}.*
+        - osl-ephys-base ==${{ version }}
+        - if: linux and x86_64
+          then:
+            # software (off-screen) rendering, so that the 3D coregistration
+            # plot works on machines without a display. This is the only
+            # platform with OSMesa VTK builds
+            - vtk * *osmesa*
+    tests:
+      - python:
+          imports:
+            - osl_ephys
+          pip_check: true
 
 about:
   homepage: https://github.com/OHBA-analysis/osl-ephys

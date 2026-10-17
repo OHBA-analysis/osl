@@ -1337,7 +1337,11 @@ unregistered on 2026-10-17) and its API token as the GitHub secret
 
 a. (done 2026-10-17) `recipe/osl-ephys/recipe.yaml`, built from the
    repository checkout with the version from `OSL_EPHYS_VERSION`, so the
-   workflow does not wait for PyPI; `recipe/{glmtools,anamnesis,sails}`
+   workflow does not wait for PyPI, with two outputs as in osl-dynamics:
+   `osl-ephys-base` (noarch, the code) and `osl-ephys` (a metapackage built
+   per platform; on Linux x86-64 it adds `vtk *osmesa*` for headless
+   servers; a condition on a noarch package would be baked in for every
+   platform, which broke the macOS install); `recipe/{glmtools,anamnesis,sails}`
    from the PyPI sdists (glmtools imports tabulate without declaring it;
    sails pins importlib-metadata <5 and reads requirements files its sdist
    lacks, so its recipe leaves the pin out, skips pip check and supplies

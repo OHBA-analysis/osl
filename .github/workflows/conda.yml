@@ -54,22 +54,31 @@ jobs:
         run: pixi global install rattler-build
 
       - name: Build and test the packages
-        # Packages already on the channel at their version are skipped. The
-        # channel has no repodata until the first upload, so it is only
-        # consulted once it exists
+        # The noarch packages are built once; the osl-ephys metapackage,
+        # which carries the per-platform dependencies, once per platform
+        # (nothing to compile, so one runner builds them all). Packages
+        # already on the channel at their version are skipped; the channel
+        # has no repodata until the first upload, so it is only consulted
+        # once it exists
         run: |
           if curl -sf "https://conda.anaconda.org/$CHANNEL/noarch/repodata.json" > /dev/null; then
             EXISTING="-c $CHANNEL --skip-existing all"
           else
-            EXISTING=""
+            EXISTING="--skip-existing local"
           fi
-          rattler-build build --recipe-dir recipe $EXISTING -c conda-forge --output-dir conda-out
+          # The tests can only run on the runner's own platform
+          rattler-build build --recipe-dir recipe --target-platform linux-64 \
+            $EXISTING -c conda-forge --output-dir conda-out
+          for platform in linux-aarch64 osx-64 osx-arm64 win-64; do
+            rattler-build build --recipe-dir recipe --target-platform $platform \
+              $EXISTING --test skip -c conda-forge --output-dir conda-out
+          done
 
       - name: Upload to the channel
         env:
           ANACONDA_API_KEY: ${{ secrets.ANACONDA_API_TOKEN }}
         run: |
-          rattler-build upload anaconda --owner "$CHANNEL" conda-out/noarch/*.conda
+          rattler-build upload anaconda --owner "$CHANNEL" conda-out/*/*.conda
 
   install:
     # The package installs from the channel into a fresh environment
