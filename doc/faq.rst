@@ -4,7 +4,7 @@ Frequently Asked Questions (FAQ)
 .. contents::
    :local:
 
-If you have a question that's not listed here, please submit an issue to the `GitHub repository <https://github.com/OHBA-analysis/osl-ephys/issues>`_. Users of osl-ephys 2 should read the :doc:`migration page <migration>` first.
+If you have a question that's not listed here, please submit an issue to the `GitHub repository <https://github.com/OHBA-analysis/osl-ephys/issues>`_.
 
 Installation
 ------------

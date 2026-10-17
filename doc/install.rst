@@ -27,6 +27,8 @@ This installs osl-ephys from the OHBA channel with everything it needs from cond
 
 glmtools and sails, which the GLM statistics module uses, are not on conda-forge; the OHBA channel carries them too, so they are installed along with the rest. (A pip installation gets them from PyPI.)
 
+On a headless Linux server, set :code:`PYVISTA_OFF_SCREEN=true` so the 3D coregistration plots render without a display; the package brings the software-rendering build of VTK with it there.
+
 Pip installation
 ----------------
 
@@ -37,34 +39,6 @@ osl-ephys can be installed from PyPI with:
     pip install osl-ephys
 
 Note that pip will not install the non-Python libraries that some dependencies need, which is why we recommend conda.
-
-Oxford computers
-----------------
-
-On the Biomedical Research Computing (BMRC) cluster, :code:`conda` is available as a software module:
-
-.. code::
-
-    module load Miniforge3
-
-and osl-ephys can be installed with:
-
-.. code::
-
-    mamba create -n osle -c ohba-analysis-group -c conda-forge osl-ephys
-    conda activate osle
-
-The above can be run on the login nodes (:code:`clusterX.bmrc.ox.ac.uk`). On :code:`compg017` you will need to set the following to use conda:
-
-.. code::
-
-    unset https_proxy http_proxy no_proxy HTTPS_PROXY HTTP_PROXY NO_PROXY
-
-On the OHBA workstations (hbaws) the same :code:`mamba create` command works once Miniforge is installed. On a headless Linux server, install the software-rendering build of VTK into the environment so the 3D coregistration plots render without a display, and set :code:`PYVISTA_OFF_SCREEN=true`:
-
-.. code::
-
-    mamba install -n osle -c conda-forge "vtk=*=*osmesa*"
 
 Install the latest development code (optional)
 ----------------------------------------------
@@ -91,14 +65,6 @@ Once you have created the :code:`osle` conda environment (see instructions above
     pip install -e .
 
 Now you can run osl-ephys with your own local changes to the code.
-
-Test the installation
----------------------
-
-.. code::
-
-    conda activate osle
-    python -c "import osl_ephys; print(osl_ephys.__version__)"
 
 Removing osl-ephys
 ------------------

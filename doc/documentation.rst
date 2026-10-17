@@ -2,8 +2,7 @@ Documentation
 =============
 
 The :doc:`API reference <autoapi/osl_ephys/index>` documents every module,
-class and function. New users may find the :doc:`FAQ <faq>` useful, and
-users of osl-ephys 2 the :doc:`migration page <migration>`.
+class and function. New users may find the :doc:`FAQ <faq>` useful.
 
 The pipeline
 ------------

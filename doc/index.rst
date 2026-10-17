@@ -1,8 +1,8 @@
 .. raw:: html
 
-   <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1em;">
-     <h1 style="margin: 0;">OSL Electrophysiology Toolbox</h1>
-     <div>
+   <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: nowrap; gap: 1em; margin-bottom: 1em;">
+     <h1 style="margin: 0; white-space: nowrap;">OSL Electrophysiology Toolbox</h1>
+     <div style="flex-shrink: 0;">
        <a href="https://www.oxcin.ox.ac.uk/about/our-locations/OHBA" target="_blank">
          <img src="https://raw.githubusercontent.com/OHBA-analysis/osl-files/main/docs/logo/ohba-logo.png" width="125px">
        </a>
@@ -31,7 +31,7 @@ If you find this toolbox useful, please cite the `paper <https://doi.org/10.3389
 
     **van Es, M. W. J., Gohil, C., Quinn, A. J., & Woolrich, M. W. (2025). osl-ephys: a Python toolbox for the analysis of electrophysiology data. Frontiers in Neuroscience, 19, 1522675.**
 
-osl-ephys builds on MNE-Python, and the source reconstruction on FSL. Please cite those packages as well when you use them.
+osl-ephys builds on `MNE-Python <https://mne.tools>`_, and the source reconstruction on `FSL <https://fsl.fmrib.ox.ac.uk/fsl>`_. Please cite those packages as well when you use them.
 
 -----------------------
 
@@ -43,7 +43,6 @@ Contents
 
    Install <install>
    Documentation <documentation>
-   Migrating from v2 <migration>
    FAQ <faq>
    API Reference <autoapi/osl_ephys/index>
 

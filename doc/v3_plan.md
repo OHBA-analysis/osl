@@ -145,7 +145,8 @@ D9-D18, answered 2026-10-16 (details in section 11):
         (`run_proc_chain` etc. are gone), no old script names, no step-name
         aliases, no renamed- or ignored-option handling, no `FutureWarning`
         for old data file names (the osl-files names are the only names).
-        The v3 docs carry a migration page instead (phase 8).
+        No migration page either (user, 2026-10-17): the changelog of the
+        release describes what changed.
     Also: the browser review page is the primary ICA review tool, the
     matplotlib GUI stays as an alternative; GLM config steps kept; FSL tests
     skipped in CI (no self-hosted runner); all eleven tutorials kept; no
@@ -1317,9 +1318,9 @@ run_batch, `osl-ephys ica review`, the QC report); they stay on the OSF
 datasets and are rendered without execution (the test recordings are too
 short and synthetic for what the tutorials show). The two SEMP tutorials
 (`preprocessing_eeg-fmri`, `preprocessing_manual-ica`) still use
-`run_proc_batch`/`find_func` and belong to the SEMP item. Docs: new
-`migration.rst` (sections, layout, renamed steps and files, commands,
-modules, removals), `documentation.rst` with the pipeline example,
+`run_proc_batch`/`find_func` and belong to the SEMP item. Docs: `documentation.rst` with the pipeline example (a migration page was
+written and then removed on the user's request, 2026-10-17; the release
+notes carry that content),
 `faq.rst` rewritten, `llms.txt` and the README example. Sphinx warnings:
 101 -> 14, the 12 left are docstrings in `preproc/semp` and
 `preproc/ica/manual` (SEMP item); autoapi no longer documents the tests
@@ -1407,7 +1408,7 @@ package exists.
 2. `v3.0.0rc1` as a GitHub pre-release: proves the release workflow and
    gives a week of testing on PyPI.
 3. Delete `doc/v3_plan.md`, moving anything still useful into the
-   migration page.
+   release notes.
 4. `v3.0.0` release; merge PR #453; close the five v2 PRs with a pointer;
    conda-forge bump; revisit the 48 open issues (board item). No v2.4.x
    maintenance branch: v3 is the only line from here.
