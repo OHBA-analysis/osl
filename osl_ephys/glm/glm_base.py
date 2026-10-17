@@ -12,7 +12,10 @@ from matplotlib.colors import ListedColormap
 from matplotlib.patches import ConnectionPatch
 from nilearn.plotting import plot_glass_brain, plot_markers
 
-import glmtools as glm
+from osl_ephys.utils.misc import lazy_import
+
+# glmtools is pip-only, so it is imported when a GLM is fitted
+glm = lazy_import("glmtools")
 import nibabel as nib
 
 from ..parcellation import parcellation

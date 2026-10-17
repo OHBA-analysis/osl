@@ -25,6 +25,12 @@ Then create an environment with osl-ephys in it:
 
 This installs osl-ephys with everything it needs, including `MNE-Python <https://mne.tools/stable/index.html>`_.
 
+Two packages the GLM statistics module and the data simulator use, `glmtools <https://pypi.org/project/glmtools>`_ and `sails <https://pypi.org/project/sails>`_, are only on PyPI, so the conda package leaves them out. Install them into the environment if you use those parts (the functions say so if they are missing):
+
+.. code::
+
+    pip install glmtools sails
+
 Pip installation
 ----------------
 

@@ -4,7 +4,10 @@ import os
 import mne
 
 from osl_ephys import files
-import sails
+from osl_ephys.utils.misc import lazy_import
+
+# sails is pip-only, so it is imported when a simulation runs
+sails = lazy_import("sails")
 import numpy as np
 
 

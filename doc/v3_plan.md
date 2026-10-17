@@ -523,7 +523,7 @@ Detailed steps and the target layout: section 11.
 - Docs: install page in the osl-dynamics style (conda-forge first), migration
   page, `llms.txt`, FAQ refresh; issues #352, #361, #386.
 
-### Phase 9: conda-forge and mne-installers  (todo: repackage for conda, mne-installers)
+### Phase 9: conda-forge and mne-installers  (in-repo work done 2026-10-17; submissions after the release)
 
 Detailed steps and the target layout: section 11.
 
@@ -1331,6 +1331,26 @@ fixed (coregistration no longer loads the headshape file when
    `plot_coregistration` with `PYVISTA_OFF_SCREEN` in the recipe test.
 3. mne-installers PR adding `osl-ephys` (and osl-dynamics) after checking
    the installer's pinned MNE/Qt stack resolves with ours.
+
+Done 2026-10-17: glmtools AND sails are imported lazily
+(`utils.misc.lazy_import`; sails on conda-forge is 1.5.18, which has no
+`glm_periodogram`, so it is pip-only for us too) with a `pip install
+glmtools sails` error on use; `osl_ephys` imports without them (tested);
+the install page says so. `recipe/recipe.yaml` is the conda-forge recipe
+(rattler-build, modelled on osl-dynamics-feedstock): noarch, both entry
+points, every other dependency from conda-forge, `vtk *osmesa*` on
+linux-64, import tests per subpackage and an off-screen
+`plot_coregistration` import. There is NO osl-ephys feedstock on
+conda-forge yet (the install page's conda instructions are for after the
+release): at release, submit `recipe/recipe.yaml` with the sdist's sha256
+to conda-forge/staged-recipes (the first conda release of osl-ephys).
+mne-installers afterwards: `recipes/mne-python/construct.yaml` pins (on
+2026-10-17) mne 1.13.2 (pyside6 build), pyside6 6.11.2, pyvistaqt 0.13.1,
+pyvista 0.49.1, trame 3.13.2 (<4), trame-vuetify 3.2.6, mne-icalabel
+0.10.0, nilearn 0.14.1, numba 0.68.0, python 3.14; nothing in our run
+dependencies pins against these, and CI now also tests Python 3.14. The
+PR adds `osl-ephys =3.0.0` (and `osl-dynamics-base`) once the conda
+package exists.
 
 ### Phase 10: release v3.0.0
 

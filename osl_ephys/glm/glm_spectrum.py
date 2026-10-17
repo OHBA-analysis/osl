@@ -10,8 +10,11 @@ from matplotlib.patches import ConnectionPatch
 from matplotlib.colors import ListedColormap
 from scipy import signal, stats
 
-import glmtools as glm
-from sails.stft import glm_periodogram
+from osl_ephys.utils.misc import lazy_import
+
+# glmtools and sails are pip-only, so they are imported when a GLM is fitted
+glm = lazy_import("glmtools")
+sails = lazy_import("sails")
 
 from .glm_base import (
     GLMBaseResult,
@@ -624,7 +627,7 @@ def glm_spectrum(
         YY = stats.zscore(YY, axis=axis)
 
     # sails.sftf.config freqvals isn't right when frange is trimmed!
-    glmsp = glm_periodogram(
+    glmsp = sails.stft.glm_periodogram(
         YY,
         axis=axis,
         reg_categorical=reg_categorical,

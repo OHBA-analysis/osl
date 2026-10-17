@@ -1,5 +1,7 @@
 """Miscellaneous utility classes and functions."""
 
+from __future__ import annotations
+
 import logging
 import random
 from pathlib import Path
@@ -216,3 +218,30 @@ def soft_import(package):
         raise ModuleNotFoundError(msg)
 
     return module
+
+
+class LazyModule:
+    """A module imported on first use, so that a package only some functions
+    need (glmtools, sails: pip-only, left out of the conda package) does not
+    have to be installed to import osl-ephys."""
+
+    def __init__(self, name: str, hint: str):
+        self._name = name
+        self._hint = hint
+        self._module = None
+
+    def __getattr__(self, attr):
+        if self._module is None:
+            try:
+                self._module = importlib.import_module(self._name)
+            except ImportError as e:
+                raise ModuleNotFoundError(
+                    f"'{self._name}' is needed here but is not installed; "
+                    f"install it with: {self._hint}"
+                ) from e
+        return getattr(self._module, attr)
+
+
+def lazy_import(name: str, hint: str | None = None) -> LazyModule:
+    """A module imported on first attribute access (see :class:`LazyModule`)."""
+    return LazyModule(name, hint or f"pip install {name}")

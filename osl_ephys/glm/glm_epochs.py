@@ -4,7 +4,10 @@ from copy import deepcopy
 from pathlib import Path
 from scipy.sparse import csr_array
 
-import glmtools as glm
+from osl_ephys.utils.misc import lazy_import
+
+# glmtools is pip-only, so it is imported when a GLM is fitted
+glm = lazy_import("glmtools")
 import mne
 import numpy as np
 
