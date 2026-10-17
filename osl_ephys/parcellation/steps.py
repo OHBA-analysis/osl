@@ -38,6 +38,7 @@ def parcellate(dataset, userargs):
     qc = userargs.pop("qc", True)
     orthogonalisation = userargs.pop("orthogonalisation", None)
     parcellation_file = userargs.pop("parcellation_file")
+    fs_route = freesurfer.is_freesurfer_route(dataset, userargs)
 
     if source_method == "lcmv":
         for name in ("method", "morph", "inverse_method", "lambda2", "pick_ori"):
@@ -48,7 +49,7 @@ def parcellate(dataset, userargs):
         names = None
         data = mne.io.read_raw_fif(session.preproc_file, preload=True, verbose=False)
     elif source_method in ("minimum_norm", "mne"):
-        if freesurfer.is_freesurfer_route(dataset, userargs):
+        if fs_route:
             parcel_data, names, data = freesurfer.parcellate(
                 session, parcellation_file, **userargs
             )
@@ -83,9 +84,22 @@ def parcellate(dataset, userargs):
         parcel_data, data, ch_names=names, extra_chans=extra_chans
     )
     parc_raw.save(str(parc_file), overwrite=True, verbose=False)
-    if qc and dataset.get("qc_dir") is not None and source_method == "lcmv":
+    if qc and dataset.get("qc_dir") is not None and not fs_route:
+        # The dipoles are those of the RHINO forward model, on the MNI grid
+        fwd = mne.read_forward_solution(session.fwd_model_file, verbose=False)
+        counts = parcellation.parcel_dipole_counts(
+            parcellation_file, grid._get_source_coords_mni(session, fwd)
+        )
         plotting.save_qc_plots(
-            dataset["qc_dir"], session.id, str(parc_file), parcellation_file
+            dataset["qc_dir"],
+            session.id,
+            str(parc_file),
+            parcellation_file,
+            summary={
+                "min_dipoles_per_parcel": int(counts.min()),
+                "n_empty_parcels": int((counts == 0).sum()),
+                "dipoles_per_parcel": counts.tolist(),
+            },
         )
     return dataset
 

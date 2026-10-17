@@ -54,6 +54,7 @@ def test_source_reconstruction_on_mni152_surfaces(sessions, tmp_path):
     assert (tmp_path / "qc" / "sign_flip" / "sign_flip.webp").exists()
     report = (tmp_path / "qc" / "report.html").read_text()
     assert "Coreg rms (mm)" in report and "Sign flip corr" in report
+    assert "Min dipoles per parcel" in report
 
 
 MINIMUM_NORM_CONFIG = """

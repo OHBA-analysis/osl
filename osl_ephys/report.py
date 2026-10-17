@@ -50,6 +50,7 @@ TABS = {
         "preproc/{id}/raw_data.webp",
         "preproc/{id}/digitisation.webp",
         "preproc/{id}/events.webp",
+        "preproc/{id}/evoked.webp",
     ],
     "Surfaces": [
         "surfaces/{subject}/surfaces.webp",
@@ -91,17 +92,38 @@ CAPTIONS = {
 # The columns of the table, read from each step's summary.json
 METRICS = [
     "Bad segments (%)",
+    "Bad mag (%)",
+    "Bad grad (%)",
+    "Bad EEG (%)",
     "Bad channels",
     "ICA excluded",
     "EOG events",
     "ECG events",
     "Head movement (mm)",
+    "Epochs",
+    "Epochs dropped",
     "MNI registration",
     "MNI overlap",
     "MNI MI",
     "Coreg rms (mm)",
+    "Min dipoles per parcel",
     "Sign flip corr",
 ]
+
+# The manifest columns the pipeline reads; any other column of a session is
+# shown in the table as it is (e.g. notes taken at the scanner)
+MANIFEST_COLUMNS = {
+    "id",
+    "subject",
+    "head_model_id",
+    "raw_file",
+    "smri_file",
+    "preproc_file",
+    "epoch_file",
+    "pos_file",
+    "elc_file",
+    "localizer_file",
+}
 
 CSS = """
 body {
@@ -508,18 +530,31 @@ def _session_row(
     head_model = session.get("head_model_id", id_)
     row = {"Session": id_, "subject": subject, "head_model": head_model}
 
+    for key, value in session.items():
+        if key not in MANIFEST_COLUMNS and isinstance(value, (str, int, float, bool)):
+            row[key] = value
+
     summary = _read_json(qc_dir / "preproc" / id_ / "summary.json")
     if summary is not None:
-        row["Bad segments (%)"] = summary.get("bad_percent")
-        row["Bad channels"] = summary.get("n_bad_channels")
         for key, column in [
+            ("bad_percent", "Bad segments (%)"),
+            ("bad_percent_mag", "Bad mag (%)"),
+            ("bad_percent_grad", "Bad grad (%)"),
+            ("bad_percent_eeg", "Bad EEG (%)"),
+            ("n_bad_channels", "Bad channels"),
             ("ica_n_excluded", "ICA excluded"),
             ("n_eog_events", "EOG events"),
             ("n_ecg_events", "ECG events"),
             ("head_movement_mm", "Head movement (mm)"),
+            ("n_epochs", "Epochs"),
+            ("n_epochs_dropped", "Epochs dropped"),
         ]:
             if key in summary:
                 row[column] = summary[key]
+
+    summary = _read_json(qc_dir / "parc" / id_ / "summary.json")
+    if summary is not None and "min_dipoles_per_parcel" in summary:
+        row["Min dipoles per parcel"] = summary["min_dipoles_per_parcel"]
 
     if sign_flip is not None and id_ in sign_flip:
         row["Sign flip corr"] = sign_flip[id_]["after"]
@@ -583,11 +618,16 @@ def _copy_plots(table: pd.DataFrame, qc_dir: Path, outdir: Path) -> None:
         list(pool.map(copy, copies))
 
 
-def _custom_plots(qc_dir: Path) -> list[str]:
-    """The custom figures any session saved, as a tab's list of plots."""
-    names = sorted(
-        {p.name for p in (qc_dir / "preproc").glob("*/custom_*.webp")}
-        if (qc_dir / "preproc").is_dir()
+def _discovered_plots(qc_dir: Path, pattern: str) -> list[str]:
+    """The preprocessing plots matching a pattern that any session saved.
+
+    For the plots whose names are not fixed: the custom figures and the
+    further ICA plots of a session with several ICA runs.
+    """
+    preproc = qc_dir / "preproc"
+    names = (
+        sorted({p.name for p in preproc.glob(f"*/{pattern}")})
+        if preproc.is_dir()
         else []
     )
     return [f"preproc/{{id}}/{name}" for name in names]
@@ -641,21 +681,27 @@ def generate_report(
     # The QC files are read in threads, a large dataset has tens of thousands
     registrations = {}
     with ThreadPoolExecutor(max_workers=16) as pool:
-        rows = pool.map(
-            lambda s: _session_row(s, qc_dir, outdir, registrations, sign_flip),
-            sessions,
+        rows = list(
+            pool.map(
+                lambda s: _session_row(s, qc_dir, outdir, registrations, sign_flip),
+                sessions,
+            )
         )
-        table = pd.DataFrame(
-            list(rows), columns=["Session", "subject", "head_model"] + METRICS
-        )
-    table = table.drop(columns=[c for c in METRICS if table[c].isna().all()])
+    info = ["Session", "subject", "head_model"]
+    table = pd.DataFrame(rows)
+    table = table.drop(columns=[c for c in table.columns if table[c].isna().all()])
+    # The metrics in a fixed order, then the manifest's own columns
+    columns = [c for c in METRICS if c in table.columns]
+    columns += [c for c in table.columns if c not in info and c not in METRICS]
+    table = table[info + columns]
     if outdir is not None:
         _copy_plots(table, qc_dir, outdir)
     if metrics is not None:
         table = table.join(metrics, on="Session")
 
-    tabs = dict(TABS)
-    custom = _custom_plots(qc_dir)
+    tabs = {name: list(plots) for name, plots in TABS.items()}
+    tabs["Artefacts"] += _discovered_plots(qc_dir, "ica_*.webp")
+    custom = _discovered_plots(qc_dir, "custom_*.webp")
     if custom:
         tabs["Custom"] = custom
 

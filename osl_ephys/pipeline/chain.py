@@ -197,6 +197,7 @@ def _preproc_report(dataset, qc_dir, outnames):
         ica=dataset["ica"],
         events=dataset["events"],
         event_id=dataset["event_id"],
+        epochs=dataset["epochs"],
         custom_figures=dataset["fig"] or None,
     )
 

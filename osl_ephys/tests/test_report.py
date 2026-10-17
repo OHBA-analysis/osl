@@ -44,6 +44,22 @@ def test_custom_figures_get_a_tab(raw, tmp_path):
     assert "Custom" in report and "custom_line.webp" in report
 
 
+def test_epochs_and_manifest_columns(raw, tmp_path):
+    events = mne.make_fixed_length_events(raw, duration=2.0)
+    events[::2, 2] = 2
+    epochs = mne.Epochs(
+        raw, events, event_id={"a": 1, "b": 2}, tmin=-0.2, tmax=0.5, preload=True
+    )
+    summary = save_qc_plots(tmp_path, "elekta", raw, epochs=epochs, plots=["evoked"])
+    assert summary["n_epochs"] == len(epochs)
+    assert (tmp_path / "preproc" / "elekta" / "evoked.webp").exists()
+    report = generate_report(
+        tmp_path, [{"id": "elekta", "notes": "moved a lot", "raw_file": "x.fif"}]
+    ).read_text()
+    assert "Epochs" in report and "notes" in report and "moved a lot" in report
+    assert "raw_file" not in report
+
+
 def test_gen_report_from_fif(raw, tmp_path):
     fif = tmp_path / "elekta_preproc-raw.fif"
     raw.save(fif, verbose=False)

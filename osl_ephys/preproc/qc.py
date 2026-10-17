@@ -497,6 +497,41 @@ def plot_bad_ica(raw, ica, filename=None):
     return fig
 
 
+def plot_evoked(epochs, filename=None):
+    """The evoked response of each condition, as the global field power per
+    channel type.
+
+    Up to eight conditions are drawn as separate lines; with more, every
+    epoch is averaged together.
+    """
+    if epochs is None or len(epochs) == 0:
+        return None
+    types = [t for t in ("mag", "grad", "eeg") if t in epochs.get_channel_types()]
+    if not types:
+        return None
+    conditions = list(epochs.event_id)
+    if 1 < len(conditions) <= 8:
+        evokeds = {c: epochs[c].average() for c in conditions if len(epochs[c]) > 0}
+    else:
+        evokeds = {"all": epochs.average()}
+    fig, axes = plt.subplots(1, len(types), figsize=(6 * len(types), 4))
+    for ax, ch_type in zip(np.atleast_1d(axes), types):
+        mne.viz.plot_compare_evokeds(
+            evokeds,
+            picks=ch_type,
+            combine="gfp",
+            axes=ax,
+            show=False,
+            show_sensors=False,
+            legend="upper right" if len(evokeds) > 1 else False,
+        )
+        ax.set_title(ch_type)
+    fig.tight_layout()
+    if filename is not None:
+        save_figure(fig, filename)
+    return fig
+
+
 def plot_events(events, event_id, filename=None):
     """The events over the recording, by event code."""
     if events is None or len(events) == 0:
@@ -614,6 +649,7 @@ def save_qc_plots(
     ica=None,
     events=None,
     event_id=None,
+    epochs=None,
     custom_figures=None,
     plots="all",
 ):
@@ -632,10 +668,14 @@ def save_qc_plots(
         The session id.
     raw : mne.io.Raw
         The preprocessed data.
-    ica : mne.preprocessing.ICA, optional
-        The fitted ICA, for the rejected components plot.
+    ica : mne.preprocessing.ICA or list of them, optional
+        The fitted ICA, for the rejected components plot. A session that ran
+        ICA several times (e.g. on the MEG and then the EEG channels) passes
+        them all: the plots are ``ica.webp``, ``ica_2.webp``, ...
     events, event_id : optional
         The events and their ids, for the events plot.
+    epochs : mne.Epochs, optional
+        The epoched data, for the evoked responses plot and the epoch counts.
     custom_figures : dict, optional
         Matplotlib figures by name, saved as ``custom_<name>.webp``.
     plots : "all" or list of str, optional
@@ -656,23 +696,34 @@ def save_qc_plots(
     )
     with headless():
         return _save_qc_plots(
-            output_dir, raw, ica, events, event_id, custom_figures, plots
+            output_dir, raw, ica, events, event_id, epochs, custom_figures, plots
         )
 
 
-def _save_qc_plots(output_dir, raw, ica, events, event_id, custom_figures, plots):
+def _save_qc_plots(
+    output_dir, raw, ica, events, event_id, epochs, custom_figures, plots
+):
     def wanted(name):
         return plots == "all" or name in plots
 
     summary = scan_summary(raw)
     summary.update(_count_events(raw))
-    if ica is not None:
-        summary["ica_n_components"] = int(ica.n_components_)
-        summary["ica_n_excluded"] = len(ica.exclude)
-        summary["ica_excluded_labels"] = {
-            str(ica._ica_names[i]): str(ica.labels_.get(ica._ica_names[i], ""))
-            for i in ica.exclude
-        }
+    icas = (
+        [] if ica is None else (list(ica) if isinstance(ica, (list, tuple)) else [ica])
+    )
+    if icas:
+        summary["ica_n_components"] = [int(i.n_components_) for i in icas]
+        summary["ica_n_excluded"] = sum(len(i.exclude) for i in icas)
+        summary["ica_excluded_labels"] = [
+            {
+                str(i._ica_names[c]): str(i.labels_.get(i._ica_names[c], ""))
+                for c in i.exclude
+            }
+            for i in icas
+        ]
+    if epochs is not None:
+        summary["n_epochs"] = len(epochs)
+        summary["n_epochs_dropped"] = int(sum(len(log) > 0 for log in epochs.drop_log))
     head_pos = head_movement(raw) if wanted("head_movement") else None
     if head_pos is not None and len(head_pos) > 0:
         # Largest distance from the initial position, in mm
@@ -696,10 +747,12 @@ def _save_qc_plots(output_dir, raw, ica, events, event_id, custom_figures, plots
         "ecg": lambda f: plot_ecg(raw, f),
         "head_movement": lambda f: plot_head_movement(raw, f, head_pos=head_pos),
         "events": lambda f: plot_events(events, event_id, f),
+        "evoked": lambda f: plot_evoked(epochs, f),
         "raw_data": lambda f: plot_raw_data(raw, f),
     }
-    if ica is not None:
-        plotters["ica"] = lambda f: plot_bad_ica(raw, ica, f)
+    for n, this_ica in enumerate(icas, start=1):
+        name = "ica" if n == 1 else f"ica_{n}"
+        plotters[name] = lambda f, i=this_ica: plot_bad_ica(raw, i, f)
     for name, plotter in plotters.items():
         if not wanted(name):
             continue
@@ -760,6 +813,7 @@ def gen_report_from_fif(infiles, qc_dir, outdir=None, ftype=None, plots="all"):
             ica=dataset.get("ica"),
             events=dataset.get("events"),
             event_id=dataset.get("event_id"),
+            epochs=dataset.get("epochs"),
             plots=plots,
         )
         sessions.append({"id": id_})

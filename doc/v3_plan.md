@@ -461,8 +461,17 @@ Detailed steps and the target layout: section 11.
   (1745 lines) and `src_report.py` go.
 - `osl_ica_label` keeps working from the saved fif + ICA files; its GUI
   (`plot_ica.py`) is untouched by this phase.
-- Closes #411, #413 (report robustness), #135 (sequential ICA overwrites),
-  #212, #134, #170, #251 are triaged: implement in the new report or close.
+- Triaged 2026-10-17 (to be closed when v3 is released, per the rule of
+  not touching issues before then): #411 and #413 (report robustness) are
+  closed by design, the report reads what each session saved and a failed
+  QC plot is a warning in the session log; #135: the report takes a list of
+  ICA objects (ica.webp, ica_2.webp, ...), the file overwrite is fixed in
+  phase 6 when the ICA step names its file by its picks; #212 (navigating
+  the report): the table's filter box and sorting; #134 (scan notes): any
+  extra manifest column (e.g. `notes`) is a column of the table; #170
+  (ERF when epoching): the evoked responses plot (GFP per condition and
+  channel type) and the epoch counts; #251 (surfaces plot slices): the
+  slices go through the centre of the inner skull.
 
 ### Phase 6: Preprocessing cleanup
 
@@ -1165,10 +1174,11 @@ derivatives and are copied to WebP by the report. Saving QC plots runs
 under the Agg backend (`report.headless`) so no window opens.
 `preproc_report.py`, `src_report.py`, `templates/`, jinja2 and tabulate
 are gone. `ica_label` regenerates the session's ICA plot under qc/ (phase
-6 rewrites the script). Not done: per-channel-type bad segment columns are
-in summary.json (bad_percent_mag etc.) but not in the table; empty-parcel
-counts (D17) are not recorded yet because `parcellate` only warns about
-them.
+6 rewrites the script). Also in the table: bad segments per channel type,
+epoch counts, the smallest number of dipoles in a parcel
+(`parcellation.parcel_dipole_counts`, the empty-parcel metric of D17; an
+empty parcel itself is an error from `parcellate`) and the manifest's own
+extra columns.
 
 ### Phase 6: `preproc/` and `maxfilter/`
 

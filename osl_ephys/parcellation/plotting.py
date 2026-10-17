@@ -85,6 +85,7 @@ def save_qc_plots(
     power_maps: bool = False,
     show: bool = False,
     cmap: str = "hot",
+    summary: dict | None = None,
 ) -> None:
     """Save parcellation QC plots.
 
@@ -111,6 +112,8 @@ def save_qc_plots(
         Whether to display the plots interactively. Default is False.
     cmap : str, optional
         Colormap for power maps.
+    summary : dict, optional
+        Numbers to add to ``summary.json`` (e.g. the dipoles per parcel).
     """
     output_dir = Path(qc_dir) / "parc" / id
     output_dir.mkdir(parents=True, exist_ok=True)
@@ -118,10 +121,14 @@ def save_qc_plots(
     from osl_ephys.report import headless
 
     with headless():
-        _save_qc_plots(output_dir, parc_fif, parcellation_file, power_maps, show, cmap)
+        _save_qc_plots(
+            output_dir, parc_fif, parcellation_file, power_maps, show, cmap, summary
+        )
 
 
-def _save_qc_plots(output_dir, parc_fif, parcellation_file, power_maps, show, cmap):
+def _save_qc_plots(
+    output_dir, parc_fif, parcellation_file, power_maps, show, cmap, summary
+):
     from osl_ephys.report import save_summary
     from osl_ephys.utils import spectral as power
     from osl_ephys.utils.plotting import plot_psd_topo, plot_brain_surface
@@ -141,6 +148,7 @@ def _save_qc_plots(output_dir, parc_fif, parcellation_file, power_maps, show, cm
             "n_parcels": int(parc_ts.shape[-2]),
             "parcellation_file": str(parcellation_file),
             "sfreq": float(fs),
+            **(summary or {}),
         },
     )
     f, psd = scipy.signal.welch(parc_ts, fs=fs, nperseg=fs, nfft=fs * 2)

@@ -459,6 +459,30 @@ def _sample_parcellation(parcellation_file: str, coords: np.ndarray) -> np.ndarr
     return parcellation_asmatrix
 
 
+def parcel_dipole_counts(
+    parcellation_file: str, voxel_coords: np.ndarray
+) -> np.ndarray:
+    """The number of dipoles with a non-zero weight in each parcel.
+
+    A parcel with few dipoles gives a noisy time course and one with none
+    cannot be parcellated, so the smallest count is a QC metric.
+
+    Parameters
+    ----------
+    parcellation_file : str
+        Parcellation file, in the space of the coordinates.
+    voxel_coords : np.ndarray
+        (n_dipoles, 3) MNI coordinates of the dipoles in mm.
+
+    Returns
+    -------
+    counts : np.ndarray
+        (n_parcels,) number of dipoles in each parcel.
+    """
+    weights = _sample_parcellation(parcellation_file, voxel_coords)
+    return (weights > 0).sum(axis=0)
+
+
 def _get_parcel_weights(
     voxel_cov: callable,
     parcellation_asmatrix: np.ndarray,
