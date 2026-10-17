@@ -580,10 +580,10 @@ Detailed steps and the target layout: section 11.
 
 Detailed steps and the target layout: section 11.
 
-- Changelog from the project board; migration page (config key renames,
-  output layout, dask removal, dropped parcellation names, dropped
-  `coreg.html`); tag `v3.0.0`, the release workflow publishes to PyPI, the
-  conda-forge bot opens the version bump.
+- Changelog from the project board (no migration page, user 2026-10-17:
+  the release notes carry the config key renames, output layout, dask
+  removal, dropped parcellation names and dropped `coreg.html`); tag
+  `v3.0.0`, the release workflow publishes to PyPI.
 
 ### Port inventory: what comes from osl-dynamics
 
@@ -1435,5 +1435,5 @@ package exists.
 3. Delete `doc/v3_plan.md`, moving anything still useful into the
    release notes.
 4. `v3.0.0` release; merge PR #453; close the five v2 PRs with a pointer;
-   conda-forge bump; revisit the 48 open issues (board item). No v2.4.x
+   revisit the 48 open issues (board item). No v2.4.x
    maintenance branch: v3 is the only line from here.
