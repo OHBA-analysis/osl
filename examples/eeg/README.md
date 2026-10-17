@@ -2,8 +2,7 @@
 
 Source reconstruction of EEG data with a structural MRI but no digitised
 electrode positions: the electrodes of the montage are used as the
-headshape, and the coregistration is allowed to scale the MRI surfaces to
-fit them. With digitised positions, drop `allow_mri_scaling`.
+headshape.
 
 1. `1_preprocess.py`: filtering, downsampling and artefact removal.
 2. `2_coregister.py`: surfaces and coregistration. Check in the

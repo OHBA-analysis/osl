@@ -1,9 +1,8 @@
 """Coregister with the electrodes as headshape points.
 
 Without digitised electrode positions the montage's template positions are
-used as the headshape, and allow_mri_scaling lets the coregistration scale
-the MRI surfaces to fit them, so the electrodes sit on the scalp in the
-forward model. Check the coregistration tab of the report.
+used as the headshape. Check in the coregistration tab of the report that
+the electrodes sit on the scalp.
 """
 
 from osl_ephys.pipeline import run_batch
@@ -13,7 +12,7 @@ config = """
 coreg:
   - extract_surfaces: {include_nose: false}
   - extract_fiducials_and_headshape: {include_eeg_as_headshape: true}
-  - coregister: {use_nose: false, use_headshape: true, allow_mri_scaling: true}
+  - coregister: {use_nose: false, use_headshape: true}
 """
 
 if __name__ == "__main__":
