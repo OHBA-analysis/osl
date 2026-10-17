@@ -15,6 +15,6 @@ If you use osl-ephys, please cite: van Es, M. W. J., Gohil, C., Quinn, A. J., an
 
 ## Source
 
-- [GitHub repository](https://github.com/OHBA-analysis/osl-ephys), with example scripts for Elekta, CTF, EEG and OPM data, and the OHBA (Oxford) pipelines, in `examples/`.
+- [GitHub repository](https://github.com/OHBA-analysis/osl-ephys), with example scripts for Elekta, CTF, EEG and OPM data, the OHBA (Oxford) pipelines and the toolbox paper's analysis of the Wakeman-Henson dataset in `examples/`.
 - [osl-dynamics](https://github.com/OHBA-analysis/osl-dynamics): the companion toolbox for dynamic network modelling.
 - [osl-files](https://github.com/OHBA-analysis/osl-files): the parcellations, templates and test data both toolboxes download at runtime.

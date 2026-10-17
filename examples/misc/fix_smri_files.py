@@ -24,5 +24,7 @@ for smri_file in smri_files:
     sform[0, :4] = [-1, 0, 0, 128]
     sform[1, :4] = [0, 1, 0, -128]
     sform[2, :4] = [0, 0, 1, -90]
-    system_call(f"fslorient -setsform {' '.join(map(str, sform.flatten()))} {fixed_file}")
+    system_call(
+        f"fslorient -setsform {' '.join(map(str, sform.flatten()))} {fixed_file}"
+    )
     print("Fixed:", fixed_file)

@@ -27,7 +27,9 @@ for i, (x, cov) in enumerate(zip(data, covs)):
     if i == template:
         flipped = x
     else:
-        flips, corr = sign_flipping.find_flips(cov, covs[template], x.shape[1], n_embeddings)
+        flips, corr = sign_flipping.find_flips(
+            cov, covs[template], x.shape[1], n_embeddings
+        )
         print(f"{files[i]}: correlation with the template {corr:.3f}")
         flipped = x * flips[np.newaxis, :]
     io.savemat(f"src/sflip{i + 1}.mat", {"X": flipped, "T": flipped.shape[0]})

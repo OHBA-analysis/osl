@@ -11,7 +11,11 @@ from osl_ephys.rhino.headshape import delete_headshape_points
 from osl_ephys.session import Session
 
 outdir = "data"
-session = {"id": "sub-001_task-rest", "subject": "sub-001", "smri_file": "smri/sub-001_T1w.nii.gz"}
+session = {
+    "id": "sub-001_task-rest",
+    "subject": "sub-001",
+    "smri_file": "smri/sub-001_T1w.nii.gz",
+}
 
 files = Session(
     outdir=outdir,

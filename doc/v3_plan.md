@@ -1338,7 +1338,15 @@ API: `automated_ica`, `manual_ica` (`ica_autoreject: {apply: false}` then
 `examples/elekta` uses generic `cal`/`ctc` files instead of `scanner: Neo`.
 The `leadfields` branch (3D leadfields) was already ported as
 `beamforming.leadfields(session, orientation=None)`.
-`examples/v2/` holds the frozen toolbox-paper, oxford, wh_mne and
+`examples/v2/` dropped (user, 2026-10-17): the toolbox paper's scripts
+are `examples/wakeman_henson/` on the v3 API (with the stats, which needed
+the GLM steps registered for the `group` section and `_run_group` passing
+the sessions' `<id>_glm.pkl` files as `dataset["glm"]`), the MNE-only
+`wh_mne` walkthrough is its `freesurfer_route.py` (replacing
+`misc/freesurfer_source_recon.py`), the beamformer comparison paper script
+is `misc/beamformer_comparison.py` on the Session API, and the v2
+`toolbox-paper` environment file is left in git history.
+Previously `examples/v2/` held the frozen toolbox-paper, oxford, wh_mne and
 beamformer-comparison scripts with a README. Tutorials: the three
 preprocessing ones, `source-recon_coreg`, `source-recon_subject`,
 `source-recon_deleting-headshape-points` and the osl-ephys calls of

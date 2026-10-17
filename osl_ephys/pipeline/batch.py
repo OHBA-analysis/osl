@@ -164,8 +164,15 @@ def _run_group(config, sessions, outdir, extra_funcs, covs, overwrite, qc_dir):
 
     logger.info(f"Running the group steps on {len(sessions)} sessions")
     paths = [manifest.output_paths(s, outdir) for s in sessions]
+    # The sessions' fitted GLMs, for the group GLM steps
+    glm_files = [
+        p["preproc_dir"] / f"{s['id']}_glm.pkl" for s, p in zip(sessions, paths)
+    ]
     dataset = {
         "raw": [str(p["preproc_file"]) for p in paths],
+        "glm": (
+            [str(f) for f in glm_files] if all(f.exists() for f in glm_files) else None
+        ),
         "covs": covs,
         "fig": {},
         "sessions": sessions,

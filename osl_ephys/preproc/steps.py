@@ -712,3 +712,7 @@ def _semp_step(name):
 
 for _name in _SEMP_STEPS:
     register(_semp_step(_name), "preproc")
+
+# The GLM steps also run in the group section, on the sessions' fitted GLMs
+for _func in (glm_add_regressor, glm_add_contrast, glm_fit, glm_permutations):
+    register(_func, "group")

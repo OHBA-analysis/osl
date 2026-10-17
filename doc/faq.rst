@@ -127,7 +127,7 @@ Coregistration maps between the MEG (device) space, the Polhemus (head) space of
 How do I use FreeSurfer for source reconstruction?
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-Install FreeSurfer and set ``FREESURFER_HOME`` (or call ``osl_ephys.source_recon.setup_freesurfer``), then run the config with ``surface_extraction_method="freesurfer"``: ``recon_all`` and ``make_watershed_bem`` replace the surface extraction, ``coregister`` and ``forward_model`` take their FreeSurfer options, and ``minimum_norm`` with ``parcellate: {source_method: minimum_norm}`` replaces the beamformer. An example is ``examples/misc/freesurfer_source_recon.py``.
+Install FreeSurfer and set ``FREESURFER_HOME`` (or call ``osl_ephys.source_recon.setup_freesurfer``), then run the config with ``surface_extraction_method="freesurfer"``: ``recon_all`` and ``make_watershed_bem`` replace the surface extraction, ``coregister`` and ``forward_model`` take their FreeSurfer options, and ``minimum_norm`` with ``parcellate: {source_method: minimum_norm}`` replaces the beamformer. An example is ``examples/wakeman_henson/freesurfer_route.py``.
 
 How do I refine the coregistration of a particular subject?
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
