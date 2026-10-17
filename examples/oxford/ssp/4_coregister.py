@@ -1,4 +1,4 @@
-"""Coregister the head to the MRI and compute the forward model.
+"""Coregister the head to the MRI.
 
 The surfaces are extracted once per subject (extract_surfaces runs on the
 first session of each subject) and the coregistration once per session.
@@ -18,8 +18,6 @@ coreg:
   - extract_fiducials_and_headshape: {}
   - remove_stray_headshape_points: {}
   - coregister: {use_nose: false, use_headshape: true, n_init: 1}
-source_recon:
-  - forward_model: {model: Single Layer}
 """
 
 if __name__ == "__main__":

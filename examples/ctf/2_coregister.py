@@ -9,8 +9,6 @@ coreg:
   - extract_fiducials_and_headshape_from_pos: {}
   - remove_stray_headshape_points: {}
   - coregister: {use_nose: false, use_headshape: true}
-source_recon:
-  - forward_model: {model: Single Layer}
 """
 
 if __name__ == "__main__":

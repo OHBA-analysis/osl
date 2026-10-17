@@ -12,11 +12,11 @@ subject.
    type from each session, applies them and overwrites the preprocessed
    file. The projectors and the power spectrum afterwards are plotted in
    `data/ssp`.
-4. `4_coregister.py` extracts the surfaces from the MRI, coregisters the
-   head to them and computes the forward model. Check the coregistration
+4. `4_coregister.py` extracts the surfaces from the MRI and coregisters the
+   head to them. Check the coregistration
    tab of `data/qc/report.html`; a session that looks off can be rerun
    with a higher `n_init`.
-5. `5_source_reconstruct.py` beamforms and parcellates. The parcel time
-   courses are `data/<id>/<id>_parc-raw.fif`.
+5. `5_source_reconstruct.py` computes the forward model, beamforms and
+   parcellates. The parcel time courses are `data/<id>/<id>_parc-raw.fif`.
 6. `6_sign_flip.py` aligns the sign of each parcel across sessions. The
    output is `data/<id>/<id>_sflip_parc-raw.fif`.

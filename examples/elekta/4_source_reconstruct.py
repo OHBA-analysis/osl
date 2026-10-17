@@ -1,4 +1,4 @@
-"""Beamform and parcellate.
+"""Forward model, beamforming and parcellation.
 
 The LCMV filters are computed from the data filtered to frequency_range,
 the parcel time courses are saved as data/<id>/<id>_parc-raw.fif, with
@@ -10,6 +10,7 @@ from sessions import sessions
 
 config = """
 source_recon:
+  - forward_model: {model: Single Layer}
   - beamform: {chantypes: [mag, grad], rank: {meg: 60}, frequency_range: [1, 45]}
 parcellation:
   - parcellate:

@@ -1,22 +1,12 @@
 Installation
 ============
 
-osl-ephys is on `PyPI <https://pypi.org/project/osl-ephys>`_ and needs Python 3.10 or newer. We recommend installing it into its own environment.
-
-With `Miniforge <https://conda-forge.org/download/>`_ (or any conda):
+osl-ephys is on `PyPI <https://pypi.org/project/osl-ephys>`_ and needs Python 3.10 or newer. We recommend installing it into its own conda environment, with `Miniforge <https://conda-forge.org/download/>`_ if you do not already have conda:
 
 .. code::
 
     conda create -n osle python=3.12
     conda activate osle
-    pip install osl-ephys
-
-or with a plain virtual environment:
-
-.. code::
-
-    python -m venv osle
-    source osle/bin/activate
     pip install osl-ephys
 
 Check the installation with :code:`osl-ephys check`, which imports the package and reports the versions of its main dependencies.
@@ -66,7 +56,7 @@ To remove osl-ephys simply delete the environment:
 
 ::
 
-    conda env remove -n osle   # or: rm -rf osle for a virtual environment
+    conda env remove -n osle
 
 The downloaded data files are cached separately, and can be removed with:
 

@@ -147,7 +147,7 @@ D9-D18, answered 2026-10-16 (details in section 11):
         The `ohba-analysis-group` organisation, its dev builds and the
         `ANACONDA_API_TOKEN` secret stay for now (user, 2026-10-17); nothing
         publishes to the channel any more. Install docs: pip into
-        a conda or venv environment, `osl-ephys check`, headless section.
+        a conda environment (no venv option, user 2026-10-17), `osl-ephys check`, headless section.
     D20 (2026-10-17, superseded by D21) The conda package is distributed from an OHBA channel on
         anaconda.org, not from conda-forge: conda-forge cannot carry glmtools
         (no package) or sails (1.5.18 there, without the GLM periodogram),
@@ -1333,8 +1333,9 @@ sMRI sform fix, FreeSurfer route, sign flipping of arrays);
 `examples/oxford/` (added 2026-10-17 from the `ohba-examples` branch, whose
 content is identical to the frozen v2 copy) has the OHBA pipelines on the v3
 API: `automated_ica`, `manual_ica` (`ica_autoreject: {apply: false}` then
-`review_gui`), `ssp` (MNE projectors on the preprocessed file), `no_viz`
-(`qc_dir=False`) and `maxfilter` (scanner option, `check_scanner.py`);
+`review_gui`), `ssp` (MNE projectors on the preprocessed file) and
+`maxfilter` (`no_viz` dropped the same day: the plotting problems it
+worked around are fixed) (scanner option, `check_scanner.py`);
 `examples/elekta` uses generic `cal`/`ctc` files instead of `scanner: Neo`.
 The `leadfields` branch (3D leadfields) was already ported as
 `beamforming.leadfields(session, orientation=None)`.

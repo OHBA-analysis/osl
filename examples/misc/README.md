@@ -11,4 +11,5 @@
   of the beamformer comparison paper.
 
 The FreeSurfer route (surface source space, minimum norm) is shown on a
-real dataset in `../wakeman_henson/freesurfer_route.py`.
+real dataset in `../wakeman_henson/2_coregister_freesurfer.py` and
+`3_source_reconstruct_freesurfer.py`.

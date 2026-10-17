@@ -8,9 +8,9 @@ and coregister with `use_headshape: false`.
 
 1. `1_preprocess.py`: filtering, downsampling and artefact removal. CTF
    axial gradiometers are picked as `mag` with `ref_meg: false`.
-2. `2_coregister.py`: surfaces, coregistration and the forward model.
-3. `3_source_reconstruct.py`: beamforming and parcellation with the AAL
-   parcellation.
+2. `2_coregister.py`: surfaces and coregistration.
+3. `3_source_reconstruct.py`: the forward model, beamforming and
+   parcellation with the AAL parcellation.
 4. `4_sign_flip.py`: the dipole sign ambiguity across sessions.
 5. `5_save_npy.py`: the parcel time courses as numpy arrays, for
    osl-dynamics.

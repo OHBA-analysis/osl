@@ -1,4 +1,4 @@
-"""Coregister the head to the MRI and compute the forward model.
+"""Coregister the head to the MRI.
 
 The headshape points on the nose are removed before the coregistration,
 which does not use the nose. Check the coregistration tab of
@@ -14,8 +14,6 @@ coreg:
   - extract_fiducials_and_headshape: {}
   - remove_stray_headshape_points: {nose: true, neck: false, far: false}
   - coregister: {use_nose: false, use_headshape: true}
-source_recon:
-  - forward_model: {model: Single Layer}
 """
 
 if __name__ == "__main__":

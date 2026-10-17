@@ -9,8 +9,6 @@ preprocessing, before source reconstruction:
   this for a first pass; it needs the least intervention.
 - `manual_ica/`: ICA with the components labelled by hand in the GUI.
 - `ssp/`: signal-space projection instead of ICA.
-- `no_viz/`: the whole pipeline in one run without the QC report, for a
-  computer where plotting fails.
 - `maxfilter/`: MaxFilter alone, and which scanner option to use for
   recordings from the older OHBA scanners.
 

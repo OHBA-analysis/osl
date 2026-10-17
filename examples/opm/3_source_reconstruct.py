@@ -1,10 +1,11 @@
-"""Beamform and parcellate."""
+"""Forward model, beamforming and parcellation."""
 
 from osl_ephys.pipeline import run_batch
 from sessions import sessions
 
 config = """
 source_recon:
+  - forward_model: {model: Single Layer}
   - beamform: {chantypes: mag, rank: {mag: 100}, frequency_range: [1, 45]}
 parcellation:
   - parcellate:

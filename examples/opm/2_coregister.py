@@ -8,8 +8,6 @@ config = """
 coreg:
   - extract_surfaces: {include_nose: false}
   - coregister: {already_coregistered: true}
-source_recon:
-  - forward_model: {model: Single Layer}
 """
 
 if __name__ == "__main__":

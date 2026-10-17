@@ -8,16 +8,16 @@ config on every session in parallel, writes a log per session and the QC
 report (`data/qc/report.html`). The stages are separate scripts so the
 report can be checked between them: MaxFilter (on the computer with the
 licence; the preprocessing script carries the same section, which is
-skipped once the output exists), preprocessing, the head model
-(surfaces, coregistration and forward model, the stage to rerun when the
-coregistration looks off), beamforming and parcellation, and the sign
-flipping across sessions. Their sections can also be put in one config
-and run in one go, as in `oxford/no_viz`.
+skipped once the output exists), preprocessing, coregistration (surfaces
+and coregistration, the stage to rerun when it looks off in the report),
+source reconstruction (forward model, beamforming and parcellation), and
+the sign flipping across sessions. Their sections can also be put in one
+config and run in one go.
 
 - `elekta/`, `ctf/`, `eeg/`, `opm/`: one pipeline per scanner type.
 - `oxford/`: the pipelines for data from the OHBA scanner, differing in
-  how the sensor data is cleaned (automatic ICA, manual ICA, SSP), plus a
-  run without plots and MaxFilter alone.
+  how the sensor data is cleaned (automatic ICA, manual ICA, SSP), plus
+  MaxFilter alone.
 - `wakeman_henson/`: the analysis of the osl-ephys toolbox paper on the
   face recognition dataset ds000117, including the statistics, and the
   FreeSurfer-based route as an alternative.

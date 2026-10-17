@@ -1,9 +1,7 @@
-"""Source reconstruction on FreeSurfer surfaces instead of RHINO.
+"""Surface forward model, minimum norm and the aparc parcellation.
 
-The alternative to 2_source_reconstruct.py: recon-all once per subject
-(hours), the watershed BEM, MNE's coregistration, a surface forward model,
-eLORETA minimum norm and the aparc parcellation with one time course per
-label. Needs FreeSurfer; set FREESURFER_HOME or call setup_freesurfer.
+The alternative to 3_source_reconstruct.py after 2_coregister_freesurfer.py:
+eLORETA on a surface source space, with one time course per aparc label.
 """
 
 from osl_ephys.pipeline import run_batch
@@ -13,11 +11,6 @@ from sessions import sessions
 setup_freesurfer("/Applications/freesurfer/7.4.1")
 
 config = """
-coreg:
-  - recon_all: {}
-  - make_watershed_bem: {}
-  - extract_fiducials_and_headshape: {}
-  - coregister: {n_init: 20}
 source_recon:
   - forward_model: {spacing: oct6, ico: 5}
   - minimum_norm: {chantypes: [mag, grad], rank: {meg: 60}, loose: 0.2, depth: 0.8}

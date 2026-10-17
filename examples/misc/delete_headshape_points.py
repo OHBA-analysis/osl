@@ -3,7 +3,8 @@
 After a batch run whose coregistration looks off for a session (the
 coregistration tab of data/qc/report.html), open its headshape points,
 delete the stray ones in the window (click a point, press d) and rerun the
-coregistration from the saved points.
+coregistration from the saved points. Then rerun the session's source
+reconstruction script, which recomputes the forward model.
 """
 
 from osl_ephys.pipeline import run_batch
@@ -28,7 +29,5 @@ delete_headshape_points(files)
 config = """
 coreg:
   - coregister: {use_nose: false, use_headshape: true, n_init: 10}
-source_recon:
-  - forward_model: {model: Single Layer}
 """
 run_batch(config, [session], outdir, overwrite=True)

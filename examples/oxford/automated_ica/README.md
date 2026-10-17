@@ -11,12 +11,12 @@ ECG channels, and a structural MRI of each subject.
    preprocessing tabs of `data/qc/report.html`; the automatic labelling is
    not always right, and the components of a session can be relabelled by
    hand with `osl-ephys ica review data <id> --reject all`.
-3. `3_coregister.py` extracts the surfaces from the MRI, coregisters the
-   head to them and computes the forward model. Check the coregistration
+3. `3_coregister.py` extracts the surfaces from the MRI and coregisters the
+   head to them. Check the coregistration
    tab of the report; a session that looks off can be rerun with a higher
    `n_init`.
-4. `4_source_reconstruct.py` beamforms and parcellates. The parcel time
-   courses are `data/<id>/<id>_parc-raw.fif`.
+4. `4_source_reconstruct.py` computes the forward model, beamforms and
+   parcellates. The parcel time courses are `data/<id>/<id>_parc-raw.fif`.
 5. `5_sign_flip.py` aligns the sign of each parcel across sessions, which
    matters when a group model (such as an HMM) is trained on the data. The
    output is `data/<id>/<id>_sflip_parc-raw.fif`.

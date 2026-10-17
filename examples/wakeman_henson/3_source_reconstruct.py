@@ -1,4 +1,4 @@
-"""Beamform and parcellate.
+"""Forward model, beamforming and parcellation.
 
 The parcel time courses are data/<id>/<id>_parc-raw.fif, with symmetric
 orthogonalisation to reduce the spatial leakage.
@@ -9,6 +9,7 @@ from sessions import sessions
 
 config = """
 source_recon:
+  - forward_model: {model: Single Layer}
   - beamform: {chantypes: [mag, grad], rank: {meg: 60}, frequency_range: [1, 45]}
 parcellation:
   - parcellate:
