@@ -25,7 +25,7 @@ Then create an environment with osl-ephys in it:
 
 This installs osl-ephys from the OHBA channel with everything it needs from conda-forge, including `MNE-Python <https://mne.tools/stable/index.html>`_.
 
-glmtools and sails, which the GLM statistics module uses, are not on conda-forge; the OHBA channel carries them too, so they are installed along with the rest. (A pip installation gets them from PyPI.)
+glmtools and sails, which the GLM statistics module uses, and osl-pathfinder, which the simultaneous EEG-fMRI preprocessing uses, are not on conda-forge; the OHBA channel carries them too, so they are installed along with the rest. (A pip installation gets them from PyPI.)
 
 On a headless Linux server, set :code:`PYVISTA_OFF_SCREEN=true` so the 3D coregistration plots render without a display; the package brings the software-rendering build of VTK with it there.
 
