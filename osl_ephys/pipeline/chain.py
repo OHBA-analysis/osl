@@ -100,6 +100,16 @@ def run_chain(
         "surface_extraction_method": surface_extraction_method,
     }
 
+    if cfg.steps(config, "maxfilter"):
+        if outdir is None:
+            raise ValueError(
+                "The maxfilter section writes to outdir, which was not given."
+            )
+        for name, userargs in cfg.steps(config, "maxfilter"):
+            step = registry.find_function(name, "maxfilter", extra_funcs)
+            logger.info(f"Running {name}")
+            dataset = step.func(dataset, deepcopy(userargs))
+
     if cfg.steps(config, "preproc"):
         dataset = _run_preproc(config, dataset, qc_dir, extra_funcs, overwrite)
 
@@ -158,11 +168,13 @@ def _run_preproc(config, dataset, qc_dir, extra_funcs, overwrite):
         return dataset
 
     if dataset["raw"] is None:
-        if "raw_file" not in session:
+        # The maxfiltered file when the maxfilter section ran, else the raw file
+        raw_file = dataset.get("maxfilter_file") or session.get("raw_file")
+        if raw_file is None:
             raise ValueError(
                 f"Session '{session['id']}' has no raw_file and no raw object."
             )
-        dataset["raw"] = import_data(str(session["raw_file"]))
+        dataset["raw"] = import_data(str(raw_file))
 
     for name, userargs in cfg.steps(config, "preproc"):
         userargs = deepcopy(userargs)

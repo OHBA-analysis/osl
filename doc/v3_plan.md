@@ -984,7 +984,7 @@ the old names are removed as each subcommand lands (D19):
 | `osl-ephys download-data` | (new) |
 | `osl-ephys check` | `utils.package.run_package_tests` |
 | `osl-ephys ica review`, `osl-ephys ica apply` | `osl_ica_label`/`osl_ica_apply` and `osl-ica-review`/`osl-ica-apply` (merged, decision 2026-10-15) |
-| `osl-ephys maxfilter files.txt outdir --tsss ...` | `osl_maxfilter`; builds a one-section config (`maxfilter:`) and runs it, so it is the same code path as `osl-ephys run` |
+| `osl-ephys maxfilter files.txt outdir --tsss ...` | `osl_maxfilter` (removed 2026-10-17); builds a one-section config (`maxfilter:`) and runs it, so it is the same code path as `osl-ephys run` |
 | `osl-ephys func` | `osl_func` |
 
 ### Phase 3: `pipeline/`: one config, one runner
@@ -1182,17 +1182,19 @@ extra columns.
 
 ### Phase 6: `preproc/` and `maxfilter/`
 
-1. `preproc/functions.py`: port `meeg/preproc.py`. Map the old
+1. (done 2026-10-17) `preproc/functions.py`: port `meeg/preproc.py`. Map the old
    osl-ephys functions onto it: `gesd` and `bad_segments`/`bad_channels`
    become the ported `detect_bad_segments`/`detect_bad_channels` with the
    #444 fixes carried over (compare outputs on the test data before
    switching); `detect_maxfilt_zeros`, `drop_bad_epochs`,
    `detect_bad_channels_psd` and the zscore/GLM steps stay as they are.
-2. `preproc/steps.py`: `mne_wrappers.py` and `osl_wrappers.py` merged,
+2. (done 2026-10-17) `preproc/steps.py`: `mne_wrappers.py` and `osl_wrappers.py` merged,
    every function keeping its name; new steps `ica_label` (mne-icalabel
    route, #427 multi-axis OPM), `ica_ecg_eog_correlation`,
-   `decimate_headshape_points`, `amm`.
-3. `preproc/amm.py`: port.
+   `decimate_headshape_points`, `amm`. osl-dynamics' `plot_ica_components`
+   is not ported: `preproc.qc.plot_bad_ica` shows the same components with
+   their properties.
+3. (done 2026-10-17) `preproc/amm.py`: port, with the `amm` step.
 4. `preproc/ica/`: `plot_ica.py` (GUI) and `manual_ica/` (review
    server, label files) side by side with one `apply` function; the two
    CLI pairs become `osl-ephys ica review` and `osl-ephys ica apply`; the
@@ -1203,7 +1205,7 @@ extra columns.
    stays as merged, its `osl_pathfinder` import is raised with its author
    (suggesting the name `osl-pathfinder`), and it is excluded from the docs
    build until that dependency is settled.
-5. `maxfilter/`: port `meeg/maxfilter.py`. Maxfilter becomes a config
+5. (done 2026-10-17) `maxfilter/`: port `meeg/maxfilter.py`. Maxfilter becomes a config
    section (decided 2026-10-16): `maxfilter: [{maxfilter: {scanner: Neo,
    mode: multistage, tsss: true, headpos: true, movecomp: true}}]`, a
    per-session step on `raw_file` writing `outdir/maxfilter/<id>_tsss.fif`

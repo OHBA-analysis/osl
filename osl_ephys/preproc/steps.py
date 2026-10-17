@@ -390,6 +390,18 @@ def decimate_headshape_points(dataset, userargs):
 
 
 @step("preproc")
+def amm(dataset, userargs):
+    """Adaptive multipole model interference rejection for OPM data
+    (:func:`~osl_ephys.preproc.amm.apply_amm`): options ``li``, ``le``,
+    ``window`` and ``corr_lim``."""
+    from osl_ephys.preproc.amm import apply_amm
+
+    userargs.pop("target", None)
+    dataset["raw"], _ = apply_amm(dataset["raw"], **userargs)
+    return dataset
+
+
+@step("preproc")
 def read_dataset(dataset, userargs):
     """Read the files saved alongside the data (events, epochs, ICA) into the
     dataset, and ``extra_keys`` (space-separated; ``.pkl`` unless a suffix is

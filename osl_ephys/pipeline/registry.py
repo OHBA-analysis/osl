@@ -16,7 +16,7 @@ from typing import Callable
 
 import mne
 
-SECTIONS = ("preproc", "coreg", "source_recon", "parcellation", "group")
+SECTIONS = ("maxfilter", "preproc", "coreg", "source_recon", "parcellation", "group")
 
 # Prefixes stripped from a wrapper's name to get its config name
 PREFIXES = ("run_mne_", "run_osl_", "run_")
@@ -50,6 +50,7 @@ _REGISTRY: dict[str, dict[str, Step]] = {section: {} for section in SECTIONS}
 # The modules that register steps, imported on first lookup so that the
 # subpackages can import each other freely
 STEP_MODULES = (
+    "osl_ephys.maxfilter.steps",
     "osl_ephys.preproc.steps",
     "osl_ephys.rhino.steps",
     "osl_ephys.source_recon.steps",

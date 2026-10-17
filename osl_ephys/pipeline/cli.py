@@ -1,7 +1,9 @@
 """The ``osl-ephys`` command.
 
-Subcommands: ``run`` (a config over a manifest), ``download-data`` (fetch
-every data file up front) and ``check`` (test the installation).
+Subcommands: ``run`` (a config over a manifest), ``maxfilter`` (MaxFilter
+a set of files, a one-section config), ``func`` (one function on one file),
+``download-data`` (fetch every data file up front) and ``check`` (test the
+installation).
 """
 
 from __future__ import annotations
@@ -44,14 +46,15 @@ def _check(args):
     import mne
 
     import osl_ephys
-    from osl_ephys import (
-        files,
-        glm,
-        maxfilter,
-        preprocessing,
-        report,
-        source_recon,
-    )
+    import osl_ephys.files as files
+    import osl_ephys.glm
+    import osl_ephys.group
+    import osl_ephys.maxfilter
+    import osl_ephys.parcellation
+    import osl_ephys.preproc
+    import osl_ephys.report
+    import osl_ephys.rhino
+    import osl_ephys.source_recon
     from osl_ephys.pipeline import run_chain
 
     print(
@@ -86,6 +89,27 @@ def _func(args):
     literals = {"None": None, "True": True, "False": False}
     func(*[literals.get(a, a) for a in args.arguments])
     return 0
+
+
+def _maxfilter(args):
+    """MaxFilter the files, as the config ``maxfilter: [{maxfilter: options}]``."""
+    from osl_ephys.pipeline import run_batch
+
+    with open(args.files) as f:
+        files = [line.strip() for line in f if line.strip()]
+    options = {
+        k: v
+        for k, v in vars(args).items()
+        if k not in ("files", "outdir", "n_workers", "func", "command")
+        and v is not None
+    }
+    if "bads" in options:
+        options["bads"] = " ".join(options["bads"])
+    config = {"maxfilter": [{"maxfilter": options}]}
+    results = run_batch(
+        config, files, args.outdir, n_workers=args.n_workers, qc_dir=False
+    )
+    return 1 if any(status == "failed" for _, status, _, _ in results) else 0
 
 
 def main(argv=None) -> int:
@@ -126,6 +150,87 @@ def main(argv=None) -> int:
         "--surface-extraction-method", default="fsl", choices=["fsl", "freesurfer"]
     )
     run.set_defaults(func=_run)
+
+    mf = sub.add_parser("maxfilter", help="MaxFilter a set of fif files")
+    mf.add_argument("files", help="text file with one raw fif file per line")
+    mf.add_argument("outdir", help="output directory (files go to outdir/maxfilter)")
+    mf.add_argument(
+        "--n-workers", type=int, default=1, help="files processed at the same time"
+    )
+    mf.add_argument("--maxpath", help="the maxfilter command")
+    mf.add_argument("--mode", choices=["standard", "multistage", "cbu"])
+    mf.add_argument(
+        "--scanner",
+        choices=["VectorView", "VectorView2", "Neo"],
+        help="OHBA scanner, sets ctc and cal",
+    )
+    mf.add_argument("--ctc", help="cross-talk calibration file")
+    mf.add_argument("--cal", help="fine-calibration file")
+    mf.add_argument("--tsss", action="store_true", default=None, help="temporal SSS")
+    mf.add_argument("--st", type=float, help="tSSS buffer length (seconds)")
+    mf.add_argument("--corr", type=float, help="tSSS subspace correlation limit")
+    mf.add_argument(
+        "--headpos",
+        action="store_true",
+        default=None,
+        help="write the head position log",
+    )
+    mf.add_argument(
+        "--movecomp", action="store_true", default=None, help="movement compensation"
+    )
+    mf.add_argument(
+        "--movecompinter",
+        action="store_true",
+        default=None,
+        help="movement compensation with intermittent HPI",
+    )
+    mf.add_argument(
+        "--nomovecompinter",
+        action="store_true",
+        default=None,
+        help="no movement compensation in the CBU recipe",
+    )
+    mf.add_argument(
+        "--autobad",
+        action="store_true",
+        default=None,
+        help="automatic bad channel detection",
+    )
+    mf.add_argument(
+        "--autobad-dur", type=int, dest="autobad_dur", help="autobad duration (seconds)"
+    )
+    mf.add_argument("--bads", nargs="+", help="bad channel numbers")
+    mf.add_argument(
+        "--badlimit", type=float, help="autobad threshold (standard deviations)"
+    )
+    mf.add_argument(
+        "--trans", help="transform to the head position of this file, or 'default'"
+    )
+    mf.add_argument("--origin", nargs=3, type=float, help="sphere origin x y z")
+    mf.add_argument("--frame", help="coordinate frame of the origin")
+    mf.add_argument(
+        "--force", action="store_true", default=None, help="ignore MaxFilter warnings"
+    )
+    mf.add_argument("--inorder", type=int, help="order of the inside expansion")
+    mf.add_argument("--outorder", type=int, help="order of the outside expansion")
+    mf.add_argument("--hpie", type=int, help="HPI fit error limit (mm)")
+    mf.add_argument("--hpig", type=float, help="HPI fit goodness-of-fit limit")
+    mf.add_argument("--linefreq", type=int, help="line frequency (50 or 60)")
+    mf.add_argument("--hpisubt", help="HPI signal subtraction mode")
+    mf.add_argument("--skip", help="intervals to skip, 'start stop ...' in seconds")
+    mf.add_argument(
+        "--overwrite",
+        action="store_true",
+        default=None,
+        help="overwrite existing output",
+    )
+    mf.add_argument(
+        "--dryrun",
+        action="store_true",
+        default=None,
+        help="print the commands without running them",
+    )
+    mf.set_defaults(func=_maxfilter)
 
     sub.add_parser(
         "download-data", help="download every data file, for use offline"
