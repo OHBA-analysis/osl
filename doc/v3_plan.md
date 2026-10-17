@@ -127,6 +127,19 @@ D9-D18, answered 2026-10-16 (details in section 11):
     D18 SEMP is dealt with separately from the phases (own board item); its
         `osl_pathfinder` dependency is raised with its author, with the
         suggestion to rename it `osl-pathfinder` like the other OSL repos.
+    D20 (2026-10-17) The conda package is distributed from an OHBA channel on
+        anaconda.org, not from conda-forge: conda-forge cannot carry glmtools
+        (no package) or sails (1.5.18 there, without the GLM periodogram),
+        and a conda-forge package cannot depend on pip. The channel
+        (`ohba-analysis`, created 2026-10-17; `ohba` belongs to an unused
+        personal account from 2019) carries osl-ephys and, built from their
+        PyPI sdists by the same workflow, glmtools, anamnesis and sails, so
+        one command installs everything:
+        `mamba create -n osle -c ohba-analysis -c conda-forge osl-ephys`.
+        osl-dynamics on the channel is the user's own, separate task;
+        conda-forge and mne-installers are dropped. The channel can be
+        closed later (install docs first; existing environments keep
+        working).
     D19 (2026-10-16) No backwards compatibility with v2: no re-export shims
         at old import paths, no wrappers for the v2 entry points
         (`run_proc_chain` etc. are gone), no old script names, no step-name
@@ -523,7 +536,7 @@ Detailed steps and the target layout: section 11.
 - Docs: install page in the osl-dynamics style (conda-forge first), migration
   page, `llms.txt`, FAQ refresh; issues #352, #361, #386.
 
-### Phase 9: conda-forge and mne-installers  (in-repo work done 2026-10-17; submissions after the release)
+### Phase 9: the OHBA conda channel (D20, 2026-10-17; conda-forge and mne-installers later)
 
 Detailed steps and the target layout: section 11.
 
@@ -1315,7 +1328,34 @@ Issues: #352/#361 (tutorial problems) addressed by the rewrite; #386
 fixed (coregistration no longer loads the headshape file when
 `use_headshape: false`, and `coreg_error` returns NaN without one).
 
-### Phase 9: conda-forge and mne-installers
+### Phase 9: the OHBA conda channel
+
+Revised 2026-10-17 (D20). Needs from the user: the anaconda.org
+organisation (name to be chosen; `ohba` and `ohba-analysis` are both
+unregistered on 2026-10-17) and its API token as the GitHub secret
+`ANACONDA_API_TOKEN` in osl-ephys and osl-dynamics.
+
+a. (done 2026-10-17) `recipe/osl-ephys/recipe.yaml`, built from the
+   repository checkout with the version from `OSL_EPHYS_VERSION`, so the
+   workflow does not wait for PyPI; `recipe/{glmtools,anamnesis,sails}`
+   from the PyPI sdists (glmtools imports tabulate without declaring it;
+   sails pins importlib-metadata <5 and reads requirements files its sdist
+   lacks, so its recipe leaves the pin out, skips pip check and supplies
+   empty files). All four build and pass their tests locally with
+   rattler-build (`mamba create -n rb -c conda-forge rattler-build`;
+   `OSL_EPHYS_VERSION=3.0.0.dev0 rattler-build build --recipe-dir recipe
+   -c conda-forge --output-dir <scratch>`).
+b. (done 2026-10-17) `.github/workflows/conda.yml`: on a published release,
+   or by hand with a version, rattler-build the recipe directory on a Linux
+   runner with `--skip-existing all` against the channel (the three
+   dependencies are built once), upload the new packages, then install
+   osl-ephys from the channel on Linux and macOS and run `osl-ephys check`.
+   Needs the `ANACONDA_API_TOKEN` secret (an organisation token with API
+   write and upload scopes). First end-to-end test: run it by hand on v3
+   with `3.0.0.dev1`, then delete that build from the channel.
+c. (done 2026-10-17) The install page and README use the channel.
+
+The earlier conda-forge plan, not pursued (kept for reference):
 
 1. glmtools: we will not submit a conda-forge recipe ourselves (decided
    2026-10-16), and conda-forge needs every run dependency on conda-forge.

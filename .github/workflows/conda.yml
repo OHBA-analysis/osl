@@ -1,0 +1,91 @@
+name: Conda package
+
+# Build the conda packages (osl-ephys, and glmtools, anamnesis and sails,
+# which are not on conda-forge) and upload them to the OHBA channel on
+# anaconda.org (https://anaconda.org/ohba-analysis), then check that
+# osl-ephys installs from there. A package already on the channel at its
+# version is not rebuilt, so the three dependencies are built once and again
+# when their recipes change version. Runs on a published release, with the version from the tag, and by
+# hand on any branch with a version given (e.g. 3.0.0.dev1, to try the
+# channel out). Needs the ANACONDA_API_TOKEN secret, a token of the
+# organisation.
+
+on:
+  release:
+    types: [published]
+  workflow_dispatch:
+    inputs:
+      version:
+        description: "Version to build and upload, e.g. 3.0.0.dev1"
+        required: true
+
+env:
+  CHANNEL: ohba-analysis
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    outputs:
+      version: ${{ steps.version.outputs.version }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: The version, from the tag or the input
+        id: version
+        run: |
+          if [ -n "${{ github.event.inputs.version }}" ]; then
+            VERSION="${{ github.event.inputs.version }}"
+          else
+            TAG="${{ github.event.release.tag_name }}"
+            VERSION="${TAG#v}"
+          fi
+          echo "OSL_EPHYS_VERSION=$VERSION" >> "$GITHUB_ENV"
+          echo "version=$VERSION" >> "$GITHUB_OUTPUT"
+
+      - uses: prefix-dev/setup-pixi@v0.8.10
+        with:
+          run-install: false
+
+      - name: Install rattler-build
+        run: pixi global install rattler-build
+
+      - name: Build and test the packages
+        run: |
+          rattler-build build --recipe-dir recipe -c $CHANNEL -c conda-forge \
+            --skip-existing all --output-dir conda-out
+
+      - name: Upload to the channel
+        env:
+          ANACONDA_API_KEY: ${{ secrets.ANACONDA_API_TOKEN }}
+        run: |
+          rattler-build upload anaconda --owner "$CHANNEL" conda-out/noarch/*.conda
+
+  install:
+    # The package installs from the channel into a fresh environment
+    needs: build
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, macos-latest]
+    steps:
+      - uses: conda-incubator/setup-miniconda@v3
+        with:
+          miniforge-version: latest
+          activate-environment: osle
+          channels: ${{ env.CHANNEL }},conda-forge
+          channel-priority: strict
+
+      - name: Install from the channel
+        shell: bash -l {0}
+        run: |
+          mamba install -y "osl-ephys==$OSL_EPHYS_VERSION"
+        env:
+          OSL_EPHYS_VERSION: ${{ needs.build.outputs.version }}
+
+      - name: Check the installation
+        shell: bash -l {0}
+        env:
+          MPLBACKEND: Agg
+          PYVISTA_OFF_SCREEN: "true"
+        run: osl-ephys check

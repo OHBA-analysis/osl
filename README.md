@@ -57,7 +57,7 @@ The same run from the terminal, with the sessions in a CSV file: `osl-ephys run 
 
 The recommended installation is:
 ```
-mamba create -n osle -c conda-forge osl-ephys
+mamba create -n osle -c ohba-analysis -c conda-forge osl-ephys
 conda activate osle
 ```
 
@@ -88,7 +88,7 @@ To release a new version:
     - Write the release notes.
     - Select 'Latest' for the release label and click 'Publish release'.
 
-3. Publishing the release triggers a GitHub Actions workflow (`.github/workflows/release.yml`) that builds the package and uploads it to [PyPI](https://pypi.org/project/osl-ephys/). Check the workflow succeeded under the Actions tab of the GitHub repo.
+3. Publishing the release triggers two GitHub Actions workflows: `release.yml` builds the package and uploads it to [PyPI](https://pypi.org/project/osl-ephys/), and `conda.yml` builds the conda package and uploads it to the [OHBA channel](https://anaconda.org/ohba-analysis) on anaconda.org, then checks it installs from there. Check both succeeded under the Actions tab of the GitHub repo.
 
 ## Citation
 

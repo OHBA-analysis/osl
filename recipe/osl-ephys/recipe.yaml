@@ -1,14 +1,13 @@
-# The conda-forge recipe of osl-ephys, in the rattler-build format of
-# conda-forge/osl-dynamics-feedstock. The feedstock is the copy that builds;
-# this one is submitted to conda-forge/staged-recipes for the first release
-# and kept in step with pyproject.toml. glmtools and sails are not on
-# conda-forge (sails only as 1.5, without the GLM periodogram), so the conda
-# package leaves them out: the GLM module and the simulator import them on
-# first use and say `pip install glmtools sails` when they are missing.
+# The conda recipe of osl-ephys, built by .github/workflows/conda.yml from
+# the repository at a release tag and uploaded to the OHBA channel on
+# anaconda.org (rattler-build format). The version comes from the
+# OSL_EPHYS_VERSION environment variable, set by the workflow from the tag.
+# glmtools and sails (and anamnesis, which glmtools needs) are not on
+# conda-forge; their recipes next to this one put them on the channel.
 schema_version: 1
 
 context:
-  version: "3.0.0"
+  version: ${{ env.get("OSL_EPHYS_VERSION", default="0.0.0") }}
   python_min: "3.10"
 
 package:
@@ -16,8 +15,7 @@ package:
   version: ${{ version }}
 
 source:
-  url: https://pypi.org/packages/source/o/osl-ephys/osl_ephys-${{ version }}.tar.gz
-  sha256: 0000000000000000000000000000000000000000000000000000000000000000
+  path: ../..
 
 build:
   number: 0
@@ -41,6 +39,7 @@ requirements:
   run:
     - python >=${{ python_min }}
     - fslpy
+    - glmtools
     - h5io
     - ipyevents
     - ipywidgets
@@ -61,6 +60,7 @@ requirements:
     - pyvista
     - pyvistaqt
     - pyyaml
+    - sails
     - scikit-image
     - scikit-learn
     - scipy
@@ -120,8 +120,7 @@ about:
     dataset, a MaxFilter wrapper, coregistration and source reconstruction
     with RHINO (FSL surfaces, LCMV beamforming, minimum norm), parcellation
     with leakage correction and sign flipping, quality control reports and
-    GLM-Spectrum sensor-level statistics. The GLM module needs the pip-only
-    packages glmtools and sails: pip install glmtools sails.
+    GLM-Spectrum sensor-level statistics.
 
 extra:
   recipe-maintainers:
