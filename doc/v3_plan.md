@@ -144,8 +144,9 @@ D9-D18, answered 2026-10-16 (details in section 11):
         five-platform workflow and, once osl-dynamics joined, a shared
         recipes repository. Removed: `recipe/` and
         `.github/workflows/conda.yml` (both in git history at 968f43f).
-        The user deletes the `ohba-analysis-group` organisation, its dev
-        builds and the `ANACONDA_API_TOKEN` secret. Install docs: pip into
+        The `ohba-analysis-group` organisation, its dev builds and the
+        `ANACONDA_API_TOKEN` secret stay for now (user, 2026-10-17); nothing
+        publishes to the channel any more. Install docs: pip into
         a conda or venv environment, `osl-ephys check`, headless section.
     D20 (2026-10-17, superseded by D21) The conda package is distributed from an OHBA channel on
         anaconda.org, not from conda-forge: conda-forge cannot carry glmtools
