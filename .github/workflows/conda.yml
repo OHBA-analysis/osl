@@ -2,7 +2,7 @@ name: Conda package
 
 # Build the conda packages (osl-ephys, and glmtools, anamnesis and sails,
 # which are not on conda-forge) and upload them to the OHBA channel on
-# anaconda.org (https://anaconda.org/ohba-analysis), then check that
+# anaconda.org (https://anaconda.org/ohba-analysis-group), then check that
 # osl-ephys installs from there. A package already on the channel at its
 # version is not rebuilt, so the three dependencies are built once and again
 # when their recipes change version. Runs on a published release, with the version from the tag, and by
@@ -24,7 +24,7 @@ on:
         required: true
 
 env:
-  CHANNEL: ohba-analysis
+  CHANNEL: ohba-analysis-group
 
 jobs:
   build:

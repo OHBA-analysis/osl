@@ -1,7 +1,7 @@
 Installation
 ============
 
-osl-ephys is available as a conda package on the `OHBA channel <https://anaconda.org/ohba-analysis>`_ of anaconda.org and on `PyPI <https://pypi.org/project/osl-ephys>`_.
+osl-ephys is available as a conda package on the `OHBA channel <https://anaconda.org/ohba-analysis-group>`_ of anaconda.org and on `PyPI <https://pypi.org/project/osl-ephys>`_.
 
 Source reconstruction also needs `FSL <https://fsl.fmrib.ox.ac.uk/fsl/fslwiki/FslInstallation>`_ for extracting the head surfaces from a structural MRI, and the surface-based route needs `FreeSurfer <https://surfer.nmr.mgh.harvard.edu/fswiki/DownloadAndInstall>`_. Neither is needed for preprocessing. On Windows, install everything inside `Ubuntu on WSL <https://ubuntu.com/wsl>`_.
 
@@ -20,7 +20,7 @@ Then create an environment with osl-ephys in it:
 
 .. code::
 
-    mamba create -n osle -c ohba-analysis -c conda-forge osl-ephys
+    mamba create -n osle -c ohba-analysis-group -c conda-forge osl-ephys
     conda activate osle
 
 This installs osl-ephys from the OHBA channel with everything it needs from conda-forge, including `MNE-Python <https://mne.tools/stable/index.html>`_.
@@ -51,7 +51,7 @@ and osl-ephys can be installed with:
 
 .. code::
 
-    mamba create -n osle -c ohba-analysis -c conda-forge osl-ephys
+    mamba create -n osle -c ohba-analysis-group -c conda-forge osl-ephys
     conda activate osle
 
 The above can be run on the login nodes (:code:`clusterX.bmrc.ox.ac.uk`). On :code:`compg017` you will need to set the following to use conda:

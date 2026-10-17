@@ -131,11 +131,11 @@ D9-D18, answered 2026-10-16 (details in section 11):
         anaconda.org, not from conda-forge: conda-forge cannot carry glmtools
         (no package) or sails (1.5.18 there, without the GLM periodogram),
         and a conda-forge package cannot depend on pip. The channel
-        (`ohba-analysis`, created 2026-10-17; `ohba` belongs to an unused
+        (`ohba-analysis-group`, created 2026-10-17 on anaconda.org after `ohba-analysis` was created on anaconda.com by mistake and its name stayed reserved; `ohba` belongs to an unused
         personal account from 2019) carries osl-ephys and, built from their
         PyPI sdists by the same workflow, glmtools, anamnesis and sails, so
         one command installs everything:
-        `mamba create -n osle -c ohba-analysis -c conda-forge osl-ephys`.
+        `mamba create -n osle -c ohba-analysis-group -c conda-forge osl-ephys`.
         osl-dynamics on the channel is the user's own, separate task;
         conda-forge and mne-installers are dropped. The channel can be
         closed later (install docs first; existing environments keep
