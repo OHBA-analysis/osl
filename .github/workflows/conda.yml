@@ -13,6 +13,10 @@ name: Conda package
 on:
   release:
     types: [published]
+  # A development tag (v3.0.0.dev1, ...) builds and uploads that version
+  # without a release, to try the channel out
+  push:
+    tags: ["v*.dev*"]
   workflow_dispatch:
     inputs:
       version:
@@ -36,7 +40,7 @@ jobs:
           if [ -n "${{ github.event.inputs.version }}" ]; then
             VERSION="${{ github.event.inputs.version }}"
           else
-            TAG="${{ github.event.release.tag_name }}"
+            TAG="${{ github.event.release.tag_name || github.ref_name }}"
             VERSION="${TAG#v}"
           fi
           echo "OSL_EPHYS_VERSION=$VERSION" >> "$GITHUB_ENV"
