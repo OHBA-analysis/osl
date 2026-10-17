@@ -2,7 +2,7 @@
 
 These files are downloaded on first use, see
 :py:mod:`osl_ephys.files._fetch`. For more information see
-:ref:`parcellations`.
+the osl-files repository (https://github.com/OHBA-analysis/osl-files/tree/main/parcellation).
 """
 
 from osl_ephys.files import _fetch

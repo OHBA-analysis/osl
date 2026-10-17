@@ -510,7 +510,7 @@ Detailed steps and the target layout: section 11.
 - `osl_ephys.check_installation()` / `osl-ephys-check` CLI (issue #425)
   replaces `utils.package.run_package_tests`.
 
-### Phase 8: Examples and docs  (todo: update examples)
+### Phase 8: Examples and docs  (done 2026-10-17)
 
 Detailed steps and the target layout: section 11.
 
@@ -1289,6 +1289,31 @@ test stays conditional on MNE's fsaverage being downloaded. 152 tests.
    removed `dask_client`, renamed parcellation files, `coreg.html`, the
    dropped `glm_irasa`), `llms.txt` kept current.
 5. README quick example in the osl-dynamics style.
+
+Done 2026-10-17: `examples/{elekta,ctf,eeg,opm}` rewritten as numbered
+scripts sharing a `sessions.py` (manifest at the top, config, `run_batch`);
+`examples/misc` pruned to four scripts on the v3 API (headshape deletion,
+sMRI sform fix, FreeSurfer route, sign flipping of arrays);
+`examples/parallelisation` removed (the runner is the default);
+`examples/v2/` holds the frozen toolbox-paper, oxford, wh_mne and
+beamformer-comparison scripts with a README. Tutorials: the three
+preprocessing ones, `source-recon_coreg`, `source-recon_subject`,
+`source-recon_deleting-headshape-points` and the osl-ephys calls of
+`source-recon_batch` rewritten on the v3 API (Session, rhino functions,
+run_batch, `osl-ephys ica review`, the QC report); they stay on the OSF
+datasets and are rendered without execution (the test recordings are too
+short and synthetic for what the tutorials show). The two SEMP tutorials
+(`preprocessing_eeg-fmri`, `preprocessing_manual-ica`) still use
+`run_proc_batch`/`find_func` and belong to the SEMP item. Docs: new
+`migration.rst` (sections, layout, renamed steps and files, commands,
+modules, removals), `documentation.rst` with the pipeline example,
+`faq.rst` rewritten, `llms.txt` and the README example. Sphinx warnings:
+101 -> 14, the 12 left are docstrings in `preproc/semp` and
+`preproc/ica/manual` (SEMP item); autoapi no longer documents the tests
+or re-exported members, the templates and gallery README are excluded.
+Issues: #352/#361 (tutorial problems) addressed by the rewrite; #386
+fixed (coregistration no longer loads the headshape file when
+`use_headshape: false`, and `coreg_error` returns NaN without one).
 
 ### Phase 9: conda-forge and mne-installers
 

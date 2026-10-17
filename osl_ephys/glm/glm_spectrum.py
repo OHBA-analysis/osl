@@ -473,7 +473,7 @@ def group_glm_spectrum(inspectra, design_config=None, datainfo=None, metric="cop
 
     References
     ----------
-    .. [1] Quinn, A. J., Atkinson, L., Gohil, C., Kohl, O., Pitt, J., Zich, C., Nobre,
+    Quinn, A. J., Atkinson, L., Gohil, C., Kohl, O., Pitt, J., Zich, C., Nobre,
        A. C., & Woolrich, M. W. (2022). The GLM-Spectrum: A multilevel framework
        for spectrum analysis with covariate and confound modelling. Cold Spring
        Harbor Laboratory. https://doi.org/10.1101/2022.11.14.516449
@@ -607,7 +607,7 @@ def glm_spectrum(
 
     References
     ----------
-    .. [1] Quinn, A. J., Atkinson, L., Gohil, C., Kohl, O., Pitt, J., Zich, C., Nobre,
+    Quinn, A. J., Atkinson, L., Gohil, C., Kohl, O., Pitt, J., Zich, C., Nobre,
        A. C., & Woolrich, M. W. (2022). The GLM-Spectrum: A multilevel framework
        for spectrum analysis with covariate and confound modelling. Cold Spring
        Harbor Laboratory. https://doi.org/10.1101/2022.11.14.516449

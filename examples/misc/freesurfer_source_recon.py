@@ -1,51 +1,40 @@
-# Authors: Mats van Es <mats.vanes@psych.ox.ac.uk>
+"""Source reconstruction on FreeSurfer surfaces instead of RHINO.
 
-from osl_ephys import source_recon
-source_recon.setup_freesurfer('/Applications/freesurfer/7.4.1')
-
-recon_dir = '/Users/matsvanes/osl-dev/output'
-subject = 'sub-oxf001'
-preproc_file = '/Users/matsvanes/osl-dev/output/sub-oxf001_task-resteyesopen/sub-oxf001_task-resteyesopen_preproc-raw.fif'
-smri_file='/Users/matsvanes/osl-dev/smri/sub-oxf001_T1w.nii.gz'
-
-subjects = [subject]
-smri_files = [smri_file]
-preproc_files = [preproc_file]
-
-# Run FreeSurfer recon-all before running the pipeline
-for subject, smri_file in zip(subjects, smri_files):
-    source_recon.recon_all(smri_file, recon_dir, subject)
-    
-config = """
-    source_recon:
-    - make_watershed_bem: {}
-    - coregister:
-        nasion_weight: 2.0
-    - forward_model:
-        forward_model: Single Layer
-        source_space: surface
-        kwargs: {ico: 4}
-        gridstep: 8
-    - minimum_norm_and_parcellate:
-        source_space: surface
-        source_method: eLORETA
-        chantypes: [mag, grad]
-        rank: {meg: 20}
-        depth: 0.8
-        loose: 0.2
-        reg: 0.1
-        pick_ori: None
-        parcellation_file: Yeo2011_7Networks_N1000
-        reference_brain: fsaverage
-        method: pca_flip
-        orthogonalisation: symmetric
+recon-all runs once per subject (hours) and the surface forward model and
+minimum norm replace the volumetric beamformer; the parcellation is a
+FreeSurfer annotation. Needs FreeSurfer; set FREESURFER_HOME or call
+osl_ephys.source_recon.setup_freesurfer first.
 """
 
-source_recon.run_src_batch(
-    config,
-    outdir=recon_dir,
-    subjects=[subject],
-    preproc_files=preproc_files,
-    smri_file=[smri_file],   
-    surface_extraction_method='freesurfer'
-)
+from osl_ephys.pipeline import run_batch
+from osl_ephys.source_recon import setup_freesurfer
+
+setup_freesurfer("/Applications/freesurfer/7.4.1")
+
+sessions = [
+    {
+        "id": "sub-001_task-rest",
+        "subject": "sub-001",
+        "raw_file": "raw/sub-001_task-rest.fif",
+        "smri_file": "smri/sub-001_T1w.nii.gz",
+    }
+]
+
+config = """
+preproc:
+  - filter: {l_freq: 1, h_freq: 45}
+  - resample: {sfreq: 250}
+coreg:
+  - recon_all: {}
+  - make_watershed_bem: {}
+  - extract_fiducials_and_headshape: {}
+  - coregister: {n_init: 20}
+source_recon:
+  - forward_model: {spacing: oct6, ico: 4}
+  - minimum_norm: {chantypes: [mag, grad], rank: {meg: 60}}
+parcellation:
+  - parcellate: {source_method: minimum_norm, parcellation_file: aparc, method: pca_flip}
+"""
+
+if __name__ == "__main__":
+    run_batch(config, sessions, "data", surface_extraction_method="freesurfer")

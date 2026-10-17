@@ -1,32 +1,21 @@
-"""Coregisteration.
+"""Coregister with the electrodes as headshape points.
 
-Note, this script does not actually move the EEG electrodes in the fif file.
-
-This script should be used to find the best rescaling for the EEG sensor
-positions to match the structural.
-
-The next script, 3_move_sensors.py, moves the sensors.
+The montage's electrode positions rarely match the subject's head, so they
+are rescaled (rescale_sensor_positions moves them in the preprocessed file)
+before the coregistration. Adjust rescale until the electrodes sit on the
+scalp in the coregistration plot of the report.
 """
 
-# Authors: Chetan Gohil <chetan.gohil@psych.ox.ac.uk>
-
-from osl_ephys import source_recon
+from osl_ephys.pipeline import run_batch
+from sessions import sessions
 
 config = """
-    source_recon:
-    - extract_polhemus_from_info:
-        include_eeg_as_headshape: True
-        rescale: [0.9, 1, 1]
-    - compute_surfaces:
-        include_nose: False
-    - coregister:
-        use_nose: False
-        use_headshape: True
+coreg:
+  - extract_surfaces: {include_nose: false}
+  - rescale_sensor_positions: {rescale: [0.9, 1, 1]}
+  - extract_fiducials_and_headshape: {include_eeg_as_headshape: true}
+  - coregister: {use_nose: false, use_headshape: true}
 """
 
-source_recon.run_src_chain(
-    config,
-    smri_file="data/sub-001_T1w.nii.gz",
-    subject="sub-001",
-    outdir="output",
-)
+if __name__ == "__main__":
+    run_batch(config, sessions, "data", n_workers=4)

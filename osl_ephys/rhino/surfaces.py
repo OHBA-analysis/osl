@@ -93,9 +93,11 @@ def extract_surfaces(
        b) The scalp surface (outer skin), inner skull and brain surface, these
           can be used for forward modelling later. Note that  due to the unusual
           naming conventions used by BET:
+
           - bet_inskull_mesh_file is actually the brain surface
           - bet_outskull_mesh_file is actually the inner skull surface
           - bet_outskin_mesh_file is the outer skin/scalp surface
+
     5) Add nose to scalp surface (optional)
     6) Output the transform from MRI space to MNI
     7) Output surfaces in MRI space

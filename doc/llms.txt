@@ -1,20 +1,21 @@
 # osl-ephys
 
-> osl-ephys is a Python toolbox for analysing electrophysiological data (MEG, EEG and OPM) from the raw recording to parcellated source-space time courses: YAML-driven preprocessing run in parallel over a dataset, a MaxFilter wrapper, coregistration and volumetric source reconstruction with RHINO (FSL surfaces, LCMV beamforming, minimum norm), parcellation with leakage correction and sign flipping, quality control reports, and GLM-Spectrum sensor-level statistics.
+> osl-ephys is a Python toolbox for analysing electrophysiological data (MEG, EEG and OPM) from the raw recording to parcellated source-space time courses. One YAML config holds every stage (MaxFilter, preprocessing, coregistration, source reconstruction, parcellation, group steps) and runs on one session or over a dataset in parallel, writing a log per session and a QC report across sessions. It wraps MaxFilter; coregisters and source-reconstructs with RHINO (surfaces from a structural MRI with FSL, LCMV beamforming on an MNI grid, volumetric minimum norm) or on FreeSurfer surfaces; parcellates with spatial leakage correction and sign flipping; and does GLM-Spectrum and GLM-Epochs sensor-level statistics.
 
-osl-ephys was developed by the OHBA Methods Group at the University of Oxford. It builds on MNE-Python and works hand in hand with osl-dynamics, which models the dynamics of the parcel time courses osl-ephys produces.
+osl-ephys was developed by the OHBA Methods Group at the University of Oxford. It builds on MNE-Python and shares its source reconstruction and parcellation code with osl-dynamics, which models the dynamics of the parcel time courses osl-ephys produces. Version 3 is a rewrite and is not backwards compatible with version 2 (see the migration page).
 
 If you use osl-ephys, please cite: van Es, M. W. J., Gohil, C., Quinn, A. J., and Woolrich, M. W. (2025). osl-ephys: a Python toolbox for the analysis of electrophysiology data. Frontiers in Neuroscience, 19, 1522675.
 
 ## Documentation
 
-- [Installation](https://osl-ephys.readthedocs.io/en/latest/install.html): conda and pip installation, Oxford computers, development install.
-- [Tutorials](https://osl-ephys.readthedocs.io/en/latest/documentation.html): preprocessing (manual, automatic, batch), coregistration, source reconstruction, GLM-Spectrum.
+- [Installation](https://osl-ephys.readthedocs.io/en/latest/install.html): conda-forge and pip installation, development install.
+- [Documentation](https://osl-ephys.readthedocs.io/en/latest/documentation.html): the pipeline in one example, and the tutorials on preprocessing (manual, automatic, batch), coregistration, source reconstruction and GLM statistics.
+- [Migrating from osl-ephys 2](https://osl-ephys.readthedocs.io/en/latest/migration.html): the config sections, output layout, renamed steps and data files, commands and modules.
 - [FAQ](https://osl-ephys.readthedocs.io/en/latest/faq.html)
-- [API reference](https://osl-ephys.readthedocs.io/en/latest/autoapi/index.html): documentation for every module, class and function.
+- [API reference](https://osl-ephys.readthedocs.io/en/latest/autoapi/osl_ephys/index.html): every module, class and function.
 
 ## Source
 
-- [GitHub repository](https://github.com/OHBA-analysis/osl-ephys)
+- [GitHub repository](https://github.com/OHBA-analysis/osl-ephys), with example scripts for Elekta, CTF, EEG and OPM data in `examples/`.
 - [osl-dynamics](https://github.com/OHBA-analysis/osl-dynamics): the companion toolbox for dynamic network modelling.
 - [osl-files](https://github.com/OHBA-analysis/osl-files): the parcellations, templates and test data both toolboxes download at runtime.

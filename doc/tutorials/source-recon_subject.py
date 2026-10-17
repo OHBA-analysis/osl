@@ -54,80 +54,77 @@ get_data("wake_hen")
 # *******************
 # Let's first setup all the file names we will need, for an example single session from a single subject from the Wakeman-Henson dataset. 
 
-
 import os.path as op
 from pprint import pprint
-from osl_ephys import utils
+
+from osl_ephys import io
 
 # setup dirs
 data_dir = './wake_hen'
 recon_dir = op.join(data_dir, "recon")
-out_dir = op.join(data_dir, "recon", "glm")
 
 # structurals
 sub_name = "sub{sub_num}"
-smri_files_path = op.join(data_dir, sub_name, "anatomy", "highres001.nii.gz")
-smri_files = utils.Study(smri_files_path).get()
+smri_files = io.Study(op.join(data_dir, sub_name, "anatomy", "highres001.nii.gz")).get()
 
 # fif files
 subject = "{subject}"
-preproc_fif_files_path = op.join(data_dir, subject + "_meg", subject + "_meg_preproc_raw.fif")
-preproc_fif_files = utils.Study(preproc_fif_files_path)
+preproc_fif_files = io.Study(op.join(data_dir, subject + "_meg", subject + "_meg_preproc_raw.fif"))
 subjects = preproc_fif_files.fields['subject']
 preproc_fif_files = preproc_fif_files.get()
 
-# setup output file names
-sflip_parc_files=[]
-for subject in subjects:
-    sflip_parc_files.append(op.join(recon_dir, subject, "sflip_parc.npy"))
-
 print('subjects:')
 pprint(subjects)
-
 print('Structural files:')
 pprint(smri_files)
-
 print('Preproc fif files:')
 pprint(preproc_fif_files)
-
-print('Sign flipped parcellated files:')
-pprint(sflip_parc_files)
 
 #%%
 # 3. Compute Surfaces, Coregistration and Forward Modelling
 # *********************************************************
 #
-# Here, we set the options in the dictionary ``config``, and use ``source_recon.run_src_batch``.
+# Here, we set the options in the ``config``, and use :func:`~osl_ephys.pipeline.run_batch`.
 # See the tutorial on "Coregistration with RHINO" for more on how this works.
 # 
 # We do not use the nose and headshape points as these were not acquired for this dataset.
 # 
 # Setting ``gridstep: 10`` means that the data will be source reconstructed to each point on a regular 3D grid, with spacings of 10mm.
 
-
-from osl_ephys import source_recon
+from osl_ephys import rhino
+from osl_ephys.pipeline import run_batch
 
 config = """
-    source_recon:
-    - extract_fiducials_from_fif: {}
-    - compute_surfaces:
+    coreg:
+    - extract_surfaces:
         include_nose: false
+    - extract_fiducials_and_headshape: {}
     - coregister:
         use_nose: false
         use_headshape: false
+    source_recon:
     - forward_model:
         model: Single Layer
         gridstep: 10
 """
-fsl_dir = '~/fsl'
-source_recon.setup_fsl(fsl_dir)
 
-source_recon.run_src_batch(
-    config,
-    src_dir=recon_dir,
-    subjects=subjects,
-    preproc_files=preproc_fif_files,
-    smri_files=smri_files,
+fsl_dir = '~/fsl'
+rhino.setup_fsl(fsl_dir)
+
+sessions = [
+    {"id": subject, "subject": subject, "preproc_file": fif, "smri_file": smri}
+    for subject, fif, smri in zip(subjects, preproc_fif_files, smri_files)
+]
+run_batch(config, sessions, recon_dir)
+
+# The files of the session we reconstruct by hand below
+from osl_ephys.session import Session
+
+session = Session(
+    outdir=recon_dir,
+    id=subjects[0],
+    surfaces_dir=op.join(recon_dir, "surfaces", subjects[0]),
+    preproc_file=preproc_fif_files[0],
 )
 
 #%%
@@ -138,7 +135,6 @@ source_recon.run_src_batch(
 # 
 # Here, we assume that we will be doing an evoked response (ERF) analysis on the epoched task data, and so we filter to the frequency range where the evoked response is typically contained, i.e. between 1 and 30 Hz.
 # 
-
 
 import mne
 
@@ -162,7 +158,7 @@ print("Completed")
 # 5. Compute beamformer weights
 # *****************************
 #
-# We now compute the beamformer weights (aka filters). These are computed using the (sensors x sensors) data covariance matrix estimated from the preprocessed and the temporally filtered MEG data (contained in *raw*), and the forward models (contained inside the ``subjects[0]`` inside the directory ``recon_dir``. 
+# We now compute the beamformer weights (aka filters). These are computed using the (sensors x sensors) data covariance matrix estimated from the preprocessed and the temporally filtered MEG data (contained in *data*), and the forward model of the session. The filters are saved in the session's source directory (``session.filters_file``).
 # 
 # Note that this automatically ignores any bad time segments when calculating the beamformer filters.
 # 
@@ -172,14 +168,13 @@ print("Completed")
 # 
 # More generally, a dipole is a 3D vector in space. Setting ``pick_ori="max-power-pre-weight-norm"`` means that we are computing a scalar beamformer, by projecting this 3D vector on the direction in which there is maximum power. 
 
+from osl_ephys import parcellation
+from osl_ephys.source_recon import beamforming
 
-from osl_ephys.source_recon import rhino, beamforming, parcellation
-      
 # Make LCMV beamformer filters
 # Note that this will exclude any bad time segments when calculating the beamformer filters
-filters = beamforming.make_lcmv(
-    recon_dir,
-    subjects[0],
+beamforming.lcmv_beamformer(
+    session,
     data,
     chantypes,
     pick_ori="max-power-pre-weight-norm",
@@ -190,22 +185,16 @@ filters = beamforming.make_lcmv(
 # 6. Applying beamformer weights
 # ******************************
 #
-# We now apply the beamformer filters to the data to project the data into source space.
+# We now apply the beamformer filters to the data to project the data into source space, on the dipole grid in MNI space.
 # 
 # Note that although the beamformer filters were calculated by ignoring any bad time segments, we apply the filters to all time points including the bad time segments. This will make it easier to do epoching later.
 
-
 print("Applying beamformer spatial filters")
 
-# stc is source space time series (in head/polhemus space).
-stc = beamforming.apply_lcmv(data, filters)
-
-# Convert from head/polhemus space to standard brain grid in MNI space
-recon_timeseries_mni, reference_brain_fname, recon_coords_mni, _ = \
-        beamforming.transform_recon_timeseries(recon_dir, 
-                                                subjects[0], 
-                                                recon_timeseries=stc.data, 
-                                                reference_brain="mni")
+# The source space time series (dipoles x time points) and the MNI coordinates of the dipoles
+recon_timeseries_mni, recon_coords_mni = beamforming.apply_lcmv_beamformer(
+    session, data, reject_by_annotation=None, reference_brain="mni"
+)
 
 print("Completed")
 print("Dimensions of reconstructed timeseries in MNI space is (dipoles x all_tpts) = {}".format(recon_timeseries_mni.shape))
@@ -222,7 +211,6 @@ print("Dimensions of reconstructed timeseries in MNI space is (dipoles x all_tpt
 # 
 # Let's take a look at the positions of the centres of each parcel in the parcellation.
 
-
 parcellation_fname = 'atlas-SchaeferHarvOxf_nparc-114_space-MNI_res-8x8x8.nii.gz'
 
 # plot centre of mass for each parcel
@@ -234,32 +222,26 @@ p = parcellation.plot_parcellation(parcellation_fname)
 # 
 # We use this parcellation to compute the parcel time courses using the parcellation and the dipole time courses. Note that the output parcel timepoints includes all time points, including any bad time segments.
 # 
-# Let's now parcellate the data to compute parcel time courses. This is done using the "spatial_basis" method, where the parcel time-course 
-# first principal component from all voxels, weighted by the spatial map for the parcel (see `here <https://pubmed.ncbi.nlm.nih.gov/25862259/>`_).
-#
+# Let's now parcellate the data to compute parcel time courses. This is done using the "pca" method, where the parcel time-course is the first principal component over all voxels in the parcel, weighted by the spatial map for the parcel (see `here <https://pubmed.ncbi.nlm.nih.gov/25862259/>`_).
 #
 # Apply parcellation to (voxels x all_tpts) data contained in recon_timeseries_mni.
 # The resulting parcel_timeseries will be (parcels x all_tpts) in MNI space
 # where all_tpts includes bad time segments
 
-parcel_ts, _, _ = parcellation.parcellate_timeseries(
-    parcellation_fname, 
-    recon_timeseries_mni, 
-    recon_coords_mni, 
-    "spatial_basis", 
-    recon_dir,
+parcel_ts = parcellation.parcellate(
+    recon_timeseries_mni,
+    recon_coords_mni,
+    parcellation_fname,
+    method="pca",
 )
-
 
 #%%
 # We now put the parcel time courses into a new MNE raw object *parc_raw*. This will allow us to easily perform epoching using MNE.
 
-
 # reload raw data to ensure that the stim channel is in there
 raw = mne.io.read_raw_fif(preproc_fif_files[0])
 
-parc_raw = parcellation.convert2mne_raw(parcel_ts, raw)
-
+parc_raw = parcellation.convert_to_mne_raw(parcel_ts, raw, extra_chans="stim")
 print("Dimensions of parc_raw are (nparcels x all_tpts) = {}".format(parc_raw.get_data().shape))
 
 #%%
@@ -268,9 +250,9 @@ print("Dimensions of parc_raw are (nparcels x all_tpts) = {}".format(parc_raw.ge
 # 
 # We can now perform epoching. Note that any epochs (aka trials) that contain any bad time segments will be rejected at this point.
 
-from osl_ephys import preprocessing
+from osl_ephys import preproc
 
-dataset = preprocessing.read_dataset(preproc_fif_files[0])
+dataset = preproc.read_dataset(preproc_fif_files[0])
 epochs = mne.Epochs(
     parc_raw,
     dataset["events"],
@@ -284,7 +266,6 @@ print("Dimensions of epochs are (good_epochs x parcels x tpts_within_epoch) = {}
 
 #%%
 # We can now plot a simple evoked response for this session of data, by averaging over all epochs (aka trials), for a selected parcel
-
 
 import matplotlib.pyplot as plt
 import numpy as np
@@ -300,16 +281,3 @@ plt.plot(epochs.times, erf)
 plt.title("ERF, for parcel={}".format(parcel_ind))
 plt.xlabel("time (s)")
 plt.ylabel("ERF")
-
-
-
-
-
-
-
-
-
-
-
-
-

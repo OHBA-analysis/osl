@@ -15,21 +15,6 @@ class Study:
     studydir : str
         The study directory with wildcards.
 
-    Attributes
-    ----------
-    studydir : str
-        The study directory with wildcards.
-    fieldnames : list
-        The wildcards in the study directory, i.e., the field names in between {braces}.
-    globdir : str
-        The study directory with wildcards replaced with *.
-    match_files : list
-        The files that match the globdir.
-    match_values : list
-        The values of the field names (i.e., wildcards) for each file.
-    fields : dict
-        The field names and values for each file.
-
     Notes
     -----
     This class is a simple wrapper around glob and parse. It works something like this:

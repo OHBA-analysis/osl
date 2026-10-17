@@ -443,9 +443,13 @@ def coregister_head_and_mri(
     raw = mne.io.RawArray(np.zeros([len(info["ch_names"]), 1]), info)
     raw.save(cfns.info_fif_file, overwrite=True)
 
-    # Load in the "polhemus-derived fiducials" in HEAD space
-    print(f"Loading: {cfns.head_headshape_file}")
-    polhemus_headshape_head = np.loadtxt(cfns.head_headshape_file)
+    # Load in the "polhemus-derived fiducials" in HEAD space; the headshape
+    # points only when they are used (a session may have none)
+    if use_headshape:
+        print(f"Loading: {cfns.head_headshape_file}")
+        polhemus_headshape_head = np.loadtxt(cfns.head_headshape_file)
+    else:
+        polhemus_headshape_head = np.zeros((3, 0))
 
     print(f"Loading: {cfns.head_nasion_file}")
     polhemus_nasion_head = np.loadtxt(cfns.head_nasion_file)
@@ -754,7 +758,10 @@ def coreg_error(session: Session, include_nose: bool = False) -> np.ndarray:
     else:
         outskin_surf_file = cfns.bet_outskin_surf_file
 
-    # Headshape points are in mm in HEAD space
+    # Headshape points are in mm in HEAD space (none when the coregistration
+    # used only the fiducials)
+    if not os.path.exists(cfns.head_headshape_file):
+        return {"distances": [], "rms": float("nan"), "mean": float("nan")}
     headshape_head = np.loadtxt(cfns.head_headshape_file)
     head_scaledmri_t = read_trans(cfns.head_scaledmri_t_file)
     headshape_mri = _xform_points(head_scaledmri_t["trans"], headshape_head).T

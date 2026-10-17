@@ -43,6 +43,7 @@ Contents
 
    Install <install>
    Documentation <documentation>
+   Migrating from v2 <migration>
    FAQ <faq>
    API Reference <autoapi/osl_ephys/index>
 

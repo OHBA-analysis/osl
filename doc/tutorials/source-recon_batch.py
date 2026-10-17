@@ -59,11 +59,12 @@ get_data("wake_hen_group_raw")
 
 import os
 import os.path as op
-from osl_ephys import source_recon
 import numpy as np
 
+from osl_ephys import rhino
+
 fsl_dir = '~/fsl'
-source_recon.setup_fsl(fsl_dir)
+rhino.setup_fsl(fsl_dir)
 
 subjects_dir = "./wake_hen_group_raw"
 out_dir = op.join(subjects_dir, "glm")
@@ -140,7 +141,7 @@ print(epoch_fif_files)
 # 
 # See the "Single Subject Source Reconstruction" tutorial for an explanation of the settings used here.
 # 
-# Here we are using ``source_recon.run_src_batch`` to easily run Coreg, Source Reconstruction and Parcellation over all subjects and sessions. 
+# Here we are using ``osl_ephys.pipeline.run_batch`` to easily run Coreg, Source Reconstruction and Parcellation over all subjects and sessions. The sessions are dicts with an ``id`` and their ``preproc_file`` and ``smri_file``.
 # 
 # Note that we do not actually run this code here. For the sake of time, it has already been run for you (it is actually not possible to run this code as the necessary files have not been provided).
 
@@ -149,32 +150,34 @@ pre_run = True
 
 if not pre_run:
 
+    from osl_ephys.pipeline import run_batch
+
     config = """
-    source_recon:
-    - extract_fiducials_from_fif: {}
-    - compute_surfaces:
+    coreg:
+    - extract_surfaces:
         include_nose: false
+    - extract_fiducials_and_headshape: {}
     - coregister:
         use_nose: false
         use_headshape: false
+    source_recon:
     - forward_model:
         model: Single Layer
-    - beamform_and_parcellate:
-        freq_range: [3, 20]
+    - beamform:
+        frequency_range: [3, 20]
         chantypes: [mag, grad]
         rank: {meg: 55}
+    parcellation:
+    - parcellate:
         parcellation_file: atlas-SchaeferHarvOxf_nparc-114_space-MNI_res-8x8x8.nii.gz
-        method: spatial_basis
-        orthogonalisation: None
+    group:
+    - sign_flip: {}
     """
-
-    source_recon.run_src_batch(
-        config,
-        src_dir=recon_dir,
-        subjects=subjects,
-        preproc_files=preproc_fif_files,
-        smri_files=smri_files,
-    )
+    sessions = [
+        {"id": subject, "subject": subject[:6], "preproc_file": preproc, "smri_file": smri}
+        for subject, preproc, smri in zip(subjects, preproc_fif_files, smri_files)
+    ]
+    run_batch(config, sessions, recon_dir)
 else:
     print('Using pre-run results')
 
@@ -182,10 +185,10 @@ else:
 # View Coregistration Report
 # --------------------------
 # 
-# A coregistration report is output by the batch call, and can be viewed in a web browser.
+# The QC report of the batch call, with the coregistration of every session, can be viewed in a web browser.
 
 
-print('View a summary report by opening the following file in a web browser:\n{}'.format(os.getcwd() + ('/wake_hen_group_raw/recon/report/summary_report.html')))
+print('View the report by opening the following file in a web browser:\n{}'.format(os.getcwd() + ('/wake_hen_group_raw/recon/qc/report.html')))
 
 
 #%%
@@ -342,7 +345,6 @@ fig = des.plot_summary()
 # We next loop over all sessions, constructing and fitting the first-level design matrices to each run (session) from each subject separately.
 
 
-from osl_ephys import preprocessing
 import h5py
 
 for epoch_fif_file, glm_model_file, glm_time_file \
@@ -527,7 +529,9 @@ print("Complete")
 
 
 
-from osl_ephys.source_recon import parcellation, rhino
+from osl_ephys import rhino
+from osl_ephys.files.functions import find_file
+from osl_ephys.parcellation import parcellation
 from nilearn import plotting
 
 # index for group contrast we want to output
@@ -545,7 +549,7 @@ mask_file = "MNI152_T1_2mm_brain.nii.gz"
 cope_map = group_model.copes[group_contrast_ind, :, volume_num]
 
 # Create niftii object
-nii = parcellation.convert2niftii(cope_map, parcellation.find_file(parcellation_file), parcellation.find_file(mask_file))
+nii = parcellation.convert2niftii(cope_map, find_file(parcellation_file), find_file(mask_file))
 
 print('Created 3D Niftii object for group contrast {}'.format(group_contrast_ind))
 
@@ -583,7 +587,7 @@ print("Complete")
 import nibabel as nib
 
 nib.save(nii, cope_fname + '.nii.gz')
-rhino.fsleyes([parcellation.find_file(mask_file), cope_fname + '.nii.gz'])
+rhino.fsleyes([find_file(mask_file), cope_fname + '.nii.gz'])
 
 #%%
 # In ``fsleyes``:
@@ -789,8 +793,8 @@ import nibabel as nib
 cope_map = group_model.copes[group_contrast_ind, :, time_inds]
 
 nii = parcellation.convert2niftii(cope_map, 
-                                  parcellation.find_file(parcellation_file), 
-                                  parcellation.find_file(mask_file), 
+                                  find_file(parcellation_file), 
+                                  find_file(mask_file), 
                                   tres=epochs_times[1]-epochs_times[0], 
                                   tmin=epochs_times[time_inds[0]])
 
@@ -803,15 +807,7 @@ cope_fname = op.join(
 print(f"Saving {cope_fname}")
 nib.save(nii, cope_fname + '.nii.gz')
 
-parc_file_3d = 'HarvOxf-sub-Schaefer100-combined-2mm.nii.gz'
-rhino.fsleyes([parcellation.find_file(parc_file_3d), parcellation.find_file(mask_file), cope_fname + '.nii.gz'])
-
-
-
-
-parc_file_3d = 'HarvOxf-sub-Schaefer100-combined-2mm.nii.gz'
-rhino.fsleyes([parcellation.find_file(parc_file_3d), parcellation.find_file(mask_file), cope_fname + '.nii.gz'])
-
+rhino.fsleyes([find_file(parcellation_file), find_file(mask_file), cope_fname + '.nii.gz'])
 #%%
 # In ``fsleyes``:
 # 

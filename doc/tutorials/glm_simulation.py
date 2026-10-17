@@ -522,7 +522,7 @@ plt.ylim(-20, 20)
 
 #%%
 # Spectra as Regressions
-# ***********
+# **********************
 #
 # With this framework, we can apply any and all of the methods of multiple regression to our spectra.
 #
@@ -805,6 +805,6 @@ plt.title('Constant + unitmax(artefact)', fontsize=16)
 
 #%%
 # Further reading
-# **************
+# ***************
 #
 #   Andrew J. Quinn, Lauren Z. Atkinson, Chetan Gohil, Oliver Kohl, Jemma Pitt, Catharina Zich, Anna C. Nobre, Mark W. Woolrich; The GLM-spectrum: A multilevel framework for spectrum analysis with covariate and confound modelling. Imaging Neuroscience 2024; 2 1–26. doi: https://doi.org/10.1162/imag_a_00082

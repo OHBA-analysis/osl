@@ -16,6 +16,43 @@ osl-ephys is a Python toolbox for analysing electrophysiological data (MEG, EEG 
 
 For a full description of the toolbox, see the [documentation](https://osl-ephys.readthedocs.io).
 
+## Example
+
+One config names the steps of each stage, and `run_batch` runs it on a set of sessions in parallel, writing a log per session and a QC report:
+
+```python
+from osl_ephys.pipeline import run_batch
+
+config = """
+preproc:
+  - filter: {l_freq: 1, h_freq: 45}
+  - resample: {sfreq: 250}
+  - bad_segments: {picks: mag}
+  - bad_channels: {picks: mag}
+  - ica_label: {picks: mag}
+coreg:
+  - extract_surfaces: {include_nose: false}
+  - extract_fiducials_and_headshape: {}
+  - coregister: {use_nose: false}
+source_recon:
+  - forward_model: {model: Single Layer}
+  - beamform: {chantypes: mag, rank: {mag: 60}}
+parcellation:
+  - parcellate: {parcellation_file: atlas-Glasser_nparc-52_space-MNI_res-8x8x8.nii.gz}
+group:
+  - sign_flip: {}
+"""
+
+sessions = [
+    {"id": "sub-01", "subject": "sub-01", "raw_file": "raw/sub-01.fif", "smri_file": "smri/sub-01.nii.gz"},
+    {"id": "sub-02", "subject": "sub-02", "raw_file": "raw/sub-02.fif", "smri_file": "smri/sub-02.nii.gz"},
+]
+
+run_batch(config, sessions, "derivatives", n_workers=2)
+```
+
+The same run from the terminal, with the sessions in a CSV file: `osl-ephys run config.yml sessions.csv derivatives --n-workers 2`. The parcel time courses end up in `derivatives/<id>/`, the report in `derivatives/qc/report.html`.
+
 ## Installation
 
 The recommended installation is:

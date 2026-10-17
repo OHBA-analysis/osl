@@ -47,8 +47,12 @@ autoapi_options = [
     "undoc-members",
     "show-inheritance",
     "show-module-summary",
-    "imported-members",
 ]
+autoapi_ignore = ["*/tests/*"]
+autoapi_add_toctree_entry = False
+
+# The autoapi templates and the gallery's own README are not documents
+exclude_patterns = ["_templates", "tutorials/README.rst", "build"]
 
 sphinx_gallery_conf = {
     "examples_dirs": "tutorials",        # Contains source .py files

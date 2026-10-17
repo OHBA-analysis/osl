@@ -34,10 +34,12 @@ def forward_model(
         Files of the session.
     model : string, optional
         Options are:
+
         - 'Single Layer' to use single layer (brain/cortex).
           Recommended for MEG.
         - 'Triple Layer' to three layers (scalp, inner skull, brain/cortex).
           Recommended for EEG.
+
     gridstep : int, optional
         Resolution of the dipole grid in mm. A dipole is placed at each voxel
         of the MNI152 brain mask with this resolution (transformed into the

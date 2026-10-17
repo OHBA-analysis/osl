@@ -4,190 +4,117 @@ Frequently Asked Questions (FAQ)
 .. contents::
    :local:
 
-If you  have a question that's not listed above, please submit an issue to the `GitHub repository <https://github.com/OHBA-analysis/osl/issues>`_. 
+If you have a question that's not listed here, please submit an issue to the `GitHub repository <https://github.com/OHBA-analysis/osl-ephys/issues>`_. Users of osl-ephys 2 should read the :doc:`migration page <migration>` first.
 
 Installation
 ------------
 
 How do I install osl-ephys?
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-The recommended installation of the latest version via pip or github is described :doc:`here <install>`.
+See the :doc:`installation page <install>`: conda-forge is the recommended route, pip the alternative.
 
+The config and the pipeline
+---------------------------
 
+How do I write a config?
+~~~~~~~~~~~~~~~~~~~~~~~~
 
-Preprocessing
--------------
+A config is YAML text (or a ``.yml`` file, or a Python dict) with one section per stage of the pipeline, each a list of steps with their options:
 
-How do I use the config API for preprocessing?
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-The config is a text that is structured as follows:
+.. code-block:: yaml
 
-
-.. code-block:: Python
-
-
-   """
-   meta: 
-      event_codes:
-         event_1: 1
-         event_2: 2
+   meta:
+     event_codes:
+       event_1: 1
+       event_2: 2
    preproc:
-      function_1: {argument_1: value, argument_2: value}
-      function_2: {}
-   """
+     - filter: {l_freq: 1, h_freq: 45}
+     - bad_segments: {picks: mag}
+   coreg:
+     - extract_surfaces: {include_nose: false}
+     - extract_fiducials_and_headshape: {}
+     - coregister: {use_nose: false}
+   source_recon:
+     - forward_model: {model: Single Layer}
+     - beamform: {chantypes: mag, rank: {mag: 60}}
+   parcellation:
+     - parcellate: {parcellation_file: atlas-Glasser_nparc-52_space-MNI_res-8x8x8.nii.gz}
+   group:
+     - sign_flip: {}
 
+The sections are ``maxfilter``, ``preproc``, ``coreg``, ``source_recon``, ``parcellation`` and ``group``, and any of them can be left out. ``meta`` holds the event trigger codes. In ``preproc``, any method of MNE's ``Raw`` or ``Epochs`` can be named (``filter``, ``resample``, ``crop``, ...) as well as the osl-ephys steps; ``osl_ephys.pipeline.registry.registered()`` lists every step by section.
 
-``meta`` contains the events trigger codes, and ``preproc`` contains all the preprocessing functions/methods and the corresponding settings. The ``config`` can also be saved as yaml file - and loaded from it. It can also be represented as a Python dictionary.
+How do I run a config?
+~~~~~~~~~~~~~~~~~~~~~~
 
+On one session, in Python: ``run_chain(config, session, outdir=...)``, where the session is a dict with an ``id`` and the files the steps need (``raw_file``, ``smri_file``, ...), or just a raw file. On a set of sessions, ``run_batch(config, sessions, outdir, n_workers=4)`` runs them in parallel, with a log per session and the QC report. From the terminal, ``osl-ephys run config.yml sessions.csv outdir``, with the sessions as a CSV file with the same columns.
 
 How do I use a custom function in the pipeline?
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-Define a python functions, and make sure it is structured as follows:
+Define a function that takes the ``dataset`` and the step's options and returns the dataset, and pass it in ``extra_funcs``:
 
-.. code-block:: Python
+.. code-block:: python
 
-   import osl_ephys
+   import logging
+   import numpy as np
+
+   logger = logging.getLogger("osl_ephys")
 
    def custom_function(dataset, userargs):
-      # Get any arguments from the userargs dictionary
-      target = userargs.pop("target", "raw")
-      picks = userargs.pop("picks", "meg")
+       target = userargs.pop("target", "raw")
+       picks = userargs.pop("picks", "meg")
+       # The logger writes to the session's log file
+       logger.info(f"Taking the absolute value of the {target} data.")
+       # Manipulate any key of the dataset, or add a new one
+       dataset["rawabs"] = dataset[target].copy().apply_function(np.abs, picks=picks)
+       # A figure in dataset["fig"] is saved and gets a tab in the report
+       dataset["fig"]["rawabs_psd"] = dataset["rawabs"].compute_psd().plot(show=False)
+       return dataset
 
-      # if a logger was set up, e.g., by run_proc_chain, log_or_print will write to the logfile
-      osl_ephys.utils.log_or_print(f"Taking the absolute value of the {target} data.")
-
-      # manipulate any keys in dataset here, or add a new one, for example using Raw.apply_function:
-      dataset["rawabs"] = dataset[target].apply_function(np.abs, picks=picks)
-
-      # you can also generate a figure; it will automatically be saved in the appropriate directory! It needs to be a key in dataset['fig']
-      dataset['fig']['rawabs_psd'] = dataset["rawabs"].compute_psd().plot()
-   return dataset
-
-   # add the function to the config
    config = """
    preproc:
-      - custom_function: {picks: meg}
+     - custom_function: {picks: meg}
    """
+   run_chain(config, session, outdir=outdir, extra_funcs=[custom_function])
 
-   # supply the function to run_proc_chain / run_proc_batch
-   osl_ephys.preproc.run_proc_chain(config, infile, subject, outdir, extra_funcs=[custom_function])
+A new key of the dataset is saved under the session's name (``sub-01_rawabs.fif`` here, a pickle for other objects). The same signature works in every section: a ``coreg``, ``source_recon`` or ``parcellation`` function gets the session's files with ``Session.from_dataset(dataset)``.
 
-The custom function should have ``dataset`` and ``userargs`` input arguments, and a ``dataset`` output argument. Any key in dataset can be manipulated in place. Alternatively, and really helpful is that when you instead add a new key osl-ephys will save it according to the name of the key.
-For example, if the data is saved as ``sub001-run01_preproc-raw.fif``, the ``rawabs`` key will be saved as ``sub001-run01_rawabs.fif`` in the corresponding directory. 
+Can I do group analysis with the config?
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-Similarly, we can add figures to the ``dataset['fig']`` dictionary, and osl-ephys will save them automatically as .png files. The figure name will be used as the filename, e.g., ``sub001-run01_rawabs_psd.png``. If you're using the report functionality, the figures will also appear as their own tabs in the report (e.g., 'rawabs_psd').
+Yes: the ``group`` section runs after every session, on a dataset whose ``raw`` is the list of the sessions' preprocessed files and whose ``sessions`` is the manifest. ``sign_flip`` is the built-in group step; the GLM group steps (``glm_fit`` with ``run_on_group``) and custom functions work the same way as in ``preproc``.
 
-The user can also print statements to an existing logfile using ``osl_ephys.utils.log_or_print``. 
+How can I use multiple cores?
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
+``run_batch(..., n_workers=4)`` processes four sessions at a time, each in its own process. Use fewer than half the cores of the computer, and on a shared system discuss the number with your IT support. Put the call under ``if __name__ == "__main__":`` in a script, as the worker processes import it.
 
-Can I do group analysis using the osl-ephys config and batch processing?
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-
-Yes! You can use the ``group`` section in the config to specify functions that will be applied to all subjects after the subject-level preprocessing is done. The custom functions work slightly differently than in the ``preproc`` module. Here, the ``dataset`` dictionary will contain lists of data for each subject, e.g., ``dataset['raw']`` will be a list of paths to Raw objects, one for each subject. 
-The userargs work the same way as in the ``preproc`` module.
-
-Note that there are no default functions in the ``group`` module, so you will need to specify at least one custom function in the config (for an example, see the `osl-ephys toolbox paper example <https://github.com/OHBA-analysis/osl-ephys/blob/main/examples/toolbox-paper/4_stats.py>`_).
-
-
-
-Can I add custom information to the reports?
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-
-Yes, you can (for the preproc module)! You can add custom figures to the report by adding them to the ``dataset['fig']`` dictionary in your custom function as ``dataset['fig']['figure name']``. Here, 'figure name' will be used as the tab name in the report.
-This works for both the subject-level and group analyses, and the figures will be added to the subject/summary reports respectively. For example:
-
-.. code-block:: Python
-
-   def plot_subject_psd(dataset, userargs):
-    dataset['fig']['Subject PSD'] = dataset['raw'].compute_psd().plot()
-    return dataset
-
-   def plot_group_psd(dataset, userargs):
-      fig = plt.figure()
-      psd = []
-      for r in dataset['raw']:
-         tmp = mne.io.read_raw(r).compute_psd(picks='meg', fmin=1, fmax=30)
-         f = tmp.freqs
-         psd.append(np.mean(tmp.get_data(), axis=0))
-      psd = np.array(psd)
-      plt.plot(f, psd.T)
-      dataset['fig']['Group PSD'] = fig
-      return dataset
-
-   config = """
-      preproc: 
-         - plot_subject_psd: {}
-      group:
-         - plot_group_psd: {}
-   """
-
-
+Preprocessing
+-------------
 
 How do I refine the pipeline for my data?
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-Have a look at the :doc:`tutorials_build/preprocessing_automatic` tutorial.
-
+Have a look at the :doc:`tutorials_build/preprocessing_automatic` tutorial, and at the QC report: sort its table by the metric that worries you to find the sessions to look at.
 
 What is MaxFilter and how do I use it?
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-MaxFilter is Elekta licensed software, and is typically only used for Elekta/Megin data, though in principle it can be applied to other data source (incl. OPM's). It is used to remove external noise (e.g., environmental noise) and do head movement compensation. 
-Maxfilter uses some extra reference sensors in the MEG together with Signal Space Separation (SSS) to achieve this. MaxFilter has various settings, for which osl-ephys has `wrappers <https://osl-ephys.readthedocs.io/en/latest/autoapi/osl_ephys/maxfilter/maxfilter/index.html>`_ for the 
-Elekta software with some explanations of settings. Furthermore, `MNE-Python also has a maxfilter that doesn't require a license <https://mne.tools/stable/generated/mne.preprocessing.maxwell_filter.html>`_. Besides these references, also have a look at the 
-`Maxfilter user manual <https://ohba-analysis.github.io/osl-docs/downloads/maxfilter_user_guide.pdf>`_ and at `these guidelines <https://lsr-wiki-01.mrc-cbu.cam.ac.uk/meg/maxpreproc>`_.
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-
-
-How can I preprocess my data using multiple cores (CPUs)?
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-
-When you're using ``osl_ephys.preproc.run_proc_batch`` you can parallelize the processing over datasets by using dask. This requires that you structure the main code of your Python file inside a ``if __name__ == '__main__':`` statement. 
-We also need to start a Client and specify ``threads_per_worker=1`` and the number of cores to use (``n_workers``). Lastly, we need to specify ``dask_client=True`` in ``run_proc_batch``.
-
-.. warning::
-
-   ``threads_per_worker`` should always be set to 1. ``n_workers`` depends on your computing infrastructure. For example, if you're on a personal computer with 8 cores, you can at most use ``n_workers=8``. If you're working on a shared computing infrastructure, discuss the appropriate setting with your IT support. As a rule of thumb, here we will use half the cores that are available on your computer.
-
-.. code-block:: Python
-
-   # start a Dask Client
-   from dask.distributed import Client
-   client = Client(threads_per_worker=1, n_workers=4)
-
-
-   if __name__ == '__main__':
-
-      # write extra information here, e.g., definitions of config, files, output_dir
-
-      osl_ephys.preproc.run_proc_batch(config, 
-         inputs=infiles, 
-         subjects=subjects_ids, 
-         outdir=outdir, 
-         dask_client=True)
+MaxFilter is Elekta/MEGIN licensed software for their scanners. It uses the reference sensors and Signal Space Separation (SSS) to remove external noise and compensate for head movement. In osl-ephys it is the ``maxfilter`` section of a config, run on the machine that has the licence (``osl-ephys maxfilter files.txt outdir --scanner Neo --mode multistage --tsss`` is the same thing from the terminal); see :mod:`osl_ephys.maxfilter` for the options. `MNE-Python has a maxwell filter that does not need a licence <https://mne.tools/stable/generated/mne.preprocessing.maxwell_filter.html>`_ (the ``maxwell_filter`` step). Also see the `MaxFilter user manual <https://ohba-analysis.github.io/osl-docs/downloads/maxfilter_user_guide.pdf>`_ and `these guidelines <https://lsr-wiki-01.mrc-cbu.cam.ac.uk/meg/maxpreproc>`_.
 
 How do I select which components to remove in ICA?
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-There are several ways to identify artefact-related components. Commonly, components related to heartbeats and eyemovements (saccades/blinks) are removed.
-These can be identified either automatically, e.g., by correlation with the ECG / EOG (when recorded), or manually, by inspecting the component topographies and timecourses. 
-We recommend a combination of the two: have a automatic first pass, and manually adapting the labels where necessary. 
 
-We provide command line functions in osl-ephys to do the manual checks and reject the components from the data post-hoc. See `ica_label <https://osl-ephys.readthedocs.io/en/latest/autoapi/osl_ephys/preproc/ica_label/index.html#osl_ephys.preproc.ica_label.main>`_
+Commonly the components related to heartbeats and eye movements are removed. They can be found automatically: ``ica_label`` labels them with a classifier (mne-icalabel), and ``ica_raw`` followed by ``ica_autoreject`` (or ``ica_ecg_eog_correlation``) by their correlation with the ECG and EOG channels. We recommend an automatic first pass and a manual check: ``osl-ephys ica review outdir`` opens each session's components in a GUI (click a time course to mark it, number keys label the artefact type, close the window to save), and ``osl-ephys ica apply outdir`` removes the labelled components from the data. The report's Artefacts tab shows the properties of every rejected component.
 
-.. code-block:: Python
+Eye and heart components are usually easy to recognise; `this advice from the FieldTrip toolbox is useful <https://www.fieldtriptoolbox.org/tutorial/ica_artifact_cleaning/#identifying-artifactual-components>`_: eye-related components are frontal, blinks and vertical saccades symmetric, horizontal saccades left-right; heart-related components in MEG are a deep bipolar source over the left and right of the helmet. Heart components are rarely seen in EEG.
 
-   (osl-ephys) > osl_ica_label None preprocessed sub001-ses01
+How do I preprocess my OPM-MEG data?
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-Also see `Automnatic preprocessing using an osl-ephys config <https://osl-ephys.readthedocs.io/en/latest/tutorials_build/preprocessing_automatic.html#manually-checking-ica>`_.
-
-Regarding the manual detection, Eye and heart related components are usually quite easy to recognise. `this advise from the FieldTrip Toolbox is useful <https://www.fieldtriptoolbox.org/tutorial/ica_artifact_cleaning/#identifying-artifactual-components>`_: 
-"Eye-related components are spatially localized on the frontal channels, blinks and vertical saccades are symmetric and horizontal saccades show a distinct left-right pattern. Heart-related components in MEG show up as a very deep source with a bipolar projecting over the left and right side of the helmet. It is common for both eye and heart components that you will see a few of them."
-Note that you typically won't see Heart-related components in EEG. 
-
-How do I preprocess my OPM-MEG data collected at OHBA?
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-OHBA installed a CERCA Magnetics Ltd. 64-sensor OPM-MEG system in January 2025. There are some preliminary scripts for how to preprocess data collected on this system here: [https://github.com/neurofractal/OPM-oxford/tree/main/tutorials#opm-meg-tutorials-in-osl-ephys](https://github.com/neurofractal/OPM-oxford/tree/main/tutorials#opm-meg-tutorials-in-osl-ephys), written by Rob Seymour.
+The ``amm`` step (adaptive multipole models) rejects interference using the sensor geometry, and ``decimate_headshape_points`` thins a dense headshape scan; see the ``examples/opm`` scripts. For OHBA's CERCA system there are scripts by Rob Seymour at https://github.com/neurofractal/OPM-oxford/tree/main/tutorials.
 
 Source reconstruction
 ---------------------
@@ -195,101 +122,41 @@ Source reconstruction
 How do I coregister my MRI and MEG data?
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-This involves coregistering a number of different coordinate systems:
+Coregistration maps between the MEG (device) space, the Polhemus (head) space of the fiducials and headshape points, the native space of the structural MRI and MNI space. See the :doc:`tutorials_build/source-recon_coreg` tutorial, and the ``coreg`` section of a config (surfaces, fiducials and headshape, coregistration).
 
-* MEG (Device) space - defined with respect to  the MEG dewar.
-* Polhemus (Head) space - defined with respect to the locations of the fiducial locations (LPA, RPA and Nasion). The fiducial locations in polhemus space are typically acquired prior to the MEG scan, using a polhemus device.
-* sMRI (Native) space - defined with respect to the structural MRI scan.
-* MNI space - defined with respect to the MNI standard space brain.
+How do I use FreeSurfer for source reconstruction?
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-See the :doc:`tutorials_build/source-recon_coreg` tutorial to see how to coregister the data.
-
-How do I Freesurfer for source reconstruction?
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-
-Make sure FreeSurfer is installed appropriately, and use ``source_recon.setup_freesurfer(/path/to/freesurfer)`` to set up the FreeSurfer environment within your script.
-You can run Freesurfer's ``recon-all`` either using FreeSurfer directly, or using the ``source_recon.recon_all`` wrapper. Note, that this is not available from the config API, because FreeSurfer has it's own way of using distributed processing, and this function is computationally heavy.
-Next, you can use the ``source_recon.run_src_chain`` or ``source_recon.run_src_batch`` functions to run the source reconstruction pipeline. Make sure to specify ``surface_extraction_method='freesurfer'`` when calling either function.
-An example pipeline can be found in the `osl-ephys examples <https://github.com/OHBA-analysis/osl-ephys/blob/main/examples/misc/freesurfer_source_recon.py>`_.
-
-How do I use a custom function in the pipeline?
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-
-This is done slightly differently than in the ``preprocessing`` module. Again, we need to define a python function, but the ``soure_recon`` module doesn't work with the ``dataset`` dictionary, so we might need to load/save data to disk directly.
-As input arguments, we can use any input arguments that `run_src_chain <https://osl-ephys.readthedocs.io/en/latest/autoapi/osl_ephys/source_recon/batch/index.html#osl_ephys.source_recon.batch.run_src_chain>`_ and `run_src_batch <https://osl-ephys.readthedocs.io/en/latest/autoapi/osl_ephys/source_recon/batch/index.html#osl_ephys.source_recon.batch.run_src_batch>`_
-take, such as ``subject``, ``outdir``, and ``smri_file``. We can also use ``userargs``, to specify any options you might want to supply in the config.
-The user can also print statements to an existing logfile using ``osl_ephys.utils.log_or_print``. 
-
-For example:
-
-.. code-block:: Python
-
-   import osl_ephys
-   import numpy as np
-
-   def fix_headshape_points(outdir, subject, userargs):
-      filenames = osl_ephys.source_recon.rhino.get_coreg_filenames(outdir, subject)
-
-      # Load saved headshape and nasion files
-      hs = np.loadtxt(filenames["polhemus_headshape_file"])
-      nas = np.loadtxt(filenames["polhemus_nasion_file"])
-      lpa = np.loadtxt(filenames["polhemus_lpa_file"])
-      rpa = np.loadtxt(filenames["polhemus_rpa_file"])
-
-      # Remove headshape points on the nose
-      remove = np.logical_and(hs[1] > max(lpa[1], rpa[1]), hs[2] < nas[2])
-      hs = hs[:, ~remove]
-
-      # Overwrite headshape file
-      osl_ephys.utils.logger.log_or_print(f"overwriting {filenames['polhemus_headshape_file']}")
-      np.savetxt(filenames["polhemus_headshape_file"], hs)
-
-
-   # add the function to the config
-   config = """
-   source_recon:
-      - fix_headshape_points: {}
-   """
-
-   # supply the function to run_src_chain / run_src_batch
-   osl_ephys.source_recon.run_src_chain(config, infile, subject, outdir, smri_file, extra_funcs=[fix_headshape_points])
-
-
-How do I use multiple cores for parallel preprocessing my data?
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-
-This works the same as in the ``preprocessing`` module, and can be applied to ``osl_ephys.source_recon.run_src_batch``. See here how to set up your script appropriately: 
-`How can I preprocess my data using multiple cores (CPUs)? <#how-can-i-preprocess-my-data-using-multiple-cores-cpus>`_
+Install FreeSurfer and set ``FREESURFER_HOME`` (or call ``osl_ephys.source_recon.setup_freesurfer``), then run the config with ``surface_extraction_method="freesurfer"``: ``recon_all`` and ``make_watershed_bem`` replace the surface extraction, ``coregister`` and ``forward_model`` take their FreeSurfer options, and ``minimum_norm`` with ``parcellate: {source_method: minimum_norm}`` replaces the beamformer. An example is ``examples/misc/freesurfer_source_recon.py``.
 
 How do I refine the coregistration of a particular subject?
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-See the `Deleting Headshape Points <https://osl-ephys.readthedocs.io/en/latest/tutorials_build/source-recon_deleting-headshape-points.html>`_ tutorial.
-
-
+Rerun its ``coregister`` step with a higher ``n_init`` (``run_batch(config, [session], outdir, overwrite=True)``), or remove misleading headshape points first: see the :doc:`tutorials_build/source-recon_deleting-headshape-points` tutorial.
 
 Utilities
 ---------
 
 How do I use the Study class for finding my data?
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-The `Study <https://osl-ephys.readthedocs.io/en/latest/autoapi/osl_ephys/io/study/index.html#osl_ephys.io.study.Study>`_ class enables finding data paths with multiple wild cars, and selecting those that satisfy a specific wild card.
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-For example 
+:class:`osl_ephys.io.Study` finds the files matching a pattern with wildcards, and selects those that match a value:
 
-.. code-block:: Python
+.. code-block:: python
 
-   import osl_ephys
+   from osl_ephys.io import Study
 
-   study = osl_ephys.io.Study('/path/to/sub{subject_id}-run{run_id}_preproc-raw.fif')
-
+   study = Study('/path/to/sub{subject_id}-run{run_id}_preproc-raw.fif')
    all_files = study.get()
    subject1_files = study.get(subject_id=1)
 
+Where are the parcellations and templates?
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+They are downloaded from `osl-files <https://github.com/OHBA-analysis/osl-files>`_ on first use and cached (``osl-ephys download-data`` fetches them all, for working offline). A parcellation is named in a config by its file name, e.g. ``atlas-Glasser_nparc-52_space-MNI_res-8x8x8.nii.gz``; :mod:`osl_ephys.files` lists them.
 
 Other
 -----
-
 
 I found a bug, what do I do?
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -297,14 +164,11 @@ I found a bug, what do I do?
 Create an issue `here <https://github.com/OHBA-analysis/osl-ephys/issues>`_.
 
 Does osl-ephys contain functionality for training generative models (e.g., HMM, DyNeMo)?
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-osl-ephys does not contain functionality for training generative models, but we have developed another Python package, osl-dynamics, which contains functionality for training generative models. You can find osl-dynamics `here <https://github.com/OHBA-analysis/osl-dynamics>`_, and the documentation `here <https://osl-dynamics.readthedocs.io/en/latest/>`_.
-
+No; that is `osl-dynamics <https://github.com/OHBA-analysis/osl-dynamics>`_ (`documentation <https://osl-dynamics.readthedocs.io/en/latest/>`_), which trains its models on the parcel time courses osl-ephys produces.
 
 How can I cite the package?
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-For up-to-date citation information, please have a look at the citation information on `GitHub   <https://github.com/OHBA-analysis/osl-ephys/blob/main/CITATION.cff>`_ (Look for the button "Cite this repository"). 
-Don't forget to also cite `MNE-Python <https://github.com/mne-tools/mne-python>`_, and, if you've used the ``osl_ephys.source_recon`` module, `FSL <https://fsl.fmrib.ox.ac.uk/fsl/docs/#/license>`_
-
+See the citation information on `GitHub <https://github.com/OHBA-analysis/osl-ephys/blob/main/CITATION.cff>`_ ("Cite this repository"). Please also cite `MNE-Python <https://github.com/mne-tools/mne-python>`_, and `FSL <https://fsl.fmrib.ox.ac.uk/fsl/docs/#/license>`_ if you used the source reconstruction.
