@@ -11,7 +11,7 @@ import logging
 
 import numpy as np
 
-from osl_ephys import files, rhino
+from osl_ephys import rhino
 from osl_ephys.source_recon import freesurfer
 from osl_ephys.pipeline.registry import step
 from osl_ephys.session import Session
@@ -70,19 +70,6 @@ def extract_fiducials_and_headshape_from_elc(dataset, userargs):
 def remove_stray_headshape_points(dataset, userargs):
     """Remove headshape points on the nose, neck or far from the head. Options: ``nose``, ``neck``, ``far``."""
     rhino.remove_stray_headshape_points(Session.from_dataset(dataset), **userargs)
-    return dataset
-
-
-@step("coreg")
-def rescale_sensor_positions(dataset, userargs):
-    """Rescale the sensor positions of the preprocessed file (EEG montages
-    that do not fit the head). Option: ``rescale``, the ``[x, y, z]`` scale
-    factors.
-    """
-    xscale, yscale, zscale = userargs.get("rescale", [1, 1, 1])
-    rhino.rescale_sensor_positions(
-        Session.from_dataset(dataset).preproc_file, xscale, yscale, zscale
-    )
     return dataset
 
 

@@ -3,7 +3,9 @@
 You need the raw `.fif` file of each session (with EOG and ECG channels for
 the automatic ICA labelling) and a structural MRI of each subject.
 
-1. `1_maxfilter.py` runs MaxFilter (on a computer with a MaxFilter licence).
+1. `1_maxfilter.py` runs MaxFilter (on a computer with a MaxFilter licence)
+   with the scanner's calibration files. The OHBA scanner has its own
+   pipelines in `../oxford`.
 2. `2_preprocess.py` filters, downsamples, marks bad segments and channels
    and removes the eye and heart artefacts with ICA. Check the
    preprocessing tabs of `data/qc/report.html`; the components can be

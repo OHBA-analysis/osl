@@ -429,40 +429,6 @@ def delete_headshape_points(
     plt.show()
 
 
-def rescale_sensor_positions(
-    fif_file: str, xscale: float = 1, yscale: float = 1, zscale: float = 1
-) -> None:
-    """Rescale the sensor positions of a fif file, for EEG montages that do
-    not fit the head. The file is overwritten and the scaling recorded in
-    its description, so it is applied once.
-
-    Parameters
-    ----------
-    fif_file : str
-        Preprocessed fif file.
-    xscale, yscale, zscale : float, optional
-        Scale factors along each axis.
-    """
-    raw = mne.io.read_raw_fif(fif_file, preload=True, verbose=False)
-    if (
-        raw.info["description"]
-        and "rescale_sensor_positions" in raw.info["description"]
-    ):
-        raise ValueError(
-            f"The sensor positions in {fif_file} have been rescaled already."
-        )
-    montage = raw.get_montage()
-    for d in montage.dig:
-        d["r"] = d["r"] * np.array([xscale, yscale, zscale])
-    raw.set_montage(montage)
-    with raw.info._unlock():
-        raw.info["description"] = (
-            (raw.info["description"] or "")
-            + f"\nrescale_sensor_positions: xscale={xscale}, yscale={yscale}, zscale={zscale}"
-        )
-    raw.save(fif_file, overwrite=True, verbose=False)
-
-
 def _extract_headshape(
     preproc_file: str,
 ) -> tuple[np.ndarray, np.ndarray, np.ndarray, np.ndarray]:

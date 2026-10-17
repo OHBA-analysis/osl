@@ -10,7 +10,7 @@ from sessions import sessions
 
 config = """
 maxfilter:
-  - maxfilter: {scanner: Neo, mode: multistage, tsss: true, headpos: true, movecomp: true}
+  - maxfilter: {maxpath: /neuro/bin/util/maxfilter, cal: /neuro/databases/sss/sss_cal.dat, ctc: /neuro/databases/ctc/ct_sparse.fif, mode: multistage, tsss: true, headpos: true, movecomp: true}
 preproc:
   - filter: {l_freq: 0.5, h_freq: 125, method: iir, iir_params: {order: 5, ftype: butter}}
   - notch_filter: {freqs: 50 100}

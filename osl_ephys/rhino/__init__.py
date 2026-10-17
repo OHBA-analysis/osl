@@ -23,7 +23,6 @@ from osl_ephys.rhino.headshape import (
     extract_fiducials_and_headshape_from_elc,
     remove_stray_headshape_points,
     delete_headshape_points,
-    rescale_sensor_positions,
 )
 from osl_ephys.rhino.coregistration import (
     scale_surfaces_to_headshape,

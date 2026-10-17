@@ -72,7 +72,8 @@ manual ICA review):
 - :doc:`tutorials_build/glm_simulation`
 - :doc:`tutorials_build/glm_sensor`
 
-Example scripts for each scanner are in the `examples directory
+Example scripts for each scanner, and the pipelines used at OHBA, are in
+the `examples directory
 <https://github.com/OHBA-analysis/osl-ephys/tree/main/examples>`_ of the
 repository.
 
