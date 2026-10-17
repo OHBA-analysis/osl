@@ -9,7 +9,6 @@ import sys
 import os
 import mne
 import numpy as np
-import pickle
 import logging
 import traceback
 from glob import glob
@@ -17,8 +16,7 @@ from copy import deepcopy
 from time import localtime, strftime
 from matplotlib import pyplot as plt
 from osl_ephys.preproc.plot_ica import plot_ica
-from osl_ephys.report import plot_bad_ica
-from osl_ephys.report.preproc_report import gen_html_page, gen_html_summary
+from osl_ephys.preproc.qc import save_qc_plots
 from osl_ephys.utils import logger as osl_logger
 
 logger = logging.getLogger(__name__)
@@ -49,8 +47,6 @@ def ica_label(data_dir, subject, reject=None, interactive=True):
     # define data paths based on osl-ephys data structure
     preproc_file = os.path.join(data_dir, subject, subject + "_preproc-raw.fif")
     ica_file = os.path.join(data_dir, subject, subject + "_ica.fif")
-    report_dir_base = os.path.join(data_dir, "preproc_report")
-    report_dir = os.path.join(report_dir_base, subject)
     logs_dir = os.path.join(data_dir, "logs")
     logfile = os.path.join(logs_dir, subject + "_preproc.log")
 
@@ -101,42 +97,12 @@ def ica_label(data_dir, subject, reject=None, interactive=True):
 
         ica.save(ica_file, overwrite=True)
 
-        # if reject is not None:
-        logger.info("Attempting to update report")
-
-        savebase = os.path.join(report_dir, "{0}.png")
-        logger.info("Assuming report directory: {0}".format(report_dir))
-        if os.path.exists(os.path.join(report_dir, "ica.png")) or os.path.exists(
-            os.path.join(report_dir, "data.pkl")
-        ):
-            logger.info("Generating ICA plot")
-            _ = plot_bad_ica(raw, deepcopy(ica), savebase)
-
-            # try updating the report data
-            logger.info("Updating data.pkl")
-            data = pickle.load(open(os.path.join(report_dir, "data.pkl"), "rb"))
-            if "plt_ica" not in data.keys():
-                data["plt_ica"] = os.path.join(report_dir.split("/")[-1], "ica.png")
-
-            # update number of bad components
-            data["ica_ncomps_rej"] = len(ica.exclude)
-
-            data["ica_ncomps_rej_ecg"] = [
-                len(ica.labels_["ecg"]) if "ecg" in ica.labels_.keys() else "N/A"
-            ][0]
-            data["ica_ncomps_rej_eog"] = [
-                len(ica.labels_["eog"]) if "eog" in ica.labels_.keys() else "N/A"
-            ][0]
-
-            # save data
-            pickle.dump(data, open(os.path.join(report_dir, "data.pkl"), "wb"))
-
-            # gen html pages
-            logger.info("Generating subject_report.html")
-            gen_html_page(report_dir_base)
-            logger.info("Generating summary_report.html")
-            gen_html_summary(report_dir_base)
-            logger.info("Successfully updated report")
+        # The session's QC plots, if a run saved them
+        qc_dir = os.path.join(data_dir, "qc")
+        if os.path.isdir(os.path.join(qc_dir, "preproc", subject)):
+            logger.info("Updating the QC plots")
+            save_qc_plots(qc_dir, subject, raw, ica=deepcopy(ica), plots=["ica"])
+            logger.info("Rerun osl_ephys.report.generate_report to update the table")
 
     except Exception as e:
         logger.critical("**********************")

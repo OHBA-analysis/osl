@@ -449,7 +449,7 @@ Detailed steps and the target layout: section 11.
   `voxel_timeseries`, `transform_recon_timeseries`, `recon_timeseries2niftii`)
   are moved, not dropped.
 
-### Phase 5: Reporting  (todo: update reporting)
+### Phase 5: Reporting  (done 2026-10-17)
 
 Detailed steps and the target layout: section 11.
 
@@ -703,8 +703,8 @@ line in its scope says "undecided".
 | `preprocessing.semp.*` | AAS/OBS/SSP epoching, metrics, plots, tracer | Keep (merged from #452); scope of maintenance to be agreed with its author. |
 | `maxfilter` | `run_maxfilter`, `run_multistage_maxfilter`, `run_cbu_3stage_maxfilter`, `run_maxfilter_batch`, `quick_load_dig`, `fit_cbu_origin`, `main` | Port (osl-dynamics `run_maxfilter` covers standard, multistage, CBU 3-stage, chunking, split chains) behind the same CLI; `run_maxfilter_batch` keeps its file-list interface. |
 | `glm.*` | `glm_spectrum`, `glm_epochs`, group variants, permutation classes, readers, all `plot_*` | Keep all (osl-dynamics has no sensor GLM). Drop `glm_irasa` and the `irasa` option of `run_osl_glm_fit` (decided 2026-10-16): it was a thin wrapper around `sails.stft.glm_irasa`, which raises inside sails itself from 1.8 onwards and is unmaintained; keeping it meant pinning sails to 1.7. |
-| `report.preproc_report` | `gen_report_from_fif`, `gen_html_*`, `plot_flowchart`, `plot_rawdata`, `plot_channel_time_series`, `plot_sensors`, `plot_channel_dists`, `plot_spectra`, `plot_freqbands`, `plot_digitisation_2d`, `plot_headmovement`, `plot_eog_summary`, `plot_ecg_summary`, `plot_bad_ica`, `plot_summary_bad_segs`, `plot_summary_bad_chans`, `plot_artefact_scan`, `print_scan_summary`, `plot_events`, `plot_custom_figures` | Every `plot_*` is Keep (becomes a QC plot in the new report). `gen_html_*` and the per-subject pages are Drop: replaced by the table report, which shows the same plots per selected session. `gen_report_from_fif` is Keep as the entry point that regenerates QC plots from a saved fif. |
-| `report.src_report` | `gen_html_*`, `plot_config`, `plot_parcellation`, `plot_sign_flipping_results`, `add_to_data`, `update_config` | `plot_*` Keep as QC plots; `gen_html_*`/`add_to_data`/`update_config` Drop (replaced by `summary.json` per step and the table report). |
+| `report.preproc_report` | `gen_report_from_fif`, `gen_html_*`, `plot_flowchart`, `plot_rawdata`, `plot_channel_time_series`, `plot_sensors`, `plot_channel_dists`, `plot_spectra`, `plot_freqbands`, `plot_digitisation_2d`, `plot_headmovement`, `plot_eog_summary`, `plot_ecg_summary`, `plot_bad_ica`, `plot_summary_bad_segs`, `plot_summary_bad_chans`, `plot_artefact_scan`, `print_scan_summary`, `plot_events`, `plot_custom_figures` | Done (2026-10-17) in `preproc/qc.py`: `plot_flowchart`, `plot_raw_data`, `plot_sum_square`, `plot_sensors`, `plot_channel_stds` (+ `plot_channel_dists`), `plot_spectra`, `plot_frequency_bands`, `plot_digitisation`, `plot_head_movement`, `plot_eog`, `plot_ecg`, `plot_bad_ica`, `plot_events`, `plot_artefact_scan`, `print_scan_summary`; custom figures are saved by `save_qc_plots`. `plot_summary_bad_segs`/`plot_summary_bad_chans` are the sortable table columns. `gen_html_*` and the per-subject pages dropped (the table report). `gen_report_from_fif` kept. |
+| `report.src_report` | `gen_html_*`, `plot_config`, `plot_parcellation`, `plot_sign_flipping_results`, `add_to_data`, `update_config` | Done (2026-10-17): `plot_sign_flipping_results` is the group step's sign_flip.webp (before/after correlation per session); `plot_parcellation` is `parcellation.plot_parcellation`; `plot_config` dropped (the preprocessing flowchart already draws the config, and the source-recon config is in the logs); `gen_html_*`/`add_to_data`/`update_config` dropped (summary.json per step and the table report). |
 | `source_recon.batch` | `run_src_chain`, `run_src_batch`, `load_config`, `find_func` | Keep `run_src_chain`/`run_src_batch` as warning wrappers over the pipeline and `load_config` (read by the v2 report until phase 5); `find_func` replaced by the registry. Done. |
 | `source_recon.wrappers` | all 19 config step names | Kept as steps (done; the v2 aliases removed under D19): `extract_fiducials_and_headshape` (was `extract_polhemus_from_info`/`extract_fiducials_from_fif`) and `_from_pos`/`_from_elc`, `remove_stray_headshape_points`, `save_mni_fiducials`, `extract_surfaces` (was `compute_surfaces`, per subject), `make_watershed_bem`, `coregister`, `forward_model`, `beamform`, `minimum_norm`, `parcellate` (with `source_method`), `beamform_and_parcellate`/`minimum_norm_and_parcellate` (combined steps), `fix_sign_ambiguity`, and `sign_flip` as the group step. `find_template_subject` is the template choice inside `sign_flip`. `rescale_sensor_positions` kept (`rhino.rescale_sensor_positions` and the step; `examples/eeg` uses it). `extract_rhino_files`: dropped, it migrated pre-2.x derivatives into the v2 layout and report. |
 | `source_recon.rhino.coreg` | `coreg`, `coreg_metrics`, `coreg_display`, `bem_display`, `apply_head2mni_xform`, `get_coreg_filenames` | Ported: `coregister_head_and_mri`, `coreg_error`/`coreg_rms` (+ `coreg.json`), `plot_coregistration`, `CoregFilenames`. `bem_display` is covered by the BEM check in `forward_model` and `repair_bem_surfaces`; `apply_head2mni_xform` by the MNI grid the forward model is built on (`_get_source_coords_mni`). Done. |
@@ -917,6 +917,7 @@ osl_ephys/
   preproc/       phase 6: the `preproc` section
     functions.py       ported meeg/preproc.py + kept osl-ephys functions
     steps.py           every `preproc` step, registered
+    qc.py              (done) the preprocessing QC plots and summary.json for the report
     amm.py             ported meeg/amm.py
     ica/               plot_ica GUI, the manual-ICA review server, one apply function
     semp/              from #452
@@ -943,9 +944,7 @@ osl_ephys/
   group/               the `group` section
     sign_flipping.py   ported data/sign_flipping.py + the scho97 solvers + template selection
     steps.py           sign_flip, and fix_sign_ambiguity (registered under parcellation)
-  report/              phase 5
-    report.py          ported meeg/report.py: generate_report, TABS, CAPTIONS
-    qc.py              the osl-ephys QC plots that osl-dynamics lacks
+  report.py            (done) the QC report: generate_report, TABS, CAPTIONS, save_figure, save_summary, headless
   glm/                 kept as is
   utils/               logger.py, plotting.py, processing.py, spectral.py, topoplots.py, misc.py, simulate.py
   tests/
@@ -956,7 +955,7 @@ Gone by the end: `preproc/batch.py` and `source_recon/batch.py`
 `preproc/mne_wrappers.py` and `osl_wrappers.py` (merged into
 `steps.py`, same function names), `source_recon/rhino.py`,
 `source_recon/session.py` (top-level `session.py`), `report/preproc_report.py`,
-`src_report.py` and `templates/`, `utils/parallel.py`, `utils/spmio/`,
+`src_report.py` and `templates/` (done: `report/` is the module `report.py`), `utils/parallel.py`, `utils/spmio/`,
 `utils/opm.py`, `utils/study.py` and `utils/file_handling.py` (moved to
 `io/`, done 2026-10-16; `opm.py` lost a dead `if False:` block of
 unfinished plotting code). Already gone (2026-10-16): the per-subpackage README.md files
@@ -1105,7 +1104,7 @@ Risks: the largest phase; the FreeSurfer route has no test data (no
 surface files in osl-files), so it is kept working by inspection and a
 skipped test until a small FreeSurfer example exists.
 
-### Phase 5: `report/` in the table style
+### Phase 5: `report/` in the table style (done 2026-10-17)
 
 Goal: one `qc/report.html` across sessions, built from what each step
 saved, replacing the per-subject jinja2 pages.
@@ -1147,6 +1146,29 @@ saved, replacing the per-subject jinja2 pages.
 Done when: a batch run of the test recordings produces a report whose
 table sorts by each metric and whose session view shows every plot the v2
 report had for the same data.
+
+Done 2026-10-17: `report.py` (one module: generate_report, TABS, CAPTIONS,
+METRICS, save_figure, save_summary, headless) and `preproc/qc.py` (every v2
+`plot_*` as a function returning the figure, `scan_summary`,
+`save_qc_plots` writing summary.json + WebP to qc/preproc/<id>/,
+`gen_report_from_fif`, `plot_artefact_scan` kept as a standalone function).
+The tabs: Preprocessing, Spectra, Artefacts, Acquisition, Surfaces, MNI
+Registration, Coregistration, Parcellation, Sign flipping, plus a Custom
+tab discovered from custom_*.webp files. The table columns: bad segments
+(%), bad channels, ICA excluded, EOG/ECG event counts, head movement (mm,
+from cHPI at 1 s steps when recorded), MNI registration/overlap/MI, coreg
+rms, sign flip correlation. The group `sign_flip` step writes
+qc/sign_flip/summary.json (template + before/after correlation per
+session) and sign_flip.webp; parcellation writes qc/parc/<id>/summary.json
+next to its plots. The surfaces and coregistration plots stay PNG with the
+derivatives and are copied to WebP by the report. Saving QC plots runs
+under the Agg backend (`report.headless`) so no window opens.
+`preproc_report.py`, `src_report.py`, `templates/`, jinja2 and tabulate
+are gone. `ica_label` regenerates the session's ICA plot under qc/ (phase
+6 rewrites the script). Not done: per-channel-type bad segment columns are
+in summary.json (bad_percent_mag etc.) but not in the table; empty-parcel
+counts (D17) are not recorded yet because `parcellate` only warns about
+them.
 
 ### Phase 6: `preproc/` and `maxfilter/`
 

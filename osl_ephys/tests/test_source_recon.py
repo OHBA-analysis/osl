@@ -50,6 +50,10 @@ def test_source_reconstruction_on_mni152_surfaces(sessions, tmp_path):
         assert len(mne.pick_types(parc.info, misc=True)) == 52
         assert (tmp_path / id_ / f"{id_}_sflip_parc-raw.fif").exists()
     assert (tmp_path / "qc" / "parc" / "elekta" / "psd_topo.webp").exists()
+    assert (tmp_path / "qc" / "coreg" / "elekta" / "coreg.webp").exists()
+    assert (tmp_path / "qc" / "sign_flip" / "sign_flip.webp").exists()
+    report = (tmp_path / "qc" / "report.html").read_text()
+    assert "Coreg rms (mm)" in report and "Sign flip corr" in report
 
 
 MINIMUM_NORM_CONFIG = """

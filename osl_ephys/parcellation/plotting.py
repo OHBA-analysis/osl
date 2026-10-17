@@ -115,6 +115,14 @@ def save_qc_plots(
     output_dir = Path(qc_dir) / "parc" / id
     output_dir.mkdir(parents=True, exist_ok=True)
 
+    from osl_ephys.report import headless
+
+    with headless():
+        _save_qc_plots(output_dir, parc_fif, parcellation_file, power_maps, show, cmap)
+
+
+def _save_qc_plots(output_dir, parc_fif, parcellation_file, power_maps, show, cmap):
+    from osl_ephys.report import save_summary
     from osl_ephys.utils import spectral as power
     from osl_ephys.utils.plotting import plot_psd_topo, plot_brain_surface
 
@@ -127,6 +135,14 @@ def save_qc_plots(
         parc_ts = parc_raw.get_data(picks="misc", reject_by_annotation="omit")
 
     fs = parc_raw.info["sfreq"]
+    save_summary(
+        output_dir,
+        {
+            "n_parcels": int(parc_ts.shape[-2]),
+            "parcellation_file": str(parcellation_file),
+            "sfreq": float(fs),
+        },
+    )
     f, psd = scipy.signal.welch(parc_ts, fs=fs, nperseg=fs, nfft=fs * 2)
     if psd.ndim == 3:
         # Average over epochs
@@ -176,7 +192,10 @@ def save_qc_plots(
         ax.axis("off")
     composite_fig.tight_layout()
     composite_fig.savefig(
-        str(output_dir / "power_maps.webp"), dpi=150, bbox_inches="tight"
+        str(output_dir / "power_maps.webp"),
+        dpi=100,
+        bbox_inches="tight",
+        pil_kwargs={"quality": 80},
     )
     if not show:
         plt.close(composite_fig)

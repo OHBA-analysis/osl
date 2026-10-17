@@ -129,10 +129,11 @@ def run_batch(
             extra_funcs,
             covs,
             overwrite,
+            qc_dir,
         )
 
     if qc_dir is not None:
-        _summary_reports(config, qc_dir, log_dir)
+        _report(qc_dir, sessions, outdir)
     return results
 
 
@@ -157,7 +158,7 @@ def _split_by_scope(config, extra_funcs):
     return subject_config, session_config
 
 
-def _run_group(config, sessions, outdir, extra_funcs, covs, overwrite):
+def _run_group(config, sessions, outdir, extra_funcs, covs, overwrite, qc_dir):
     """The group section, on the outputs of the sessions that finished."""
     from osl_ephys.preproc.batch import write_dataset
 
@@ -169,6 +170,7 @@ def _run_group(config, sessions, outdir, extra_funcs, covs, overwrite):
         "fig": {},
         "sessions": sessions,
         "outdir": outdir,
+        "qc_dir": qc_dir,
     }
     inputs = set(dataset)
     for name, userargs in cfg.steps(config, "group"):
@@ -191,18 +193,8 @@ def _run_group(config, sessions, outdir, extra_funcs, covs, overwrite):
         )
 
 
-def _summary_reports(config, qc_dir, log_dir):
-    """The v2 summary pages, until phase 5 replaces them."""
-    if cfg.steps(config, "preproc") and (qc_dir / "preproc").exists():
-        from osl_ephys.report import preproc_report
+def _report(qc_dir, sessions, outdir):
+    """The QC report across sessions, from what the steps saved."""
+    from osl_ephys.report import generate_report
 
-        preproc_report.gen_html_page(qc_dir / "preproc")
-        preproc_report.gen_html_summary(qc_dir / "preproc", log_dir)
-    if (
-        any(cfg.steps(config, s) for s in ("coreg", "source_recon", "parcellation"))
-        and (qc_dir / "src").exists()
-    ):
-        from osl_ephys.report import src_report
-
-        src_report.gen_html_page(qc_dir / "src")
-        src_report.gen_html_summary(qc_dir / "src")
+    generate_report(qc_dir, sessions, outdir)

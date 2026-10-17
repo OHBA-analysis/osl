@@ -58,4 +58,6 @@ def test_run_batch_writes_outputs_and_isolates_failures(sessions, tmp_path):
 def test_run_batch_with_the_report(sessions, tmp_path):
     results = run_batch(CONFIG, sessions[:1], tmp_path, n_workers=1)
     assert results[0][1] == "ok"
-    assert (tmp_path / "qc" / "preproc" / "subject_report.html").exists()
+    assert (tmp_path / "qc" / "report.html").exists()
+    assert (tmp_path / "qc" / "preproc" / "elekta" / "summary.json").exists()
+    assert (tmp_path / "qc" / "preproc" / "elekta" / "psd.webp").exists()

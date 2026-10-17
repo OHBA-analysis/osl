@@ -42,8 +42,7 @@ classifiers = [
 ]
 
 # The same set as osl-dynamics without TensorFlow and the packages only its
-# models use, plus what the GLM module needs. tabulate and jinja2 go when the
-# reports are replaced.
+# models use, plus what the GLM module needs.
 dependencies = [
     "fslpy",
     "glmtools",
@@ -51,7 +50,6 @@ dependencies = [
     # MNE's off-screen 3D backend, used for the coregistration plots
     "ipyevents",
     "ipywidgets",
-    "jinja2",
     "matplotlib",
     "mne",
     "mne-icalabel[onnx]",
@@ -71,7 +69,6 @@ dependencies = [
     "scikit-image",
     "scikit-learn",
     "scipy",
-    "tabulate",
     "trame",
     "trame-vtk",
     "trame-vuetify",

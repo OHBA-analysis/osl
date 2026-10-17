@@ -187,30 +187,18 @@ def _run_preproc(config, dataset, qc_dir, extra_funcs, overwrite):
 
 
 def _preproc_report(dataset, qc_dir, outnames):
-    """The per-session preprocessing QC, with the old report until phase 5."""
-    import matplotlib
+    """The per-session preprocessing QC: the numbers and plots for the report."""
+    from osl_ephys.preproc.qc import save_qc_plots
 
-    from osl_ephys.report import gen_html_data, gen_html_page
-
-    report_dir = Path(qc_dir) / "preproc"
-    data_dir = report_dir / dataset["session"]["id"]
-    data_dir.mkdir(parents=True, exist_ok=True)
-    backend = matplotlib.get_backend()
-    matplotlib.use("Agg")
-    try:
-        gen_html_data(
-            dataset["raw"],
-            data_dir,
-            ica=dataset["ica"],
-            events=dataset["events"],
-            event_id=dataset["event_id"],
-            preproc_fif_filename=outnames["raw"],
-            run_id=dataset["session"]["id"],
-            custom_figures=dataset["fig"] or None,
-        )
-        gen_html_page(report_dir)
-    finally:
-        matplotlib.use(backend)
+    save_qc_plots(
+        qc_dir,
+        dataset["session"]["id"],
+        dataset["raw"],
+        ica=dataset["ica"],
+        events=dataset["events"],
+        event_id=dataset["event_id"],
+        custom_figures=dataset["fig"] or None,
+    )
 
 
 def _run_source_recon(
