@@ -65,7 +65,7 @@ def _bad_segment_spans(raw):
 
 def plot_flowchart(raw, filename=None):
     """The preprocessing steps recorded in the file, as a flowchart per run."""
-    from osl_ephys.preproc.batch import get_config_from_fif, plot_preproc_flowchart
+    from osl_ephys.preproc.dataset import get_config_from_fif, plot_preproc_flowchart
 
     if not raw.info.get("description"):
         return None
@@ -606,8 +606,10 @@ def scan_summary(raw):
     summary["bad_percent"] = round(float(100 * bad.mean()), 1)
     for modality, inds in per_type.items():
         summary[f"bad_percent_{modality}"] = round(float(100 * inds.mean()), 1)
-    summary["bad_channels"] = list(raw.info["bads"])
-    summary["n_bad_channels"] = len(raw.info["bads"])
+    # Interpolated channels are kept in info["temp"] by the interpolate_bads step
+    bads = raw.info["bads"] or (raw.info.get("temp") or {}).get("bads", [])
+    summary["bad_channels"] = list(bads)
+    summary["n_bad_channels"] = len(bads)
     return summary
 
 
@@ -792,7 +794,7 @@ def gen_report_from_fif(infiles, qc_dir, outdir=None, ftype=None, plots="all"):
     path : Path
         The report.
     """
-    from osl_ephys.preproc.batch import read_dataset
+    from osl_ephys.preproc.dataset import read_dataset
     from osl_ephys.report import generate_report
 
     if isinstance(infiles, (str, Path)):

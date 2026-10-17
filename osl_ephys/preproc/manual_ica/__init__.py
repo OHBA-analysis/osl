@@ -8,7 +8,7 @@ are written back to ``label.txt`` / ``bads.txt`` by the bundled review
 server (``osl-ica-review``) and applied via ``osl-ica-apply``.
 
 Because ``manual_ica`` is now resolved through osl-ephys's
-``find_func`` (``run_osl_manual_ica`` in ``osl_wrappers``), an
+the step registry (``manual_ica`` in ``preproc/steps.py``), an
 osl-ephys config can use it directly without passing it via
 ``extra_funcs``::
 

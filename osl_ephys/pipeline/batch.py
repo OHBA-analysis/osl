@@ -160,7 +160,7 @@ def _split_by_scope(config, extra_funcs):
 
 def _run_group(config, sessions, outdir, extra_funcs, covs, overwrite, qc_dir):
     """The group section, on the outputs of the sessions that finished."""
-    from osl_ephys.preproc.batch import write_dataset
+    from osl_ephys.preproc.dataset import write_dataset
 
     logger.info(f"Running the group steps on {len(sessions)} sessions")
     paths = [manifest.output_paths(s, outdir) for s in sessions]

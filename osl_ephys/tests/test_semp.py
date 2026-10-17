@@ -16,7 +16,7 @@ import pytest
 
 mne.set_log_level("ERROR")
 
-from osl_ephys.preproc.batch import find_func
+from osl_ephys.pipeline import registry
 from osl_ephys.preproc.semp.wrappers.epoching import (
     create_epoch,
     create_TR_epoch,
@@ -81,17 +81,18 @@ def _dataset():
         "epoch_aas",
         "crop_TR",
         "manual_ica",
-        "apply_ica",
+        "apply_manual_ica",
     ],
 )  # these two live in preproc.manual_ica
 def test_wrappers_resolve_by_name(name):
-    assert find_func(name).__name__ == f"run_osl_{name}"
+    assert registry.find_function(name, "preproc").func.__name__ == name
 
 
 def test_removed_names_do_not_resolve():
     # renamed / relocated in the 2026-07 cleanup
-    assert find_func("slice_ica") is None
-    assert find_func("set_channel_type_raw") is None
+    for name in ("slice_ica", "set_channel_type_raw"):
+        with pytest.raises(LookupError):
+            registry.find_function(name, "preproc")
 
 
 def test_create_TR_epoch_fixed_window():

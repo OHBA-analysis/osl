@@ -15,7 +15,7 @@ Layout
   the standalone ``osl_pathfinder.Pathfinder``.)
 
 There is no ``batch`` re-export any more: every wrapper is registered as
-``run_osl_<name>`` in ``osl_ephys.preproc.osl_wrappers``, so the plain
+a step in ``osl_ephys.preproc.steps``, so the plain
 ``osl_ephys.preproc.run_proc_batch`` resolves them by name -- import it
 from there directly.
 
@@ -49,7 +49,7 @@ from .metric import EEGTracer, psd_band_ratio, psd_band_stat, mean_psd_in_band
 # The project ``initialize`` extra_func is NOT provided by semp -- copy the
 # template from the semp EEG-fMRI tutorial and adapt it to your acquisition.
 
-# --- Preprocessing wrappers (resolved by name through osl-ephys find_func) ---
+# The preprocessing wrappers, resolved by name through the step registry
 # (``apply_ica`` now lives in osl_ephys.preproc.manual_ica -- it belongs
 # with the manual ICA review pipeline, not the automatic semp path.)
 from .wrappers import (

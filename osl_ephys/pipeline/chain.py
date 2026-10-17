@@ -143,7 +143,7 @@ def _as_session(session) -> dict:
 
 def _run_preproc(config, dataset, qc_dir, extra_funcs, overwrite):
     """The preprocessing section: load, run the steps, write, report."""
-    from osl_ephys.preproc.batch import (
+    from osl_ephys.preproc.dataset import (
         append_preproc_info,
         import_data,
         write_dataset,

@@ -6,7 +6,7 @@
 #       <method>" -- epoch_aas, epoch_obs, epoch_ssp.
 # (start_timer/end_timer/cleanup/summary/ckpt_report are standalone verbs.)
 # Renaming existing wrappers is a breaking change -- every config references
-# them by name and osl_wrappers.py builds a run_osl_<name> stub per name -- so
+# them by name and preproc/steps.py registers a step per name -- so
 # this governs *new* wrappers, not a churn of the current ones.
 
 from .misc import voltage_correction, cleanup, mid_crop

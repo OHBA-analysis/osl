@@ -1,21 +1,30 @@
 """Sensor-level preprocessing.
 
-The steps of the ``preproc`` section of a config: MNE methods on Raw and
-Epochs (``filter``, ``resample``, ``epochs``, ...), the osl-ephys detectors
-for bad segments and channels, ICA with automatic or manual labelling, and
-the GLM steps. See :mod:`osl_ephys.pipeline` for running a config.
+The steps of the ``preproc`` section of a config (:mod:`~osl_ephys.preproc.steps`):
+MNE methods on Raw and Epochs (``filter``, ``resample``, ``epochs``, ...),
+the detectors for bad segments, channels and epochs, ICA with automatic,
+correlation-based or manual labelling, headshape decimation and the GLM
+steps. The functions behind them are in :mod:`~osl_ephys.preproc.functions`,
+the reading and writing of a session's files in
+:mod:`~osl_ephys.preproc.dataset` and the QC plots in
+:mod:`~osl_ephys.preproc.qc`.
 """
 
-#!/usr/bin/python
-
-from . import mne_wrappers
-from . import osl_wrappers
-
-from .batch import *
-from .plot_ica import *
-
-# Every wrapper is a step of the preproc section, by its name without the prefix
-from osl_ephys.pipeline import registry as _registry
-
-_registry.register_module(mne_wrappers, "preproc")
-_registry.register_module(osl_wrappers, "preproc")
+from osl_ephys.preproc.functions import (
+    gesd,
+    detect_artefacts,
+    detect_bad_segments,
+    detect_bad_channels,
+    detect_bad_channels_psd,
+    detect_maxfilt_zeros,
+    drop_bad_epochs,
+    ica_label,
+    ica_ecg_eog_correlation,
+    decimate_headshape_points,
+)
+from osl_ephys.preproc.dataset import (
+    import_data,
+    read_dataset,
+    write_dataset,
+    plot_preproc_flowchart,
+)
