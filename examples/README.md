@@ -6,8 +6,13 @@ the sessions (a list of dicts in `sessions.py`, or a CSV file with the
 same columns) and a config at the top, then `run_batch`, which runs the
 config on every session in parallel, writes a log per session and the QC
 report (`data/qc/report.html`). The stages are separate scripts so the
-report can be checked between them, but their sections can be put in one
-config and run in one go.
+report can be checked between them: MaxFilter (on the computer with the
+licence; the preprocessing script carries the same section, which is
+skipped once the output exists), preprocessing, the head model
+(surfaces, coregistration and forward model, the stage to rerun when the
+coregistration looks off), beamforming and parcellation, and the sign
+flipping across sessions. Their sections can also be put in one config
+and run in one go, as in `oxford/no_viz`.
 
 - `elekta/`, `ctf/`, `eeg/`, `opm/`: one pipeline per scanner type.
 - `oxford/`: the pipelines for data from the OHBA scanner, differing in

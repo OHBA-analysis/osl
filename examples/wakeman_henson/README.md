@@ -13,14 +13,15 @@ and install FSL. The scripts run in the order they appear in the paper:
    sessions were refined by hand (`osl-ephys ica review data <id> --reject
    all`, for the ids listed in the script); every other session is then
    cleaned with `osl-ephys ica apply data`.
-2. `2_source_reconstruct.py`: surfaces, coregistration, forward model,
-   beamforming and parcellation with the 52-parcel Glasser atlas.
-3. `3_sign_flip.py`: the dipole sign ambiguity across sessions.
-4. `4_stats.py`: a GLM per session on the epoched parcel time courses
+2. `2_coregister.py`: surfaces, coregistration and the forward model.
+3. `3_source_reconstruct.py`: beamforming and parcellation with the
+   52-parcel Glasser atlas.
+4. `4_sign_flip.py`: the dipole sign ambiguity across sessions.
+5. `5_stats.py`: a GLM per session on the epoched parcel time courses
    (famous, unfamiliar and scrambled faces) and a group GLM with a
    max-statistic permutation test of the mean response.
 
-`freesurfer_route.py` is the surface-based alternative to step 2:
+`freesurfer_route.py` is the surface-based alternative to steps 2 and 3:
 FreeSurfer's recon-all and watershed BEM, MNE's coregistration, a surface
 forward model, minimum norm and the aparc parcellation. It needs FreeSurfer
 and takes hours per subject.

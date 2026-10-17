@@ -1,11 +1,10 @@
-"""Forward model, beamforming and parcellation for EEG."""
+"""Beamform and parcellate the EEG."""
 
 from osl_ephys.pipeline import run_batch
 from sessions import sessions
 
 config = """
 source_recon:
-  - forward_model: {model: Triple Layer, eeg: true}
   - beamform: {chantypes: eeg, rank: {eeg: 40}, frequency_range: [1, 40]}
 parcellation:
   - parcellate:
