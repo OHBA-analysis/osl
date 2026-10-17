@@ -491,7 +491,7 @@ Detailed steps and the target layout: section 11.
 - `utils.spmio`, `utils.study`, `utils.opm`: keep; `utils.simulate` reads the
   template from osl-files.
 
-### Phase 7: Tests and GitHub Actions  (todo: tests)
+### Phase 7: Tests and GitHub Actions  (done 2026-10-17)
 
 Detailed steps and the target layout: section 11.
 
@@ -1234,9 +1234,9 @@ Done when: the preprocessing section of the config runs every step on the
 test recordings, and the ICA review round-trips a label file through both
 the GUI's save path and the server's.
 
-### Phase 7: tests
+### Phase 7: tests (done 2026-10-17)
 
-Flaky: `test_batch_preproc.py::TestPreprocessingBatch::test_batch_mixes_existing_and_new_outputs` failed once in a full run on 2026-10-16 and passed on rerun; find the order or timing dependence.
+Flaky: `test_batch_preproc.py::TestPreprocessingBatch::test_batch_mixes_existing_and_new_outputs` failed once in a full run on 2026-10-16 (when it still went through the v2 wrapper) and passed on rerun; rewritten on `run_batch` it passed five isolated runs and every full run since, so it is treated as gone.
 
 Tests are written in each phase above; this phase is the top-up and the
 CI shape.
@@ -1256,6 +1256,21 @@ CI shape.
    or larger runner can run them later.
 4. `osl-ephys check` (#425): imports every subpackage, prints versions,
    fetches one test file, runs a 10-second preprocessing chain.
+
+Done 2026-10-17: `conftest.py` (Agg backend, session-scoped `recordings`
+and `two_sessions` fixtures, the `fsl` and `freesurfer` markers skipped
+without `FSLDIR`/`FREESURFER_HOME`); `test_preproc_steps.py` (configs
+exercising the preproc steps on each of the four recordings, the
+unknown-option error, the rectified-signal warning);
+`test_parcellation_maths.py` (PCA and centroid parcel time courses on the
+parcellation's own voxels, symmetric orthogonalisation, dipole counts);
+`test_sign_flipping.py` (coordinate ascent and the spectral and SDP
+solvers recover known flips); `test_cli.py` (every subcommand's `--help`,
+which caught that `func` had no parser); `test_fsl.py` (surface
+extraction on the MNI152 brain, 3 minutes, passes locally; skipped in
+CI); the two source-reconstruction tests carry the `fsl` marker too, as
+the coregistration needs FLIRT even on the MNI152 surfaces; the osl-files data cached between CI runs. The FreeSurfer-route
+test stays conditional on MNE's fsaverage being downloaded. 152 tests.
 
 ### Phase 8: examples and docs
 

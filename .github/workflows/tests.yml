@@ -28,5 +28,16 @@ jobs:
       - name: Install the package
         run: python -m pip install -e ".[dev]"
 
+      # The test recordings and parcellations from osl-files, fetched once
+      - name: Cache the osl-files data
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.cache/osl-files
+            ~/Library/Caches/osl-files
+          key: osl-files-${{ runner.os }}-${{ hashFiles('osl_ephys/files/_fetch.py') }}
+
       - name: Run the tests
+        env:
+          MPLBACKEND: Agg
         run: pytest osl_ephys/tests

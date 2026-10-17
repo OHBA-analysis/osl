@@ -309,6 +309,11 @@ def main(argv=None) -> int:
     )
     apply.set_defaults(func=_ica_apply)
 
+    fn = sub.add_parser("func", help="call a function of the package")
+    fn.add_argument("function", help="e.g. osl_ephys.rhino.setup_fsl")
+    fn.add_argument("arguments", nargs="*", help="its arguments, as strings")
+    fn.set_defaults(func=_func)
+
     sub.add_parser(
         "download-data", help="download every data file, for use offline"
     ).set_defaults(func=_download_data)

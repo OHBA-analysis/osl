@@ -107,3 +107,9 @@ include-package-data = true
 skip = '.git*,*.pdf,*.gii,*.scene,*.html,*.yml,*.tree'
 check-hidden = true
 ignore-words-list = 'fo,fro,commun,nd,ser,ans,aas'
+
+[tool.pytest.ini_options]
+markers = [
+    "fsl: needs FSL (skipped unless FSLDIR is set)",
+    "freesurfer: needs FreeSurfer (skipped unless FREESURFER_HOME is set)",
+]

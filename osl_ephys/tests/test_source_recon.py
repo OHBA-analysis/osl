@@ -34,6 +34,7 @@ def sessions():
     ]
 
 
+@pytest.mark.fsl
 def test_source_reconstruction_on_mni152_surfaces(sessions, tmp_path):
     results = run_batch(CONFIG, sessions, tmp_path, n_workers=2)
     assert {s for _, s, _, _ in results} == {"ok"}, results
@@ -74,6 +75,7 @@ parcellation:
 """
 
 
+@pytest.mark.fsl
 def test_volumetric_minimum_norm_on_mni152_surfaces(sessions, tmp_path):
     results = run_batch(
         MINIMUM_NORM_CONFIG, sessions[:1], tmp_path, n_workers=1, qc_dir=False
