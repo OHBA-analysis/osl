@@ -30,7 +30,7 @@ def test_manual_ica_without_mr_timing_omits_ga_scores(
     monkeypatch.setattr(mne, "__version__", mne_version)
     # Reproduce CI's removed private method even in the older local install.
     monkeypatch.delattr(mne.preprocessing.ICA, "_get_ctps_threshold", raising=False)
-    ica_module = importlib.import_module("osl_ephys.preproc.manual_ica.ica")
+    ica_module = importlib.import_module("osl_ephys.preproc.ica.manual.ica")
     rng = np.random.RandomState(7)
     names = ["Fz", "Cz", "Pz", "Oz"] + (["EOGU", "EOGL", "ECG"] if with_aux else [])
     types = ["eeg"] * 4 + (["eog", "eog", "ecg"] if with_aux else [])
@@ -105,13 +105,13 @@ def test_manual_ica_without_mr_timing_omits_ga_scores(
 
 @pytest.mark.parametrize("threshold", [-0.1, 3.0, np.nan])
 def test_manual_ica_rejects_invalid_correlation_threshold(threshold):
-    ica_module = importlib.import_module("osl_ephys.preproc.manual_ica.ica")
+    ica_module = importlib.import_module("osl_ephys.preproc.ica.manual.ica")
     with pytest.raises(ValueError, match="absolute correlation threshold"):
         ica_module.manual_ica({}, {"eog_threshold": threshold})
 
 
 @pytest.mark.parametrize("threshold", ["auto", -0.1, np.nan])
 def test_manual_ica_rejects_invalid_ctps_threshold(threshold):
-    ica_module = importlib.import_module("osl_ephys.preproc.manual_ica.ica")
+    ica_module = importlib.import_module("osl_ephys.preproc.ica.manual.ica")
     with pytest.raises(ValueError, match="numeric CTPS threshold"):
         ica_module.manual_ica({}, {"ecg_threshold": threshold})

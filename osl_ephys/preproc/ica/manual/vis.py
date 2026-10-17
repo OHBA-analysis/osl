@@ -16,7 +16,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 from matplotlib.ticker import MultipleLocator
 import mne
-from ...utils.logger import log_or_print
+from osl_ephys.utils.logger import log_or_print
 
 from .helpers import _good_mask
 

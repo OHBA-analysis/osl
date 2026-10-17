@@ -77,7 +77,16 @@ def _purge_review_assets(subject_dir):
     return n_removed, freed
 
 
-def apply_one(ica_root, raw_root, subject, overwrite=False, purge_svgs=False):
+def apply_one(
+    ica_root,
+    raw_root,
+    subject,
+    overwrite=False,
+    purge_svgs=False,
+    raw_path=None,
+    ica_path=None,
+    out_path=None,
+):
     """Apply review decisions for one subject.
 
     Parameters
@@ -94,22 +103,27 @@ def apply_one(ica_root, raw_root, subject, overwrite=False, purge_svgs=False):
         After a successful apply, delete the per-IC SVGs + HTML review
         pages under ``<ica_root>/<subject>/`` (keeps label.txt / bads.txt).
         On a typical Staresina subject this frees ~50-200 MB.
+    raw_path, ica_path, out_path : path-like, optional
+        The data, ICA and output files, instead of the ``raw_root`` layout
+        (the ``osl-ephys ica apply`` command passes the run's layout).
 
     Returns a status string (``ok ...`` or ``skip ...`` / ``error ...``)
     suitable for printing in batch mode.
     """
     ica_root = Path(ica_root)
-    raw_root = Path(raw_root)
-    raw_path = raw_root / subject / f"{subject}{RAW_SUFFIX}"
-    ica_path = raw_root / subject / f"{subject}{ICA_SUFFIX}"
+    if raw_root is not None:
+        raw_root = Path(raw_root)
+        raw_path = raw_path or raw_root / subject / f"{subject}{RAW_SUFFIX}"
+        ica_path = ica_path or raw_root / subject / f"{subject}{ICA_SUFFIX}"
+        out_path = out_path or raw_root / subject / f"{subject}{OUT_SUFFIX}"
+    raw_path, ica_path, out_path = Path(raw_path), Path(ica_path), Path(out_path)
     label_path = ica_root / subject / "label.txt"
     bads_path = ica_root / subject / "bads.txt"
-    out_path = raw_root / subject / f"{subject}{OUT_SUFFIX}"
 
     missing = [p for p in (raw_path, ica_path, label_path) if not p.exists()]
     if missing:
         return f"skip --- missing: {[p.name for p in missing]}"
-    if out_path.exists() and not overwrite:
+    if out_path.exists() and not overwrite and out_path != raw_path:
         return f"skip --- exists: {out_path.name}"
 
     ica = mne.preprocessing.read_ica(ica_path, verbose=False)

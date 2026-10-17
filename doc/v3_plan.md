@@ -704,11 +704,11 @@ line in its scope says "undecided".
 
 | Module | Public names | Disposition |
 | --- | --- | --- |
-| CLIs | `osl_maxfilter`, `osl_ica_label`, `osl_ica_apply`, `osl_preproc`, `osl_func`, `osl-ica-review`, `osl-ica-apply` | Every command survives as an `osl-ephys` subcommand; the old script names are removed as each subcommand lands (D19; `osl_preproc` and `osl_func` removed 2026-10-16). The two ICA review/apply pairs (`osl_ica_label`/`osl_ica_apply` and the SEMP `osl-ica-review`/`osl-ica-apply` from #452) are merged into one pair (decided 2026-10-15): one CLI that opens the review, one that applies, covering both the fif-based and the manual-label workflows. |
+| CLIs | `osl_maxfilter`, `osl_ica_label`, `osl_ica_apply`, `osl_preproc`, `osl_func`, `osl-ica-review`, `osl-ica-apply` | Done (2026-10-17): every command is an `osl-ephys` subcommand (`run`, `maxfilter`, `ica review`, `ica apply`, `func`, `download-data`, `check`) and the old script names are gone (D19). The two ICA review/apply pairs (`osl_ica_label`/`osl_ica_apply` and the SEMP `osl-ica-review`/`osl-ica-apply` from #452) are merged into one pair (decided 2026-10-15): one CLI that opens the review, one that applies, covering both the fif-based and the manual-label workflows. |
 | `preprocessing.batch` | `run_proc_chain`, `run_proc_batch`, `load_config`, `find_func`, `check_config_versions`, `get_config_from_fif`, `append_preproc_info`, `import_data`, `read_dataset`, `write_dataset`, `plot_preproc_flowchart`, `print_custom_func_info` | Keep; `run_proc_batch` becomes a wrapper over `run_batch` (phase 3), `find_func`/`load_config` become the shared registry. Config provenance in the fif (`get_config_from_fif`, `append_preproc_info`) is kept. |
 | `preprocessing.mne_wrappers` | 23 `run_mne_*` steps | Keep all. |
 | `preprocessing.osl_wrappers` | `gesd`, `detect_artefacts`, `detect_maxfilt_zeros`, `bad_segments`, `bad_channels`, `drop_bad_epochs`, `detect_bad_channels_psd`, `run_osl_read_dataset`, `run_osl_bad_segments`, `run_osl_bad_channels`, `run_osl_drop_bad_epochs`, `run_osl_zscore_present_data`, `run_osl_glm_*` (4), `run_osl_manual_ica`, `run_osl_apply_ica` | Keep all wrappers. `gesd`/`bad_segments`/`bad_channels` are Port (osl-dynamics `detect_bad_segments`/`detect_bad_channels`, same GESD, with the #444 fixes carried over); `detect_maxfilt_zeros`, `drop_bad_epochs`, `detect_bad_channels_psd`, zscore and GLM steps have no osl-dynamics equivalent and are Keep. |
-| `preprocessing.ica_label`, `plot_ica`, `manual_ica.*` | `ica_label`, `apply`, `plot_ica`, `osl_MNEBrowseFigure`, `manual_ica`, `apply_ica`, review server | Keep (GUI and manual workflow; nothing in osl-dynamics). Add the mne-icalabel automatic route from osl-dynamics as a new wrapper. |
+| `preprocessing.ica_label`, `plot_ica`, `manual_ica.*` | `ica_label`, `apply`, `plot_ica`, `osl_MNEBrowseFigure`, `manual_ica`, `apply_ica`, review server | Done (2026-10-17): `preproc/ica/` holds the GUI (`gui.plot_ica`), the browser review package (`manual/`) and the shared `review_gui`/`serve_review`/`apply_review`; the automatic route is the `ica_label` step (mne-icalabel) and `ica_ecg_eog_correlation`. |
 | `preprocessing.semp.*` | AAS/OBS/SSP epoching, metrics, plots, tracer | Keep (merged from #452); scope of maintenance to be agreed with its author. |
 | `maxfilter` | `run_maxfilter`, `run_multistage_maxfilter`, `run_cbu_3stage_maxfilter`, `run_maxfilter_batch`, `quick_load_dig`, `fit_cbu_origin`, `main` | Port (osl-dynamics `run_maxfilter` covers standard, multistage, CBU 3-stage, chunking, split chains) behind the same CLI; `run_maxfilter_batch` keeps its file-list interface. |
 | `glm.*` | `glm_spectrum`, `glm_epochs`, group variants, permutation classes, readers, all `plot_*` | Keep all (osl-dynamics has no sensor GLM). Drop `glm_irasa` and the `irasa` option of `run_osl_glm_fit` (decided 2026-10-16): it was a thin wrapper around `sails.stft.glm_irasa`, which raises inside sails itself from 1.8 onwards and is unmaintained; keeping it meant pinning sails to 1.7. |
@@ -983,7 +983,7 @@ the old names are removed as each subcommand lands (D19):
 | `osl-ephys run config.yml sessions.csv outdir` | `osl_preproc`, and `run_src_batch` scripts |
 | `osl-ephys download-data` | (new) |
 | `osl-ephys check` | `utils.package.run_package_tests` |
-| `osl-ephys ica review`, `osl-ephys ica apply` | `osl_ica_label`/`osl_ica_apply` and `osl-ica-review`/`osl-ica-apply` (merged, decision 2026-10-15) |
+| `osl-ephys ica review`, `osl-ephys ica apply` | `osl_ica_label`/`osl_ica_apply` and `osl-ica-review`/`osl-ica-apply` (merged, decision 2026-10-15; done 2026-10-17) |
 | `osl-ephys maxfilter files.txt outdir --tsss ...` | `osl_maxfilter` (removed 2026-10-17); builds a one-section config (`maxfilter:`) and runs it, so it is the same code path as `osl-ephys run` |
 | `osl-ephys func` | `osl_func` |
 
@@ -1180,7 +1180,7 @@ epoch counts, the smallest number of dipoles in a parcel
 empty parcel itself is an error from `parcellate`) and the manifest's own
 extra columns.
 
-### Phase 6: `preproc/` and `maxfilter/`
+### Phase 6: `preproc/` and `maxfilter/` (done 2026-10-17)
 
 1. (done 2026-10-17) `preproc/functions.py`: port `meeg/preproc.py`. Map the old
    osl-ephys functions onto it: `gesd` and `bad_segments`/`bad_channels`
@@ -1195,10 +1195,20 @@ extra columns.
    is not ported: `preproc.qc.plot_bad_ica` shows the same components with
    their properties.
 3. (done 2026-10-17) `preproc/amm.py`: port, with the `amm` step.
-4. `preproc/ica/`: `plot_ica.py` (GUI) and `manual_ica/` (review
-   server, label files) side by side with one `apply` function; the two
-   CLI pairs become `osl-ephys ica review` and `osl-ephys ica apply`; the
-   old script names are removed (D19). The browser review page is the primary tool
+4. (done 2026-10-17) `preproc/ica/`: `gui.py` (the GUI, was `plot_ica.py`),
+   `manual/` (the browser review package, was `manual_ica/`), `review.py`
+   (`review_gui`, `serve_review`), `apply.py` (`apply_review`: the browser
+   labels when `outdir/ica/<id>/label.txt` exists, else the GUI's
+   `exclude`, written back to the preprocessed file and the QC ICA plot
+   updated) and `files.py` (the run's layout). The CLI is `osl-ephys ica
+   review outdir [ids] [--reject all|manual] [--browser]` and `osl-ephys
+   ica apply outdir [ids]`; the four script names are removed (D19). The
+   `manual_ica` and `apply_manual_ica` steps take the session id and the
+   run's output directory (`outdir/ica/<id>/`) unless an extra_func set
+   `subject`/`target_pth`. The GUI's Evoked branch called MNE internals
+   that no longer exist (`_butterfly_onpick`, `plt_show`); it now uses
+   MNE's `ICA.plot_sources` for Evoked input (the labelling GUI is for
+   Raw and Epochs). The browser review page is the primary tool
    and the GUI the alternative; the review server's label format is the
    one both workflows write.
 4b. `preproc/semp/` is outside this phase (D18, own board item): it
@@ -1216,7 +1226,9 @@ extra columns.
    the file-list-plus-flags interface by building that one-section config.
    Tests at the command-building level (no MaxFilter licence in CI).
 6. `glm/`: unchanged.
-7. Issues folded in: #373 (warn when filtering rectified signals), #440 done.
+7. (done 2026-10-17) Issues folded in: #373 (the `filter`, `notch_filter`
+   and `savgol_filter` steps warn when the data is non-negative everywhere,
+   as a rectified or power signal is), #440 done.
 
 Done when: the preprocessing section of the config runs every step on the
 test recordings, and the ICA review round-trips a label file through both

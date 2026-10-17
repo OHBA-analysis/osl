@@ -1,7 +1,8 @@
 """The ``osl-ephys`` command.
 
 Subcommands: ``run`` (a config over a manifest), ``maxfilter`` (MaxFilter
-a set of files, a one-section config), ``func`` (one function on one file),
+a set of files, a one-section config), ``ica review`` and ``ica apply`` (the
+hand-labelled ICA components), ``func`` (one function on one file),
 ``download-data`` (fetch every data file up front) and ``check`` (test the
 installation).
 """
@@ -110,6 +111,37 @@ def _maxfilter(args):
         config, files, args.outdir, n_workers=args.n_workers, qc_dir=False
     )
     return 1 if any(status == "failed" for _, status, _, _ in results) else 0
+
+
+def _ica_review(args):
+    from osl_ephys.preproc.ica import review_gui, serve_review
+    from osl_ephys.preproc.ica.files import sessions_with_ica
+
+    if args.browser:
+        serve_review(args.outdir, host=args.host, port=args.port)
+        return 0
+    ids = args.ids or sessions_with_ica(args.outdir)
+    for id_ in ids:
+        review_gui(
+            args.outdir,
+            id_,
+            reject=None if args.reject == "none" else args.reject,
+            run=args.run,
+        )
+    return 0
+
+
+def _ica_apply(args):
+    from osl_ephys.preproc.ica import apply_review
+    from osl_ephys.preproc.ica.files import sessions_with_ica
+
+    ids = args.ids or sessions_with_ica(args.outdir)
+    failed = 0
+    for id_ in ids:
+        message = apply_review(args.outdir, id_, run=args.run, purge=args.purge)
+        print(f"{id_}: {message}")
+        failed += not message.startswith("ok")
+    return 1 if failed else 0
 
 
 def main(argv=None) -> int:
@@ -231,6 +263,51 @@ def main(argv=None) -> int:
         help="print the commands without running them",
     )
     mf.set_defaults(func=_maxfilter)
+
+    ica = sub.add_parser(
+        "ica", help="review ICA components by hand and apply the labels"
+    )
+    ica_sub = ica.add_subparsers(dest="ica_command", required=True)
+    review = ica_sub.add_parser(
+        "review", help="label the components of a run's sessions"
+    )
+    review.add_argument("outdir", help="output directory of the run")
+    review.add_argument(
+        "ids", nargs="*", help="session ids (default: every session with an ICA)"
+    )
+    review.add_argument(
+        "--reject",
+        choices=["none", "all", "manual"],
+        default="none",
+        help="after the GUI: remove all labelled components, only those labelled now, or none",
+    )
+    review.add_argument(
+        "--run", type=int, default=1, help="which ICA of a session with several"
+    )
+    review.add_argument(
+        "--browser",
+        action="store_true",
+        help="serve the browser review pages of outdir/ica instead of the GUI",
+    )
+    review.add_argument("--host", default="127.0.0.1")
+    review.add_argument("--port", type=int, default=8000)
+    review.set_defaults(func=_ica_review)
+    apply = ica_sub.add_parser(
+        "apply", help="remove the labelled components from the data"
+    )
+    apply.add_argument("outdir", help="output directory of the run")
+    apply.add_argument(
+        "ids", nargs="*", help="session ids (default: every session with an ICA)"
+    )
+    apply.add_argument(
+        "--run", type=int, default=1, help="which ICA of a session with several"
+    )
+    apply.add_argument(
+        "--purge",
+        action="store_true",
+        help="delete the browser review's plots afterwards",
+    )
+    apply.set_defaults(func=_ica_apply)
 
     sub.add_parser(
         "download-data", help="download every data file, for use offline"

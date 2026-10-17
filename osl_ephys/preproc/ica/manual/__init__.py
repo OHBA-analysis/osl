@@ -18,16 +18,18 @@ osl-ephys config can use it directly without passing it via
                         'outdir': '/path/to/ica_review'}},
     ]}
 
-``dataset['subject']`` must be set by an upstream extra_func.
+In a pipeline run ``subject`` is the session id and the review root
+``outdir/ica``; ``dataset['subject']`` and ``dataset['target_pth']`` can
+also be set by an extra_func.
 
-To review the results, run the bundled HTTP server inside the IC root::
+To review the results, serve the pages of the run and open
+``http://localhost:8000/<id>/single_ic.html``::
 
-    osl-ica-review 8000
-    # then open http://localhost:8000/<subject>/single_ic.html
+    osl-ephys ica review outdir --browser
 
 To apply the review decisions::
 
-    osl-ica-apply <ica_root> <raw_root> <subject>
+    osl-ephys ica apply outdir
 """
 
 from .ica import manual_ica, apply_ica

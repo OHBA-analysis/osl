@@ -31,7 +31,7 @@ from osl_ephys.preproc.semp.wrappers.aas import epoch_aas
 from osl_ephys.preproc.semp.wrappers.obs import epoch_obs
 from osl_ephys.preproc.semp.wrappers import timer as timer_mod
 from osl_ephys.preproc.semp.vis import _amplitude_yticks
-from osl_ephys.preproc.manual_ica.helpers import (
+from osl_ephys.preproc.ica.manual.helpers import (
     _compute_slice_contribution_scores,
     _compute_slice_ga_scores,
 )

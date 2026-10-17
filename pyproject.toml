@@ -87,10 +87,6 @@ dev = [
 "Documentation" = "https://osl-ephys.readthedocs.io/en/latest/"
 
 [project.scripts]
-osl_ica_label = "osl_ephys.preproc.ica_label:main"
-osl_ica_apply = "osl_ephys.preproc.ica_label:apply"
-osl-ica-review = "osl_ephys.preproc.manual_ica.review_server:main"
-osl-ica-apply = "osl_ephys.preproc.manual_ica.apply:main"
 osl-ephys = "osl_ephys.pipeline.cli:main"
 osl-ephys-download-data = "osl_ephys.files._fetch:download_data_cli"
 

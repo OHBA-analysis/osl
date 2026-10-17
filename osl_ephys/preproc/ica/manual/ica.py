@@ -10,9 +10,9 @@ import math
 import numpy as np
 import mne
 from mne.preprocessing import ICA
-from ...utils.logger import log_or_print
+from osl_ephys.utils.logger import log_or_print
 
-from ...utils import ensure_dir, proc_userargs
+from osl_ephys.utils import ensure_dir, proc_userargs
 from .config import DEFAULT_USERARGS
 from .helpers import (
     _good_mask,
@@ -65,7 +65,7 @@ def manual_ica(dataset, userargs):
 
     ``userargs`` schema
     -------------------
-    The full schema lives in ``osl_ephys.preproc.manual_ica.config.DEFAULT_USERARGS``;
+    The full schema lives in ``osl_ephys.preproc.ica.manual.config.DEFAULT_USERARGS``;
     it is enforced strict --- any unknown key raises a clear KeyError.
     Highlights:
 

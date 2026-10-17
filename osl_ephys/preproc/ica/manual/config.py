@@ -3,7 +3,7 @@
 Kept as a module-level dict (instead of a function-local one) so it's easy
 to inspect and override from a project script::
 
-    from osl_ephys.preproc.manual_ica import config
+    from osl_ephys.preproc.ica.manual import config
     custom = {**config.DEFAULT_USERARGS, 'n_components': 50}
 
 Any key supplied to ``manual_ica``'s ``userargs`` that is *not* in

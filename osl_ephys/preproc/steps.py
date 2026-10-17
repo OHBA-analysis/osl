@@ -57,6 +57,20 @@ def _add_ica(dataset, ica):
     return dataset
 
 
+def _warn_if_rectified(obj, what):
+    """Filtering a rectified signal (a power or amplitude envelope, which is
+    never negative) is usually a mistake, so say so."""
+    try:
+        data = obj.get_data(picks="data")
+    except Exception:
+        return
+    if data.size and data.min() >= 0:
+        logger.warning(
+            f"The data is non-negative everywhere, as a rectified or power signal "
+            f"is; {what} it is usually a mistake."
+        )
+
+
 def mne_method(dataset, userargs, method):
     """Call a method of the target MNE object with the options.
 
@@ -67,6 +81,8 @@ def mne_method(dataset, userargs, method):
     logger.info(f"{target}.{method}({userargs})")
     if not callable(getattr(obj, method, None)):
         raise ValueError(f"Method '{method}' not found on target '{target}'")
+    if method in ("filter", "notch_filter", "savgol_filter"):
+        _warn_if_rectified(obj, "filtering")
     getattr(obj, method)(**userargs)
     return dataset
 
@@ -75,6 +91,7 @@ def mne_method(dataset, userargs, method):
 def notch_filter(dataset, userargs):
     """MNE ``notch_filter``; ``freqs`` is a number or a space-separated list."""
     target, obj = _target(dataset, userargs)
+    _warn_if_rectified(obj, "filtering")
     obj.notch_filter(_floats(userargs.pop("freqs")), **userargs)
     return dataset
 
@@ -630,10 +647,11 @@ def glm_permutations(dataset, userargs):
 @step("preproc")
 def manual_ica(dataset, userargs):
     """Fit an ICA and write the browser review page for labelling its
-    components (:mod:`osl_ephys.preproc.manual_ica`); the ICA is not applied
+    components (:mod:`osl_ephys.preproc.ica.manual`); the ICA is not applied
     until ``apply_manual_ica`` or the ``osl-ephys ica apply`` command."""
-    from osl_ephys.preproc.manual_ica import manual_ica as run
+    from osl_ephys.preproc.ica.manual import manual_ica as run
 
+    _seed_manual_ica(dataset)
     return run(dataset, userargs)
 
 
@@ -641,9 +659,19 @@ def manual_ica(dataset, userargs):
 def apply_manual_ica(dataset, userargs):
     """Apply a saved ICA excluding ``bad_ics``, the in-pipeline counterpart
     of the ``osl-ephys ica apply`` command."""
-    from osl_ephys.preproc.manual_ica import apply_ica as run
+    from osl_ephys.preproc.ica.manual import apply_ica as run
 
+    _seed_manual_ica(dataset)
     return run(dataset, userargs)
+
+
+def _seed_manual_ica(dataset):
+    """The manual ICA package names its files by ``subject`` under
+    ``target_pth``: the session id and the run's output directory."""
+    if dataset.get("subject") is None and "session" in dataset:
+        dataset["subject"] = dataset["session"]["id"]
+    if dataset.get("target_pth") is None and "paths" in dataset:
+        dataset["target_pth"] = dataset["paths"]["session_dir"].parent
 
 
 # The SEMP (simultaneous EEG-fMRI) steps, imported when one runs so that

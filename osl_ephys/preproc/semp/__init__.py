@@ -50,7 +50,7 @@ from .metric import EEGTracer, psd_band_ratio, psd_band_stat, mean_psd_in_band
 # template from the semp EEG-fMRI tutorial and adapt it to your acquisition.
 
 # The preprocessing wrappers, resolved by name through the step registry
-# (``apply_ica`` now lives in osl_ephys.preproc.manual_ica -- it belongs
+# (``apply_ica`` now lives in osl_ephys.preproc.ica.manual -- it belongs
 # with the manual ICA review pipeline, not the automatic semp path.)
 from .wrappers import (
     voltage_correction,

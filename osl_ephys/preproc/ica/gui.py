@@ -141,19 +141,15 @@ def plot_ica(
             bad_labels_list=bad_labels_list,
         )
     elif isinstance(inst, Evoked):
-        if start is not None or stop is not None:
-            inst = inst.copy().crop(start, stop)
-        sources = ica.get_sources(inst)
-        fig = _plot_ica_sources_evoked(
-            evoked=sources,
+        # MNE's own plot: the labelling is for continuous and epoched data
+        fig = ica.plot_sources(
+            inst,
             picks=picks,
             exclude=exclude,
+            start=start,
+            stop=stop,
             title=title,
-            labels=getattr(ica, "labels_", None),
             show=show,
-            ica=ica,
-            n_channels=n_channels,
-            bad_labels_list=bad_labels_list,
         )
     else:
         raise ValueError("Data input must be of Raw or Epochs type")
@@ -1549,161 +1545,3 @@ def flatten_recursive(lst):
             yield from flatten_recursive(item)
         else:
             yield item
-
-
-def _plot_ica_sources_evoked(
-    evoked,
-    picks,
-    exclude,
-    title,
-    show,
-    ica,
-    labels=None,
-    n_channels=10,
-    bad_labels_list=None,
-):
-    """Plot average over epochs in ICA space.
-
-    Parameters
-    ----------
-    evoked : instance of mne.Evoked
-        The Evoked to be used.
-    %(picks_base)s all sources in the order as fitted.
-    exclude : array-like of int
-        The components marked for exclusion. If None (default), ICA.exclude
-        will be used.
-    title : str
-        The figure title.
-    show : bool
-        Show figure if True.
-    labels : None | dict
-        The ICA labels attribute.
-    """
-    raise ValueError("plot_ica is not yet supported for Evoked data")
-
-    import matplotlib.pyplot as plt
-    from matplotlib import patheffects
-
-    if title is None:
-        title = "Reconstructed latent sources, time-locked"
-
-    fig, axes = plt.subplots(1)
-    ax = axes
-    axes = [axes]
-    times = evoked.times * 1e3
-
-    # plot unclassified sources and label excluded ones
-    lines = list()
-    texts = list()
-    picks = np.sort(picks)
-    idxs = [picks]
-
-    if labels is not None:
-        labels_used = [k for k in labels if "/" not in k]
-
-    exclude_labels = list()
-    for ii in picks:
-        if ii in exclude:
-            line_label = ica._ica_names[ii]
-            if labels is not None:
-                annot = list()
-                for this_label in labels_used:
-                    indices = labels[this_label]
-                    if ii in indices:
-                        annot.append(this_label)
-
-                if annot:
-                    line_label += " – " + ", ".join(annot)  # Unicode en-dash
-            exclude_labels.append(line_label)
-        else:
-            exclude_labels.append(None)
-    label_props = [("k", "-") if lb is None else ("r", "-") for lb in exclude_labels]
-    styles = ["-", "--", ":", "-."]
-    if labels is not None:
-        # differentiate categories by linestyle and components by color
-        col_lbs = [it for it in exclude_labels if it is not None]
-        cmap = plt.get_cmap("tab10", len(col_lbs))
-
-        unique_labels = set()
-        for label in exclude_labels:
-            if label is None:
-                continue
-            elif " – " in label:
-                unique_labels.add(label.split(" – ")[1])
-            else:
-                unique_labels.add("")
-
-        # Determine up to 4 different styles for n categories
-        cat_styles = dict(
-            zip(
-                unique_labels,
-                map(
-                    lambda ux: styles[int(ux % len(styles))], range(len(unique_labels))
-                ),
-            )
-        )
-        for label_idx, label in enumerate(exclude_labels):
-            if label is not None:
-                color = cmap(col_lbs.index(label))
-                if " – " in label:
-                    label_name = label.split(" – ")[1]
-                else:
-                    label_name = ""
-                style = cat_styles[label_name]
-                label_props[label_idx] = (color, style)
-
-    for exc_label, ii in zip(exclude_labels, picks):
-        color, style = label_props[ii]
-        # ensure traces of excluded components are plotted on top
-        zorder = 2 if exc_label is None else 10
-        lines.extend(
-            ax.plot(
-                times,
-                evoked.data[ii].T,
-                picker=True,
-                zorder=zorder,
-                color=color,
-                linestyle=style,
-                label=exc_label,
-            )
-        )
-        lines[-1].set_pickradius(3.0)
-
-    ax.set(title=title, xlim=times[[0, -1]], xlabel="Time (ms)", ylabel="(NA)")
-    if len(exclude) > 0:
-        plt.legend(loc="best")
-    tight_layout(fig=fig)
-
-    texts.append(
-        ax.text(
-            0,
-            0,
-            "",
-            zorder=3,
-            verticalalignment="baseline",
-            horizontalalignment="left",
-            fontweight="bold",
-            alpha=0,
-        )
-    )
-    # this is done to give the structure of a list of lists of a group of lines
-    # in each subplot
-    lines = [lines]
-    ch_names = evoked.ch_names
-
-    path_effects = [patheffects.withStroke(linewidth=2, foreground="w", alpha=0.75)]
-    params = dict(
-        axes=axes,
-        texts=texts,
-        lines=lines,
-        idxs=idxs,
-        ch_names=ch_names,
-        need_draw=False,
-        path_effects=path_effects,
-    )
-    fig.canvas.mpl_connect("pick_event", partial(_butterfly_onpick, params=params))
-    fig.canvas.mpl_connect(
-        "button_press_event", partial(_butterfly_on_button_press, params=params)
-    )
-    plt_show(show)
-    return fig
