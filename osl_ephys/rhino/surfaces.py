@@ -83,15 +83,17 @@ def extract_surfaces(
     MRI file has a valid sform.
 
     In more detail:
+
     1) Transform MRI to be aligned with the MNI axes so that BET works well
     2) Use bet to skull strip MRI so that flirt works well
     3) Use flirt to register skull stripped MRI to MNI space
     4) Use BET/BETSURF to get:
+
        a) The scalp surface (excluding nose), this gives the MRI-derived
           headshape points in native MRI space, which can be used in the
           headshape points registration later.
        b) The scalp surface (outer skin), inner skull and brain surface, these
-          can be used for forward modelling later. Note that  due to the unusual
+          can be used for forward modelling later. Note that due to the unusual
           naming conventions used by BET:
 
           - bet_inskull_mesh_file is actually the brain surface

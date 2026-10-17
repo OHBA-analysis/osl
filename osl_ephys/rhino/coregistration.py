@@ -332,6 +332,7 @@ def coregister_head_and_mri(
     registered to the MRI-derived scalp surface in native MRI space.
 
     In more detail:
+
     1)  Map location of fiducials in MNI standard space brain to native MRI
         space. These are then used as the location of the MRI-derived fiducials
         in native MRI space.
