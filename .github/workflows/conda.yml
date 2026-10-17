@@ -54,9 +54,16 @@ jobs:
         run: pixi global install rattler-build
 
       - name: Build and test the packages
+        # Packages already on the channel at their version are skipped. The
+        # channel has no repodata until the first upload, so it is only
+        # consulted once it exists
         run: |
-          rattler-build build --recipe-dir recipe -c $CHANNEL -c conda-forge \
-            --skip-existing all --output-dir conda-out
+          if curl -sf "https://conda.anaconda.org/$CHANNEL/noarch/repodata.json" > /dev/null; then
+            EXISTING="-c $CHANNEL --skip-existing all"
+          else
+            EXISTING=""
+          fi
+          rattler-build build --recipe-dir recipe $EXISTING -c conda-forge --output-dir conda-out
 
       - name: Upload to the channel
         env:
