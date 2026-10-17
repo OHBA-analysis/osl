@@ -136,7 +136,18 @@ D9-D18, answered 2026-10-16 (details in section 11):
         has no release yet (no tag, not on PyPI), so once it is released
         the `sign_flip`/`fix_sign_ambiguity` steps call it and the copied
         solvers in `group/sign_flipping.py` go.
-    D20 (2026-10-17) The conda package is distributed from an OHBA channel on
+    D21 (2026-10-17, supersedes D20; D8 reason) osl-ephys is pip-only: no
+        conda package, no OHBA channel. Every dependency ships wheels, so
+        the channel only added headless VTK on Linux, which one documented
+        pip line (`vtk-osmesa` from wheels.vtk.org) covers; against that it
+        cost an anaconda.org organisation and token, five recipes, a
+        five-platform workflow and, once osl-dynamics joined, a shared
+        recipes repository. Removed: `recipe/` and
+        `.github/workflows/conda.yml` (both in git history at 968f43f).
+        The user deletes the `ohba-analysis-group` organisation, its dev
+        builds and the `ANACONDA_API_TOKEN` secret. Install docs: pip into
+        a conda or venv environment, `osl-ephys check`, headless section.
+    D20 (2026-10-17, superseded by D21) The conda package is distributed from an OHBA channel on
         anaconda.org, not from conda-forge: conda-forge cannot carry glmtools
         (no package) or sails (1.5.18 there, without the GLM periodogram),
         and a conda-forge package cannot depend on pip. The channel
@@ -546,7 +557,7 @@ Detailed steps and the target layout: section 11.
 - Docs: install page in the osl-dynamics style (conda-forge first), migration
   page, `llms.txt`, FAQ refresh; issues #352, #361, #386.
 
-### Phase 9: the OHBA conda channel (D20, 2026-10-17; conda-forge and mne-installers later)
+### Phase 9: the OHBA conda channel (D20, 2026-10-17; dropped by D21 the same day: pip-only)
 
 Detailed steps and the target layout: section 11.
 
@@ -1339,6 +1350,10 @@ fixed (coregistration no longer loads the headshape file when
 `use_headshape: false`, and `coreg_error` returns NaN without one).
 
 ### Phase 9: the OHBA conda channel
+
+Dropped 2026-10-17 (D21): osl-ephys is pip-only. The channel test below
+passed end to end before the decision; the recipes and workflow are in git
+history at 968f43f if a conda package is ever wanted again.
 
 Revised 2026-10-17 (D20). Needs from the user: the anaconda.org
 organisation (name to be chosen; `ohba` and `ohba-analysis` are both

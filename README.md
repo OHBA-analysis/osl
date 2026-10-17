@@ -55,13 +55,14 @@ The same run from the terminal, with the sessions in a CSV file: `osl-ephys run 
 
 ## Installation
 
-The recommended installation is:
+osl-ephys is on PyPI and needs Python 3.10 or newer. Install it into its own environment, e.g.
 ```
-mamba create -n osle -c ohba-analysis-group -c conda-forge osl-ephys
+conda create -n osle python=3.12
 conda activate osle
+pip install osl-ephys
 ```
 
-See the [installation page](https://osl-ephys.readthedocs.io/en/latest/install.html) for more information, including installing with pip.
+See the [installation page](https://osl-ephys.readthedocs.io/en/latest/install.html) for more information, including headless servers.
 
 ## Documentation
 
@@ -88,7 +89,7 @@ To release a new version:
     - Write the release notes.
     - Select 'Latest' for the release label and click 'Publish release'.
 
-3. Publishing the release triggers two GitHub Actions workflows: `release.yml` builds the package and uploads it to [PyPI](https://pypi.org/project/osl-ephys/), and `conda.yml` builds the conda package and uploads it to the [OHBA channel](https://anaconda.org/ohba-analysis-group) on anaconda.org, then checks it installs from there. Check both succeeded under the Actions tab of the GitHub repo.
+3. Publishing the release triggers the `release.yml` GitHub Actions workflow, which builds the package and uploads it to [PyPI](https://pypi.org/project/osl-ephys/). Check it succeeded under the Actions tab of the GitHub repo.
 
 ## Citation
 

@@ -37,7 +37,7 @@ The core developer team is @matsvanes, @woolrich, @cgohil8 and @ajquinn.
 ### Installation
 
 ```
-mamba create -n osle -c conda-forge osl-ephys
+conda create -n osle python=3.12
 conda activate osle
 git clone git@github.com:OHBA-analysis/osl-ephys.git
 cd osl-ephys

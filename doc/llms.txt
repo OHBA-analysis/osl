@@ -8,7 +8,7 @@ If you use osl-ephys, please cite: van Es, M. W. J., Gohil, C., Quinn, A. J., an
 
 ## Documentation
 
-- [Installation](https://osl-ephys.readthedocs.io/en/latest/install.html): conda-forge and pip installation, development install.
+- [Installation](https://osl-ephys.readthedocs.io/en/latest/install.html): pip installation, headless servers, development install.
 - [Documentation](https://osl-ephys.readthedocs.io/en/latest/documentation.html): the pipeline in one example, and the tutorials on preprocessing (manual, automatic, batch), coregistration, source reconstruction and GLM statistics.
 - [FAQ](https://osl-ephys.readthedocs.io/en/latest/faq.html)
 - [API reference](https://osl-ephys.readthedocs.io/en/latest/autoapi/osl_ephys/index.html): every module, class and function.

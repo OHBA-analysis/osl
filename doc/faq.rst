@@ -12,7 +12,7 @@ Installation
 How do I install osl-ephys?
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-See the :doc:`installation page <install>`: conda-forge is the recommended route, pip the alternative.
+See the :doc:`installation page <install>`: osl-ephys is installed with pip into its own environment.
 
 The config and the pipeline
 ---------------------------

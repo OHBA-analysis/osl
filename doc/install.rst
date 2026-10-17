@@ -1,66 +1,59 @@
 Installation
 ============
 
-osl-ephys is available as a conda package on the `OHBA channel <https://anaconda.org/ohba-analysis-group>`_ of anaconda.org and on `PyPI <https://pypi.org/project/osl-ephys>`_.
+osl-ephys is on `PyPI <https://pypi.org/project/osl-ephys>`_ and needs Python 3.10 or newer. We recommend installing it into its own environment.
+
+With `Miniforge <https://conda-forge.org/download/>`_ (or any conda):
+
+.. code::
+
+    conda create -n osle python=3.12
+    conda activate osle
+    pip install osl-ephys
+
+or with a plain virtual environment:
+
+.. code::
+
+    python -m venv osle
+    source osle/bin/activate
+    pip install osl-ephys
+
+Check the installation with :code:`osl-ephys check`, which imports the package and reports the versions of its main dependencies.
 
 Source reconstruction also needs `FSL <https://fsl.fmrib.ox.ac.uk/fsl/fslwiki/FslInstallation>`_ for extracting the head surfaces from a structural MRI, and the surface-based route needs `FreeSurfer <https://surfer.nmr.mgh.harvard.edu/fswiki/DownloadAndInstall>`_. Neither is needed for preprocessing. On Windows, install everything inside `Ubuntu on WSL <https://ubuntu.com/wsl>`_.
 
-Conda installation (recommended)
---------------------------------
+Headless Linux servers
+----------------------
 
-We recommend installing osl-ephys with `Miniforge <https://conda-forge.org/download/>`_, which provides :code:`conda` and :code:`mamba`. If you do not already have it:
-
-.. code::
-
-    curl -LO "https://github.com/conda-forge/miniforge/releases/latest/download/Miniforge3-$(uname)-$(uname -m).sh"
-    bash Miniforge3-$(uname)-$(uname -m).sh
-    rm Miniforge3-$(uname)-$(uname -m).sh
-
-Then create an environment with osl-ephys in it:
+The VTK wheel on PyPI needs a display for the 3D coregistration plots. On a server without one, either run osl-ephys under :code:`xvfb-run`, or swap in the software-rendering build of VTK:
 
 .. code::
 
-    mamba create -n osle -c ohba-analysis-group -c conda-forge osl-ephys
-    conda activate osle
+    pip uninstall vtk
+    pip install --extra-index-url https://wheels.vtk.org vtk-osmesa
 
-This installs osl-ephys from the OHBA channel with everything it needs from conda-forge, including `MNE-Python <https://mne.tools/stable/index.html>`_.
-
-glmtools and sails, which the GLM statistics module uses, and osl-pathfinder, which the simultaneous EEG-fMRI preprocessing uses, are not on conda-forge; the OHBA channel carries them too, so they are installed along with the rest. (A pip installation gets them from PyPI.)
-
-On a headless Linux server, set :code:`PYVISTA_OFF_SCREEN=true` so the 3D coregistration plots render without a display; the package brings the software-rendering build of VTK with it there.
-
-Pip installation
-----------------
-
-osl-ephys can be installed from PyPI with:
-
-.. code::
-
-    pip install osl-ephys
-
-Note that pip will not install the non-Python libraries that some dependencies need, which is why we recommend conda.
+and set :code:`PYVISTA_OFF_SCREEN=true` in the environment.
 
 Install the latest development code (optional)
 ----------------------------------------------
 
 You should only need to do this if you need a feature or fix that has not been released yet.
 
-Once you have created the :code:`osle` conda environment (see instructions above) you can install the latest development version on the `GitHub repository <https://github.com/OHBA-analysis/osl-ephys>`_ with:
+In the :code:`osle` environment created above, install the latest development version from the `GitHub repository <https://github.com/OHBA-analysis/osl-ephys>`_ with:
 
 .. code::
 
-    conda activate osle
     pip install git+https://github.com/OHBA-analysis/osl-ephys.git
 
 Copy the source code (optional)
 -------------------------------
 
-Once you have created the :code:`osle` conda environment (see instructions above) you can install a local copy of the source code (`GitHub repository <https://github.com/OHBA-analysis/osl-ephys>`_) into it:
+To work on osl-ephys itself, install a local copy of the source code (`GitHub repository <https://github.com/OHBA-analysis/osl-ephys>`_) into the :code:`osle` environment:
 
 .. code::
 
     git clone https://github.com/OHBA-analysis/osl-ephys.git
-    conda activate osle
     cd osl-ephys
     pip install -e .
 
@@ -69,12 +62,11 @@ Now you can run osl-ephys with your own local changes to the code.
 Removing osl-ephys
 ------------------
 
-To remove osl-ephys simply delete the conda environment:
+To remove osl-ephys simply delete the environment:
 
 ::
 
-    conda env remove -n osle
-    conda clean --all
+    conda env remove -n osle   # or: rm -rf osle for a virtual environment
 
 The downloaded data files are cached separately, and can be removed with:
 
