@@ -1,4 +1,4 @@
-"""osl-ephys imports without the pip-only packages the conda package leaves out."""
+"""osl-ephys imports without the packages only the GLM module needs."""
 
 import subprocess
 import sys

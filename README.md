@@ -71,7 +71,6 @@ The read the docs page is updated automatically whenever there is a new commit o
 The documentation is included as docstrings in the source code, and the `doc/` directory contains `.rst` files for installation, tutorials and the FAQ. To build the documentation locally:
 ```
 cd osl-ephys
-conda activate osle
 pip install -r doc/requirements.txt
 sphinx-build -b html doc build
 ```

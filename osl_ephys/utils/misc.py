@@ -222,8 +222,8 @@ def soft_import(package):
 
 class LazyModule:
     """A module imported on first use, so that a package only some functions
-    need (glmtools, sails: pip-only, left out of the conda package) does not
-    have to be installed to import osl-ephys."""
+    need (glmtools and sails, which only the GLM module uses) does not have
+    to be installed to import osl-ephys, and does not slow its import down."""
 
     def __init__(self, name: str, hint: str):
         self._name = name
