@@ -61,7 +61,7 @@ mamba create -n osle -c ohba-analysis-group -c conda-forge osl-ephys
 conda activate osle
 ```
 
-See the [installation page](https://osl-ephys.readthedocs.io/en/latest/install.html) for more information, including installing with pip and on Oxford computers.
+See the [installation page](https://osl-ephys.readthedocs.io/en/latest/install.html) for more information, including installing with pip.
 
 ## Documentation
 
