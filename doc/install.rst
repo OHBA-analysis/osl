@@ -1,7 +1,45 @@
 Installation
 ============
 
-osl-ephys is on `PyPI <https://pypi.org/project/osl-ephys>`_ and needs Python 3.10 or newer. We recommend installing it into its own conda environment, with `Miniforge <https://conda-forge.org/download/>`_ if you do not already have conda:
+osl-ephys is on `PyPI <https://pypi.org/project/osl-ephys>`_ and needs Python 3.10 or newer. We recommend installing it into its own conda environment.
+
+Getting conda
+-------------
+
+If you do not already have conda, install `Miniforge <https://conda-forge.org/download/>`_, which provides :code:`conda` and :code:`mamba`. On Linux and macOS:
+
+.. code::
+
+    curl -LO "https://github.com/conda-forge/miniforge/releases/latest/download/Miniforge3-$(uname)-$(uname -m).sh"
+    bash Miniforge3-$(uname)-$(uname -m).sh
+    rm Miniforge3-$(uname)-$(uname -m).sh
+
+On Windows, download and run the installer from the Miniforge page.
+
+Conda environment (recommended)
+-------------------------------
+
+The `envs <https://github.com/OHBA-analysis/osl-ephys/tree/main/envs>`_ directory of the repository has an environment file per platform. Each installs the compiled dependencies (Qt, VTK, ONNX Runtime, ...) from conda-forge and osl-ephys itself from PyPI, which is the closest to what a conda package of osl-ephys would install:
+
+- :code:`linux.yml`: Linux with a display.
+- :code:`linux-headless.yml`: Linux servers without a display, see below.
+- :code:`macos.yml`: macOS, Intel or Apple silicon.
+- :code:`windows.yml`: Windows.
+
+Download the file for your platform and create the environment from it, e.g. on Linux:
+
+.. code::
+
+    curl -LO https://raw.githubusercontent.com/OHBA-analysis/osl-ephys/main/envs/linux.yml
+    conda env create -f linux.yml
+    conda activate osle
+
+Check the installation with :code:`osl-ephys check`, which imports the package and reports the versions of its main dependencies.
+
+Pip installation
+----------------
+
+Alternatively, install everything from PyPI into an empty conda environment:
 
 .. code::
 
@@ -9,21 +47,26 @@ osl-ephys is on `PyPI <https://pypi.org/project/osl-ephys>`_ and needs Python 3.
     conda activate osle
     pip install osl-ephys
 
-Check the installation with :code:`osl-ephys check`, which imports the package and reports the versions of its main dependencies.
+Every dependency ships wheels, so this works on all three platforms. Prefer the environment files if a compiled dependency gives trouble, e.g. Qt not finding its platform plugin.
 
-Source reconstruction also needs `FSL <https://fsl.fmrib.ox.ac.uk/fsl/fslwiki/FslInstallation>`_ for extracting the head surfaces from a structural MRI, and the surface-based route needs `FreeSurfer <https://surfer.nmr.mgh.harvard.edu/fswiki/DownloadAndInstall>`_. Neither is needed for preprocessing. On Windows, install everything inside `Ubuntu on WSL <https://ubuntu.com/wsl>`_.
+FSL and FreeSurfer
+------------------
+
+Source reconstruction also needs `FSL <https://fsl.fmrib.ox.ac.uk/fsl/fslwiki/FslInstallation>`_ for extracting the head surfaces from a structural MRI, and the surface-based route needs `FreeSurfer <https://surfer.nmr.mgh.harvard.edu/fswiki/DownloadAndInstall>`_. Neither is needed for preprocessing. Both only run on Linux and macOS: on Windows, install everything inside `Ubuntu on WSL <https://ubuntu.com/wsl>`_ and follow the Linux instructions.
 
 Headless Linux servers
 ----------------------
 
-The VTK wheel on PyPI needs a display for the 3D coregistration plots. On a server without one, either run osl-ephys under :code:`xvfb-run`, or swap in the software-rendering build of VTK:
+The standard VTK needs a display for the 3D coregistration plots. On a server without one, use :code:`linux-headless.yml`, which installs the software-rendering (OSMesa) build of VTK from conda-forge, and set :code:`PYVISTA_OFF_SCREEN=true` in the environment. This build cannot open interactive 3D windows, which a server has no use for anyway.
+
+With a pip installation, swap in the software-rendering wheel instead:
 
 .. code::
 
     pip uninstall vtk
     pip install --extra-index-url https://wheels.vtk.org vtk-osmesa
 
-and set :code:`PYVISTA_OFF_SCREEN=true` in the environment.
+Or keep the standard VTK and run osl-ephys under :code:`xvfb-run`.
 
 Install the latest development code (optional)
 ----------------------------------------------

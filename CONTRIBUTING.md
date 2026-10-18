@@ -37,12 +37,14 @@ The core developer team is @matsvanes, @woolrich, @cgohil8 and @ajquinn.
 ### Installation
 
 ```
-conda create -n osle python=3.12
-conda activate osle
 git clone git@github.com:OHBA-analysis/osl-ephys.git
 cd osl-ephys
+conda env create -f envs/<platform>.yml
+conda activate osle
 pip install -e ".[dev]"
 ```
+
+where `<platform>` is `linux`, `macos` or `windows` (see `envs/README.md`).
 
 ### Tests
 

@@ -148,6 +148,16 @@ D9-D18, answered 2026-10-16 (details in section 11):
         `ANACONDA_API_TOKEN` secret stay for now (user, 2026-10-17); nothing
         publishes to the channel any more. Install docs: pip into
         a conda environment (no venv option, user 2026-10-17), `osl-ephys check`, headless section.
+        Amended 2026-10-18 (user): `envs/{linux,linux-headless,macos,windows}.yml`,
+        built from the dropped recipe's run list, install the conda-forge
+        part of the dependencies (Qt, VTK, ONNX Runtime, ...) and osl-ephys
+        from PyPI, which is what the conda package would have installed;
+        `linux-headless.yml` takes `vtk=*=*osmesa*` (conda-forge's last
+        OSMesa build is VTK 9.3.1, which pins Qt/PySide6 6.7). All four
+        dry-run solved with mamba 2.9 on 2026-10-18. The install page
+        starts with getting Miniforge (the osl-dynamics curl lines) and
+        recommends the environment files, pip-only as the alternative; the
+        raw-file URL in the docs points at `main`, valid after the squash merge.
     D20 (2026-10-17, superseded by D21) The conda package is distributed from an OHBA channel on
         anaconda.org, not from conda-forge: conda-forge cannot carry glmtools
         (no package) or sails (1.5.18 there, without the GLM periodogram),
