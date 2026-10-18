@@ -24,8 +24,11 @@ jobs:
         include:
           - platform: linux-64
             os: ubuntu-latest
+          # No OSMesa VTK on conda-forge for ARM, so the standard build renders
+          # under a virtual display, as a user without one would run it
           - platform: linux-aarch64
             os: ubuntu-24.04-arm
+            prefix: xvfb-run -a
           - platform: osx-64
             os: macos-15-intel
           - platform: osx-arm64
@@ -43,15 +46,22 @@ jobs:
           fetch-depth: 0
 
       # The file installs the released osl-ephys from PyPI; here the checkout
-      # (with the test dependencies) takes its place
+      # (with the test dependencies) takes its place. A POSIX class, as the
+      # macOS sed has no \s
       - name: Point the environment file at the checkout
-        run: sed 's|^\(\s*- \)osl-ephys$|\1-e .[dev]|' envs/${{ matrix.platform }}.yml > environment-ci.yml
+        run: |
+          sed 's|^\([[:space:]]*- \)osl-ephys$|\1-e .[dev]|' envs/${{ matrix.platform }}.yml > environment-ci.yml
+          grep -q -- "-e .\[dev\]" environment-ci.yml
 
       - uses: conda-incubator/setup-miniconda@v3
         with:
           miniforge-version: latest
           environment-file: environment-ci.yml
           activate-environment: osle
+
+      - name: Install Xvfb
+        if: matrix.prefix != ''
+        run: sudo apt-get install -y xvfb
 
       - name: Check the installation
         run: |
@@ -66,7 +76,7 @@ jobs:
         env:
           PYVISTA_OFF_SCREEN: "true"
         run: |
-          python - <<'PY'
+          ${{ matrix.prefix }} python - <<'PY'
           import pyvista
           pyvista.OFF_SCREEN = True
           plotter = pyvista.Plotter(off_screen=True)
@@ -92,4 +102,4 @@ jobs:
         env:
           MPLBACKEND: Agg
           PYVISTA_OFF_SCREEN: "true"
-        run: pytest osl_ephys/tests
+        run: ${{ matrix.prefix }} pytest osl_ephys/tests

@@ -1,5 +1,7 @@
 """Config loading, step lookup and the manifest."""
 
+from pathlib import Path
+
 import pytest
 
 from osl_ephys.pipeline import config as cfg
@@ -105,4 +107,4 @@ def test_output_paths_follow_the_layout(tmp_path):
     paths = manifest.output_paths(
         {"id": "s1", "preproc_file": "/elsewhere/s1.fif"}, tmp_path
     )
-    assert str(paths["preproc_file"]) == "/elsewhere/s1.fif"
+    assert paths["preproc_file"] == Path("/elsewhere/s1.fif")

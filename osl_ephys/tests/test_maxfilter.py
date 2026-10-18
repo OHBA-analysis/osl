@@ -1,5 +1,7 @@
 """The MaxFilter commands, built without running MaxFilter."""
 
+import os
+
 from osl_ephys import files
 from osl_ephys.maxfilter import maxfilter, output_file
 from osl_ephys.maxfilter.steps import maxfilter as maxfilter_step
@@ -33,19 +35,20 @@ def test_the_command_has_the_flags():
 
 
 def test_output_names_follow_bids():
-    assert (
-        output_file("sub-01_task-rest_meg.fif", "out")
-        == "out/sub-01_task-rest_proc-sss_meg.fif"
+    # The output name is joined with the platform's separator
+    def out(name):
+        return os.path.join("out", name)
+
+    assert output_file("sub-01_task-rest_meg.fif", "out") == out(
+        "sub-01_task-rest_proc-sss_meg.fif"
     )
-    assert (
-        output_file("sub-01_task-rest_meg.fif", "out", tsss=True)
-        == "out/sub-01_task-rest_proc-tsss_meg.fif"
+    assert output_file("sub-01_task-rest_meg.fif", "out", tsss=True) == out(
+        "sub-01_task-rest_proc-tsss_meg.fif"
     )
-    assert (
-        output_file("x.fif", "out", mode="multistage", tsss=True, trans="default")
-        == "out/x_proc-tsss+trans.fif"
-    )
-    assert output_file("x.fif", "out", mode="cbu") == "out/x_proc-tsss+trans.fif"
+    assert output_file(
+        "x.fif", "out", mode="multistage", tsss=True, trans="default"
+    ) == out("x_proc-tsss+trans.fif")
+    assert output_file("x.fif", "out", mode="cbu") == out("x_proc-tsss+trans.fif")
 
 
 def test_the_step_in_a_dry_run(tmp_path, capsys):

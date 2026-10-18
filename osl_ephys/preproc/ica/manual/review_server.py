@@ -122,9 +122,11 @@ class ReviewHandler(http.server.SimpleHTTPRequestHandler):
         with _WRITE_LOCK:
             tmp_path = None
             try:
+                # newline="\n" keeps the posted text as sent on Windows too
                 with tempfile.NamedTemporaryFile(
                     mode="w",
                     encoding="utf-8",
+                    newline="\n",
                     dir=target_dir,
                     prefix="." + out_name + ".",
                     delete=False,

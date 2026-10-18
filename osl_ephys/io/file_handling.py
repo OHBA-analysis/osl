@@ -48,7 +48,9 @@ def process_file_inputs(inputs):
                 # Check if path to unicode file...
                 open(inputs, "r")
                 infiles, outnames = _load_unicode_inputs(inputs)
-            except (UnicodeDecodeError, FileNotFoundError, IndexError):
+            # A glob pattern is not found on Linux and macOS and an invalid
+            # argument on Windows, so any OSError means it is not a file list
+            except (UnicodeDecodeError, OSError, IndexError):
                 # ...else we have a single path or glob expression
                 infiles = glob.glob(inputs)
                 outnames = [find_run_id(f) for f in infiles]
