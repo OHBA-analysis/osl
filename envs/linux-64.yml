@@ -1,4 +1,7 @@
-# osl-ephys on Linux x86-64 (a machine with a display)
+# osl-ephys on Linux x86-64. As the conda packages of osl-dynamics do, this
+# takes the software-rendering (OSMesa) build of VTK, so the 3D coregistration
+# plots render on servers and clusters without a display; this is the only
+# platform conda-forge builds it for
 name: osle
 channels:
   - conda-forge
@@ -32,6 +35,7 @@ dependencies:
   - trame
   - trame-vtk
   - trame-vuetify
+  - vtk=*=*osmesa*
   # glmtools, sails and osl-pathfinder are not on conda-forge, so they come
   # from PyPI with osl-ephys itself
   - pip:

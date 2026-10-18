@@ -21,8 +21,7 @@ Conda environment (recommended)
 
 The `envs <https://github.com/OHBA-analysis/osl-ephys/tree/main/envs>`_ directory of the repository has an environment file per platform, named as conda names them (:code:`conda info` shows yours under "platform"). Each installs the compiled dependencies (Qt, VTK, ONNX Runtime, ...) from conda-forge and osl-ephys itself from PyPI, which is the closest to what a conda package of osl-ephys would install:
 
-- :code:`linux-64.yml`: Linux on x86-64.
-- :code:`linux-64-headless.yml`: Linux x86-64 servers without a display, see below.
+- :code:`linux-64.yml`: Linux on x86-64, including servers without a display (see below).
 - :code:`linux-aarch64.yml`: Linux on ARM64.
 - :code:`osx-64.yml`: Intel Macs.
 - :code:`osx-arm64.yml`: Apple silicon Macs.
@@ -59,7 +58,7 @@ Source reconstruction also needs `FSL <https://fsl.fmrib.ox.ac.uk/fsl/fslwiki/Fs
 Headless Linux servers
 ----------------------
 
-The standard VTK needs a display for the 3D coregistration plots. On a server without one, use :code:`linux-64-headless.yml`, which installs the software-rendering (OSMesa) build of VTK from conda-forge, and set :code:`PYVISTA_OFF_SCREEN=true` in the environment. This build cannot open interactive 3D windows, which a server has no use for anyway.
+The standard VTK needs a display for the 3D coregistration plots. On Linux x86-64, :code:`linux-64.yml` installs the software-rendering (OSMesa) build of VTK from conda-forge, as the conda package of osl-dynamics does, so the plots render on servers and clusters without a display; set :code:`PYVISTA_OFF_SCREEN=true` in the environment there. This build saves the plots to image and HTML files but cannot open interactive 3D windows, so pass :code:`display=False` (the default) to the plotting functions.
 
 With a pip installation, swap in the software-rendering wheel instead:
 

@@ -5,9 +5,9 @@ shows yours under "platform"). Each installs the compiled dependencies (Qt,
 VTK, ONNX Runtime, ...) from conda-forge and osl-ephys itself from PyPI, which
 is the closest to what a conda package of osl-ephys would install.
 
-- `linux-64.yml`: Linux on x86-64.
-- `linux-64-headless.yml`: Linux x86-64 servers without a display
-  (software-rendering VTK, set `PYVISTA_OFF_SCREEN=true`).
+- `linux-64.yml`: Linux on x86-64, with the software-rendering (OSMesa) VTK
+  as the osl-dynamics conda package has, so the 3D plots render on servers
+  without a display (set `PYVISTA_OFF_SCREEN=true` there).
 - `linux-aarch64.yml`: Linux on ARM64.
 - `osx-64.yml`: Intel Macs.
 - `osx-arm64.yml`: Apple silicon Macs.
