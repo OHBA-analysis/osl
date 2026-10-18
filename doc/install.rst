@@ -41,10 +41,11 @@ Then download the file and create the environment from it. This fills your platf
 
 .. code::
 
-    curl -LO "https://raw.githubusercontent.com/OHBA-analysis/osl-ephys/main/envs/$(conda info | awk '/platform/ {print $3}').yml"
-    mamba env create -f *.yml
+    platform=$(conda info | awk '/platform/ {print $3}')
+    curl -LO "https://raw.githubusercontent.com/OHBA-analysis/osl-ephys/main/envs/$platform.yml"
+    mamba env create -f "$platform.yml"
     conda activate osle
-    rm *.yml
+    rm "$platform.yml"
 
 or, written out for an Apple silicon Mac:
 
