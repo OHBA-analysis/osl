@@ -1,5 +1,4 @@
-# osl-ephys on Windows. FSL and FreeSurfer, which source reconstruction
-# needs, only run under WSL, where linux.yml applies instead
+# osl-ephys on Apple silicon Macs
 name: osle
 channels:
   - conda-forge

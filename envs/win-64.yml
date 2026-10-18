@@ -1,4 +1,5 @@
-# osl-ephys on a Linux desktop (a machine with a display)
+# osl-ephys on Windows. FSL and FreeSurfer, which source reconstruction
+# needs, only run under WSL, where linux-64.yml applies instead
 name: osle
 channels:
   - conda-forge

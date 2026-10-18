@@ -1,4 +1,4 @@
-# osl-ephys on a Linux server without a display: the software-rendering
+# osl-ephys on a Linux x86-64 server without a display: the software-rendering
 # (OSMesa) build of VTK draws the 3D coregistration plot off screen, so set
 # PYVISTA_OFF_SCREEN=true in the environment; it cannot open interactive
 # 3D windows

@@ -55,10 +55,10 @@ The same run from the terminal, with the sessions in a CSV file: `osl-ephys run 
 
 ## Installation
 
-osl-ephys is on PyPI and needs Python 3.10 or newer. Create a conda environment from the file for your platform in [envs](envs), which installs the compiled dependencies from conda-forge and osl-ephys from PyPI, e.g. on Linux:
+osl-ephys is on PyPI and needs Python 3.10 or newer. Create a conda environment from the file for your platform in [envs](envs), which installs the compiled dependencies from conda-forge and osl-ephys from PyPI, e.g. on Linux x86-64:
 ```
-curl -LO https://raw.githubusercontent.com/OHBA-analysis/osl-ephys/main/envs/linux.yml
-conda env create -f linux.yml
+curl -LO https://raw.githubusercontent.com/OHBA-analysis/osl-ephys/main/envs/linux-64.yml
+conda env create -f linux-64.yml
 conda activate osle
 ```
 

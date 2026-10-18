@@ -1,4 +1,4 @@
-# osl-ephys on macOS (Intel or Apple silicon)
+# osl-ephys on Linux x86-64 (a machine with a display)
 name: osle
 channels:
   - conda-forge

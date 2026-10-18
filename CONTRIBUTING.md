@@ -44,7 +44,7 @@ conda activate osle
 pip install -e ".[dev]"
 ```
 
-where `<platform>` is `linux`, `macos` or `windows` (see `envs/README.md`).
+where `<platform>` is the conda platform name, e.g. `linux-64` or `osx-arm64` (see `envs/README.md`).
 
 ### Tests
 

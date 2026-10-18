@@ -19,19 +19,21 @@ On Windows, download and run the installer from the Miniforge page.
 Conda environment (recommended)
 -------------------------------
 
-The `envs <https://github.com/OHBA-analysis/osl-ephys/tree/main/envs>`_ directory of the repository has an environment file per platform. Each installs the compiled dependencies (Qt, VTK, ONNX Runtime, ...) from conda-forge and osl-ephys itself from PyPI, which is the closest to what a conda package of osl-ephys would install:
+The `envs <https://github.com/OHBA-analysis/osl-ephys/tree/main/envs>`_ directory of the repository has an environment file per platform, named as conda names them (:code:`conda info` shows yours under "platform"). Each installs the compiled dependencies (Qt, VTK, ONNX Runtime, ...) from conda-forge and osl-ephys itself from PyPI, which is the closest to what a conda package of osl-ephys would install:
 
-- :code:`linux.yml`: Linux with a display.
-- :code:`linux-headless.yml`: Linux servers without a display, see below.
-- :code:`macos.yml`: macOS, Intel or Apple silicon.
-- :code:`windows.yml`: Windows.
+- :code:`linux-64.yml`: Linux on x86-64.
+- :code:`linux-64-headless.yml`: Linux x86-64 servers without a display, see below.
+- :code:`linux-aarch64.yml`: Linux on ARM64.
+- :code:`osx-64.yml`: Intel Macs.
+- :code:`osx-arm64.yml`: Apple silicon Macs.
+- :code:`win-64.yml`: Windows.
 
-Download the file for your platform and create the environment from it, e.g. on Linux:
+Download the file for your platform and create the environment from it, e.g. on Linux x86-64:
 
 .. code::
 
-    curl -LO https://raw.githubusercontent.com/OHBA-analysis/osl-ephys/main/envs/linux.yml
-    conda env create -f linux.yml
+    curl -LO https://raw.githubusercontent.com/OHBA-analysis/osl-ephys/main/envs/linux-64.yml
+    conda env create -f linux-64.yml
     conda activate osle
 
 Check the installation with :code:`osl-ephys check`, which imports the package and reports the versions of its main dependencies.
@@ -57,7 +59,7 @@ Source reconstruction also needs `FSL <https://fsl.fmrib.ox.ac.uk/fsl/fslwiki/Fs
 Headless Linux servers
 ----------------------
 
-The standard VTK needs a display for the 3D coregistration plots. On a server without one, use :code:`linux-headless.yml`, which installs the software-rendering (OSMesa) build of VTK from conda-forge, and set :code:`PYVISTA_OFF_SCREEN=true` in the environment. This build cannot open interactive 3D windows, which a server has no use for anyway.
+The standard VTK needs a display for the 3D coregistration plots. On a server without one, use :code:`linux-64-headless.yml`, which installs the software-rendering (OSMesa) build of VTK from conda-forge, and set :code:`PYVISTA_OFF_SCREEN=true` in the environment. This build cannot open interactive 3D windows, which a server has no use for anyway.
 
 With a pip installation, swap in the software-rendering wheel instead:
 
