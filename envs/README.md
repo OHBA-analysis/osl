@@ -12,8 +12,9 @@ is the closest to what a conda package of osl-ephys would install.
   a display run under `xvfb-run`).
 - `osx-64.yml`: Intel Macs.
 - `osx-arm64.yml`: Apple silicon Macs.
-- `win-64.yml`: Windows (source reconstruction needs FSL, so WSL with
-  `linux-64.yml`).
+
+There is no Windows file: osl-ephys runs under WSL there, with `linux-64.yml`,
+as source reconstruction needs FSL.
 
 Create and activate the environment with:
 

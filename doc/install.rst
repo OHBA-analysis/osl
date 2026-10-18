@@ -1,20 +1,18 @@
 Installation
 ============
 
-osl-ephys is on `PyPI <https://pypi.org/project/osl-ephys>`_ and needs Python 3.10 or newer. We recommend installing it into its own conda environment.
+osl-ephys is on `PyPI <https://pypi.org/project/osl-ephys>`_ and needs Python 3.10 or newer. It runs on Linux and macOS; on Windows, install it inside `Ubuntu on WSL <https://ubuntu.com/wsl>`_ and follow the Linux instructions, as source reconstruction needs FSL, which has no Windows version. We recommend installing osl-ephys into its own conda environment.
 
 Getting conda
 -------------
 
-If you do not already have conda, install `Miniforge <https://conda-forge.org/download/>`_, which provides :code:`conda` and :code:`mamba`. On Linux and macOS:
+If you do not already have conda, install `Miniforge <https://conda-forge.org/download/>`_, which provides :code:`conda` and :code:`mamba`:
 
 .. code::
 
     curl -LO "https://github.com/conda-forge/miniforge/releases/latest/download/Miniforge3-$(uname)-$(uname -m).sh"
     bash Miniforge3-$(uname)-$(uname -m).sh
     rm Miniforge3-$(uname)-$(uname -m).sh
-
-On Windows, download and run the installer from the Miniforge page.
 
 Conda environment (recommended)
 -------------------------------
@@ -25,7 +23,6 @@ The `envs <https://github.com/OHBA-analysis/osl-ephys/tree/main/envs>`_ director
 - :code:`linux-aarch64.yml`: Linux on ARM64.
 - :code:`osx-64.yml`: Intel Macs.
 - :code:`osx-arm64.yml`: Apple silicon Macs.
-- :code:`win-64.yml`: Windows.
 
 Download the file for your platform and create the environment from it, e.g. on Linux x86-64:
 
@@ -48,12 +45,12 @@ Alternatively, install everything from PyPI into an empty conda environment:
     conda activate osle
     pip install osl-ephys
 
-Every dependency ships wheels, so this works on all three platforms. Prefer the environment files if a compiled dependency gives trouble, e.g. Qt not finding its platform plugin.
+Every dependency ships wheels, so this works on every platform. Prefer the environment files if a compiled dependency gives trouble, e.g. Qt not finding its platform plugin.
 
 FSL and FreeSurfer
 ------------------
 
-Source reconstruction also needs `FSL <https://fsl.fmrib.ox.ac.uk/fsl/fslwiki/FslInstallation>`_ for extracting the head surfaces from a structural MRI, and the surface-based route needs `FreeSurfer <https://surfer.nmr.mgh.harvard.edu/fswiki/DownloadAndInstall>`_. Neither is needed for preprocessing. Both only run on Linux and macOS: on Windows, install everything inside `Ubuntu on WSL <https://ubuntu.com/wsl>`_ and follow the Linux instructions.
+Source reconstruction also needs `FSL <https://fsl.fmrib.ox.ac.uk/fsl/fslwiki/FslInstallation>`_ for extracting the head surfaces from a structural MRI, and the surface-based route needs `FreeSurfer <https://surfer.nmr.mgh.harvard.edu/fswiki/DownloadAndInstall>`_. Neither is needed for preprocessing.
 
 Headless Linux servers
 ----------------------

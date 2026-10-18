@@ -33,8 +33,6 @@ jobs:
             os: macos-15-intel
           - platform: osx-arm64
             os: macos-latest
-          - platform: win-64
-            os: windows-latest
     defaults:
       run:
         # Activates the conda environment in every step
@@ -95,7 +93,6 @@ jobs:
           path: |
             ~/.cache/osl-files
             ~/Library/Caches/osl-files
-            ~/AppData/Local/osl-files
           key: osl-files-${{ runner.os }}-${{ hashFiles('osl_ephys/files/_fetch.py') }}
 
       - name: Run the tests
