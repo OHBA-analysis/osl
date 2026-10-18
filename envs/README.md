@@ -8,7 +8,8 @@ is the closest to what a conda package of osl-ephys would install.
 - `linux-64.yml`: Linux on x86-64, with the software-rendering (OSMesa) VTK
   as the osl-dynamics conda package has, so the 3D plots render on servers
   without a display (set `PYVISTA_OFF_SCREEN=true` there).
-- `linux-aarch64.yml`: Linux on ARM64.
+- `linux-aarch64.yml`: Linux on ARM64 (no OSMesa VTK on conda-forge; without
+  a display run under `xvfb-run`).
 - `osx-64.yml`: Intel Macs.
 - `osx-arm64.yml`: Apple silicon Macs.
 - `win-64.yml`: Windows (source reconstruction needs FSL, so WSL with

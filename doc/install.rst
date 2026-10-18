@@ -60,6 +60,8 @@ Headless Linux servers
 
 The standard VTK needs a display for the 3D coregistration plots. On Linux x86-64, :code:`linux-64.yml` installs the software-rendering (OSMesa) build of VTK from conda-forge, as the conda package of osl-dynamics does, so the plots render on servers and clusters without a display; set :code:`PYVISTA_OFF_SCREEN=true` in the environment there. This build saves the plots to image and HTML files but cannot open interactive 3D windows, so pass :code:`display=False` (the default) to the plotting functions.
 
+conda-forge has no OSMesa build for ARM Linux, so on an ARM server without a display run osl-ephys under :code:`xvfb-run`, which the Linux distribution's package manager provides.
+
 With a pip installation, swap in the software-rendering wheel instead:
 
 .. code::
