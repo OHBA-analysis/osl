@@ -44,6 +44,7 @@ Then download the file and create the environment from it. This fills your platf
     curl -LO "https://raw.githubusercontent.com/OHBA-analysis/osl-ephys/main/envs/$(conda info | awk '/platform/ {print $3}').yml"
     mamba env create -f *.yml
     conda activate osle
+    rm *.yml
 
 or, written out for an Apple silicon Mac:
 
@@ -52,6 +53,9 @@ or, written out for an Apple silicon Mac:
     curl -LO https://raw.githubusercontent.com/OHBA-analysis/osl-ephys/main/envs/osx-arm64.yml
     mamba env create -f osx-arm64.yml
     conda activate osle
+    rm osx-arm64.yml
+
+The file is only needed to create the environment, so the last line deletes it.
 
 Check the installation with :code:`osl-ephys check`, which imports the package and reports the versions of its main dependencies.
 
