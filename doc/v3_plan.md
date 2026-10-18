@@ -1240,7 +1240,7 @@ extra columns.
    `decimate_headshape_points`, `amm`. osl-dynamics' `plot_ica_components`
    is not ported: `preproc.qc.plot_bad_ica` shows the same components with
    their properties.
-3. (done 2026-10-17) `preproc/amm.py`: port, with the `amm` step.
+3. (done 2026-10-17) `preproc/amm.py`: port, with the `amm` step. `tests/test_amm.py` (variance drops on 5 s of the OPM recording) dropped on the user's request 2026-10-18 (D8); the step itself stays.
 4. (done 2026-10-17) `preproc/ica/`: `gui.py` (the GUI, was `plot_ica.py`),
    `manual/` (the browser review package, was `manual_ica/`), `review.py`
    (`review_gui`, `serve_review`), `apply.py` (`apply_review`: the browser
