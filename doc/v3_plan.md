@@ -154,7 +154,7 @@ D9-D18, answered 2026-10-16 (details in section 11):
         from PyPI, which is what the conda package would have installed;
         `linux-64.yml` takes `vtk=*=*osmesa*` for every Linux x86-64 install, exactly as the osl-dynamics conda package and the dropped recipe did (user, 2026-10-18: robust on servers; no separate headless file) (conda-forge's last
         OSMesa build is VTK 9.3.1, which pins Qt/PySide6 6.7). All five
-        dry-run solved with mamba 2.9 on 2026-10-18 (the pip step on top is untested). The install page
+        dry-run solved with mamba 2.9 on 2026-10-18. `.github/workflows/envs.yml` (2026-10-18) creates each file on its runner with the checkout in place of the PyPI osl-ephys, runs `pip check`, `osl-ephys check`, an off-screen pyvista render and the tests, weekly too; this is the only CI for the OSMesa rendering (no test renders the coreg plot, which needs FSL surfaces). The install page keeps the environment files as the recommended route, pip as the alternative (user, 2026-10-18). The install page
         starts with getting Miniforge (the osl-dynamics curl lines) and
         recommends the environment files, pip-only as the alternative; the
         raw-file URL in the docs points at `main`, valid after the squash merge.
