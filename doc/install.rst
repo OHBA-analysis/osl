@@ -17,19 +17,40 @@ If you do not already have conda, install `Miniforge <https://conda-forge.org/do
 Conda environment (recommended)
 -------------------------------
 
-The `envs <https://github.com/OHBA-analysis/osl-ephys/tree/main/envs>`_ directory of the repository has an environment file per platform, named as conda names them (:code:`conda info` shows yours under "platform"). Each installs the compiled dependencies (Qt, VTK, ONNX Runtime, ...) from conda-forge and osl-ephys itself from PyPI, which is the closest to what a conda package of osl-ephys would install:
+The `envs <https://github.com/OHBA-analysis/osl-ephys/tree/main/envs>`_ directory of the repository has an environment file per platform. Each installs the compiled dependencies (Qt, VTK, ONNX Runtime, ...) from conda-forge and osl-ephys itself from PyPI, which is the closest to what a conda package of osl-ephys would install.
 
-- :code:`linux-64.yml`: Linux on x86-64, including servers without a display (see below).
-- :code:`linux-aarch64.yml`: Linux on ARM64.
-- :code:`osx-64.yml`: Intel Macs.
-- :code:`osx-arm64.yml`: Apple silicon Macs.
-
-Download the file for your platform and create the environment from it, e.g. on Linux x86-64:
+First find your platform, which conda names after the operating system and processor:
 
 .. code::
 
-    curl -LO https://raw.githubusercontent.com/OHBA-analysis/osl-ephys/main/envs/linux-64.yml
-    mamba env create -f linux-64.yml
+    conda info | grep platform
+
+and pick the file named after it:
+
+================== ================================= ====================================
+Platform           Machine                           Environment file
+================== ================================= ====================================
+``linux-64``       Linux on x86-64, including        ``linux-64.yml``
+                   servers without a display
+``linux-aarch64``  Linux on ARM64                    ``linux-aarch64.yml``
+``osx-64``         Intel Mac                         ``osx-64.yml``
+``osx-arm64``      Apple silicon Mac                 ``osx-arm64.yml``
+================== ================================= ====================================
+
+Then download the file and create the environment from it. This fills your platform in for you:
+
+.. code::
+
+    curl -LO "https://raw.githubusercontent.com/OHBA-analysis/osl-ephys/main/envs/$(conda info | awk '/platform/ {print $3}').yml"
+    mamba env create -f *.yml
+    conda activate osle
+
+or, written out for an Apple silicon Mac:
+
+.. code::
+
+    curl -LO https://raw.githubusercontent.com/OHBA-analysis/osl-ephys/main/envs/osx-arm64.yml
+    mamba env create -f osx-arm64.yml
     conda activate osle
 
 Check the installation with :code:`osl-ephys check`, which imports the package and reports the versions of its main dependencies.

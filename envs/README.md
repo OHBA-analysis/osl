@@ -1,7 +1,7 @@
 # Conda environments
 
-One environment file per platform, named as conda names them (`conda info`
-shows yours under "platform"). Each installs the compiled dependencies (Qt,
+One environment file per platform, named as conda names them: `conda info |
+grep platform` shows yours. Each installs the compiled dependencies (Qt,
 VTK, ONNX Runtime, ...) from conda-forge and osl-ephys itself from PyPI, which
 is the closest to what a conda package of osl-ephys would install.
 
