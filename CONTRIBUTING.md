@@ -39,7 +39,7 @@ The core developer team is @matsvanes, @woolrich, @cgohil8 and @ajquinn.
 ```
 git clone git@github.com:OHBA-analysis/osl-ephys.git
 cd osl-ephys
-conda env create -f envs/<platform>.yml
+mamba env create -f envs/<platform>.yml
 conda activate osle
 pip install -e ".[dev]"
 ```

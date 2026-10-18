@@ -29,7 +29,7 @@ Download the file for your platform and create the environment from it, e.g. on 
 .. code::
 
     curl -LO https://raw.githubusercontent.com/OHBA-analysis/osl-ephys/main/envs/linux-64.yml
-    conda env create -f linux-64.yml
+    mamba env create -f linux-64.yml
     conda activate osle
 
 Check the installation with :code:`osl-ephys check`, which imports the package and reports the versions of its main dependencies.

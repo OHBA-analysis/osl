@@ -16,12 +16,22 @@ is the closest to what a conda package of osl-ephys would install.
 There is no Windows file: osl-ephys runs under WSL there, with `linux-64.yml`,
 as source reconstruction needs FSL.
 
-Create and activate the environment with:
+If you do not already have conda, install
+[Miniforge](https://conda-forge.org/download/), which provides `conda` and
+`mamba`:
 
 ```
-conda env create -f envs/<platform>.yml
+curl -LO "https://github.com/conda-forge/miniforge/releases/latest/download/Miniforge3-$(uname)-$(uname -m).sh"
+bash Miniforge3-$(uname)-$(uname -m).sh
+rm Miniforge3-$(uname)-$(uname -m).sh
+```
+
+Then create and activate the environment:
+
+```
+mamba env create -f envs/<platform>.yml
 conda activate osle
 ```
 
 See the [installation instructions](https://osl-ephys.readthedocs.io/en/latest/install.html)
-for getting conda and the alternatives.
+for the alternatives.
