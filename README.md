@@ -4,6 +4,7 @@
 [![Documentation](https://readthedocs.org/projects/osl-ephys/badge/?version=latest)](https://osl-ephys.readthedocs.io)
 [![License](https://img.shields.io/badge/license-Apache%202.0-green)](https://github.com/OHBA-analysis/osl-ephys/blob/main/LICENSE)
 [![Paper](https://img.shields.io/badge/paper-Frontiers-orange)](https://doi.org/10.3389/fnins.2025.1522675)
+[![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.23543782.svg)](https://doi.org/10.5281/zenodo.23543782)
 
 osl-ephys is a Python toolbox for analysing electrophysiological data (MEG, EEG and OPM) from the raw recording to parcellated source-space time courses. It builds on [MNE-Python](https://mne.tools) and adds the pieces an M/EEG pipeline needs around it:
 
