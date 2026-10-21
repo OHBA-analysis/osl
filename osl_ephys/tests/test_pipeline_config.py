@@ -99,6 +99,19 @@ def test_manifest_from_rows_csv_and_files(tmp_path):
         manifest.load_manifest([{"id": "s1"}, {"id": "s1"}])
 
 
+def test_ids_drop_the_raw_suffix():
+    # The id names the outputs, so the file's raw suffix must not carry over
+    # (and not be removed from the middle of the id either)
+    rows = manifest.load_manifest(
+        ["/x/sub-01_task-rest_raw.fif", "/x/sub-01_raw_task-rest.fif", "/x/tmpraw.fif"]
+    )
+    assert [r["id"] for r in rows] == [
+        "sub-01_task-rest",
+        "sub-01_raw_task-rest",
+        "tmpraw",
+    ]
+
+
 def test_output_paths_follow_the_layout(tmp_path):
     paths = manifest.output_paths({"id": "s1", "subject": "sub-01"}, tmp_path)
     assert paths["preproc_file"] == tmp_path / "preproc" / "s1_preproc-raw.fif"

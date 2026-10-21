@@ -153,8 +153,6 @@ def write_dataset(
         The file written for each key.
     """
     skip = skip or []
-    for string in ("_preproc-raw", "_raw"):
-        run_id = run_id.replace(string, "")
 
     def name(ftype, fext):
         return outbase.format(run_id=run_id, ftype=ftype, fext=fext)

@@ -150,6 +150,11 @@ def find_run_id(infile, preload=True):
         runname = os.path.basename(infile).split(".")[0]
         # raise ValueError('Unable to determine run_id from file {0}'.format(infile))
 
+    # The id names the outputs (<id>_preproc-raw.fif, ...), so a raw suffix
+    # in the file name does not carry over
+    for suffix in ("_preproc-raw", "_raw"):
+        runname = runname.removesuffix(suffix)
+
     return runname
 
 
