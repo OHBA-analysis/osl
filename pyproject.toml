@@ -98,12 +98,15 @@ osl-ephys-download-data = "osl_ephys.files._fetch:download_data_cli"
 
 [tool.setuptools.packages.find]
 where = ["."]
+# Only the package: without this every directory (doc, envs, examples) is
+# taken for a namespace package and shipped in the wheel
+include = ["osl_ephys*"]
 
 [tool.setuptools]
 include-package-data = true
 
 [tool.setuptools.package-data]
-"*" = ["*"]
+"osl_ephys" = ["**/*.yml", "**/*.tree", "**/*.html"]
 
 [tool.codespell]
 # Ref: https://github.com/codespell-project/codespell#using-a-config-file
