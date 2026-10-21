@@ -280,7 +280,7 @@ tutorials; cleaned up in phase 8).
 - One-off black reformat with black's defaults (line length 88, as
   osl-dynamics; decided 2026-10-15) in its own commit, listed in
   `.git-blame-ignore-revs`. Codespell config in `pyproject.toml`.
-- (done 2026-10-17) An `AUTHORS` file at the repository root listing the contributors (the
+- (done 2026-10-17, names only 2026-10-21 on the user's request) An `AUTHORS` file at the repository root: three authors and seven contributors, no roles or other information (the
   module headers no longer carry author lists; `git shortlog -sn` is the
   starting point), referenced from `NOTICE` and `CITATION.cff`. Added
   2026-10-16, not yet done.
