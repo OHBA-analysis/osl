@@ -1,7 +1,7 @@
 cff-version: 1.2.0
 message: "If you use this software, please cite the software itself, as well as the paper listed in the preferred-citation field. osl-ephys is based on MNE-Python and the Source Recon module on FSL/FreeSurfer. Please cite these packages appropriately."
 title: "osl-ephys"
-doi: 10.5281/zenodo.6875060
+doi: 10.5281/zenodo.6875059
 keywords:
   - MEG
   - magnetoencephalography
