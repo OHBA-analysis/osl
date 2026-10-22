@@ -90,4 +90,4 @@ If you find this toolbox useful, please cite the [paper](https://doi.org/10.3389
 
 > **van Es, M. W. J., Gohil, C., Quinn, A. J., & Woolrich, M. W. (2025). osl-ephys: a Python toolbox for the analysis of electrophysiology data. Frontiers in Neuroscience, 19, 1522675.**
 
-osl-ephys builds on MNE-Python, and the source reconstruction on FSL. Please cite those packages as well when you use them.
+osl-ephys builds on [MNE-Python](https://mne.tools), and the source reconstruction on [FSL](https://fsl.fmrib.ox.ac.uk/fsl). Please cite those packages as well when you use them.
