@@ -17,15 +17,7 @@ If you do not already have conda, install `Miniforge <https://conda-forge.org/do
 Conda environment (recommended)
 -------------------------------
 
-The `envs <https://github.com/OHBA-analysis/osl-ephys/tree/main/envs>`_ directory of the repository has an environment file per platform. Each installs the compiled dependencies (Qt, VTK, ONNX Runtime, ...) from conda-forge and osl-ephys itself from PyPI, which is the closest to what a conda package of osl-ephys would install.
-
-First find your platform, which conda names after the operating system and processor:
-
-.. code::
-
-    conda info | grep platform
-
-and pick the file named after it:
+The `envs <https://github.com/OHBA-analysis/osl-ephys/tree/main/envs>`_ directory of the repository has an environment file per platform:
 
 ================== ================================= ====================================
 Platform           Machine                           Environment file
@@ -46,17 +38,6 @@ Then download the file and create the environment from it. This fills your platf
     mamba env create -f "$platform.yml"
     conda activate osle
     rm "$platform.yml"
-
-or, written out for an Apple silicon Mac:
-
-.. code::
-
-    curl -LO https://raw.githubusercontent.com/OHBA-analysis/osl-ephys/main/envs/osx-arm64.yml
-    mamba env create -f osx-arm64.yml
-    conda activate osle
-    rm osx-arm64.yml
-
-The file is only needed to create the environment, so the last line deletes it.
 
 Check the installation with :code:`osl-ephys check`, which imports the package and reports the versions of its main dependencies.
 
